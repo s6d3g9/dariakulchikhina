@@ -45,6 +45,7 @@ const emit = defineEmits<{
 }>()
 
 const fileInputEl = ref<HTMLInputElement | null>(null)
+const projectActionsRootEl = ref<HTMLDivElement | null>(null)
 const composerBarEl = ref<HTMLDivElement | null>(null)
 const composerInputEl = ref<HTMLTextAreaElement | HTMLDivElement | null>(null)
 
@@ -86,6 +87,7 @@ function onCEKeydown(event: KeyboardEvent) {
 
 defineExpose({
   fileInputEl,
+  projectActionsRootEl,
   composerBarEl,
   composerInputEl,
 })
@@ -94,7 +96,7 @@ defineExpose({
 <template>
   <template v-if="props.visible">
     <input ref="fileInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="emit('file-select', $event)">
-    <div class="composer-dock-wrapper">
+    <div ref="projectActionsRootEl" class="composer-dock-wrapper" :class="{ 'composer-dock-wrapper--project-actions-open': props.projectActionsOpen }">
       <button
         v-if="props.showProjectActionsButton && !props.isRecording && !props.audioDraft"
         type="button"
@@ -106,7 +108,14 @@ defineExpose({
       >
         <VIcon icon="mdi-lightning-bolt" :size="14" />
       </button>
-      <div ref="composerBarEl" class="composer-bar" :class="{ 'composer-bar--audio': props.isRecording || Boolean(props.audioDraft) }">
+      <div class="composer-bar-anchor">
+        <Transition name="composer-project-actions">
+          <div v-if="props.projectActionsOpen && $slots['project-actions-panel']" class="composer-project-actions-popover" @click.stop>
+            <slot name="project-actions-panel" />
+          </div>
+        </Transition>
+
+        <div ref="composerBarEl" class="composer-bar" :class="{ 'composer-bar--audio': props.isRecording || Boolean(props.audioDraft) }">
       <MessengerAudioComposerDraft
         v-if="props.isRecording || props.audioDraft"
         :mode="props.isRecording ? 'recording' : 'preview'"
@@ -229,6 +238,53 @@ defineExpose({
         </template>
       </MessengerDockField>
     </div>
+      </div>
     </div>
   </template>
 </template>
+
+<style scoped>
+.composer-dock-wrapper {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.composer-bar-anchor {
+  position: relative;
+  min-width: 0;
+}
+
+.composer-project-actions-popover {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% + 10px);
+  z-index: 30;
+}
+
+.composer-project-actions-enter-active,
+.composer-project-actions-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform-origin: left bottom;
+}
+
+.composer-project-actions-enter-from,
+.composer-project-actions-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+}
+
+@media (max-width: 430px) {
+  .composer-dock-wrapper {
+    gap: 6px;
+  }
+
+  .composer-project-actions-popover {
+    bottom: calc(100% + 8px);
+  }
+}
+</style>

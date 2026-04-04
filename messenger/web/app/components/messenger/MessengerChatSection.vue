@@ -33,6 +33,7 @@ const composerMediaMenuRef = ref<{
 } | null>(null)
 const composerDockRef = ref<{
   fileInputEl: HTMLInputElement | null
+  projectActionsRootEl: HTMLDivElement | null
   composerBarEl: HTMLDivElement | null
   composerInputEl: HTMLTextAreaElement | HTMLDivElement | null
 } | null>(null)
@@ -2368,6 +2369,14 @@ function toggleMessageActions(messageId: string, event?: MouseEvent) {
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
+  if (projectActions.panelOpen.value && event.target instanceof Node) {
+    const projectActionsRoot = composerDockRef.value?.projectActionsRootEl
+
+    if (projectActionsRoot && !projectActionsRoot.contains(event.target)) {
+      projectActions.closePanel()
+    }
+  }
+
   if (event.target instanceof Element && event.target.closest('[data-message-action-root="true"]')) {
     return
   }
@@ -2671,24 +2680,6 @@ onBeforeUnmount(() => {
         @update:collapsed="agentWorkspaceCollapsed = $event"
       />
 
-      <MessengerProjectActionsPanel
-        :open="projectActions.panelOpen.value"
-        :groups="projectActions.groupedActions.value"
-        :pending-action="projectActions.pendingAction.value"
-        :projects="projectActions.platformProjects.value"
-        :projects-pending="projectActions.platformProjectsPending.value"
-        :projects-error="projectActions.platformProjectsError.value"
-        :selected-project-slug="projectActions.selectedProjectSlug.value"
-        :selected-action-id="projectActions.selectedActionId.value"
-        :catalog="projectActions.platformCatalog.value"
-        :catalog-pending="projectActions.platformCatalogPending.value"
-        :catalog-error="projectActions.platformCatalogError.value"
-        @close="projectActions.closePanel()"
-        @execute="handleProjectAction"
-        @select-project="projectActions.setSelectedProjectSlug($event)"
-        @select-action="projectActions.setSelectedAction($event)"
-      />
-
       <MessengerChatComposerDock
         ref="composerDockRef"
         :visible="Boolean(conversations.activeConversation.value) && !detailsOpen && !composerMediaMenuVisible"
@@ -2722,7 +2713,27 @@ onBeforeUnmount(() => {
         @cancel-audio-draft="cancelAudioComposerState"
         @update:audio-trim-start="updateAudioDraftTrimStart"
         @update:audio-trim-end="updateAudioDraftTrimEnd"
-      />
+      >
+        <template #project-actions-panel>
+          <MessengerProjectActionsPanel
+            :open="projectActions.panelOpen.value"
+            :groups="projectActions.groupedActions.value"
+            :pending-action="projectActions.pendingAction.value"
+            :projects="projectActions.platformProjects.value"
+            :projects-pending="projectActions.platformProjectsPending.value"
+            :projects-error="projectActions.platformProjectsError.value"
+            :selected-project-slug="projectActions.selectedProjectSlug.value"
+            :selected-action-id="projectActions.selectedActionId.value"
+            :catalog="projectActions.platformCatalog.value"
+            :catalog-pending="projectActions.platformCatalogPending.value"
+            :catalog-error="projectActions.platformCatalogError.value"
+            @close="projectActions.closePanel()"
+            @execute="handleProjectAction"
+            @select-project="projectActions.setSelectedProjectSlug($event)"
+            @select-action="projectActions.setSelectedAction($event)"
+          />
+        </template>
+      </MessengerChatComposerDock>
     </section>
   </section>
 </template>

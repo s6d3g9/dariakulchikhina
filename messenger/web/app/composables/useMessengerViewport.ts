@@ -24,7 +24,7 @@ function isMobileViewport() {
     return false
   }
 
-  return window.matchMedia('(max-width: 767px)').matches || navigator.maxTouchPoints > 0
+  return window.matchMedia('(max-width: 767px)').matches
 }
 
 function isAppleTouchViewport() {

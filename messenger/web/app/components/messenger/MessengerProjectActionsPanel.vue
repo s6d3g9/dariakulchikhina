@@ -30,6 +30,8 @@ const emit = defineEmits<{
 }>()
 
 const manualProjectSlug = ref('')
+const projectPickerOpen = ref(false)
+const searchPanelOpen = ref(false)
 const taskMode = ref<'existing' | 'new'>('new')
 const selectedTaskId = ref('')
 const taskTitle = ref('')
@@ -44,9 +46,24 @@ const rangeStart = ref('')
 const rangeEnd = ref('')
 const detailsText = ref('')
 const formError = ref('')
+const actionSearch = ref('')
+const selectedCategory = ref<ProjectActionCategoryGroup['category'] | ''>('')
 
 const allActions = computed(() => props.groups.flatMap(group => group.actions))
 const currentAction = computed(() => allActions.value.find(action => action.id === props.selectedActionId) || null)
+const normalizedActionSearch = computed(() => actionSearch.value.trim().toLowerCase())
+const selectedProjectLabel = computed(() => {
+  return props.catalog?.project.title
+    || props.projects.find(project => project.slug === props.selectedProjectSlug)?.title
+    || props.selectedProjectSlug
+    || 'Проект'
+})
+const searchChipLabel = computed(() => actionSearch.value.trim() || 'Поиск')
+const showProjectPane = computed(() => projectPickerOpen.value)
+const showSearchPane = computed(() => searchPanelOpen.value)
+const showExpansion = computed(() => {
+  return showProjectPane.value || showSearchPane.value || Boolean(currentAction.value) || Boolean(formError.value)
+})
 
 const projectModel = computed({
   get: () => props.selectedProjectSlug,
@@ -155,6 +172,51 @@ const submitLabel = computed(() => {
   return isDirectMutationAction.value ? 'Выполнить и добавить в чат' : 'Добавить в чат'
 })
 
+const filteredCategoryGroups = computed(() => {
+  const query = normalizedActionSearch.value
+
+  return props.groups
+    .map((group) => {
+      const categoryMatches = matchesText(group.label, query)
+      const visibleActions = (!query || categoryMatches)
+        ? group.actions
+        : group.actions.filter(action => matchesActionSearch(action, query))
+
+      if (query && !categoryMatches && !visibleActions.length) {
+        return null
+      }
+
+      return {
+        ...group,
+        visibleActions,
+        preview: visibleActions.slice(0, 2).map(action => action.label).join(' · '),
+      }
+    })
+    .filter(Boolean) as Array<ProjectActionCategoryGroup & {
+      visibleActions: ProjectActionDefinition[]
+      preview: string
+    }>
+})
+
+const selectedCategoryGroup = computed(() => {
+  return props.groups.find(group => group.category === selectedCategory.value) || null
+})
+
+const selectedCategoryActions = computed(() => {
+  const group = selectedCategoryGroup.value
+  const query = normalizedActionSearch.value
+
+  if (!group) {
+    return []
+  }
+
+  if (!query || matchesText(group.label, query)) {
+    return group.actions
+  }
+
+  return group.actions.filter(action => matchesActionSearch(action, query))
+})
+
 const canSubmit = computed(() => {
   if (!currentAction.value || !props.selectedProjectSlug || props.catalogPending || Boolean(props.pendingAction)) {
     return false
@@ -198,6 +260,37 @@ function resetFormState() {
   formError.value = ''
 }
 
+function matchesText(value: string | undefined, query: string) {
+  if (!query) {
+    return true
+  }
+
+  return value?.toLowerCase().includes(query) || false
+}
+
+function matchesActionSearch(action: ProjectActionDefinition, query: string) {
+  if (!query) {
+    return true
+  }
+
+  return [action.label, action.description].some(text => matchesText(text, query))
+}
+
+function formatActionCount(count: number) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+
+  if (mod10 === 1 && mod100 !== 11) {
+    return `${count} сценарий`
+  }
+
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return `${count} сценария`
+  }
+
+  return `${count} сценариев`
+}
+
 function primeDefaults() {
   if (!props.catalog) {
     return
@@ -221,7 +314,52 @@ function primeDefaults() {
 }
 
 function handleActionClick(action: ProjectActionDefinition) {
+  const parentGroup = props.groups.find(group => group.actions.some(candidate => candidate.id === action.id))
+  if (parentGroup) {
+    selectedCategory.value = parentGroup.category
+  }
+
+  searchPanelOpen.value = false
+
   emit('selectAction', props.selectedActionId === action.id ? null : action.id)
+}
+
+function clearCategorySelection() {
+  selectedCategory.value = ''
+  formError.value = ''
+  emit('selectAction', null)
+}
+
+function selectCategory(category: ProjectActionCategoryGroup['category']) {
+  if (selectedCategory.value === category) {
+    clearCategorySelection()
+    return
+  }
+
+  selectedCategory.value = category
+  formError.value = ''
+  searchPanelOpen.value = false
+
+  const nextGroup = props.groups.find(group => group.category === category)
+  if (props.selectedActionId && nextGroup && !nextGroup.actions.some(action => action.id === props.selectedActionId)) {
+    emit('selectAction', null)
+  }
+}
+
+function toggleProjectPane() {
+  projectPickerOpen.value = !projectPickerOpen.value
+
+  if (projectPickerOpen.value) {
+    searchPanelOpen.value = false
+  }
+}
+
+function toggleSearchPane() {
+  searchPanelOpen.value = !searchPanelOpen.value
+
+  if (searchPanelOpen.value) {
+    projectPickerOpen.value = false
+  }
 }
 
 function applyManualProjectSlug() {
@@ -350,6 +488,13 @@ watch(currentAction, (action) => {
     return
   }
 
+  searchPanelOpen.value = false
+
+  const parentGroup = props.groups.find(group => group.actions.some(candidate => candidate.id === action.id))
+  if (parentGroup) {
+    selectedCategory.value = parentGroup.category
+  }
+
   if (action.id === 'update_work_status') {
     taskMode.value = 'existing'
   }
@@ -360,6 +505,19 @@ watch(currentAction, (action) => {
 watch(() => props.catalog, () => {
   primeDefaults()
 }, { immediate: true })
+
+watch(() => props.open, (open) => {
+  if (open) {
+    return
+  }
+
+  projectPickerOpen.value = false
+  searchPanelOpen.value = false
+  actionSearch.value = ''
+  if (!props.selectedActionId) {
+    selectedCategory.value = ''
+  }
+})
 
 watch(serviceItems, (items) => {
   if (selectedServiceId.value && !items.some(service => service.id === selectedServiceId.value)) {
@@ -399,401 +557,507 @@ watch(selectedTask, (task) => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="pa-overlay">
-      <div v-if="props.open" class="pa-overlay" @click.self="emit('close')" />
-    </Transition>
-
-    <Transition name="pa-panel">
-      <div v-if="props.open" class="pa-panel">
-        <div class="pa-panel__header">
-          <div>
-            <span class="pa-panel__title">Действия проекта</span>
-            <p class="pa-panel__subtitle">Выбор задач, этапов, документов и проектного контекста прямо из платформы.</p>
+  <div v-if="props.open" class="pa-shell" :class="{ 'pa-shell--expanded': showExpansion }" @click.stop>
+    <Transition name="pa-expand">
+      <div v-if="showExpansion" class="pa-expand">
+        <section v-if="showProjectPane" class="pa-pane pa-pane--project">
+          <div class="pa-pane__head">
+            <span class="pa-pane__title">Проект</span>
+            <span class="pa-pane__value">{{ selectedProjectLabel }}</span>
           </div>
-          <VBtn icon variant="text" size="small" aria-label="Закрыть" @click="emit('close')">
-            <VIcon icon="mdi-close" size="18" />
-          </VBtn>
-        </div>
 
-        <div class="pa-panel__body">
-          <section class="pa-section pa-section--project">
-            <div class="pa-section__head">
-              <span class="pa-section__title">Проект</span>
-              <span class="pa-section__meta">Источник данных для задач, этапов и документов</span>
-            </div>
+          <VAutocomplete
+            v-model="projectModel"
+            :items="projectItems"
+            item-title="title"
+            item-value="value"
+            variant="outlined"
+            density="comfortable"
+            label="Проект платформы"
+            placeholder="Начните вводить название проекта"
+            clearable
+            hide-details
+            :loading="props.projectsPending"
+          />
 
-            <VAutocomplete
-              v-model="projectModel"
-              :items="projectItems"
-              item-title="title"
-              item-value="value"
+          <div class="pa-project-manual">
+            <VTextField
+              v-model="manualProjectSlug"
               variant="outlined"
               density="comfortable"
-              label="Выберите проект платформы"
-              placeholder="Начните вводить название проекта"
+              label="Slug проекта"
+              placeholder="project-slug"
+              hide-details
+            />
+            <VBtn color="primary" variant="tonal" @click="applyManualProjectSlug">Открыть</VBtn>
+          </div>
+
+          <p v-if="props.projectsError" class="pa-state pa-state--error">{{ props.projectsError }}</p>
+          <p v-else-if="props.catalogError" class="pa-state pa-state--error">{{ props.catalogError }}</p>
+          <p v-else-if="props.catalogPending" class="pa-state pa-state--muted">Загружаю каталог проекта…</p>
+        </section>
+
+        <section v-if="showSearchPane" class="pa-pane pa-pane--search">
+          <VTextField
+            v-model="actionSearch"
+            class="pa-search-field"
+            variant="solo-filled"
+            density="comfortable"
+            flat
+            clearable
+            hide-details
+            bg-color="surface-container-highest"
+            prepend-inner-icon="mdi-magnify"
+            label="Поиск"
+            placeholder="Счёт, отчёт, этап, задача"
+          />
+        </section>
+
+        <section v-if="currentAction" class="pa-pane pa-pane--builder">
+          <div class="pa-pane__head">
+            <span class="pa-pane__title">{{ currentAction.label }}</span>
+            <span class="pa-pane__value">{{ currentAction.description }}</span>
+          </div>
+
+          <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
+            Сначала выберите проект.
+          </div>
+
+          <div v-else-if="props.catalogPending" class="pa-empty-state">
+            Подготавливаю каталог проекта…
+          </div>
+
+          <div v-else-if="props.catalog" class="pa-form-grid">
+            <div v-if="usesTaskSelection" class="pa-field-block pa-field-block--full">
+              <div class="pa-field-block__head">
+                <span class="pa-field-block__title">Задача</span>
+                <span class="pa-field-block__hint">Новая или из существующего списка.</span>
+              </div>
+
+              <div class="pa-mode-row">
+                <button type="button" class="pa-mode-chip" :class="{ 'pa-mode-chip--active': taskMode === 'new' }" @click="taskMode = 'new'">Новая</button>
+                <button type="button" class="pa-mode-chip" :class="{ 'pa-mode-chip--active': taskMode === 'existing' }" @click="taskMode = 'existing'">Из списка</button>
+              </div>
+
+              <VAutocomplete
+                v-if="taskMode === 'existing'"
+                v-model="selectedTaskId"
+                :items="taskItems"
+                item-title="title"
+                item-value="id"
+                variant="outlined"
+                density="comfortable"
+                label="Задача"
+                clearable
+                hide-details
+              />
+
+              <VTextField
+                v-else
+                v-model="taskTitle"
+                variant="outlined"
+                density="comfortable"
+                label="Название задачи"
+                placeholder="Например: Согласовать акт"
+                hide-details
+              />
+
+              <VSelect
+                v-if="usesTaskStatusSelection"
+                v-model="selectedTaskStatus"
+                :items="selectedTaskStatusItems"
+                item-title="title"
+                item-value="value"
+                variant="outlined"
+                density="comfortable"
+                label="Статус"
+                hide-details
+              />
+            </div>
+
+            <VSelect
+              v-if="usesStageSelection || usesTaskSelection"
+              v-model="selectedPhaseKey"
+              :items="phaseItems"
+              item-title="title"
+              item-value="phaseKey"
+              variant="outlined"
+              density="comfortable"
+              label="Этап"
               clearable
               hide-details
-              :loading="props.projectsPending"
             />
 
-            <div class="pa-project-manual">
+            <VSelect
+              v-if="usesStageSelection || usesTaskSelection"
+              v-model="selectedSprintId"
+              :items="sprintItems"
+              item-title="name"
+              item-value="id"
+              variant="outlined"
+              density="comfortable"
+              label="Спринт"
+              clearable
+              hide-details
+            />
+
+            <VSelect
+              v-if="usesSubjectSelection"
+              v-model="selectedSubjectId"
+              :items="subjectItems"
+              item-title="label"
+              item-value="id"
+              variant="outlined"
+              density="comfortable"
+              label="Субъект"
+              clearable
+              hide-details
+            />
+
+            <VSelect
+              v-if="usesObjectSelection"
+              v-model="selectedObjectId"
+              :items="objectItems"
+              item-title="label"
+              item-value="id"
+              variant="outlined"
+              density="comfortable"
+              label="Объект"
+              clearable
+              hide-details
+            />
+
+            <VSelect
+              v-if="usesDocumentSelection"
+              v-model="selectedDocumentId"
+              :items="documentItems"
+              item-title="title"
+              item-value="id"
+              variant="outlined"
+              density="comfortable"
+              label="Документ"
+              clearable
+              hide-details
+            />
+
+            <VSelect
+              v-if="usesFinanceSelection"
+              v-model="selectedServiceId"
+              :items="serviceItems"
+              item-title="title"
+              item-value="id"
+              variant="outlined"
+              density="comfortable"
+              label="Услуга"
+              clearable
+              hide-details
+            />
+
+            <div v-if="usesRangeSelection" class="pa-range-row pa-field-block--full">
               <VTextField
-                v-model="manualProjectSlug"
+                v-model="rangeStart"
+                type="date"
                 variant="outlined"
                 density="comfortable"
-                label="Или введите slug вручную"
-                placeholder="project-slug"
+                label="Начало"
                 hide-details
               />
-              <VBtn color="primary" variant="tonal" @click="applyManualProjectSlug">Открыть</VBtn>
-            </div>
-
-            <p v-if="props.projectsError" class="pa-state pa-state--error">{{ props.projectsError }}</p>
-            <p v-else-if="props.catalogError" class="pa-state pa-state--error">{{ props.catalogError }}</p>
-            <p v-else-if="props.catalogPending" class="pa-state pa-state--muted">Загружаю задачи, этапы, документы и связи проекта…</p>
-          </section>
-
-          <section v-if="props.catalog" class="pa-section pa-section--summary">
-            <div class="pa-summary-grid">
-              <article class="pa-summary-card">
-                <span class="pa-summary-card__label">Активная фаза</span>
-                <strong class="pa-summary-card__value">{{ props.catalog.project.activePhaseTitle || 'Не выбрана' }}</strong>
-              </article>
-              <article class="pa-summary-card">
-                <span class="pa-summary-card__label">Активный спринт</span>
-                <strong class="pa-summary-card__value">{{ props.catalog.project.activeSprintName || 'Нет активного' }}</strong>
-              </article>
-              <article class="pa-summary-card">
-                <span class="pa-summary-card__label">Задачи</span>
-                <strong class="pa-summary-card__value">{{ props.catalog.project.taskTotal }}</strong>
-              </article>
-              <article class="pa-summary-card">
-                <span class="pa-summary-card__label">Документы</span>
-                <strong class="pa-summary-card__value">{{ props.catalog.project.documentCount }}</strong>
-              </article>
-            </div>
-
-            <div v-if="catalogRecommendations.length" class="pa-recommendations">
-              <div class="pa-section__head pa-section__head--compact">
-                <span class="pa-section__title">Подсказки координации</span>
-              </div>
-              <article v-for="recommendation in catalogRecommendations" :key="recommendation.id" class="pa-recommendation">
-                <strong>{{ recommendation.title }}</strong>
-                <p>{{ recommendation.reason }}</p>
-              </article>
-            </div>
-          </section>
-
-          <section class="pa-section pa-section--actions">
-            <div class="pa-section__head">
-              <span class="pa-section__title">Тип действия</span>
-              <span class="pa-section__meta">Не команда, а структурированный сценарий с выбором сущностей</span>
-            </div>
-
-            <div v-for="group in props.groups" :key="group.category" class="pa-group">
-              <div class="pa-group__header">
-                <VIcon :icon="group.icon" size="14" class="pa-group__icon" />
-                <span class="pa-group__label">{{ group.label }}</span>
-              </div>
-              <div class="pa-group__actions">
-                <button
-                  v-for="action in group.actions"
-                  :key="action.id"
-                  type="button"
-                  class="pa-action"
-                  :class="{
-                    'pa-action--active': props.selectedActionId === action.id,
-                    'pa-action--pending': props.pendingAction === action.id,
-                  }"
-                  :disabled="Boolean(props.pendingAction)"
-                  @click="handleActionClick(action)"
-                >
-                  <VIcon :icon="action.icon" size="20" class="pa-action__icon" />
-                  <span class="pa-action__label">{{ action.label }}</span>
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section v-if="currentAction" class="pa-section pa-section--builder">
-            <div class="pa-section__head">
-              <span class="pa-section__title">Сценарий</span>
-              <span class="pa-section__meta">{{ currentAction.description }}</span>
-            </div>
-
-            <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
-              Сначала выберите проект, чтобы открыть реальные задачи, этапы и документы платформы.
-            </div>
-
-            <div v-else-if="props.catalogPending" class="pa-empty-state">
-              Подготавливаю каталог проекта…
-            </div>
-
-            <div v-else-if="props.catalog" class="pa-form-grid">
-              <div v-if="usesTaskSelection" class="pa-field-block pa-field-block--full">
-                <div class="pa-field-block__head">
-                  <span class="pa-field-block__title">Задача</span>
-                  <span class="pa-field-block__hint">Можно выбрать существующую или собрать новую.</span>
-                </div>
-
-                <div class="pa-mode-row">
-                  <button type="button" class="pa-mode-chip" :class="{ 'pa-mode-chip--active': taskMode === 'new' }" @click="taskMode = 'new'">Новая</button>
-                  <button type="button" class="pa-mode-chip" :class="{ 'pa-mode-chip--active': taskMode === 'existing' }" @click="taskMode = 'existing'">Из списка</button>
-                </div>
-
-                <VAutocomplete
-                  v-if="taskMode === 'existing'"
-                  v-model="selectedTaskId"
-                  :items="taskItems"
-                  item-title="title"
-                  item-value="id"
-                  variant="outlined"
-                  density="comfortable"
-                  label="Выберите задачу"
-                  clearable
-                  hide-details
-                />
-
-                <VTextField
-                  v-else
-                  v-model="taskTitle"
-                  variant="outlined"
-                  density="comfortable"
-                  label="Название новой задачи"
-                  placeholder="Например: Согласовать акт по этапу"
-                  hide-details
-                />
-
-                <VSelect
-                  v-if="usesTaskStatusSelection"
-                  v-model="selectedTaskStatus"
-                  :items="selectedTaskStatusItems"
-                  item-title="title"
-                  item-value="value"
-                  variant="outlined"
-                  density="comfortable"
-                  label="Новый статус задачи"
-                  hide-details
-                />
-              </div>
-
-              <VSelect
-                v-if="usesStageSelection || usesTaskSelection"
-                v-model="selectedPhaseKey"
-                :items="phaseItems"
-                item-title="title"
-                item-value="phaseKey"
+              <VTextField
+                v-model="rangeEnd"
+                type="date"
                 variant="outlined"
                 density="comfortable"
-                label="Этап"
-                clearable
-                hide-details
-              />
-
-              <VSelect
-                v-if="usesStageSelection || usesTaskSelection"
-                v-model="selectedSprintId"
-                :items="sprintItems"
-                item-title="name"
-                item-value="id"
-                variant="outlined"
-                density="comfortable"
-                label="Спринт"
-                clearable
-                hide-details
-              />
-
-              <VSelect
-                v-if="usesSubjectSelection"
-                v-model="selectedSubjectId"
-                :items="subjectItems"
-                item-title="label"
-                item-value="id"
-                variant="outlined"
-                density="comfortable"
-                label="Субъект"
-                clearable
-                hide-details
-              />
-
-              <VSelect
-                v-if="usesObjectSelection"
-                v-model="selectedObjectId"
-                :items="objectItems"
-                item-title="label"
-                item-value="id"
-                variant="outlined"
-                density="comfortable"
-                label="Объект / контекст"
-                clearable
-                hide-details
-              />
-
-              <VSelect
-                v-if="usesDocumentSelection"
-                v-model="selectedDocumentId"
-                :items="documentItems"
-                item-title="title"
-                item-value="id"
-                variant="outlined"
-                density="comfortable"
-                label="Документ из библиотеки"
-                clearable
-                hide-details
-              />
-
-              <VSelect
-                v-if="usesFinanceSelection"
-                v-model="selectedServiceId"
-                :items="serviceItems"
-                item-title="title"
-                item-value="id"
-                variant="outlined"
-                density="comfortable"
-                label="Услуга / финансовый объект"
-                clearable
-                hide-details
-              />
-
-              <div v-if="usesRangeSelection" class="pa-range-row pa-field-block--full">
-                <VTextField
-                  v-model="rangeStart"
-                  type="date"
-                  variant="outlined"
-                  density="comfortable"
-                  label="Начало диапазона"
-                  hide-details
-                />
-                <VTextField
-                  v-model="rangeEnd"
-                  type="date"
-                  variant="outlined"
-                  density="comfortable"
-                  label="Конец диапазона"
-                  hide-details
-                />
-              </div>
-
-              <VTextarea
-                v-model="detailsText"
-                class="pa-field-block--full"
-                variant="outlined"
-                density="comfortable"
-                rows="3"
-                auto-grow
-                label="Комментарий или уточнение"
-                placeholder="Например: привязать к подписанию акта и отправить подрядчику"
+                label="Конец"
                 hide-details
               />
             </div>
-          </section>
 
-          <p v-if="formError" class="pa-state pa-state--error">{{ formError }}</p>
-        </div>
+            <VTextarea
+              v-model="detailsText"
+              class="pa-field-block--full"
+              variant="outlined"
+              density="comfortable"
+              rows="3"
+              auto-grow
+              label="Комментарий"
+              placeholder="Уточнение для отправки или выполнения"
+              hide-details
+            />
+          </div>
+        </section>
 
-        <div class="pa-panel__footer">
+        <p v-if="formError" class="pa-state pa-state--error">{{ formError }}</p>
+
+        <div v-if="currentAction" class="pa-expand__footer">
           <VBtn variant="text" @click="emit('close')">Закрыть</VBtn>
           <VBtn color="primary" variant="flat" :disabled="!canSubmit" @click="submitAction">{{ submitLabel }}</VBtn>
         </div>
       </div>
     </Transition>
-  </Teleport>
+
+    <div class="pa-base">
+      <button type="button" class="pa-base-chip" :class="{ 'pa-base-chip--active': showProjectPane }" @click="toggleProjectPane">
+        <VIcon icon="mdi-briefcase-outline" size="16" />
+        <span class="pa-base-chip__label">{{ selectedProjectLabel }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="pa-base-chip"
+        :class="{ 'pa-base-chip--active': showSearchPane, 'pa-base-chip--compact': !actionSearch.trim() }"
+        @click="toggleSearchPane"
+      >
+        <VIcon icon="mdi-magnify" size="16" />
+        <span class="pa-base-chip__label">{{ searchChipLabel }}</span>
+      </button>
+
+      <div class="pa-base__rail">
+        <div class="pa-base__scroll">
+          <button
+            v-if="selectedCategoryGroup"
+            type="button"
+            class="pa-rail-chip pa-rail-chip--ghost"
+            @click="clearCategorySelection"
+          >
+            <VIcon icon="mdi-arrow-left" size="16" />
+            <span>Категории</span>
+          </button>
+
+          <template v-if="selectedCategoryGroup && selectedCategoryActions.length">
+            <button
+              v-for="action in selectedCategoryActions"
+              :key="action.id"
+              type="button"
+              class="pa-rail-chip"
+              :class="{
+                'pa-rail-chip--active': props.selectedActionId === action.id,
+                'pa-rail-chip--pending': props.pendingAction === action.id,
+              }"
+              :disabled="Boolean(props.pendingAction)"
+              @click="handleActionClick(action)"
+            >
+              <VIcon :icon="action.icon" size="16" />
+              <span>{{ action.label }}</span>
+            </button>
+          </template>
+
+          <template v-else-if="!selectedCategoryGroup && filteredCategoryGroups.length">
+            <button
+              v-for="group in filteredCategoryGroups"
+              :key="group.category"
+              type="button"
+              class="pa-rail-chip"
+              :class="{ 'pa-rail-chip--active': selectedCategory === group.category }"
+              :disabled="Boolean(props.pendingAction)"
+              @click="selectCategory(group.category)"
+            >
+              <VIcon :icon="group.icon" size="16" />
+              <span>{{ group.label }}</span>
+              <span class="pa-rail-chip__count">{{ group.visibleActions.length }}</span>
+            </button>
+          </template>
+
+          <span v-else class="pa-base__empty">
+            {{ selectedCategoryGroup ? 'Нет действий' : 'Ничего не найдено' }}
+          </span>
+        </div>
+      </div>
+
+      <button type="button" class="pa-base-icon" aria-label="Закрыть" @click="emit('close')">
+        <VIcon icon="mdi-close" size="18" />
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.pa-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 199;
-  background: rgba(0, 0, 0, 0.34);
-}
-
-.pa-panel {
-  position: fixed;
-  inset-inline: 0;
-  bottom: 0;
-  z-index: 200;
-  max-height: min(88vh, 980px);
+.pa-shell {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  background: rgb(var(--v-theme-surface-container));
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+  align-items: stretch;
+  container-type: inline-size;
+  container-name: project-actions;
 }
 
-.pa-panel__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 16px 10px;
-  flex-shrink: 0;
-}
-
-.pa-panel__title {
-  display: block;
-  font-size: 16px;
-  font-weight: 700;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.pa-panel__subtitle {
-  margin-top: 4px;
-  font-size: 13px;
-  line-height: 1.45;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
-.pa-panel__body {
-  flex: 1;
+.pa-expand {
+  display: grid;
+  gap: 10px;
+  max-height: min(62vh, 640px);
+  padding: 12px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 14px 18px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  border-bottom: none;
+  border-radius: 24px 24px 0 0;
+  background: rgb(var(--v-theme-surface-container));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.2);
 }
 
-.pa-panel__footer {
+.pa-expand__footer {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-  background: rgb(var(--v-theme-surface-container-high));
-  flex-shrink: 0;
 }
 
-.pa-section {
+.pa-pane {
   display: grid;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 14px;
+  gap: 10px;
+  padding: 12px;
   border-radius: 18px;
   background: rgb(var(--v-theme-surface-container-high));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 
-.pa-section__head {
+.pa-pane__head,
+.pa-field-block__head {
   display: grid;
   gap: 2px;
 }
 
-.pa-section__head--compact {
-  gap: 0;
-}
-
-.pa-section__title {
+.pa-pane__title,
+.pa-field-block__title {
   font-size: 13px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: rgb(var(--v-theme-on-surface));
 }
 
-.pa-section__meta {
+.pa-pane__value,
+.pa-field-block__hint {
   font-size: 12px;
   line-height: 1.45;
   color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.pa-base {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 8px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  border-radius: 999px;
+  background: rgb(var(--v-theme-surface-container-high));
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
+}
+
+.pa-shell--expanded .pa-base {
+  margin-top: -1px;
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.2);
+}
+
+.pa-base-chip,
+.pa-base-icon,
+.pa-rail-chip,
+.pa-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+  background: rgb(var(--v-theme-surface-container-highest));
+  color: rgb(var(--v-theme-on-surface));
+  cursor: pointer;
+}
+
+.pa-base-chip,
+.pa-rail-chip,
+.pa-mode-chip {
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+.pa-base-chip {
+  max-width: 132px;
+}
+
+.pa-base-chip--compact {
+  max-width: 44px;
+  padding-inline: 0;
+}
+
+.pa-base-chip--compact .pa-base-chip__label {
+  display: none;
+}
+
+.pa-base-chip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pa-base-chip--active,
+.pa-rail-chip--active,
+.pa-mode-chip--active {
+  border-color: rgba(var(--v-theme-primary), 0.52);
+  background: rgba(var(--v-theme-primary), 0.14);
+  color: rgb(var(--v-theme-primary));
+}
+
+.pa-base-icon {
+  width: 42px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.pa-base__rail {
+  min-width: 0;
+}
+
+.pa-base__scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.pa-base__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.pa-rail-chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pa-rail-chip--ghost {
+  background: transparent;
+}
+
+.pa-rail-chip--pending {
+  opacity: 0.68;
+}
+
+.pa-rail-chip__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.pa-base__empty {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .pa-project-manual,
@@ -802,127 +1066,8 @@ watch(selectedTask, (task) => {
   gap: 10px;
 }
 
-.pa-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.pa-summary-card {
-  display: grid;
-  gap: 4px;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgb(var(--v-theme-surface-container-highest));
-}
-
-.pa-summary-card__label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
-.pa-summary-card__value {
-  font-size: 14px;
-  line-height: 1.35;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.pa-recommendations {
-  display: grid;
-  gap: 8px;
-}
-
-.pa-recommendation {
-  display: grid;
-  gap: 4px;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(var(--v-theme-primary), 0.08);
-}
-
-.pa-recommendation strong {
-  font-size: 13px;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.pa-recommendation p {
+.pa-search-field {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
-.pa-group {
-  display: grid;
-  gap: 8px;
-}
-
-.pa-group__header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pa-group__icon {
-  opacity: 0.56;
-}
-
-.pa-group__label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
-.pa-group__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.pa-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: rgb(var(--v-theme-surface-container-highest));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-  color: rgb(var(--v-theme-on-surface));
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-}
-
-.pa-action:hover:not(:disabled) {
-  border-color: rgba(var(--v-theme-primary), 0.32);
-}
-
-.pa-action:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.pa-action:disabled {
-  opacity: 0.52;
-  cursor: not-allowed;
-}
-
-.pa-action--active {
-  border-color: rgba(var(--v-theme-primary), 0.52);
-  background: rgba(var(--v-theme-primary), 0.14);
-}
-
-.pa-action__icon {
-  color: rgb(var(--v-theme-primary));
-}
-
-.pa-action--pending {
-  opacity: 0.68;
 }
 
 .pa-form-grid {
@@ -940,45 +1085,10 @@ watch(selectedTask, (task) => {
   grid-column: 1 / -1;
 }
 
-.pa-field-block__head {
-  display: grid;
-  gap: 2px;
-}
-
-.pa-field-block__title {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.pa-field-block__hint {
-  font-size: 12px;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-
 .pa-mode-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.pa-mode-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.14);
-  background: transparent;
-  color: rgb(var(--v-theme-on-surface));
-  cursor: pointer;
-}
-
-.pa-mode-chip--active {
-  border-color: rgba(var(--v-theme-primary), 0.52);
-  background: rgba(var(--v-theme-primary), 0.14);
-  color: rgb(var(--v-theme-primary));
 }
 
 .pa-empty-state,
@@ -996,39 +1106,80 @@ watch(selectedTask, (task) => {
   color: rgb(var(--v-theme-error));
 }
 
-.pa-overlay-enter-active,
-.pa-overlay-leave-active {
-  transition: opacity 0.2s ease;
+.pa-expand-enter-active,
+.pa-expand-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform-origin: center bottom;
 }
 
-.pa-overlay-enter-from,
-.pa-overlay-leave-to {
+.pa-expand-enter-from,
+.pa-expand-leave-to {
   opacity: 0;
+  transform: translateY(10px);
 }
 
-.pa-panel-enter-active,
-.pa-panel-leave-active {
-  transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.pa-panel-enter-from,
-.pa-panel-leave-to {
-  transform: translateY(100%);
-}
-
-@media (min-width: 860px) {
-  .pa-panel {
-    left: 50%;
-    right: auto;
-    width: min(920px, calc(100vw - 40px));
-    transform: translateX(-50%);
-    border-radius: 24px;
-    bottom: 20px;
+@container project-actions (max-width: 479px) {
+  .pa-base {
+    gap: 6px;
+    padding: 6px;
+    min-height: 54px;
   }
 
-  .pa-panel-enter-from,
-  .pa-panel-leave-to {
-    transform: translateX(-50%) translateY(40px);
+  .pa-base-chip:first-child {
+    max-width: 112px;
+  }
+
+  .pa-base-chip,
+  .pa-base-icon,
+  .pa-rail-chip,
+  .pa-mode-chip {
+    min-height: 40px;
+  }
+
+  .pa-base-chip,
+  .pa-rail-chip,
+  .pa-mode-chip {
+    padding-inline: 12px;
+  }
+
+  .pa-base-icon {
+    width: 40px;
+  }
+
+  .pa-form-grid,
+  .pa-project-manual,
+  .pa-range-row {
+    grid-template-columns: 1fr;
+  }
+
+  .pa-expand__footer {
+    flex-direction: column-reverse;
+  }
+
+  .pa-expand__footer :deep(.v-btn) {
+    width: 100%;
+  }
+}
+
+@container project-actions (min-width: 480px) {
+  .pa-base-chip--compact {
+    max-width: 132px;
+    padding-inline: 14px;
+  }
+
+  .pa-base-chip--compact .pa-base-chip__label {
+    display: inline;
+  }
+}
+
+@container project-actions (min-width: 640px) {
+  .pa-base {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .pa-base-chip {
+    max-width: 176px;
   }
 
   .pa-project-manual,
@@ -1038,18 +1189,19 @@ watch(selectedTask, (task) => {
   }
 }
 
-@media (max-width: 699px) {
-  .pa-form-grid,
-  .pa-summary-grid {
-    grid-template-columns: 1fr;
+@container project-actions (min-width: 900px) {
+  .pa-expand {
+    max-height: min(72vh, 760px);
+    padding: 14px;
+    gap: 12px;
   }
 
-  .pa-panel__footer {
-    flex-direction: column-reverse;
+  .pa-base-chip {
+    max-width: 220px;
   }
 
-  .pa-panel__footer :deep(.v-btn) {
-    width: 100%;
+  .pa-base__scroll {
+    gap: 10px;
   }
 }
 </style>
