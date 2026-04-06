@@ -1,3 +1,4 @@
+import { normalizeMessengerProjectRoot } from '../utils/messenger-project-root'
 import { buildMessengerUrl } from '../utils/messenger-url'
 
 type MessengerCallMode = 'audio' | 'video'
@@ -805,6 +806,7 @@ async function flushPendingIceCandidates(callId: string, connection: RTCPeerConn
 
 export function useMessengerCalls() {
   const runtimeConfig = useRuntimeConfig()
+  const messengerProjectRoot = computed(() => normalizeMessengerProjectRoot(runtimeConfig.public.messengerProjectRoot || ''))
   const auth = useMessengerAuth()
   const settingsModel = useMessengerSettings()
   const { clientId } = useMessengerRealtimeIdentity()
@@ -1165,7 +1167,7 @@ export function useMessengerCalls() {
           blockerCountAdded?: number
           checkpointCreated?: boolean
         }
-      }>(buildMessengerUrl(runtimeConfig.public.messengerProjectRoot || '/', `/api/projects/${encodeURIComponent(projectSlug)}/communications/call-insights`), {
+      }>(buildMessengerUrl(messengerProjectRoot.value, `/api/projects/${encodeURIComponent(projectSlug)}/communications/call-insights`), {
         method: 'POST',
         credentials: 'include',
         body: {
@@ -1253,7 +1255,7 @@ export function useMessengerCalls() {
           createdTaskCount?: number
           createdSprint?: boolean
         }
-      }>(buildMessengerUrl(runtimeConfig.public.messengerProjectRoot || '/', `/api/projects/${encodeURIComponent(projectSlug)}/communications/call-insights/${encodeURIComponent(insightId)}/apply`), {
+      }>(buildMessengerUrl(messengerProjectRoot.value, `/api/projects/${encodeURIComponent(projectSlug)}/communications/call-insights/${encodeURIComponent(insightId)}/apply`), {
         method: 'POST',
         credentials: 'include',
         body: {},

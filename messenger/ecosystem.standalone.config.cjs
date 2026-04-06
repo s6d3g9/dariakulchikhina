@@ -61,6 +61,9 @@ const messengerProjectRoot = runtimeEnv.MESSENGER_PROJECT_ROOT || messengerDeplo
 const messengerDataRoot = runtimeEnv.MESSENGER_CORE_DATA_DIR || inferredDataRoot
 const messengerRuntimeEnvPath = runtimeEnv.MESSENGER_RUNTIME_ENV_PATH || inferredRuntimeEnvPath
 const messengerPublicOrigin = (runtimeEnv.MESSENGER_PUBLIC_ORIGIN || 'https://messenger.example.com').replace(/\/$/, '')
+const messengerPublicProjectRoot = runtimeEnv.NUXT_PUBLIC_MESSENGER_PROJECT_ROOT
+  || runtimeEnv.MESSENGER_PUBLIC_PROJECT_ROOT
+  || messengerPublicOrigin
 const messengerCoreBaseUrl = runtimeEnv.NUXT_PUBLIC_MESSENGER_CORE_BASE_URL || `${messengerPublicOrigin}/api`
 const messengerAppBaseUrl = runtimeEnv.NUXT_APP_BASE_URL || '/'
 const messengerServerTranscriptionEnabled = resolveServerTranscriptionPublicFlag(runtimeEnv)
@@ -122,7 +125,7 @@ module.exports = {
         NUXT_PUBLIC_MESSENGER_CORE_BASE_URL: messengerCoreBaseUrl,
         NUXT_PUBLIC_MESSENGER_ENABLE_AGENTS: runtimeEnv.NUXT_PUBLIC_MESSENGER_ENABLE_AGENTS || runtimeEnv.MESSENGER_ENABLE_AGENTS || 'true',
         NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED: messengerServerTranscriptionEnabled,
-        NUXT_PUBLIC_MESSENGER_PROJECT_ROOT: messengerProjectRoot,
+        NUXT_PUBLIC_MESSENGER_PROJECT_ROOT: messengerPublicProjectRoot,
         NUXT_APP_BASE_URL: messengerAppBaseUrl,
         PORT: runtimeEnv.PORT || '3300',
         HOST: runtimeEnv.HOST || '0.0.0.0',

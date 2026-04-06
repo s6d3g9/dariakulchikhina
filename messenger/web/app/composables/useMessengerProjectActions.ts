@@ -5,6 +5,7 @@
  * выполняет actions через relay-API мессенджера → основную платформу.
  */
 
+import { normalizeMessengerProjectRoot } from '../utils/messenger-project-root'
 import { buildMessengerUrl } from '../utils/messenger-url'
 
 export type ProjectActionRole = 'designer' | 'client' | 'contractor' | 'general'
@@ -309,25 +310,6 @@ const PROJECT_MUTATION_ACTIONS = new Set<ProjectMutationActionId>([
   'order_extra_service',
   'update_work_status',
 ])
-
-function normalizeProjectRoot(configuredRoot: string) {
-  const trimmed = configuredRoot.trim()
-  if (trimmed) {
-    return trimmed
-  }
-
-  if (!import.meta.client) {
-    return '/'
-  }
-
-  const { hostname, port, protocol, origin } = window.location
-  const localHost = hostname === '127.0.0.1' || hostname === 'localhost'
-  if (localHost && port && !['3000', '3003'].includes(port)) {
-    return `${protocol}//${hostname}:3003`
-  }
-
-  return origin
-}
 
 function readCookieValue(name: string) {
   if (!import.meta.client) {
@@ -676,7 +658,7 @@ export function useMessengerProjectActions() {
     return null
   })
 
-  const projectRoot = computed(() => normalizeProjectRoot(runtimeConfig.public.messengerProjectRoot || ''))
+  const projectRoot = computed(() => normalizeMessengerProjectRoot(runtimeConfig.public.messengerProjectRoot || ''))
 
   async function requestPlatform<T>(
     path: string,
