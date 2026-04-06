@@ -15,8 +15,15 @@
       </div>
 
       <!-- ── Tariff selector ──────────────────────────────────────── -->
-      <div class="ator-section">
-        <div class="ator-section-title">тариф дизайнера</div>
+      <div class="ator-section" :class="{ 'ator-section--expanded': isSectionExpanded('tariff') }">
+        <div class="ator-section-head">
+          <button type="button" class="ator-section-toggle" :aria-expanded="isSectionExpanded('tariff') ? 'true' : 'false'" @click="toggleSection('tariff')">
+            <span class="ator-section-title">тариф дизайнера</span>
+            <span class="ator-section-chevron" :class="{ 'ator-section-chevron--expanded': isSectionExpanded('tariff') }">⌄</span>
+          </button>
+        </div>
+
+        <div v-show="isSectionExpanded('tariff')" class="ator-section-panel">
 
         <!-- Client tariff request alert -->
         <div v-if="pendingTariffRequest" class="ator-tariff-req-alert">
@@ -55,10 +62,18 @@
           </button>
         </div>
       </div>
+      </div>
 
       <!-- ── Contract ─────────────────────────────────────────────── -->
-      <div class="ator-section">
-        <div class="ator-section-title">договор и ТЗ</div>
+      <div class="ator-section" :class="{ 'ator-section--expanded': isSectionExpanded('contract') }">
+        <div class="ator-section-head">
+          <button type="button" class="ator-section-toggle" :aria-expanded="isSectionExpanded('contract') ? 'true' : 'false'" @click="toggleSection('contract')">
+            <span class="ator-section-title">договор и ТЗ</span>
+            <span class="ator-section-chevron" :class="{ 'ator-section-chevron--expanded': isSectionExpanded('contract') }">⌄</span>
+          </button>
+        </div>
+
+        <div v-show="isSectionExpanded('contract')" class="ator-section-panel">
 
         <div class="ass-upload-zone">
           <div class="ass-upload-row">
@@ -106,11 +121,19 @@
             <GlassInput v-model="form.contract_notes"  @blur="save" />
           </div>
         </div>
+        </div>
       </div>
 
       <!-- ── Invoice / Advance ───────────────────────────────────── -->
-      <div class="ator-section">
-        <div class="ator-section-title">инвойс · аванс (этап 1)</div>
+      <div class="ator-section" :class="{ 'ator-section--expanded': isSectionExpanded('invoice') }">
+        <div class="ator-section-head">
+          <button type="button" class="ator-section-toggle" :aria-expanded="isSectionExpanded('invoice') ? 'true' : 'false'" @click="toggleSection('invoice')">
+            <span class="ator-section-title">инвойс · аванс (этап 1)</span>
+            <span class="ator-section-chevron" :class="{ 'ator-section-chevron--expanded': isSectionExpanded('invoice') }">⌄</span>
+          </button>
+        </div>
+
+        <div v-show="isSectionExpanded('invoice')" class="ator-section-panel">
 
         <div class="ass-upload-zone">
           <div class="ass-upload-row">
@@ -157,11 +180,19 @@
               placeholder="счёт, банк, назначение платежа..." @blur="save" />
           </div>
         </div>
+        </div>
       </div>
 
       <!-- ── ToR Scope ───────────────────────────────────────────── -->
-      <div class="ator-section">
-        <div class="ator-section-title">содержание ТЗ (Terms of Reference)</div>
+      <div class="ator-section" :class="{ 'ator-section--expanded': isSectionExpanded('scope') }">
+        <div class="ator-section-head">
+          <button type="button" class="ator-section-toggle" :aria-expanded="isSectionExpanded('scope') ? 'true' : 'false'" @click="toggleSection('scope')">
+            <span class="ator-section-title">содержание ТЗ (Terms of Reference)</span>
+            <span class="ator-section-chevron" :class="{ 'ator-section-chevron--expanded': isSectionExpanded('scope') }">⌄</span>
+          </button>
+        </div>
+
+        <div v-show="isSectionExpanded('scope')" class="ator-section-panel">
         <div class="ass-upload-zone">
           <div class="ass-upload-row">
             <label class="ass-field-label">объём работ</label>
@@ -182,6 +213,7 @@
             <GlassInput v-model="form.tor_deliverables" 
               placeholder="PDF, DWG, 3D-файлы, BIM..." @blur="save" />
           </div>
+        </div>
         </div>
       </div>
 
@@ -230,6 +262,18 @@ const form = reactive<Record<string, any>>({
   tor_timeline: '',
   tor_deliverables: '',
 })
+
+type ToRAccordionSectionKey = 'tariff' | 'contract' | 'invoice' | 'scope'
+
+const expandedSectionKey = ref<ToRAccordionSectionKey | null>('tariff')
+
+function isSectionExpanded(sectionKey: ToRAccordionSectionKey) {
+  return expandedSectionKey.value === sectionKey
+}
+
+function toggleSection(sectionKey: ToRAccordionSectionKey) {
+  expandedSectionKey.value = expandedSectionKey.value === sectionKey ? null : sectionKey
+}
 
 watch(project, (p) => {
   if (p?.profile) {
@@ -394,8 +438,8 @@ async function save() {
 
 /* ── Tariff selector ── */
 .ator-tariff-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 .ator-tariff-card {
@@ -484,11 +528,86 @@ async function save() {
 .ator-btn-transition:disabled { opacity: .55; cursor: default; }
 
 /* Sections */
-.ator-section { margin-bottom: 28px; }
+.ator-section {
+  margin-bottom: 18px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--glass-bg, #fff) 92%, transparent);
+  overflow: hidden;
+}
+.ator-section-head {
+  display: flex;
+  align-items: stretch;
+}
+.ator-section--expanded .ator-section-head {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+.ator-section-toggle {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ator-section-toggle:hover {
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
 .ator-section-title {
-  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--ds-muted, color-mix(in srgb, var(--glass-text) 60%, transparent));
-  margin-bottom: 14px; padding-bottom: 8px;
-  border-bottom: 1px solid var(--border, #ececec);
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ds-muted, color-mix(in srgb, var(--glass-text) 60%, transparent));
+}
+.ator-section-chevron {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+  transition: transform .18s ease, color .18s ease;
+}
+.ator-section-chevron--expanded {
+  transform: rotate(180deg);
+  color: var(--glass-text);
+}
+.ator-section-panel {
+  padding: 16px 18px 18px;
+}
+
+.ator-section-panel .ass-upload-zone {
+  gap: 12px;
+}
+
+.ator-section-panel .ass-upload-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.ator-section-panel .ass-field-label {
+  min-width: 0;
+}
+
+.ator-section-panel :deep(.glass-field),
+.ator-section-panel :deep(.glass-input),
+.ator-section-panel :deep(.dp-wrap) {
+  width: 100%;
+}
+
+.ator-section-panel .ator-status-wrap,
+.ator-section-panel .ator-file-row {
+  width: 100%;
 }
 
 /* Rows */

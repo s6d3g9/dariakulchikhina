@@ -10,23 +10,48 @@
         <button type="button" class="asb-reset-btn" @click="resetBriefConfig" title="Сбросить все кастомизации к шаблону по типу объекта">сбросить к шаблону</button>
       </div>
 
-      <div v-for="(section, sIdx) in activeSections" :key="section.key" class="asb-section" :class="{ 'asb-section--edit': editMode }">
-        <!-- Заголовок секции -->
-        <div class="asb-section-title">
-          {{ section.title }}
-          <template v-if="section.key === 'requirements'">
-            <span v-if="form.objectType" class="asb-type-hint">{{ objectTypeLabel }}</span>
-            <span v-else class="asb-type-hint asb-type-hint--warn">⚠ укажите тип объекта в параметрах (0.1) для точных тегов</span>
-          </template>
-          <template v-if="editMode">
-            <div class="asb-section-move">
-              <button type="button" class="asb-move-btn" :disabled="sIdx === 0" @click="moveSectionUp(section.key)" title="Переместить вверх">↑</button>
-              <button type="button" class="asb-move-btn" :disabled="sIdx === activeSections.length - 1" @click="moveSectionDown(section.key)" title="Переместить вниз">↓</button>
+      <div
+        v-for="(section, sIdx) in activeSections"
+        :key="section.key"
+        class="asb-section"
+        :class="{
+          'asb-section--edit': editMode,
+          'asb-section--expanded': isSectionExpanded(section.key),
+        }"
+      >
+        <div class="asb-section-head">
+          <button
+            type="button"
+            class="asb-section-toggle"
+            :class="{ 'asb-section-toggle--expanded': isSectionExpanded(section.key) }"
+            :aria-expanded="isSectionExpanded(section.key) ? 'true' : 'false'"
+            @click="toggleSection(section.key)"
+          >
+            <div class="asb-section-title-wrap">
+              <span class="asb-section-title">{{ section.title }}</span>
+              <div class="asb-section-meta">
+                <span class="asb-section-progress">{{ getSectionFilledCount(section) }}/{{ getSectionQuestionCount(section) }}</span>
+                <template v-if="section.key === 'requirements'">
+                  <span v-if="form.objectType" class="asb-type-hint">{{ objectTypeLabel }}</span>
+                  <span v-else class="asb-type-hint asb-type-hint--warn">⚠ укажите тип объекта в параметрах (0.1) для точных тегов</span>
+                </template>
+              </div>
             </div>
-            <button class="asb-section-rm" type="button" @click="hideSection(section.key)" title="Скрыть раздел">×</button>
+            <span class="asb-section-chevron" :class="{ 'asb-section-chevron--expanded': isSectionExpanded(section.key) }">⌄</span>
+          </button>
+
+          <template v-if="editMode">
+            <div class="asb-section-actions">
+              <div class="asb-section-move">
+                <button type="button" class="asb-move-btn" :disabled="sIdx === 0" @click="moveSectionUp(section.key)" title="Переместить вверх">↑</button>
+                <button type="button" class="asb-move-btn" :disabled="sIdx === activeSections.length - 1" @click="moveSectionDown(section.key)" title="Переместить вниз">↓</button>
+              </div>
+              <button class="asb-section-rm" type="button" @click="hideSection(section.key)" title="Скрыть раздел">×</button>
+            </div>
           </template>
         </div>
 
+        <div v-show="isSectionExpanded(section.key)" class="asb-section-panel">
         <!-- Обычные поля формы -->
         <div v-if="section.type === 'fields'" class="ass-upload-zone">
 
@@ -159,6 +184,7 @@
             @click="toggle(req.key)"
           >{{ req.label }}</button>
         </div>
+        </div>
       </div>
 
       <!-- Добавить раздел (редактирование) -->
@@ -277,6 +303,31 @@ const inactiveSections = computed((): BriefSectionDef[] => {
     .map(k => BRIEF_SECTIONS[k])
 })
 
+const expandedSectionKey = ref<string | null>(null)
+
+watch([activeSections, editMode], ([sections, editing]) => {
+  if (editing) return
+
+  const keys = sections.map(section => section.key)
+  if (!keys.length) {
+    expandedSectionKey.value = null
+    return
+  }
+
+  if (!expandedSectionKey.value || !keys.includes(expandedSectionKey.value)) {
+    expandedSectionKey.value = keys[0]
+  }
+}, { immediate: true })
+
+function isSectionExpanded(sectionKey: string) {
+  return editMode.value || expandedSectionKey.value === sectionKey
+}
+
+function toggleSection(sectionKey: string) {
+  if (editMode.value) return
+  expandedSectionKey.value = expandedSectionKey.value === sectionKey ? null : sectionKey
+}
+
 function getVisibleFields(section: BriefSectionDef) {
   const cfg = form.brief_config as BriefConfig | undefined
   const hidden = cfg?.hiddenFields || []
@@ -285,6 +336,29 @@ function getVisibleFields(section: BriefSectionDef) {
 function getCustomFields(sectionKey: string): BriefCustomField[] {
   const cfg = form.brief_config as BriefConfig | undefined
   return (cfg?.customFields || []).filter(f => f.sectionKey === sectionKey)
+}
+
+function isAnswerFilled(value: unknown) {
+  return typeof value === 'string' ? value.trim().length > 0 : !!value
+}
+
+function getSectionStatKeys(section: BriefSectionDef) {
+  if (section.type === 'requirements') {
+    return filteredRequirements.value.map(req => req.key)
+  }
+
+  return [
+    ...getVisibleFields(section).map(f => f.key),
+    ...getCustomFields(section.key).map(f => f.id),
+  ]
+}
+
+function getSectionQuestionCount(section: BriefSectionDef) {
+  return getSectionStatKeys(section).length
+}
+
+function getSectionFilledCount(section: BriefSectionDef) {
+  return getSectionStatKeys(section).filter(key => isAnswerFilled(form[key])).length
 }
 function isFieldHidden(fieldKey: string) {
   const cfg = form.brief_config as BriefConfig | undefined
@@ -449,18 +523,113 @@ async function save() {
 .asb-loading { font-size: .88rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 
 /* Sections */
-.asb-section { margin-bottom: 32px; }
+.asb-section {
+  margin-bottom: 18px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--glass-bg, #fff) 92%, transparent);
+  overflow: hidden;
+}
+.asb-section-head {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.asb-section--expanded .asb-section-head {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+.asb-section-toggle {
+  flex: 1;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.asb-section-toggle:hover {
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
+.asb-section-title-wrap {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
 .asb-section-title {
-  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: color-mix(in srgb, var(--glass-text) 55%, transparent);
-  margin-bottom: 14px; padding-bottom: 8px;
-  border-bottom: 1px solid var(--border, #ececec);
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: color-mix(in srgb, var(--glass-text) 62%, transparent);
+}
+.asb-section-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.asb-section-progress {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 58%, transparent);
+  font-size: .68rem;
+  letter-spacing: .02em;
+}
+.asb-section-chevron {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+  transition: transform .18s ease, color .18s ease;
+}
+.asb-section-chevron--expanded {
+  transform: rotate(180deg);
+  color: var(--glass-text);
+}
+.asb-section-panel {
+  padding: 16px 18px 18px;
 }
 .asb-type-hint {
   font-size: .7rem; text-transform: none; letter-spacing: 0;
   background: color-mix(in srgb, var(--ds-accent) 12%, transparent); color: var(--ds-accent); padding: 2px 8px; border-radius: 10px; font-weight: 500;
 }
 .asb-type-hint--warn { background: color-mix(in srgb, var(--ds-warning) 12%, transparent); color: var(--ds-warning); }
+
+.asb-section-panel .ass-upload-zone {
+  gap: 12px;
+}
+
+.asb-section-panel .ass-upload-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.asb-section-panel .ass-field-label {
+  min-width: 0;
+}
+
+.asb-section-panel :deep(.glass-field),
+.asb-section-panel :deep(.glass-input) {
+  width: 100%;
+}
+
+.asb-section-panel textarea.glass-input {
+  width: 100%;
+}
 
 /* Requirements tag cloud */
 .asb-checks-grid {
@@ -529,7 +698,19 @@ async function save() {
 @media (max-width: 768px) {
   .asb-footer { flex-direction: column; align-items: stretch; gap: 10px; }
   .asb-btn-save { width: 100%; text-align: center; }
-  .asb-section-title { flex-direction: column; align-items: flex-start; }
+  .asb-section-head {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .asb-section-actions {
+    padding: 0 18px 14px;
+    justify-content: flex-end;
+  }
+
+  .asb-section-toggle {
+    padding-bottom: 14px;
+  }
 }
 
 /* ── Edit mode ── */
@@ -541,9 +722,9 @@ async function save() {
 }
 .asb-section-rm:hover { color: var(--ds-danger, #e35b5b); }
 
-.asb-editable-row { position: relative; padding-left: 28px !important; }
+.asb-editable-row { position: relative; padding-left: 44px !important; }
 .asb-row-ctrl {
-  position: absolute; left: 0; top: 14px;
+  position: absolute; left: 16px; top: 16px;
   display: flex; align-items: center;
 }
 .asb-ctrl-btn {
@@ -575,9 +756,10 @@ async function save() {
 /* Форма добавления вопроса */
 .asb-add-field-form {
   display: flex; flex-direction: column; gap: 8px;
-  padding: 12px 14px; margin: 8px 0;
+  padding: 14px 16px; margin: 0;
   border: 1px dashed color-mix(in srgb, var(--glass-text) 18%, transparent);
-  border-radius: 8px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 .asb-aftype { display: flex; gap: 6px; }
 .asb-aftype-btn {
@@ -592,7 +774,7 @@ async function save() {
 .asb-add-field-btn {
   width: 100%; padding: 8px; margin-top: 4px;
   background: none; border: 1px dashed color-mix(in srgb, var(--glass-text) 14%, transparent);
-  border-radius: 6px; cursor: pointer; font-family: inherit; font-size: .76rem;
+  border-radius: 12px; cursor: pointer; font-family: inherit; font-size: .76rem;
   color: color-mix(in srgb, var(--glass-text) 40%, transparent);
   transition: all .15s;
 }
@@ -692,7 +874,14 @@ html.dark .asb-fab-edit {
 }
 
 /* Кнопки перемещения раздела */
-.asb-section-move { display: flex; gap: 2px; margin-left: auto; }
+.asb-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px 12px 0;
+}
+
+.asb-section-move { display: flex; gap: 2px; }
 .asb-move-btn {
   width: 22px; height: 22px; border-radius: 4px;
   border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);

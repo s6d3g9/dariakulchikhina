@@ -2371,8 +2371,10 @@ function toggleMessageActions(messageId: string, event?: MouseEvent) {
 function handleDocumentPointerDown(event: PointerEvent) {
   if (projectActions.panelOpen.value && event.target instanceof Node) {
     const projectActionsRoot = composerDockRef.value?.projectActionsRootEl
+    const overlayTarget = event.target instanceof Element
+      && Boolean(event.target.closest('.v-overlay__content, [role="listbox"]'))
 
-    if (projectActionsRoot && !projectActionsRoot.contains(event.target)) {
+    if (projectActionsRoot && !projectActionsRoot.contains(event.target) && !overlayTarget) {
       projectActions.closePanel()
     }
   }
@@ -2727,10 +2729,21 @@ onBeforeUnmount(() => {
             :catalog="projectActions.platformCatalog.value"
             :catalog-pending="projectActions.platformCatalogPending.value"
             :catalog-error="projectActions.platformCatalogError.value"
+            :scope-detail="projectActions.platformScopeDetail.value"
+            :scope-detail-pending="projectActions.platformScopeDetailPending.value"
+            :scope-detail-error="projectActions.platformScopeDetailError.value"
+            :governance-mutation-pending="projectActions.governanceMutationPending.value"
+            :governance-mutation-error="projectActions.governanceMutationError.value"
+            :governance-mutation-notice="projectActions.governanceMutationNotice.value"
             @close="projectActions.closePanel()"
             @execute="handleProjectAction"
             @select-project="projectActions.setSelectedProjectSlug($event)"
             @select-action="projectActions.setSelectedAction($event)"
+            @open-scope-detail="projectActions.openScopeDetail($event.scopeType, $event.scopeId)"
+            @create-scope-participant="projectActions.createScopeParticipant($event)"
+            @update-scope-assignment="projectActions.updateScopeAssignment($event.assignmentId, { responsibility: $event.responsibility })"
+            @delete-scope-assignment="projectActions.deleteScopeAssignment($event.assignmentId)"
+            @update-scope-settings="projectActions.updateScopeSettings($event.settings)"
           />
         </template>
       </MessengerChatComposerDock>

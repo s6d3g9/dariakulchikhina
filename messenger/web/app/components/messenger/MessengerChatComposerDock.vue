@@ -246,16 +246,16 @@ defineExpose({
 <style scoped>
 .composer-dock-wrapper {
   position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: end;
-  gap: 8px;
+  display: block;
+  width: 100%;
   overflow: visible;
   isolation: isolate;
 }
 
 .composer-bar-anchor {
   position: relative;
+  display: block;
+  width: 100%;
   min-width: 0;
 }
 
@@ -263,7 +263,13 @@ defineExpose({
   position: absolute;
   inset-inline: 0;
   bottom: calc(100% + 10px);
+  width: 100%;
+  max-width: 100%;
   z-index: 30;
+}
+
+.composer-bar {
+  width: 100%;
 }
 
 .composer-project-actions-enter-active,
@@ -279,10 +285,6 @@ defineExpose({
 }
 
 @media (max-width: 430px) {
-  .composer-dock-wrapper {
-    gap: 6px;
-  }
-
   .composer-project-actions-popover {
     bottom: calc(100% + 8px);
   }

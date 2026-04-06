@@ -5,7 +5,12 @@
         <p class="cpc-eyebrow">Контроль проекта</p>
         <h2 class="cpc-title">Как проект ведётся и где находится сейчас</h2>
       </div>
-      <span class="cpc-pill" :class="`cpc-pill--${summary.health.status}`">{{ summary.health.label }}</span>
+      <div class="cpc-hero__actions">
+        <span class="cpc-pill" :class="`cpc-pill--${summary.health.status}`">{{ summary.health.label }}</span>
+        <GlassButton variant="secondary" density="compact" type="button" @click="openProjectScopeDetails">
+          контур проекта
+        </GlassButton>
+      </div>
     </div>
 
     <div class="cpc-grid cpc-grid--summary">
@@ -275,20 +280,15 @@
             <GlassButton variant="secondary" density="compact" type="button" @click="closeTimelineRowDetails">закрыть</GlassButton>
           </div>
 
-          <div class="cpc-timeline-detail-grid">
-            <article class="cpc-timeline-detail-card">
-              <span class="cpc-timeline-detail-card__label">Период</span>
-              <strong class="cpc-timeline-detail-card__value">{{ formatDateRange(selectedTimelineRowDetails.startDate, selectedTimelineRowDetails.endDate) }}</strong>
-            </article>
-            <article class="cpc-timeline-detail-card">
-              <span class="cpc-timeline-detail-card__label">Прогресс</span>
-              <strong class="cpc-timeline-detail-card__value">{{ selectedTimelineRowDetails.progressLabel }}</strong>
-            </article>
-            <article class="cpc-timeline-detail-card">
-              <span class="cpc-timeline-detail-card__label">Статус</span>
-              <strong class="cpc-timeline-detail-card__value">{{ selectedTimelineRowDetails.statusLabel }}</strong>
+          <div v-if="selectedTimelineDetailCards.length" class="cpc-timeline-detail-grid">
+            <article v-for="card in selectedTimelineDetailCards" :key="card.label" class="cpc-timeline-detail-card">
+              <span class="cpc-timeline-detail-card__label">{{ card.label }}</span>
+              <strong class="cpc-timeline-detail-card__value">{{ card.value }}</strong>
             </article>
           </div>
+
+          <p v-if="timelineScopeDetailPending" class="cpc-timeline-empty">Загружаю детали контура…</p>
+          <p v-else-if="timelineScopeDetailError" class="cpc-timeline-empty cpc-timeline-empty--error">{{ timelineScopeDetailError }}</p>
 
           <div class="cpc-timeline-clusters">
             <section class="cpc-timeline-cluster">
@@ -317,6 +317,80 @@
                 </article>
               </div>
               <p v-else class="cpc-timeline-empty">Связанные объекты еще не описаны.</p>
+            </section>
+
+            <section class="cpc-timeline-cluster">
+              <div class="cpc-timeline-cluster__head">
+                <p class="cpc-phase-field__label">Настройки</p>
+                <span class="cpc-chip">{{ timelineDetailSettings.length }}</span>
+              </div>
+              <div v-if="timelineDetailSettings.length" class="cpc-timeline-cluster__list">
+                <article v-for="item in timelineDetailSettings" :key="item.key" class="cpc-timeline-cluster__item">
+                  <span class="cpc-timeline-cluster__label">{{ item.label }}</span>
+                  <strong class="cpc-timeline-cluster__value">{{ item.value }}</strong>
+                </article>
+              </div>
+              <p v-else class="cpc-timeline-empty">Для этого контура дополнительные настройки пока не заданы.</p>
+            </section>
+
+            <section v-if="clientEditableScopeSettings.length" class="cpc-timeline-cluster cpc-timeline-cluster--actions">
+              <div class="cpc-timeline-cluster__head">
+                <p class="cpc-phase-field__label">Настройки клиента</p>
+                <span class="cpc-chip">{{ clientEditableScopeSettings.length }}</span>
+              </div>
+              <div class="cpc-timeline-cluster__list cpc-timeline-governance-settings">
+                <article v-for="field in clientEditableScopeSettings" :key="field.key" class="cpc-timeline-cluster__item">
+                  <span class="cpc-timeline-cluster__label">{{ field.label }}</span>
+
+                  <select
+                    v-if="field.kind === 'select'"
+                    class="glass-input"
+                    :value="field.value == null ? '' : String(field.value)"
+                    :disabled="timelineScopeMutationPending"
+                    @change="handleClientScopeSelectSettingChange(field.key, $event)"
+                  >
+                    <option v-for="option in field.items || []" :key="option.value" :value="option.value">{{ option.label }}</option>
+                  </select>
+
+                  <label v-else-if="field.kind === 'boolean'" class="cpc-timeline-governance-toggle">
+                    <input
+                      :checked="Boolean(field.value)"
+                      type="checkbox"
+                      :disabled="timelineScopeMutationPending"
+                      @change="handleClientScopeBooleanSettingChange(field.key, $event)"
+                    />
+                    <span>{{ Boolean(field.value) ? 'Включено' : 'Выключено' }}</span>
+                  </label>
+
+                  <input
+                    v-else
+                    class="glass-input"
+                    :type="field.kind === 'number' ? 'number' : 'text'"
+                    :value="field.value == null ? '' : String(field.value)"
+                    :disabled="timelineScopeMutationPending"
+                    @input="handleClientScopeTextSettingInput(field.key, field.kind, $event)"
+                    @blur="commitClientScopeSettings()"
+                  />
+
+                  <strong class="cpc-timeline-cluster__value">{{ field.kind === 'list' ? 'Список через запятую' : 'Изменения отправляются сразу' }}</strong>
+                </article>
+              </div>
+              <p v-if="timelineScopeMutationError" class="cpc-timeline-empty cpc-timeline-empty--error">{{ timelineScopeMutationError }}</p>
+              <p v-else-if="timelineScopeMutationNotice" class="cpc-phase-row__meta">{{ timelineScopeMutationNotice }}</p>
+            </section>
+
+            <section class="cpc-timeline-cluster">
+              <div class="cpc-timeline-cluster__head">
+                <p class="cpc-phase-field__label">Связанные контуры</p>
+                <span class="cpc-chip">{{ timelineDetailLinkedScopes.length }}</span>
+              </div>
+              <div v-if="timelineDetailLinkedScopes.length" class="cpc-timeline-cluster__list">
+                <article v-for="item in timelineDetailLinkedScopes" :key="item.key" class="cpc-timeline-cluster__item">
+                  <span class="cpc-timeline-cluster__label">{{ item.label }}</span>
+                  <strong class="cpc-timeline-cluster__value">{{ item.value }}</strong>
+                </article>
+              </div>
+              <p v-else class="cpc-timeline-empty">Связанные контуры пока не определены.</p>
             </section>
 
             <section class="cpc-timeline-cluster cpc-timeline-cluster--actions">
@@ -349,13 +423,18 @@
             <p v-else class="cpc-timeline-empty">Для этого контура нет отдельного правила коммуникации.</p>
           </div>
 
-          <div v-if="selectedTimelineRowDetails.type === 'sprint' && selectedTimelineSprint?.tasks?.length" class="cpc-timeline-meta">
+          <div v-if="timelineDetailTasks.length" class="cpc-timeline-meta">
             <p class="cpc-phase-field__label">Задачи спринта</p>
             <ul class="cpc-timeline-task-list">
-              <li v-for="task in selectedTimelineSprint?.tasks || []" :key="task.id" class="cpc-timeline-task-item">
-                <strong class="cpc-timeline-task-item__title">{{ task.title }}</strong>
-                <span class="cpc-timeline-task-item__meta">{{ task.assignee || 'Исполнитель не назначен' }} · {{ taskStatusLabels[task.status] }}</span>
-                <GlassButton variant="secondary" density="compact" type="button" @click="openTimelineTask(task.id, selectedTimelineRowDetails.id)">к задаче</GlassButton>
+              <li v-for="task in timelineDetailTasks" :key="task.id" class="cpc-timeline-task-item">
+                <div>
+                  <strong class="cpc-timeline-task-item__title">{{ task.title }}</strong>
+                  <span class="cpc-timeline-task-item__meta">{{ task.meta }}</span>
+                </div>
+                <div class="cpc-timeline-task-item__actions">
+                  <GlassButton variant="secondary" density="compact" type="button" @click="openTaskScopeDetails(task.scopeId, task.sprintId)">контур</GlassButton>
+                  <GlassButton variant="secondary" density="compact" type="button" @click="openTimelineTask(task.id, task.sprintId)">к задаче</GlassButton>
+                </div>
               </li>
             </ul>
           </div>
@@ -378,6 +457,15 @@
               @click="openTimelineSprint(selectedTimelineRowDetails.id)"
             >
               к спринту
+            </GlassButton>
+            <GlassButton
+              v-if="selectedTimelineRowDetails.scopeType === 'task'"
+              variant="secondary"
+              density="compact"
+              type="button"
+              @click="openTimelineTask(selectedTimelineRowDetails.id, selectedTimelineTaskSprintId)"
+            >
+              к задаче
             </GlassButton>
           </div>
         </section>
@@ -591,6 +679,7 @@
               <div class="cpc-phase-row__right">
                 <span class="cpc-chip">{{ selectedSprint?.name || 'Спринт' }}</span>
                 <span class="cpc-chip">{{ selectedTask.points || 0 }} pt</span>
+                <GlassButton variant="secondary" density="compact" type="button" @click="openTaskScopeDetails(selectedTask.id, selectedSprint?.id)">контур задачи</GlassButton>
                 <GlassButton variant="secondary" density="compact" type="button" @click="clearTaskFocus">снять фокус</GlassButton>
               </div>
             </div>
@@ -667,6 +756,8 @@ import {
   type HybridTimelineScale,
 } from '~~/shared/utils/project-control-timeline'
 import type { HybridControlCallInsight, HybridControlCheckpoint, HybridControlPhase, HybridControlSprint, HybridControlTask } from '~~/shared/types/project'
+import type { ProjectScopeDetailBundle, ProjectScopeType } from '~~/shared/types/project-governance'
+import { getProjectScopeEditableSettingKeys } from '~~/shared/utils/project-governance'
 
 type TimelineDetailItem = {
   key: string
@@ -682,10 +773,33 @@ type TimelineRuleSummary = {
   audience: string
 }
 
-type SelectedTimelineRowState = {
+type SelectedTimelineScopeState = {
   id: string
-  type: HybridTimelineRow['type']
+  scopeType: ProjectScopeType
+  scopeId: string
+  type: ProjectScopeType
+  typeLabel: string
+  title: string
+  meta: string
+  startDate?: string
+  endDate?: string
+  progressLabel?: string
+  statusLabel?: string
+  phaseKey?: string
+  linkedPhaseKey?: string
+  sprintId?: string
+  taskId?: string
 }
+
+type TimelineDetailTaskItem = {
+  id: string
+  scopeId: string
+  title: string
+  meta: string
+  sprintId: string
+}
+
+type ClientScopeSettingFieldKind = 'select' | 'number' | 'boolean' | 'list' | 'text'
 
 const props = defineProps<{ slug: string }>()
 const route = useRoute()
@@ -735,10 +849,37 @@ const taskDateFormatter = new Intl.DateTimeFormat('ru-RU', {
 
 const timelineScaleOptions: HybridTimelineScale[] = ['months', 'weeks', 'days', 'hours']
 const timelineScale = ref<HybridTimelineScale>('weeks')
-const selectedTimelineRowState = ref<SelectedTimelineRowState | null>(null)
+const selectedTimelineScopeState = ref<SelectedTimelineScopeState | null>(null)
+const timelineScopeDetail = ref<ProjectScopeDetailBundle | null>(null)
+const timelineScopeDetailPending = ref(false)
+const timelineScopeDetailError = ref('')
+const timelineScopeDetailRequestId = ref(0)
+const timelineScopeSettingsDraft = ref<Record<string, unknown>>({})
+const timelineScopeMutationPending = ref(false)
+const timelineScopeMutationError = ref('')
+const timelineScopeMutationNotice = ref('')
 const selectedSprintId = ref('')
 const selectedTaskId = ref('')
 const sprintDetailRef = ref<HTMLElement | null>(null)
+
+const clientScopeSelectItems: Record<string, Array<{ label: string; value: string }>> = {
+  approvalMode: [
+    { label: 'Через лида проекта', value: 'project-lead' },
+    { label: 'Через владельца фазы', value: 'phase-owner' },
+    { label: 'Через ревью спринта', value: 'sprint-review' },
+    { label: 'Через ревью задачи', value: 'task-review' },
+    { label: 'Через согласование документа', value: 'document-approval' },
+    { label: 'Через согласование услуги', value: 'service-request' },
+  ],
+  visibility: [
+    { label: 'Команда проекта', value: 'team' },
+    { label: 'Только участники контура', value: 'assigned-only' },
+  ],
+  acceptanceMode: [
+    { label: 'Явное подтверждение', value: 'explicit' },
+    { label: 'Без отдельного подтверждения', value: 'implicit' },
+  ],
+}
 
 let syncingControlStateFromRoute = false
 
@@ -843,27 +984,87 @@ const timelineStats = computed(() => ([
   { label: 'Спринтов', value: `${control.value.sprints.length}` },
 ]))
 
-const selectedTimelineRowDetails = computed<HybridTimelineRow | null>(() => {
-  const selected = selectedTimelineRowState.value
-  if (!selected) return null
-  return timelineRows.value.find(row => row.id === selected.id && row.type === selected.type) || null
-})
+const selectedTimelineRowDetails = computed<SelectedTimelineScopeState | null>(() => selectedTimelineScopeState.value)
 
 const selectedTimelinePhase = computed(() => {
   const selected = selectedTimelineRowDetails.value
-  if (!selected || selected.type !== 'phase') return null
-  return getPhaseById(selected.id)
+  if (!selected || selected.scopeType !== 'phase') return null
+  return getPhaseById(selected.id) || control.value.phases.find(phase => phase.phaseKey === selected.phaseKey) || null
 })
 
 const selectedTimelineSprint = computed(() => {
   const selected = selectedTimelineRowDetails.value
-  if (!selected || selected.type !== 'sprint') return null
+  if (!selected || selected.scopeType !== 'sprint') return null
   return getSprintById(selected.id)
 })
+
+const selectedTimelineTaskSprintId = computed(() => {
+  const selected = selectedTimelineRowDetails.value
+  if (!selected || selected.scopeType !== 'task') return ''
+  return selected.sprintId || ''
+})
+
+const selectedTimelineDetailCards = computed(() => {
+  const selected = selectedTimelineRowDetails.value
+  if (!selected) return [] as Array<{ label: string; value: string }>
+
+  const cards: Array<{ label: string; value: string }> = []
+
+  if (selected.startDate || selected.endDate) {
+    cards.push({
+      label: 'Период',
+      value: formatDateRange(selected.startDate, selected.endDate),
+    })
+  }
+
+  if (selected.progressLabel) {
+    cards.push({
+      label: 'Прогресс',
+      value: selected.progressLabel,
+    })
+  }
+
+  const resolvedStatusLabel = timelineScopeDetail.value?.scope.statusLabel || selected.statusLabel
+  if (resolvedStatusLabel) {
+    cards.push({
+      label: 'Статус',
+      value: resolvedStatusLabel,
+    })
+  }
+
+  return cards
+})
+
+const timelineScopeTypeLabels = {
+  project: 'Проект',
+  phase: 'Фаза',
+  sprint: 'Спринт',
+  task: 'Задача',
+  document: 'Документ',
+  service: 'Услуга',
+} as const
+
+function mapTimelineDetailItems(items: Array<{ key: string; label: string; value: string }>): TimelineDetailItem[] {
+  return items.map(item => ({
+    key: item.key,
+    label: item.label,
+    value: item.value,
+  }))
+}
 
 const timelineDetailRules = computed<TimelineRuleSummary[]>(() => {
   const selected = selectedTimelineRowDetails.value
   if (!selected) return []
+
+  if (timelineScopeDetail.value) {
+    return timelineScopeDetail.value.ruleItems.map(rule => ({
+      id: rule.id,
+      title: rule.title,
+      channel: rule.channel,
+      trigger: rule.trigger,
+      audience: rule.audience,
+    }))
+  }
 
   const selectedPhaseKey = selected.type === 'phase'
     ? selected.phaseKey
@@ -883,6 +1084,21 @@ const timelineDetailRules = computed<TimelineRuleSummary[]>(() => {
 const timelineDetailSubjects = computed<TimelineDetailItem[]>(() => {
   const selected = selectedTimelineRowDetails.value
   if (!selected) return []
+
+  if (timelineScopeDetail.value) {
+    return [
+      ...timelineScopeDetail.value.participants.map(participant => ({
+        key: participant.assignmentId,
+        label: participant.roleLabel,
+        value: [participant.displayName, participant.responsibilityLabel, participant.secondary].filter(Boolean).join(' · '),
+      })),
+      ...timelineScopeDetail.value.subjectItems.map(item => ({
+        key: `subject-${item.key}`,
+        label: item.label,
+        value: item.value,
+      })),
+    ]
+  }
 
   const audienceLabels = Array.from(new Set(
     coordinationBrief.value.playbook.flatMap(rule => rule.audienceLabels),
@@ -914,6 +1130,10 @@ const timelineDetailSubjects = computed<TimelineDetailItem[]>(() => {
     ]
   }
 
+  if (selected.scopeType !== 'sprint') {
+    return []
+  }
+
   const sprint = selectedTimelineSprint.value
   const assignees = Array.from(new Set(
     (sprint?.tasks || []).map(task => (task.assignee || '').trim()).filter(Boolean),
@@ -942,6 +1162,10 @@ const timelineDetailObjects = computed<TimelineDetailItem[]>(() => {
   const selected = selectedTimelineRowDetails.value
   if (!selected) return []
 
+  if (timelineScopeDetail.value) {
+    return mapTimelineDetailItems(timelineScopeDetail.value.objectItems)
+  }
+
   if (selected.type === 'phase') {
     const phase = selectedTimelinePhase.value
     const linkedSprints = control.value.sprints.filter(sprint => sprint.linkedPhaseKey === phase?.phaseKey)
@@ -964,6 +1188,10 @@ const timelineDetailObjects = computed<TimelineDetailItem[]>(() => {
         value: linkedTasks.length ? `${linkedTasks.length} задач в связанных спринтах` : 'задачи еще не заведены',
       },
     ]
+  }
+
+  if (selected.scopeType !== 'sprint') {
+    return []
   }
 
   const sprint = selectedTimelineSprint.value
@@ -990,6 +1218,10 @@ const timelineDetailActions = computed<TimelineDetailItem[]>(() => {
   const selected = selectedTimelineRowDetails.value
   if (!selected) return []
 
+  if (timelineScopeDetail.value) {
+    return mapTimelineDetailItems(timelineScopeDetail.value.actionItems)
+  }
+
   if (selected.type === 'phase') {
     const phase = selectedTimelinePhase.value
     const gateActions = (phase?.gates || []).map(gate => ({
@@ -1007,6 +1239,10 @@ const timelineDetailActions = computed<TimelineDetailItem[]>(() => {
     return [...gateActions, ...checkpointActions].slice(0, 6)
   }
 
+  if (selected.scopeType !== 'sprint') {
+    return []
+  }
+
   const sprint = selectedTimelineSprint.value
   const taskActions = (sprint?.tasks || []).map(task => ({
     key: `task-${task.id}`,
@@ -1021,6 +1257,120 @@ const timelineDetailActions = computed<TimelineDetailItem[]>(() => {
   }))
 
   return [...taskActions, ...projectBlockers].slice(0, 6)
+})
+
+const timelineDetailSettings = computed<TimelineDetailItem[]>(() => {
+  if (!timelineScopeDetail.value) return []
+  return mapTimelineDetailItems(timelineScopeDetail.value.settingItems)
+})
+
+const clientEditableScopeSettings = computed(() => {
+  const detail = timelineScopeDetail.value
+  if (!detail) {
+    return [] as Array<{
+      key: string
+      label: string
+      kind: ClientScopeSettingFieldKind
+      value: string | number | boolean | null
+      items?: Array<{ label: string; value: string }>
+    }>
+  }
+
+  const labelMap = new Map(detail.settingItems.map(item => [item.key, item.label]))
+  const allowedKeys = getProjectScopeEditableSettingKeys(detail.scope.scopeType, 'client')
+
+  return allowedKeys
+    .filter(key => key in timelineScopeSettingsDraft.value)
+    .map((key) => {
+      const rawValue = timelineScopeSettingsDraft.value[key]
+
+      if (key in clientScopeSelectItems) {
+        return {
+          key,
+          label: labelMap.get(key) || key,
+          kind: 'select' as const,
+          value: typeof rawValue === 'string' ? rawValue : '',
+          items: clientScopeSelectItems[key],
+        }
+      }
+
+      if (key === 'reviewCadenceDays' || key === 'reminderCadenceDays' || key === 'slaHours') {
+        return {
+          key,
+          label: labelMap.get(key) || key,
+          kind: 'number' as const,
+          value: typeof rawValue === 'number' ? rawValue : rawValue == null ? null : Number(rawValue),
+        }
+      }
+
+      if (key === 'escalateOnBlocked') {
+        return {
+          key,
+          label: labelMap.get(key) || key,
+          kind: 'boolean' as const,
+          value: Boolean(rawValue),
+        }
+      }
+
+      if (key === 'requiredResponsibilities') {
+        return {
+          key,
+          label: labelMap.get(key) || key,
+          kind: 'list' as const,
+          value: Array.isArray(rawValue) ? rawValue.join(', ') : typeof rawValue === 'string' ? rawValue : '',
+        }
+      }
+
+      return {
+        key,
+        label: labelMap.get(key) || key,
+        kind: 'text' as const,
+        value: Array.isArray(rawValue) ? rawValue.join(', ') : typeof rawValue === 'string' ? rawValue : rawValue == null ? '' : String(rawValue),
+      }
+    })
+})
+
+const timelineDetailLinkedScopes = computed<TimelineDetailItem[]>(() => {
+  if (!timelineScopeDetail.value) return []
+
+  return timelineScopeDetail.value.linkedScopes.map(linkedScope => ({
+    key: `${linkedScope.scopeType}-${linkedScope.scopeId}`,
+    label: timelineScopeTypeLabels[linkedScope.scopeType],
+    value: [linkedScope.title, linkedScope.statusLabel || linkedScope.status].filter(Boolean).join(' · '),
+  }))
+})
+
+const timelineDetailTasks = computed<TimelineDetailTaskItem[]>(() => {
+  if (timelineScopeDetail.value) {
+    return timelineScopeDetail.value.tasks.map(task => {
+      const normalizedTaskId = normalizeTaskScopeId(task.id)
+      const taskContext = getTaskContext(normalizedTaskId)
+
+      return {
+        id: normalizedTaskId,
+        scopeId: task.id,
+        title: task.title,
+        meta: [
+          task.assigneeLabels.length ? task.assigneeLabels.join(', ') : 'Исполнитель не назначен',
+          task.statusLabel,
+          task.secondary,
+        ].filter(Boolean).join(' · '),
+        sprintId: taskContext?.sprint.id || (selectedTimelineRowDetails.value?.type === 'sprint' ? selectedTimelineRowDetails.value.id : ''),
+      }
+    })
+  }
+
+  if (selectedTimelineRowDetails.value?.scopeType !== 'sprint') {
+    return []
+  }
+
+  return (selectedTimelineSprint.value?.tasks || []).map(task => ({
+    id: task.id,
+    scopeId: task.id,
+    title: task.title,
+    meta: `${task.assignee || 'Исполнитель не назначен'} · ${taskStatusLabels[task.status]}`,
+    sprintId: selectedTimelineRowDetails.value?.id || '',
+  }))
 })
 
 const phaseGateStats = computed(() => control.value.phases.reduce((acc, phase) => {
@@ -1337,24 +1687,265 @@ function getPhaseTitleByKey(phaseKey?: string) {
 }
 
 function isTimelineRowSelected(row: HybridTimelineRow) {
-  return selectedTimelineRowDetails.value?.id === row.id && selectedTimelineRowDetails.value?.type === row.type
+  return selectedTimelineRowDetails.value?.scopeId === row.id && selectedTimelineRowDetails.value?.scopeType === row.type
 }
 
-async function openTimelineRowDetails(row: HybridTimelineRow) {
-  selectedTimelineRowState.value = { id: row.id, type: row.type }
+function cloneTimelineScopeSettings(settings: Record<string, unknown>) {
+  return JSON.parse(JSON.stringify(settings || {})) as Record<string, unknown>
+}
 
+function normalizeTimelineScopeMutationError(error: unknown, fallback: string) {
+  if (!error || typeof error !== 'object') {
+    return fallback
+  }
+
+  const record = error as {
+    statusMessage?: string
+    message?: string
+    data?: { statusMessage?: string; message?: string }
+  }
+
+  return String(record.data?.statusMessage || record.statusMessage || record.data?.message || record.message || fallback).trim() || fallback
+}
+
+function normalizeClientScopeSettingValue(kind: ClientScopeSettingFieldKind, value: unknown) {
+  if (kind === 'boolean') {
+    return Boolean(value)
+  }
+
+  if (kind === 'number') {
+    const normalized = typeof value === 'number' ? value : Number(String(value || '').trim())
+    return Number.isFinite(normalized) ? normalized : null
+  }
+
+  if (kind === 'list') {
+    return String(value || '')
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+  }
+
+  return typeof value === 'string' ? value.trim() : value == null ? '' : String(value)
+}
+
+function updateClientScopeSettingDraft(key: string, kind: ClientScopeSettingFieldKind, value: unknown) {
+  timelineScopeSettingsDraft.value = {
+    ...timelineScopeSettingsDraft.value,
+    [key]: normalizeClientScopeSettingValue(kind, value),
+  }
+}
+
+function normalizeTaskScopeId(taskId: string) {
+  return taskId.startsWith('hybrid:') ? taskId.slice('hybrid:'.length) : taskId
+}
+
+function buildSelectedTimelineScopeState(row: HybridTimelineRow): SelectedTimelineScopeState {
+  return {
+    id: row.id,
+    scopeType: row.type,
+    scopeId: row.id,
+    type: row.type,
+    typeLabel: row.typeLabel,
+    title: row.title,
+    meta: row.meta,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    progressLabel: row.progressLabel,
+    statusLabel: row.statusLabel,
+    phaseKey: row.phaseKey,
+    linkedPhaseKey: row.linkedPhaseKey,
+  }
+}
+
+function buildProjectScopeState(): SelectedTimelineScopeState {
+  return {
+    id: props.slug,
+    scopeType: 'project',
+    scopeId: props.slug,
+    type: 'project',
+    typeLabel: 'Проект',
+    title: project.value?.title || 'Проект',
+    meta: [project.value?.status, summary.value.activePhase?.title, summary.value.activeSprint?.name].filter(Boolean).join(' · '),
+    statusLabel: project.value?.status || 'Проект',
+  }
+}
+
+function buildTaskScopeState(taskId: string, sprintId?: string): SelectedTimelineScopeState | null {
+  const normalizedTaskId = normalizeTaskScopeId(taskId)
+  const taskContext = getTaskContext(normalizedTaskId)
+  const resolvedSprintId = sprintId || taskContext?.sprint.id || ''
+  const resolvedSprintName = taskContext?.sprint.name || selectedSprint.value?.name || 'Спринт'
+  const resolvedPhaseTitle = taskContext?.sprint.linkedPhaseKey ? getPhaseTitleByKey(taskContext.sprint.linkedPhaseKey) : selectedSprintPhaseTitle.value
+
+  if (!taskContext && !normalizedTaskId) {
+    return null
+  }
+
+  return {
+    id: normalizedTaskId,
+    taskId: normalizedTaskId,
+    sprintId: resolvedSprintId,
+    scopeType: 'task',
+    scopeId: taskId,
+    type: 'task',
+    typeLabel: 'Задача',
+    title: taskContext?.task.title || 'Задача',
+    meta: [resolvedSprintName, resolvedPhaseTitle].filter(Boolean).join(' · '),
+    progressLabel: taskContext?.task.points ? `${taskContext.task.points} pt` : '',
+    statusLabel: taskContext?.task ? taskStatusLabels[taskContext.task.status] : 'Задача',
+    linkedPhaseKey: taskContext?.sprint.linkedPhaseKey || '',
+  }
+}
+
+async function scrollTimelineDetailsIntoView() {
   if (!import.meta.client || typeof document === 'undefined') return
-  await nextTick()
 
-  if (window.innerWidth >= 1180) return
+  await nextTick()
   document.querySelector<HTMLElement>('.cpc-timeline-details-panel')?.scrollIntoView({
     behavior: 'smooth',
     block: 'start',
   })
 }
 
+function resetTimelineScopeDetailState() {
+  timelineScopeDetail.value = null
+  timelineScopeDetailPending.value = false
+  timelineScopeDetailError.value = ''
+  timelineScopeSettingsDraft.value = {}
+  timelineScopeMutationPending.value = false
+  timelineScopeMutationError.value = ''
+  timelineScopeMutationNotice.value = ''
+}
+
+async function fetchTimelineScopeDetail(scope: SelectedTimelineScopeState | null) {
+  if (!scope?.scopeType || !scope.scopeId) {
+    resetTimelineScopeDetailState()
+    return
+  }
+
+  const preserveCurrentDetail = Boolean(
+    timelineScopeDetail.value
+    && timelineScopeDetail.value.scope.scopeType === scope.scopeType
+    && timelineScopeDetail.value.scope.scopeId === scope.scopeId,
+  )
+
+  const requestId = timelineScopeDetailRequestId.value + 1
+  timelineScopeDetailRequestId.value = requestId
+  timelineScopeDetailPending.value = true
+  timelineScopeDetailError.value = ''
+
+  if (!preserveCurrentDetail) {
+    timelineScopeDetail.value = null
+    timelineScopeSettingsDraft.value = {}
+    timelineScopeMutationError.value = ''
+    timelineScopeMutationNotice.value = ''
+  }
+
+  try {
+    const detail = await $fetch<ProjectScopeDetailBundle>(`/api/projects/${props.slug}/coordination/scopes/${scope.scopeType}/${encodeURIComponent(scope.scopeId)}`)
+
+    if (timelineScopeDetailRequestId.value !== requestId) {
+      return
+    }
+
+    timelineScopeDetail.value = detail
+  } catch {
+    if (timelineScopeDetailRequestId.value !== requestId) {
+      return
+    }
+
+    if (!preserveCurrentDetail) {
+      timelineScopeDetail.value = null
+    }
+    timelineScopeDetailError.value = 'Не удалось загрузить детали контура проекта.'
+  } finally {
+    if (timelineScopeDetailRequestId.value === requestId) {
+      timelineScopeDetailPending.value = false
+    }
+  }
+}
+
+async function openTimelineRowDetails(row: HybridTimelineRow) {
+  const nextScope = buildSelectedTimelineScopeState(row)
+  selectedTimelineScopeState.value = nextScope
+  void fetchTimelineScopeDetail(nextScope)
+
+  if (import.meta.client && typeof window !== 'undefined' && window.innerWidth >= 1180) return
+  await scrollTimelineDetailsIntoView()
+}
+
+async function openProjectScopeDetails() {
+  const nextScope = buildProjectScopeState()
+  selectedTimelineScopeState.value = nextScope
+  void fetchTimelineScopeDetail(nextScope)
+  await scrollTimelineDetailsIntoView()
+}
+
+async function openTaskScopeDetails(taskId?: string, sprintId?: string) {
+  if (!taskId) return
+
+  const nextScope = buildTaskScopeState(taskId, sprintId)
+  if (!nextScope) return
+
+  selectedTimelineScopeState.value = nextScope
+  void fetchTimelineScopeDetail(nextScope)
+  await scrollTimelineDetailsIntoView()
+}
+
 function closeTimelineRowDetails() {
-  selectedTimelineRowState.value = null
+  timelineScopeDetailRequestId.value += 1
+  resetTimelineScopeDetailState()
+  selectedTimelineScopeState.value = null
+}
+
+watch(() => timelineScopeDetail.value?.revision, () => {
+  timelineScopeSettingsDraft.value = cloneTimelineScopeSettings(timelineScopeDetail.value?.settings || {})
+  timelineScopeMutationError.value = ''
+  timelineScopeMutationNotice.value = ''
+}, { immediate: true })
+
+async function commitClientScopeSettings() {
+  const detail = timelineScopeDetail.value
+  if (!detail) {
+    return
+  }
+
+  timelineScopeMutationPending.value = true
+  timelineScopeMutationError.value = ''
+  timelineScopeMutationNotice.value = ''
+
+  try {
+    await $fetch(`/api/projects/${props.slug}/coordination/scopes/${detail.scope.scopeType}/${encodeURIComponent(detail.scope.scopeId)}/settings`, {
+      method: 'PATCH',
+      body: {
+        settings: cloneTimelineScopeSettings(timelineScopeSettingsDraft.value),
+      },
+    })
+
+    await fetchTimelineScopeDetail(selectedTimelineRowDetails.value)
+    timelineScopeMutationNotice.value = 'Настройки контура обновлены.'
+  } catch (error) {
+    timelineScopeMutationError.value = normalizeTimelineScopeMutationError(error, 'Не удалось обновить настройки контура.')
+  } finally {
+    timelineScopeMutationPending.value = false
+  }
+}
+
+function handleClientScopeSelectSettingChange(key: string, event: Event) {
+  const value = (event.target as HTMLSelectElement | null)?.value || ''
+  updateClientScopeSettingDraft(key, 'select', value)
+  void commitClientScopeSettings()
+}
+
+function handleClientScopeBooleanSettingChange(key: string, event: Event) {
+  const checked = Boolean((event.target as HTMLInputElement | null)?.checked)
+  updateClientScopeSettingDraft(key, 'boolean', checked)
+  void commitClientScopeSettings()
+}
+
+function handleClientScopeTextSettingInput(key: string, kind: ClientScopeSettingFieldKind, event: Event) {
+  const value = (event.target as HTMLInputElement | HTMLTextAreaElement | null)?.value || ''
+  updateClientScopeSettingDraft(key, kind, value)
 }
 
 function openTimelinePhase(phaseId?: string) {
@@ -1369,8 +1960,9 @@ function openTimelineSprint(sprintId?: string) {
 
 function openTimelineTask(taskId?: string, sprintId?: string) {
   if (!taskId) return
+  const normalizedTaskId = normalizeTaskScopeId(taskId)
   closeTimelineRowDetails()
-  selectTask(taskId, sprintId)
+  selectTask(normalizedTaskId, sprintId)
 }
 </script>
 
@@ -1393,6 +1985,31 @@ function openTimelineTask(taskId?: string, sprintId?: string) {
   --cpc-label-spacing: 0.12em;
   display: grid;
   gap: 18px;
+}
+
+.cpc-hero__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cpc-timeline-governance-settings {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.cpc-timeline-governance-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cpc-timeline-task-item__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 :global(html[data-design-mode="liquid-glass"] .cpc-root) {

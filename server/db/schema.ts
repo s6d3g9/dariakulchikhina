@@ -403,6 +403,56 @@ export const managerProjects = pgTable('manager_projects', {
   assignedAt: timestamp('assigned_at').defaultNow().notNull(),
 }, (t) => [unique('manager_project_uniq').on(t.managerId, t.projectId)])
 
+// ── Governance graph: participants / assignments / scope settings ─────────────────
+
+export const projectParticipants = pgTable('project_participants', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  sourceKind: text('source_kind').notNull().default('custom'),
+  sourceId: integer('source_id'),
+  roleKey: text('role_key').notNull().default('other'),
+  displayName: text('display_name').notNull(),
+  companyName: text('company_name'),
+  phone: text('phone'),
+  email: text('email'),
+  messengerNick: text('messenger_nick'),
+  isPrimary: boolean('is_primary').default(false).notNull(),
+  status: text('status').default('active').notNull(),
+  notes: text('notes'),
+  meta: jsonb('meta').$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [unique('project_participant_source_uniq').on(t.projectId, t.sourceKind, t.sourceId)])
+
+export const projectScopeAssignments = pgTable('project_scope_assignments', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  participantId: integer('participant_id').notNull().references(() => projectParticipants.id, { onDelete: 'cascade' }),
+  scopeType: text('scope_type').notNull(),
+  scopeSource: text('scope_source').notNull(),
+  scopeId: text('scope_id').notNull(),
+  responsibility: text('responsibility').notNull().default('observer'),
+  allocationPercent: integer('allocation_percent'),
+  status: text('status').default('active').notNull(),
+  dueDate: text('due_date'),
+  notes: text('notes'),
+  meta: jsonb('meta').$type<Record<string, unknown>>().default({}).notNull(),
+  assignedBy: text('assigned_by'),
+  assignedAt: timestamp('assigned_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [unique('project_scope_assignment_uniq').on(t.projectId, t.participantId, t.scopeType, t.scopeSource, t.scopeId, t.responsibility)])
+
+export const projectScopeSettings = pgTable('project_scope_settings', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  scopeType: text('scope_type').notNull(),
+  scopeSource: text('scope_source').notNull(),
+  scopeId: text('scope_id').notNull(),
+  settings: jsonb('settings').$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [unique('project_scope_settings_uniq').on(t.projectId, t.scopeType, t.scopeSource, t.scopeId)])
+
 export const managersRelations = relations(managers, ({ many }) => ({
   managerProjects: many(managerProjects),
 }))
@@ -410,6 +460,20 @@ export const managersRelations = relations(managers, ({ many }) => ({
 export const managerProjectsRelations = relations(managerProjects, ({ one }) => ({
   manager: one(managers, { fields: [managerProjects.managerId], references: [managers.id] }),
   project: one(projects, { fields: [managerProjects.projectId], references: [projects.id] }),
+}))
+
+export const projectParticipantsRelations = relations(projectParticipants, ({ one, many }) => ({
+  project: one(projects, { fields: [projectParticipants.projectId], references: [projects.id] }),
+  assignments: many(projectScopeAssignments),
+}))
+
+export const projectScopeAssignmentsRelations = relations(projectScopeAssignments, ({ one }) => ({
+  project: one(projects, { fields: [projectScopeAssignments.projectId], references: [projects.id] }),
+  participant: one(projectParticipants, { fields: [projectScopeAssignments.participantId], references: [projectParticipants.id] }),
+}))
+
+export const projectScopeSettingsRelations = relations(projectScopeSettings, ({ one }) => ({
+  project: one(projects, { fields: [projectScopeSettings.projectId], references: [projects.id] }),
 }))
 
 export const projectExtraServicesRelations = relations(projectExtraServices, ({ one }) => ({
@@ -424,6 +488,9 @@ export const projectsRelations = relations(projects, ({ many, one }) => ({
   projectContractors: many(projectContractors),
   workStatusItems: many(workStatusItems),
   uploads: many(uploads),
+  projectParticipants: many(projectParticipants),
+  projectScopeAssignments: many(projectScopeAssignments),
+  projectScopeSettings: many(projectScopeSettings),
 }))
 
 export const contractorsRelations = relations(contractors, ({ many }) => ({

@@ -140,9 +140,79 @@ export interface MessengerPlatformTaskOption {
 
 export interface MessengerPlatformSubjectOption {
   id: string
-  kind: 'client' | 'contractor' | 'designer' | 'seller' | 'manager'
+  kind: 'client' | 'contractor' | 'designer' | 'seller' | 'manager' | 'custom'
   label: string
   secondary: string
+}
+
+export type MessengerPlatformScopeType = 'project' | 'phase' | 'sprint' | 'task' | 'document' | 'service'
+
+export interface MessengerPlatformScopeDetailItem {
+  key: string
+  label: string
+  value: string
+}
+
+export interface MessengerPlatformScopeParticipant {
+  assignmentId: string
+  participantId: string
+  displayName: string
+  roleKey: string
+  roleLabel: string
+  responsibility: string
+  responsibilityLabel: string
+  origin: 'direct' | 'project' | 'derived'
+  activeTaskCount: number
+  secondary: string
+}
+
+export interface MessengerPlatformScopeLink {
+  scopeType: MessengerPlatformScopeType
+  scopeSource: string
+  scopeId: string
+  title: string
+  status?: string
+  statusLabel?: string
+}
+
+export interface MessengerPlatformScopeTaskSummary {
+  id: string
+  title: string
+  status: string
+  statusLabel: string
+  assigneeLabels: string[]
+  secondary: string
+}
+
+export interface MessengerPlatformScopeRuleSummary {
+  id: string
+  title: string
+  channel: string
+  trigger: string
+  audience: string
+}
+
+export interface MessengerPlatformScopeDetailBundle {
+  revision: string
+  scope: {
+    scopeType: MessengerPlatformScopeType
+    scopeSource: string
+    scopeId: string
+    title: string
+    subtitle: string
+    status: string
+    statusLabel: string
+  }
+  core: Record<string, unknown>
+  settings: Record<string, unknown>
+  settingItems: MessengerPlatformScopeDetailItem[]
+  participants: MessengerPlatformScopeParticipant[]
+  subjectItems: MessengerPlatformScopeDetailItem[]
+  objectItems: MessengerPlatformScopeDetailItem[]
+  actionItems: MessengerPlatformScopeDetailItem[]
+  ruleItems: MessengerPlatformScopeRuleSummary[]
+  linkedScopes: MessengerPlatformScopeLink[]
+  tasks: MessengerPlatformScopeTaskSummary[]
 }
 
 export interface MessengerPlatformObjectOption {
@@ -179,6 +249,7 @@ export interface MessengerPlatformActionCatalog {
     title: string
     status: string
     projectType: string
+    revision: string
     pages: string[]
     activePhaseKey: string
     activePhaseTitle: string
@@ -208,6 +279,20 @@ interface ProjectActionMutationResponse {
     id: string
     label: string
   }
+}
+
+interface GovernanceParticipantMutationResponse {
+  participant: {
+    persistedId: number
+  }
+}
+
+type GovernanceMutationRequestMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
+
+interface GovernanceScopeParticipantDraft {
+  displayName: string
+  roleKey: string
+  responsibility: string
 }
 
 type ProjectMutationActionId = Extract<
@@ -532,6 +617,17 @@ export function useMessengerProjectActions() {
   const platformCatalogPending = useState<boolean>('messenger-project-actions-platform-catalog-pending', () => false)
   const platformCatalogError = useState<string>('messenger-project-actions-platform-catalog-error', () => '')
   const loadedCatalogProjectSlug = useState<string>('messenger-project-actions-loaded-catalog-slug', () => '')
+  const pendingCatalogProjectSlug = useState<string>('messenger-project-actions-pending-catalog-slug', () => '')
+  const platformCatalogRequestId = useState<number>('messenger-project-actions-platform-catalog-request-id', () => 0)
+  const selectedScopeType = useState<MessengerPlatformScopeType | ''>('messenger-project-actions-selected-scope-type', () => '')
+  const selectedScopeId = useState<string>('messenger-project-actions-selected-scope-id', () => '')
+  const platformScopeDetail = useState<MessengerPlatformScopeDetailBundle | null>('messenger-project-actions-platform-scope-detail', () => null)
+  const platformScopeDetailPending = useState<boolean>('messenger-project-actions-platform-scope-detail-pending', () => false)
+  const platformScopeDetailError = useState<string>('messenger-project-actions-platform-scope-detail-error', () => '')
+  const platformScopeDetailRequestId = useState<number>('messenger-project-actions-platform-scope-detail-request-id', () => 0)
+  const governanceMutationPending = useState<boolean>('messenger-project-actions-governance-pending', () => false)
+  const governanceMutationError = useState<string>('messenger-project-actions-governance-error', () => '')
+  const governanceMutationNotice = useState<string>('messenger-project-actions-governance-notice', () => '')
 
   const peerRole = computed<ProjectActionRole>(() => {
     if (!currentPeerLogin.value) return 'general'
@@ -584,7 +680,7 @@ export function useMessengerProjectActions() {
 
   async function requestPlatform<T>(
     path: string,
-    options: { method?: 'GET' | 'POST'; body?: BodyInit | Record<string, any> | null } = {},
+    options: { method?: GovernanceMutationRequestMethod; body?: BodyInit | Record<string, any> | null } = {},
   ) {
     const method = options.method || 'GET'
     const headers: Record<string, string> = {}
@@ -625,11 +721,11 @@ export function useMessengerProjectActions() {
       }))
 
       if (!selectedProjectSlug.value && platformProjects.value.length === 1) {
-        selectedProjectSlug.value = platformProjects.value[0]?.slug || ''
+        setSelectedProjectSlug(platformProjects.value[0]?.slug || '')
       }
 
       if (selectedProjectSlug.value && !platformProjects.value.some(project => project.slug === selectedProjectSlug.value) && platformProjects.value.length) {
-        selectedProjectSlug.value = platformProjects.value[0]?.slug || ''
+        setSelectedProjectSlug(platformProjects.value[0]?.slug || '')
       }
     } catch (error) {
       platformProjectsError.value = normalizePlatformApiError(error, 'Не удалось загрузить список проектов платформы.')
@@ -638,31 +734,75 @@ export function useMessengerProjectActions() {
     }
   }
 
+  function clearPlatformCatalogState() {
+    platformCatalog.value = null
+    loadedCatalogProjectSlug.value = ''
+    platformCatalogError.value = ''
+  }
+
+  function clearPlatformScopeDetailState(clearSelection = true) {
+    platformScopeDetail.value = null
+    platformScopeDetailPending.value = false
+    platformScopeDetailError.value = ''
+    governanceMutationError.value = ''
+    governanceMutationNotice.value = ''
+
+    if (clearSelection) {
+      selectedScopeType.value = ''
+      selectedScopeId.value = ''
+    }
+  }
+
+  function cancelPlatformCatalogRequest() {
+    platformCatalogRequestId.value += 1
+    pendingCatalogProjectSlug.value = ''
+    platformCatalogPending.value = false
+  }
+
   async function fetchPlatformCatalog(projectSlug = selectedProjectSlug.value, force = false) {
     const slug = projectSlug.trim()
     if (!slug) {
-      platformCatalog.value = null
-      loadedCatalogProjectSlug.value = ''
-      platformCatalogError.value = ''
+      clearPlatformCatalogState()
+      cancelPlatformCatalogRequest()
       return
     }
 
-    if (platformCatalogPending.value || (!force && platformCatalog.value && loadedCatalogProjectSlug.value === slug)) {
+    if (!force && platformCatalog.value && loadedCatalogProjectSlug.value === slug) {
       return
     }
 
+    if (platformCatalogPending.value && pendingCatalogProjectSlug.value === slug) {
+      return
+    }
+
+    const requestId = platformCatalogRequestId.value + 1
+    platformCatalogRequestId.value = requestId
+    pendingCatalogProjectSlug.value = slug
     platformCatalogPending.value = true
     platformCatalogError.value = ''
 
     try {
-      platformCatalog.value = await requestPlatform<MessengerPlatformActionCatalog>(`/api/projects/${encodeURIComponent(slug)}/communications/action-catalog`)
+      const catalog = await requestPlatform<MessengerPlatformActionCatalog>(`/api/projects/${encodeURIComponent(slug)}/communications/action-catalog`)
+
+      if (platformCatalogRequestId.value !== requestId) {
+        return
+      }
+
+      platformCatalog.value = catalog
       loadedCatalogProjectSlug.value = slug
     } catch (error) {
+      if (platformCatalogRequestId.value !== requestId) {
+        return
+      }
+
       platformCatalog.value = null
       loadedCatalogProjectSlug.value = ''
       platformCatalogError.value = normalizePlatformApiError(error, 'Не удалось загрузить каталог действий проекта.')
     } finally {
-      platformCatalogPending.value = false
+      if (platformCatalogRequestId.value === requestId) {
+        platformCatalogPending.value = false
+        pendingCatalogProjectSlug.value = ''
+      }
     }
   }
 
@@ -692,12 +832,15 @@ export function useMessengerProjectActions() {
   }
 
   function setSelectedProjectSlug(slug: string) {
-    selectedProjectSlug.value = slug.trim()
-    if (!selectedProjectSlug.value) {
-      platformCatalog.value = null
-      loadedCatalogProjectSlug.value = ''
-      platformCatalogError.value = ''
+    const nextSlug = slug.trim()
+    if (nextSlug === selectedProjectSlug.value) {
+      return
     }
+
+    selectedProjectSlug.value = nextSlug
+    clearPlatformCatalogState()
+    clearPlatformScopeDetailState()
+    cancelPlatformCatalogRequest()
   }
 
   function setSelectedAction(actionId: ProjectActionId | null) {
@@ -716,6 +859,250 @@ export function useMessengerProjectActions() {
     panelOpen.value = true
   }
 
+  async function fetchPlatformScopeDetail(scopeType = selectedScopeType.value, scopeId = selectedScopeId.value, force = false) {
+    const slug = selectedProjectSlug.value.trim()
+    const normalizedScopeType = scopeType.trim() as MessengerPlatformScopeType | ''
+    const normalizedScopeId = scopeId.trim()
+
+    if (!slug || !normalizedScopeType || !normalizedScopeId) {
+      clearPlatformScopeDetailState(false)
+      return
+    }
+
+    if (!force
+      && platformScopeDetail.value
+      && selectedScopeType.value === normalizedScopeType
+      && selectedScopeId.value === normalizedScopeId
+      && platformScopeDetail.value.scope.scopeType === normalizedScopeType
+      && platformScopeDetail.value.scope.scopeId === normalizedScopeId) {
+      return
+    }
+
+    selectedScopeType.value = normalizedScopeType
+    selectedScopeId.value = normalizedScopeId
+
+    const requestId = platformScopeDetailRequestId.value + 1
+    platformScopeDetailRequestId.value = requestId
+    platformScopeDetailPending.value = true
+    platformScopeDetailError.value = ''
+
+    try {
+      const detail = await requestPlatform<MessengerPlatformScopeDetailBundle>(
+        `/api/projects/${encodeURIComponent(slug)}/coordination/scopes/${encodeURIComponent(normalizedScopeType)}/${encodeURIComponent(normalizedScopeId)}`,
+      )
+
+      if (platformScopeDetailRequestId.value !== requestId) {
+        return
+      }
+
+      platformScopeDetail.value = detail
+    } catch (error) {
+      if (platformScopeDetailRequestId.value !== requestId) {
+        return
+      }
+
+      platformScopeDetail.value = null
+      platformScopeDetailError.value = normalizePlatformApiError(error, 'Не удалось загрузить детали контура проекта.')
+    } finally {
+      if (platformScopeDetailRequestId.value === requestId) {
+        platformScopeDetailPending.value = false
+      }
+    }
+  }
+
+  async function openScopeDetail(scopeType: MessengerPlatformScopeType, scopeId: string) {
+    await fetchPlatformScopeDetail(scopeType, scopeId, true)
+  }
+
+  function clearPlatformScopeDetail() {
+    clearPlatformScopeDetailState()
+  }
+
+  function extractPersistedGovernanceId(rawId: string, prefix: 'assignment' | 'participant') {
+    const match = rawId.match(new RegExp(`^${prefix}:(\\d+)$`))
+    return match ? Number(match[1]) : 0
+  }
+
+  function cloneGovernanceSettings(settings: Record<string, unknown>) {
+    return JSON.parse(JSON.stringify(settings || {})) as Record<string, unknown>
+  }
+
+  async function refreshGovernanceViews() {
+    const slug = selectedProjectSlug.value.trim()
+    const jobs: Array<Promise<unknown>> = []
+
+    if (slug) {
+      jobs.push(fetchPlatformCatalog(slug, true))
+    }
+
+    if (selectedScopeType.value && selectedScopeId.value) {
+      jobs.push(fetchPlatformScopeDetail(selectedScopeType.value, selectedScopeId.value, true))
+    }
+
+    if (!jobs.length) {
+      return
+    }
+
+    await Promise.allSettled(jobs)
+  }
+
+  function resetGovernanceMutationState() {
+    governanceMutationError.value = ''
+    governanceMutationNotice.value = ''
+  }
+
+  async function createScopeParticipant(payload: GovernanceScopeParticipantDraft) {
+    const slug = selectedProjectSlug.value.trim()
+    const scopeDetail = platformScopeDetail.value
+    const displayName = payload.displayName.trim()
+
+    resetGovernanceMutationState()
+
+    if (!slug || !scopeDetail || !displayName) {
+      governanceMutationError.value = 'Сначала откройте контур проекта и заполните имя участника.'
+      return false
+    }
+
+    governanceMutationPending.value = true
+
+    try {
+      const participantResponse = await requestPlatform<GovernanceParticipantMutationResponse>(
+        `/api/projects/${encodeURIComponent(slug)}/coordination/participants`,
+        {
+          method: 'POST',
+          body: {
+            displayName,
+            roleKey: payload.roleKey,
+            sourceKind: 'custom',
+          },
+        },
+      )
+
+      await requestPlatform(
+        `/api/projects/${encodeURIComponent(slug)}/coordination/assignments`,
+        {
+          method: 'POST',
+          body: {
+            participantId: participantResponse.participant.persistedId,
+            scopeType: scopeDetail.scope.scopeType,
+            scopeSource: scopeDetail.scope.scopeSource,
+            scopeId: scopeDetail.scope.scopeId,
+            responsibility: payload.responsibility,
+          },
+        },
+      )
+
+      await refreshGovernanceViews()
+      governanceMutationNotice.value = 'Участник добавлен в контур.'
+      return true
+    } catch (error) {
+      governanceMutationError.value = normalizePlatformApiError(error, 'Не удалось добавить участника в контур.')
+      return false
+    } finally {
+      governanceMutationPending.value = false
+    }
+  }
+
+  async function updateScopeAssignment(assignmentId: string, patch: { responsibility?: string }) {
+    const slug = selectedProjectSlug.value.trim()
+    const persistedAssignmentId = extractPersistedGovernanceId(assignmentId, 'assignment')
+
+    resetGovernanceMutationState()
+
+    if (!slug || !persistedAssignmentId) {
+      governanceMutationError.value = 'Не удалось определить назначение для обновления.'
+      return false
+    }
+
+    governanceMutationPending.value = true
+
+    try {
+      await requestPlatform(
+        `/api/projects/${encodeURIComponent(slug)}/coordination/assignments/${persistedAssignmentId}`,
+        {
+          method: 'PATCH',
+          body: patch,
+        },
+      )
+
+      await refreshGovernanceViews()
+      governanceMutationNotice.value = 'Назначение обновлено.'
+      return true
+    } catch (error) {
+      governanceMutationError.value = normalizePlatformApiError(error, 'Не удалось обновить назначение.')
+      return false
+    } finally {
+      governanceMutationPending.value = false
+    }
+  }
+
+  async function deleteScopeAssignment(assignmentId: string) {
+    const slug = selectedProjectSlug.value.trim()
+    const persistedAssignmentId = extractPersistedGovernanceId(assignmentId, 'assignment')
+
+    resetGovernanceMutationState()
+
+    if (!slug || !persistedAssignmentId) {
+      governanceMutationError.value = 'Не удалось определить назначение для удаления.'
+      return false
+    }
+
+    governanceMutationPending.value = true
+
+    try {
+      await requestPlatform(
+        `/api/projects/${encodeURIComponent(slug)}/coordination/assignments/${persistedAssignmentId}`,
+        {
+          method: 'DELETE',
+        },
+      )
+
+      await refreshGovernanceViews()
+      governanceMutationNotice.value = 'Назначение удалено.'
+      return true
+    } catch (error) {
+      governanceMutationError.value = normalizePlatformApiError(error, 'Не удалось удалить назначение.')
+      return false
+    } finally {
+      governanceMutationPending.value = false
+    }
+  }
+
+  async function updateScopeSettings(settings: Record<string, unknown>) {
+    const slug = selectedProjectSlug.value.trim()
+    const scopeDetail = platformScopeDetail.value
+
+    resetGovernanceMutationState()
+
+    if (!slug || !scopeDetail) {
+      governanceMutationError.value = 'Сначала откройте контур проекта.'
+      return false
+    }
+
+    governanceMutationPending.value = true
+
+    try {
+      await requestPlatform(
+        `/api/projects/${encodeURIComponent(slug)}/coordination/scopes/${encodeURIComponent(scopeDetail.scope.scopeType)}/${encodeURIComponent(scopeDetail.scope.scopeId)}/settings`,
+        {
+          method: 'PATCH',
+          body: {
+            settings: cloneGovernanceSettings(settings),
+          },
+        },
+      )
+
+      await refreshGovernanceViews()
+      governanceMutationNotice.value = 'Настройки контура обновлены.'
+      return true
+    } catch (error) {
+      governanceMutationError.value = normalizePlatformApiError(error, 'Не удалось обновить настройки контура.')
+      return false
+    } finally {
+      governanceMutationPending.value = false
+    }
+  }
+
   watch(panelOpen, async (open) => {
     if (!open) {
       return
@@ -724,7 +1111,7 @@ export function useMessengerProjectActions() {
     await fetchPlatformProjects()
 
     if (selectedProjectSlug.value) {
-      await fetchPlatformCatalog(selectedProjectSlug.value)
+      await fetchPlatformCatalog(selectedProjectSlug.value, true)
     }
   })
 
@@ -732,6 +1119,8 @@ export function useMessengerProjectActions() {
     if (nextSlug === previousSlug) {
       return
     }
+
+    resetGovernanceMutationState()
 
     if (!panelOpen.value) {
       return
@@ -805,10 +1194,16 @@ export function useMessengerProjectActions() {
         const response = await dispatchPlatformMutation(action.id, effectivePayload)
 
         if (effectivePayload.projectSlug) {
-          await Promise.allSettled([
+          const refreshJobs: Array<Promise<unknown>> = [
             fetchPlatformProjects(true),
             fetchPlatformCatalog(effectivePayload.projectSlug, true),
-          ])
+          ]
+
+          if (selectedScopeType.value && selectedScopeId.value) {
+            refreshJobs.push(fetchPlatformScopeDetail(selectedScopeType.value, selectedScopeId.value, true))
+          }
+
+          await Promise.allSettled(refreshJobs)
         }
 
         return {
@@ -928,11 +1323,26 @@ export function useMessengerProjectActions() {
     platformCatalog: readonly(platformCatalog),
     platformCatalogPending: readonly(platformCatalogPending),
     platformCatalogError: readonly(platformCatalogError),
+    selectedScopeType: readonly(selectedScopeType),
+    selectedScopeId: readonly(selectedScopeId),
+    platformScopeDetail: readonly(platformScopeDetail),
+    platformScopeDetailPending: readonly(platformScopeDetailPending),
+    platformScopeDetailError: readonly(platformScopeDetailError),
+    governanceMutationPending: readonly(governanceMutationPending),
+    governanceMutationError: readonly(governanceMutationError),
+    governanceMutationNotice: readonly(governanceMutationNotice),
     setPeerLogin,
     setSelectedProjectSlug,
     setSelectedAction,
     fetchPlatformProjects,
     fetchPlatformCatalog,
+    fetchPlatformScopeDetail,
+    openScopeDetail,
+    clearPlatformScopeDetail,
+    createScopeParticipant,
+    updateScopeAssignment,
+    deleteScopeAssignment,
+    updateScopeSettings,
     togglePanel,
     closePanel,
     openPanel,

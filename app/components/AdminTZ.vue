@@ -2,23 +2,43 @@
   <div class="atz-wrap">
     <div v-if="pending" class="ent-content-loading atz-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
-      <GlassSurface v-for="(sec, si) in sections" :key="si" class="atz-card ">
-        <div class="atz-card-label">раздел: {{ sec.title || '(без названия)' }}</div>
-        <div class="atz-row">
+      <GlassSurface
+        v-for="(sec, si) in sections"
+        :key="si"
+        class="atz-card "
+        :class="{ 'atz-card--expanded': isSectionExpanded(getSectionKey(sec, si)) }"
+      >
+        <div class="atz-card-head">
+          <button
+            type="button"
+            class="atz-card-toggle"
+            :aria-expanded="isSectionExpanded(getSectionKey(sec, si)) ? 'true' : 'false'"
+            @click="toggleSection(getSectionKey(sec, si))"
+          >
+            <div class="atz-card-summary">
+              <span class="atz-card-label">{{ sec.title || '(без названия)' }}</span>
+              <span class="atz-card-meta">{{ sec.questions.length }} {{ formatQuestionCount(sec.questions.length) }}</span>
+            </div>
+            <span class="atz-card-chevron" :class="{ 'atz-card-chevron--expanded': isSectionExpanded(getSectionKey(sec, si)) }">⌄</span>
+          </button>
+        </div>
+
+        <div v-show="isSectionExpanded(getSectionKey(sec, si))" class="atz-card-panel">
+        <div class="atz-row atz-row--field">
           <label class="atz-lbl">id:</label>
           <GlassInput v-model="sec.id" class="atz-inp " type="text" @input="markDirty" />
         </div>
-        <div class="atz-row">
+        <div class="atz-row atz-row--field">
           <label class="atz-lbl">название:</label>
           <GlassInput v-model="sec.title" class="atz-inp " type="text" @input="markDirty" />
         </div>
-        <div class="atz-row">
+        <div class="atz-row atz-row--field">
           <label class="atz-lbl">заголовок:</label>
           <GlassInput v-model="sec.heading" class="atz-inp " type="text" @input="markDirty" />
         </div>
 
         <!-- section image -->
-        <div class="atz-upload-row">
+        <div class="atz-upload-row atz-upload-row--field">
           <label class="atz-lbl">изображение:</label>
           <GlassInput v-model="sec.image" class="atz-inp " type="text" placeholder="имя файла" @input="markDirty" />
           <label class="atz-btn-upload glass-chip">
@@ -30,7 +50,7 @@
 
         <!-- questions -->
         <div v-for="(q, qi) in sec.questions" :key="qi" class="atz-question">
-          <div class="atz-row">
+          <div class="atz-question-head">
             <AppAutocomplete
               v-model="q.label"
               input-class="atz-inp glass-input"
@@ -38,17 +58,19 @@
               categories="materials,fabrics,furniture_types,kitchen,lighting,sanitary,flooring,rooms,styles,colors"
               @change="markDirty"
             />
-            <select v-model="q.type" class="atz-select glass-input" @change="markDirty">
-              <option value="text">текст</option>
-              <option value="select">выбор</option>
-              <option value="number">число</option>
-              <option value="yesno">да/нет</option>
-            </select>
-            <button class="atz-btn-sm glass-chip danger" @click="delQ(si, qi)">×</button>
+            <div class="atz-question-controls">
+              <select v-model="q.type" class="atz-select glass-input" @change="markDirty">
+                <option value="text">текст</option>
+                <option value="select">выбор</option>
+                <option value="number">число</option>
+                <option value="yesno">да/нет</option>
+              </select>
+              <button class="atz-btn-sm glass-chip danger" @click="delQ(si, qi)">×</button>
+            </div>
           </div>
           <!-- question image -->
-          <div class="atz-upload-row" style="margin-top:4px">
-            <label class="atz-lbl" style="width:60px;font-size:.72rem">фото:</label>
+          <div class="atz-upload-row atz-upload-row--field atz-upload-row--question">
+            <label class="atz-lbl atz-lbl--compact">фото:</label>
             <GlassInput v-model="q.image" class="atz-inp " type="text" placeholder="имя файла" @input="markDirty" />
             <label class="atz-btn-upload glass-chip">
               загрузить
@@ -59,8 +81,9 @@
         </div>
         <button class="atz-btn-add glass-chip" @click="addQ(si)">+ вопрос</button>
 
-        <div style="text-align:right;margin-top:8px">
+        <div class="atz-card-footer">
           <button class="atz-btn-sm glass-chip danger" @click="delSec(si)">удалить раздел</button>
+        </div>
         </div>
       </GlassSurface>
 
@@ -90,6 +113,7 @@ const { data: raw, pending, refresh } = await useFetch<any>(
 const sections = ref<Section[]>([])
 const saving = ref(false)
 const error = ref('')
+const expandedSectionId = ref('')
 
 function markDirty() {}
 
@@ -103,6 +127,39 @@ watch(raw, (v) => {
 }, { immediate: true })
 
 watch(() => props.page, () => { refresh() })
+
+watch(sections, (list) => {
+  const keys = list.map((section, index) => getSectionKey(section, index))
+  if (!keys.length) {
+    expandedSectionId.value = ''
+    return
+  }
+
+  if (!expandedSectionId.value || !keys.includes(expandedSectionId.value)) {
+    expandedSectionId.value = keys[0] || ''
+  }
+}, { immediate: true, deep: true })
+
+function getSectionKey(_section: Section, sectionIndex: number) {
+  return `section-${sectionIndex + 1}`
+}
+
+function isSectionExpanded(sectionId: string) {
+  return expandedSectionId.value === sectionId
+}
+
+function toggleSection(sectionId: string) {
+  expandedSectionId.value = expandedSectionId.value === sectionId ? '' : sectionId
+}
+
+function formatQuestionCount(count: number) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+
+  if (mod10 === 1 && mod100 !== 11) return 'вопрос'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'вопроса'
+  return 'вопросов'
+}
 
 function addSec() {
   sections.value.push({ id: `s${sections.value.length + 1}`, title: 'новый раздел', heading: '', image: '', questions: [] })
@@ -158,34 +215,92 @@ async function save() {
   --atz-muted: #888;
   border: 1px solid var(--atz-border);
   border-left: 3px solid color-mix(in srgb, var(--glass-text) 60%, #1a1a1a 40%);
-  padding: 20px;
+  padding: 0;
   margin-bottom: 16px;
+  overflow: hidden;
 }
 .atz-content-loading::before {
   content: '[ ЗАГРУЖАЕМ ТЗ ]';
 }
+.atz-card-head {
+  display: flex;
+  align-items: stretch;
+}
+.atz-card--expanded .atz-card-head {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+.atz-card-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.atz-card-toggle:hover {
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+.atz-card-summary {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
 .atz-card-label {
   font-size: .9rem;
   font-weight: 400;
-  color: var(--atz-muted);
+  color: var(--atz-text);
   text-transform: uppercase;
   letter-spacing: .5px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
+}
+.atz-card-meta {
+  font-size: .72rem;
+  color: var(--atz-muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.atz-card-chevron {
+  flex-shrink: 0;
+  color: var(--atz-muted);
+  transition: transform .18s ease, color .18s ease;
+}
+.atz-card-chevron--expanded {
+  transform: rotate(180deg);
+  color: var(--atz-text);
+}
+.atz-card-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px 18px;
 }
 .atz-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  display: grid;
+  gap: 6px;
+  margin-bottom: 0;
+}
+.atz-row--field,
+.atz-upload-row--field {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
 }
 .atz-lbl {
   font-size: .78rem;
   color: var(--atz-muted);
-  width: 80px;
+  width: auto;
   flex-shrink: 0;
 }
+.atz-lbl--compact {
+  font-size: .72rem;
+}
 .atz-inp {
-  flex: 1;
+  width: 100%;
   border: 1px solid transparent;
   padding: 6px 0;
   font-size: .88rem;
@@ -203,13 +318,16 @@ async function save() {
   outline: none;
   color: var(--atz-text);
   background: transparent;
+  width: 100%;
 }
 .atz-upload-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
   flex-wrap: wrap;
+}
+.atz-upload-row--question {
+  margin-top: 4px;
 }
 .atz-btn-upload {
   border: none;
@@ -234,10 +352,25 @@ async function save() {
   color: color-mix(in srgb, var(--glass-text) 58%, #9a9a9a 42%);
 }
 .atz-question {
-  padding: 10px 10px 6px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-border) 62%, #d7d7d7 38%);
-  margin: 6px 0;
-  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+.atz-question-head {
+  display: grid;
+  gap: 8px;
+}
+.atz-question-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.atz-question-controls .atz-select {
+  flex: 1 1 180px;
 }
 .atz-btn-sm {
   border: none;
@@ -264,6 +397,11 @@ async function save() {
   display: block;
 }
 .atz-btn-add:hover { color: var(--atz-text); opacity: .9; }
+.atz-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
 .atz-actions {
   display: flex;
   gap: 10px;
@@ -278,14 +416,20 @@ async function save() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .atz-card { padding: 14px; }
+  .atz-card-toggle,
+  .atz-card-panel { padding-left: 14px; padding-right: 14px; }
   .atz-row {
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
   }
-  .atz-lbl { width: auto; }
-  .atz-question { padding-left: 10px; }
+  .atz-question-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .atz-upload-row--field {
+    align-items: stretch;
+  }
   .atz-actions {
     flex-direction: column;
     gap: 8px;

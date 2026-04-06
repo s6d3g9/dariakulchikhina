@@ -5,6 +5,7 @@ import { contractors, documents, projectExtraServices, projects, workStatusItems
 import { requireAdmin } from '~/server/utils/auth'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
 import { getProjectRelationsSnapshot } from '~/server/utils/project-relations'
+import { buildProjectGovernanceCatalogSubjects, buildProjectGovernanceSummary } from '~/server/utils/project-governance'
 import { buildHybridCoordinationBrief, buildHybridControlSummary, ensureHybridControl } from '~/shared/utils/project-control'
 
 function formatPeriod(startDate?: string | null, endDate?: string | null) {
@@ -55,6 +56,7 @@ export default defineEventHandler(async (event) => {
   const summary = buildHybridControlSummary(control)
   const coordination = buildHybridCoordinationBrief(control, { projectSlug: project.slug })
   const relations = await getProjectRelationsSnapshot(project.slug)
+  const governanceSummary = await buildProjectGovernanceSummary(project, { control, relations })
 
   const [workItems, projectDocuments, extraServices] = await Promise.all([
     db
@@ -185,38 +187,7 @@ export default defineEventHandler(async (event) => {
     ]),
   }))
 
-  const subjects = [
-    ...(relations?.linked.clients || []).map((client) => ({
-      id: `client:${client.id}`,
-      kind: 'client',
-      label: client.name,
-      secondary: buildSubjectSecondary(['Клиент', client.phone, client.email]),
-    })),
-    ...(relations?.linked.contractors || []).map((contractor) => ({
-      id: `contractor:${contractor.id}`,
-      kind: 'contractor',
-      label: contractor.name,
-      secondary: buildSubjectSecondary(['Подрядчик', contractor.companyName, contractor.phone]),
-    })),
-    ...(relations?.linked.designers || []).map((designer) => ({
-      id: `designer:${designer.id}`,
-      kind: 'designer',
-      label: designer.name,
-      secondary: buildSubjectSecondary(['Дизайнер', designer.companyName, designer.phone]),
-    })),
-    ...(relations?.linked.sellers || []).map((seller) => ({
-      id: `seller:${seller.id}`,
-      kind: 'seller',
-      label: seller.name,
-      secondary: buildSubjectSecondary(['Поставщик', seller.companyName, seller.contactPerson]),
-    })),
-    ...(relations?.linked.managers || []).map((manager) => ({
-      id: `manager:${manager.id}`,
-      kind: 'manager',
-      label: manager.name,
-      secondary: buildSubjectSecondary(['Менеджер', manager.role, manager.phone]),
-    })),
-  ]
+  const subjects = buildProjectGovernanceCatalogSubjects(governanceSummary)
 
   const documentsLibrary = projectDocuments.map((document) => ({
     id: `document:${document.id}`,
@@ -283,6 +254,7 @@ export default defineEventHandler(async (event) => {
       title: project.title,
       status: project.status,
       projectType: project.projectType || '',
+      revision: governanceSummary.revision,
       pages: project.pages || [],
       activePhaseKey: summary.activePhase?.phaseKey || '',
       activePhaseTitle: summary.activePhase?.title || '',

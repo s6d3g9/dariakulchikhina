@@ -4,8 +4,14 @@
     <template v-else-if="hasTZ">
 
       <!-- ── Содержание ТЗ ── -->
-      <div class="ctz-section">
-        <div class="ctz-section-title">содержание технического задания</div>
+      <div class="ctz-section" :class="{ 'ctz-section--expanded': isSectionExpanded('tz') }">
+        <div class="ctz-section-head">
+          <button type="button" class="ctz-section-toggle" :aria-expanded="isSectionExpanded('tz') ? 'true' : 'false'" @click="toggleSection('tz')">
+            <span class="ctz-section-title">содержание технического задания</span>
+            <span class="ctz-section-chevron" :class="{ 'ctz-section-chevron--expanded': isSectionExpanded('tz') }">⌄</span>
+          </button>
+        </div>
+        <div v-show="isSectionExpanded('tz')" class="ctz-section-panel">
         <div class="ass-upload-zone">
           <div v-if="profile.tor_scope" class="u-field">
             <span class="u-field__label">Объём работ</span>
@@ -24,11 +30,18 @@
             <span class="ctz-val ctz-val--pre">{{ profile.tor_deliverables }}</span>
           </div>
         </div>
+        </div>
       </div>
 
       <!-- ── Договор (если есть) ── -->
-      <div v-if="hasContract" class="ctz-section">
-        <div class="ctz-section-title">договор</div>
+      <div v-if="hasContract" class="ctz-section" :class="{ 'ctz-section--expanded': isSectionExpanded('contract') }">
+        <div class="ctz-section-head">
+          <button type="button" class="ctz-section-toggle" :aria-expanded="isSectionExpanded('contract') ? 'true' : 'false'" @click="toggleSection('contract')">
+            <span class="ctz-section-title">договор</span>
+            <span class="ctz-section-chevron" :class="{ 'ctz-section-chevron--expanded': isSectionExpanded('contract') }">⌄</span>
+          </button>
+        </div>
+        <div v-show="isSectionExpanded('contract')" class="ctz-section-panel">
         <div class="ass-upload-zone">
           <div v-if="profile.contract_number" class="u-field">
             <span class="u-field__label">Номер</span>
@@ -54,6 +67,7 @@
         <div v-if="profile.contract_file" class="ctz-download">
           <a :href="profile.contract_file" target="_blank" class="ctz-download-btn">↓ Скачать договор</a>
         </div>
+        </div>
       </div>
 
     </template>
@@ -68,6 +82,18 @@ const reqHeaders = useRequestHeaders(['cookie'])
 const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
 const profile = computed(() => (project.value?.profile || {}) as Record<string, any>)
+
+type ClientTzSectionKey = 'tz' | 'contract'
+
+const expandedSectionKey = ref<ClientTzSectionKey | null>('tz')
+
+function isSectionExpanded(sectionKey: ClientTzSectionKey) {
+  return expandedSectionKey.value === sectionKey
+}
+
+function toggleSection(sectionKey: ClientTzSectionKey) {
+  expandedSectionKey.value = expandedSectionKey.value === sectionKey ? null : sectionKey
+}
 
 const hasTZ = computed(() =>
   !!(profile.value.tor_scope || profile.value.tor_exclusions || profile.value.tor_timeline || profile.value.tor_deliverables
@@ -96,11 +122,68 @@ function fmtDate(val: string | null | undefined): string {
 .ctz-loading { font-size: .85rem; color: var(--ds-muted, #999); }
 .ctz-empty { font-size: .85rem; color: var(--ds-muted, #999); padding: 20px 0; }
 
-.ctz-section { margin-bottom: 24px; }
+.ctz-section {
+  margin-bottom: 18px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--glass-bg, #fff) 92%, transparent);
+  overflow: hidden;
+}
+.ctz-section-head {
+  display: flex;
+  align-items: stretch;
+}
+.ctz-section--expanded .ctz-section-head {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+.ctz-section-toggle {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ctz-section-toggle:hover {
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
 .ctz-section-title {
-  font-size: .68rem; text-transform: uppercase; letter-spacing: 1px;
-  color: var(--glass-text); opacity: .45; margin-bottom: 14px;
-  padding-bottom: 8px; border-bottom: 1px solid var(--glass-border);
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--glass-text);
+  opacity: .45;
+}
+.ctz-section-chevron {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+  transition: transform .18s ease, color .18s ease;
+}
+.ctz-section-chevron--expanded {
+  transform: rotate(180deg);
+  color: var(--glass-text);
+}
+.ctz-section-panel {
+  padding: 16px 18px 18px;
+}
+
+.ctz-section-panel .ass-upload-zone {
+  gap: 12px;
+}
+
+.ctz-section-panel .u-field {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
 }
 
 .ctz-val { font-size: .88rem; color: var(--glass-text); line-height: 1.5; }

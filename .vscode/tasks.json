@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "messenger core dev",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"messenger:core:dev"
+			],
+			"isBackground": true
+		}
+	]
+}

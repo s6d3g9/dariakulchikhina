@@ -52,6 +52,7 @@
           </div>
           <div class="hpc-summary__meta">
             <span class="hpc-pill" :class="`hpc-pill--${summary.health.status}`">{{ summary.health.label }}</span>
+            <GlassButton variant="secondary" density="compact" type="button" @click="openProjectScopeDetails">контур проекта</GlassButton>
             <span v-if="saveMetaText" class="hpc-saved" :class="{ 'hpc-saved--error': saveState === 'error' }">{{ saveMetaText }}</span>
           </div>
         </div>
@@ -614,20 +615,15 @@
                 <GlassButton variant="secondary" density="compact" class="hpc-timeline-details-modal__close" @click="closeTimelineRowDetails">Закрыть</GlassButton>
               </div>
 
-              <div class="hpc-grid hpc-grid--top">
-                <div class="hpc-timeline-detail-field">
-                  <span class="hpc-timeline-detail-field__label">Период</span>
-                  <strong class="hpc-timeline-detail-field__value">{{ formatDateRange(selectedTimelineRowDetails.startDate, selectedTimelineRowDetails.endDate) }}</strong>
-                </div>
-                <div class="hpc-timeline-detail-field">
-                  <span class="hpc-timeline-detail-field__label">Прогресс</span>
-                  <strong class="hpc-timeline-detail-field__value">{{ selectedTimelineRowDetails.progressLabel }}</strong>
-                </div>
-                <div class="hpc-timeline-detail-field">
-                  <span class="hpc-timeline-detail-field__label">Статус</span>
-                  <strong class="hpc-timeline-detail-field__value">{{ selectedTimelineRowDetails.statusLabel }}</strong>
+              <div v-if="selectedTimelineDetailCards.length" class="hpc-grid hpc-grid--top">
+                <div v-for="card in selectedTimelineDetailCards" :key="card.label" class="hpc-timeline-detail-field">
+                  <span class="hpc-timeline-detail-field__label">{{ card.label }}</span>
+                  <strong class="hpc-timeline-detail-field__value">{{ card.value }}</strong>
                 </div>
               </div>
+
+              <p v-if="timelineScopeDetailPending" class="hpc-timeline-empty">Загружаю детали контура…</p>
+              <p v-else-if="timelineScopeDetailError" class="hpc-timeline-empty hpc-timeline-empty--error">{{ timelineScopeDetailError }}</p>
 
               <div class="hpc-timeline-clusters">
                 <section class="hpc-timeline-cluster">
@@ -644,6 +640,68 @@
                   <p v-else class="hpc-timeline-empty">Связанные участники пока не назначены.</p>
                 </section>
 
+                <section v-if="timelineScopeDetail" class="hpc-timeline-cluster hpc-timeline-cluster--governance">
+                  <div class="hpc-timeline-cluster__head">
+                    <p class="hpc-summary__label">Управление участниками</p>
+                    <span class="hpc-chip">{{ timelineGovernanceParticipants.length }}</span>
+                  </div>
+
+                  <div v-if="timelineGovernanceParticipants.length" class="hpc-timeline-governance-list">
+                    <article v-for="participant in timelineGovernanceParticipants" :key="participant.assignmentId" class="hpc-timeline-governance-card">
+                      <div class="hpc-timeline-governance-card__head">
+                        <div>
+                          <strong class="hpc-timeline-governance-card__title">{{ participant.displayName }}</strong>
+                          <p class="hpc-recommendation-text">{{ participant.roleLabel }} · {{ participant.responsibilityLabel }}</p>
+                        </div>
+                        <span class="hpc-chip">{{ participant.originLabel }}</span>
+                      </div>
+
+                      <p v-if="participant.secondary" class="hpc-recommendation-text">{{ participant.secondary }}</p>
+
+                      <div v-if="participant.editable" class="hpc-timeline-governance-card__controls">
+                        <div class="u-field">
+                          <label class="u-field__label">Ответственность</label>
+                          <select class="u-status-sel" :value="participant.responsibility" :disabled="timelineGovernancePending" @change="handleTimelineGovernanceResponsibilityChange(participant.assignmentId, $event)">
+                            <option v-for="option in projectGovernanceResponsibilityOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                          </select>
+                        </div>
+                        <GlassButton variant="danger" density="compact" type="button" :disabled="timelineGovernancePending" @click="deleteTimelineGovernanceAssignment(participant.assignmentId)">
+                          убрать
+                        </GlassButton>
+                      </div>
+                    </article>
+                  </div>
+                  <p v-else class="hpc-timeline-empty">Для этого контура ещё нет прямых назначений.</p>
+
+                  <div class="hpc-grid hpc-grid--top hpc-timeline-governance-form">
+                    <div class="u-field">
+                      <label class="u-field__label">Имя участника</label>
+                      <GlassInput v-model="timelineGovernanceParticipantDraft.displayName" placeholder="Например, юрист проекта" :disabled="timelineGovernancePending" />
+                    </div>
+                    <div class="u-field">
+                      <label class="u-field__label">Роль</label>
+                      <select v-model="timelineGovernanceParticipantDraft.roleKey" class="u-status-sel" :disabled="timelineGovernancePending">
+                        <option v-for="option in projectParticipantRoleOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                      </select>
+                    </div>
+                    <div class="u-field">
+                      <label class="u-field__label">Ответственность</label>
+                      <select v-model="timelineGovernanceParticipantDraft.responsibility" class="u-status-sel" :disabled="timelineGovernancePending">
+                        <option v-for="option in projectGovernanceResponsibilityOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                      </select>
+                    </div>
+                    <div class="u-field u-field--actions">
+                      <label class="u-field__label">Добавление</label>
+                      <GlassButton variant="primary" density="compact" type="button" :disabled="!canCreateTimelineGovernanceParticipant" @click="createTimelineGovernanceParticipant">
+                        добавить в контур
+                      </GlassButton>
+                    </div>
+                  </div>
+
+                  <p v-if="timelineGovernanceError" class="hpc-timeline-empty hpc-timeline-empty--error">{{ timelineGovernanceError }}</p>
+                  <p v-else-if="timelineGovernanceNotice" class="hpc-recommendation-text">{{ timelineGovernanceNotice }}</p>
+                </section>
+
                 <section class="hpc-timeline-cluster">
                   <div class="hpc-timeline-cluster__head">
                     <p class="hpc-summary__label">Объекты</p>
@@ -656,6 +714,79 @@
                     </article>
                   </div>
                   <p v-else class="hpc-timeline-empty">Связанные объекты еще не описаны.</p>
+                </section>
+
+                <section class="hpc-timeline-cluster">
+                  <div class="hpc-timeline-cluster__head">
+                    <p class="hpc-summary__label">Настройки</p>
+                    <span class="hpc-chip">{{ timelineDetailSettings.length }}</span>
+                  </div>
+                  <div v-if="timelineDetailSettings.length" class="hpc-timeline-cluster__list">
+                    <article v-for="item in timelineDetailSettings" :key="item.key" class="hpc-timeline-cluster__item">
+                      <span class="hpc-timeline-cluster__label">{{ item.label }}</span>
+                      <strong class="hpc-timeline-cluster__value">{{ item.value }}</strong>
+                    </article>
+                  </div>
+                  <p v-else class="hpc-timeline-empty">Для этого контура дополнительные настройки пока не заданы.</p>
+                </section>
+
+                <section v-if="timelineGovernanceEditableSettings.length" class="hpc-timeline-cluster hpc-timeline-cluster--governance">
+                  <div class="hpc-timeline-cluster__head">
+                    <p class="hpc-summary__label">Редактирование настроек</p>
+                    <span class="hpc-chip">{{ timelineGovernanceEditableSettings.length }}</span>
+                  </div>
+
+                  <div class="hpc-grid hpc-grid--top hpc-timeline-governance-settings">
+                    <div v-for="field in timelineGovernanceEditableSettings" :key="field.key" class="u-field">
+                      <label class="u-field__label">{{ field.label }}</label>
+
+                      <select
+                        v-if="field.kind === 'select'"
+                        class="u-status-sel"
+                        :value="field.value == null ? '' : String(field.value)"
+                        :disabled="timelineGovernancePending"
+                        @change="handleTimelineGovernanceSelectSettingChange(field.key, $event)"
+                      >
+                        <option v-for="option in communicationChannelOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                      </select>
+
+                      <label v-else-if="field.kind === 'boolean'" class="hpc-timeline-governance-toggle">
+                        <input
+                          :checked="Boolean(field.value)"
+                          type="checkbox"
+                          :disabled="timelineGovernancePending"
+                          @change="handleTimelineGovernanceBooleanSettingChange(field.key, $event)"
+                        />
+                        <span>{{ Boolean(field.value) ? 'Включено' : 'Выключено' }}</span>
+                      </label>
+
+                      <input
+                        v-else
+                        class="glass-input"
+                        :type="field.kind === 'number' ? 'number' : 'text'"
+                        :value="field.value == null ? '' : String(field.value)"
+                        :disabled="timelineGovernancePending"
+                        @input="handleTimelineGovernanceTextSettingInput(field.key, field.kind, $event)"
+                        @blur="commitTimelineGovernanceSettings()"
+                      />
+
+                      <span class="hpc-recommendation-text">{{ field.kind === 'list' ? 'Список через запятую' : 'Изменения отправляются сразу' }}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="hpc-timeline-cluster">
+                  <div class="hpc-timeline-cluster__head">
+                    <p class="hpc-summary__label">Связанные контуры</p>
+                    <span class="hpc-chip">{{ timelineDetailLinkedScopes.length }}</span>
+                  </div>
+                  <div v-if="timelineDetailLinkedScopes.length" class="hpc-timeline-cluster__list">
+                    <article v-for="item in timelineDetailLinkedScopes" :key="item.key" class="hpc-timeline-cluster__item">
+                      <span class="hpc-timeline-cluster__label">{{ item.label }}</span>
+                      <strong class="hpc-timeline-cluster__value">{{ item.value }}</strong>
+                    </article>
+                  </div>
+                  <p v-else class="hpc-timeline-empty">Связанные контуры пока не определены.</p>
                 </section>
 
                 <section class="hpc-timeline-cluster hpc-timeline-cluster--actions">
@@ -688,13 +819,18 @@
                 <p v-else class="hpc-timeline-empty">Для этого контура нет отдельного правила коммуникации.</p>
               </div>
 
-              <div v-if="selectedTimelineRowDetails.type === 'sprint' && getSprintById(selectedTimelineRowDetails.id)?.tasks?.length" class="hpc-timeline-meta">
+              <div v-if="timelineDetailTasks.length" class="hpc-timeline-meta">
                 <p class="hpc-summary__label">Задачи спринта</p>
                 <ul class="hpc-timeline-task-list">
-                  <li v-for="task in getSprintById(selectedTimelineRowDetails.id)?.tasks || []" :key="task.id" class="hpc-timeline-task-item">
-                    <strong class="hpc-timeline-task-item__title">{{ task.title }}</strong>
-                    <span class="hpc-timeline-task-item__meta">{{ task.assignee || 'Исполнитель не назначен' }} · {{ taskStatusLabels[task.status] }}</span>
-                    <GlassButton variant="secondary" density="compact" type="button" @click="openTimelineTask(task.id, selectedTimelineRowDetails.id)">к задаче</GlassButton>
+                  <li v-for="task in timelineDetailTasks" :key="task.id" class="hpc-timeline-task-item">
+                    <div>
+                      <strong class="hpc-timeline-task-item__title">{{ task.title }}</strong>
+                      <span class="hpc-timeline-task-item__meta">{{ task.meta }}</span>
+                    </div>
+                    <div class="hpc-timeline-task-item__actions">
+                      <GlassButton variant="secondary" density="compact" type="button" @click="openTaskScopeDetails(task.scopeId, task.sprintId)">контур</GlassButton>
+                      <GlassButton variant="secondary" density="compact" type="button" @click="openTimelineTask(task.id, task.sprintId)">к задаче</GlassButton>
+                    </div>
                   </li>
                 </ul>
               </div>
@@ -717,6 +853,15 @@
                   @click="openTimelinePhaseEditor()"
                 >
                   Настройки фазы
+                </GlassButton>
+                <GlassButton
+                  v-if="selectedTimelineRowDetails.scopeType === 'task'"
+                  variant="secondary"
+                  density="compact"
+                  type="button"
+                  @click="openTimelineTask(selectedTimelineRowDetails.id, selectedTimelineTaskSprintId)"
+                >
+                  К задаче
                 </GlassButton>
               </div>
             </GlassSurface>
@@ -988,6 +1133,7 @@
                 <div class="hpc-phase-card__head-right">
                   <span class="hpc-chip">{{ selectedSprint.name }}</span>
                   <span class="hpc-chip">{{ selectedTask.points || 0 }} pt</span>
+                  <GlassButton variant="secondary" density="compact" type="button" @click="openTaskScopeDetails(selectedTask.id, selectedSprint.id)">контур задачи</GlassButton>
                   <GlassButton variant="secondary" density="compact" type="button" @click="clearTaskFocus">снять фокус</GlassButton>
                 </div>
               </div>
@@ -1117,6 +1263,17 @@ import {
   toIsoLocalDate,
   type HybridTimelineRow,
 } from '~~/shared/utils/project-control-timeline'
+import {
+  PROJECT_PARTICIPANT_ROLE_KEYS,
+  PROJECT_RESPONSIBILITY_KEYS,
+  type ProjectParticipantRoleKey,
+  type ProjectResponsibilityKey,
+  type ProjectScopeType,
+} from '~~/shared/types/project-governance'
+import {
+  getProjectParticipantRoleLabel,
+  getProjectResponsibilityLabel,
+} from '~~/shared/utils/project-governance'
 import type {
   HybridControl,
   HybridControlCallInsight,
@@ -1128,6 +1285,7 @@ import type {
   HybridControlTeamMember,
   HybridControlTask,
 } from '~~/shared/types/project'
+import type { ProjectScopeDetailBundle } from '~~/shared/types/project-governance'
 
 const modules = [
   { id: 'overview', label: 'Обзор' },
@@ -1155,11 +1313,46 @@ type TimelineRuleSummary = {
 
 type SelectedTimelineRowState = {
   id: string
-  type: HybridTimelineRow['type']
+  scopeType: ProjectScopeType
+  scopeId: string
+  type: ProjectScopeType
+  typeLabel: string
+  title: string
+  meta: string
+  startDate?: string
+  endDate?: string
+  progressLabel?: string
+  statusLabel?: string
+  phaseKey?: string
+  linkedPhaseKey?: string
+  sprintId?: string
+  taskId?: string
+}
+
+type TimelineDetailTaskItem = {
+  id: string
+  scopeId: string
+  title: string
+  meta: string
+  sprintId: string
 }
 
 type SaveOptions = {
   refreshAfter?: boolean
+}
+
+type TimelineGovernanceParticipantDraft = {
+  displayName: string
+  roleKey: ProjectParticipantRoleKey
+  responsibility: ProjectResponsibilityKey
+}
+
+type TimelineGovernanceSettingFieldKind = 'select' | 'number' | 'boolean' | 'list' | 'text'
+
+type TimelineGovernanceMutationResponse = {
+  participant: {
+    persistedId: number
+  }
 }
 
 const CONTROL_QUERY_TAB_KEY = 'controlTab'
@@ -1357,6 +1550,44 @@ const communicationChannelOptions = (
   value,
   label: getHybridCommunicationChannelLabel(value),
 }))
+
+const projectParticipantRoleOptions = PROJECT_PARTICIPANT_ROLE_KEYS.map(value => ({
+  value,
+  label: getProjectParticipantRoleLabel(value),
+}))
+
+const projectGovernanceResponsibilityOptions = PROJECT_RESPONSIBILITY_KEYS.map(value => ({
+  value,
+  label: getProjectResponsibilityLabel(value),
+}))
+
+const timelineGovernanceSettingOrder = [
+  'communicationChannel',
+  'approvalMode',
+  'visibility',
+  'requiredResponsibilities',
+  'reviewCadenceDays',
+  'reminderCadenceDays',
+  'slaHours',
+  'escalateOnBlocked',
+] as const
+
+const timelineGovernanceSettingLabels: Record<string, string> = {
+  communicationChannel: 'Канал коммуникации',
+  approvalMode: 'Режим согласования',
+  visibility: 'Видимость',
+  requiredResponsibilities: 'Обязательные роли',
+  reviewCadenceDays: 'Ревью, дней',
+  reminderCadenceDays: 'Напоминание, дней',
+  slaHours: 'SLA, часов',
+  escalateOnBlocked: 'Эскалация при блокере',
+}
+
+const timelineGovernanceOriginLabels: Record<ProjectScopeDetailBundle['participants'][number]['origin'], string> = {
+  direct: 'контур',
+  project: 'проект',
+  derived: 'legacy',
+}
 
 const stakeholderRoleOptions = (
   ['admin', 'manager', 'designer', 'client', 'contractor', 'seller', 'service'] as const satisfies readonly HybridControlStakeholderRole[]
@@ -1616,28 +1847,101 @@ const activeModuleCard = computed(() => moduleCards.value.find(moduleCard => mod
 
 const activeTaskContext = computed(() => getTaskContext(activeTaskId.value))
 const selectedTimelineRowState = ref<SelectedTimelineRowState | null>(null)
-
-const selectedTimelineRowDetails = computed<HybridTimelineRow | null>(() => {
-  const selected = selectedTimelineRowState.value
-  if (!selected) return null
-  return timelineRows.value.find(row => row.id === selected.id && row.type === selected.type) || null
+const timelineScopeDetail = ref<ProjectScopeDetailBundle | null>(null)
+const timelineScopeDetailPending = ref(false)
+const timelineScopeDetailError = ref('')
+const timelineScopeDetailRequestId = ref(0)
+const timelineGovernancePending = ref(false)
+const timelineGovernanceError = ref('')
+const timelineGovernanceNotice = ref('')
+const timelineGovernanceSettingsDraft = ref<Record<string, unknown>>({})
+const timelineGovernanceParticipantDraft = reactive<TimelineGovernanceParticipantDraft>({
+  displayName: '',
+  roleKey: 'manager',
+  responsibility: 'owner',
 })
+
+const selectedTimelineRowDetails = computed<SelectedTimelineRowState | null>(() => selectedTimelineRowState.value)
 
 const selectedTimelinePhase = computed(() => {
   const selected = selectedTimelineRowDetails.value
-  if (!selected || selected.type !== 'phase') return null
-  return getPhaseById(selected.id)
+  if (!selected || selected.scopeType !== 'phase') return null
+  return getPhaseById(selected.id) || control.phases.find(phase => phase.phaseKey === selected.phaseKey) || null
 })
 
 const selectedTimelineSprint = computed(() => {
   const selected = selectedTimelineRowDetails.value
-  if (!selected || selected.type !== 'sprint') return null
+  if (!selected || selected.scopeType !== 'sprint') return null
   return getSprintById(selected.id)
 })
+
+const selectedTimelineTaskSprintId = computed(() => {
+  const selected = selectedTimelineRowDetails.value
+  if (!selected || selected.scopeType !== 'task') return ''
+  return selected.sprintId || ''
+})
+
+const selectedTimelineDetailCards = computed(() => {
+  const selected = selectedTimelineRowDetails.value
+  if (!selected) return [] as Array<{ label: string; value: string }>
+
+  const cards: Array<{ label: string; value: string }> = []
+
+  if (selected.startDate || selected.endDate) {
+    cards.push({
+      label: 'Период',
+      value: formatDateRange(selected.startDate, selected.endDate),
+    })
+  }
+
+  if (selected.progressLabel) {
+    cards.push({
+      label: 'Прогресс',
+      value: selected.progressLabel,
+    })
+  }
+
+  const resolvedStatusLabel = timelineScopeDetail.value?.scope.statusLabel || selected.statusLabel
+  if (resolvedStatusLabel) {
+    cards.push({
+      label: 'Статус',
+      value: resolvedStatusLabel,
+    })
+  }
+
+  return cards
+})
+
+const timelineScopeTypeLabels = {
+  project: 'Проект',
+  phase: 'Фаза',
+  sprint: 'Спринт',
+  task: 'Задача',
+  document: 'Документ',
+  service: 'Услуга',
+} as const
+
+function mapTimelineDetailItems(items: Array<{ key: string; label: string; value: string }>): TimelineDetailItem[] {
+  return items.map(item => ({
+    key: item.key,
+    label: item.label,
+    value: item.value,
+  }))
+}
 
 const timelineDetailRules = computed<TimelineRuleSummary[]>(() => {
   const selected = selectedTimelineRowDetails.value
   if (!selected) return []
+
+  if (timelineScopeDetail.value) {
+    return timelineScopeDetail.value.ruleItems.map(rule => ({
+      id: rule.id,
+      title: rule.title,
+      channel: rule.channel,
+      trigger: rule.trigger,
+      audience: rule.audience,
+    }))
+  }
 
   const selectedPhaseKey = selected.type === 'phase'
     ? selected.phaseKey
@@ -1657,6 +1961,21 @@ const timelineDetailRules = computed<TimelineRuleSummary[]>(() => {
 const timelineDetailSubjects = computed<TimelineDetailItem[]>(() => {
   const selected = selectedTimelineRowDetails.value
   if (!selected) return []
+
+  if (timelineScopeDetail.value) {
+    return [
+      ...timelineScopeDetail.value.participants.map(participant => ({
+        key: participant.assignmentId,
+        label: participant.roleLabel,
+        value: [participant.displayName, participant.responsibilityLabel, participant.secondary].filter(Boolean).join(' · '),
+      })),
+      ...timelineScopeDetail.value.subjectItems.map(item => ({
+        key: `subject-${item.key}`,
+        label: item.label,
+        value: item.value,
+      })),
+    ]
+  }
 
   const audienceLabels = Array.from(new Set(
     control.communicationPlaybook.flatMap(rule => rule.audience.map(getStakeholderRoleLabel)),
@@ -1688,6 +2007,10 @@ const timelineDetailSubjects = computed<TimelineDetailItem[]>(() => {
     ]
   }
 
+  if (selected.scopeType !== 'sprint') {
+    return []
+  }
+
   const sprint = selectedTimelineSprint.value
   const assignees = Array.from(new Set(
     (sprint?.tasks || []).map(task => (task.assignee || '').trim()).filter(Boolean),
@@ -1716,6 +2039,10 @@ const timelineDetailObjects = computed<TimelineDetailItem[]>(() => {
   const selected = selectedTimelineRowDetails.value
   if (!selected) return []
 
+  if (timelineScopeDetail.value) {
+    return mapTimelineDetailItems(timelineScopeDetail.value.objectItems)
+  }
+
   if (selected.type === 'phase') {
     const phase = selectedTimelinePhase.value
     const linkedSprints = control.sprints.filter(sprint => sprint.linkedPhaseKey === phase?.phaseKey)
@@ -1738,6 +2065,10 @@ const timelineDetailObjects = computed<TimelineDetailItem[]>(() => {
         value: linkedTasks.length ? `${linkedTasks.length} задач в связанных спринтах` : 'задачи еще не заведены',
       },
     ]
+  }
+
+  if (selected.scopeType !== 'sprint') {
+    return []
   }
 
   const sprint = selectedTimelineSprint.value
@@ -1764,6 +2095,10 @@ const timelineDetailActions = computed<TimelineDetailItem[]>(() => {
   const selected = selectedTimelineRowDetails.value
   if (!selected) return []
 
+  if (timelineScopeDetail.value) {
+    return mapTimelineDetailItems(timelineScopeDetail.value.actionItems)
+  }
+
   if (selected.type === 'phase') {
     const phase = selectedTimelinePhase.value
     const gateActions = (phase?.gates || []).map(gate => ({
@@ -1779,6 +2114,10 @@ const timelineDetailActions = computed<TimelineDetailItem[]>(() => {
     }))
 
     return [...gateActions, ...checkpointActions].slice(0, 6)
+  }
+
+  if (selected.scopeType !== 'sprint') {
+    return []
   }
 
   const sprint = selectedTimelineSprint.value
@@ -1797,9 +2136,340 @@ const timelineDetailActions = computed<TimelineDetailItem[]>(() => {
   return [...taskActions, ...projectBlockers].slice(0, 6)
 })
 
+const timelineDetailSettings = computed<TimelineDetailItem[]>(() => {
+  if (!timelineScopeDetail.value) return []
+  return mapTimelineDetailItems(timelineScopeDetail.value.settingItems)
+})
+
+const timelineDetailLinkedScopes = computed<TimelineDetailItem[]>(() => {
+  if (!timelineScopeDetail.value) return []
+
+  return timelineScopeDetail.value.linkedScopes.map(linkedScope => ({
+    key: `${linkedScope.scopeType}-${linkedScope.scopeId}`,
+    label: timelineScopeTypeLabels[linkedScope.scopeType],
+    value: [linkedScope.title, linkedScope.statusLabel || linkedScope.status].filter(Boolean).join(' · '),
+  }))
+})
+
+const timelineDetailTasks = computed<TimelineDetailTaskItem[]>(() => {
+  if (timelineScopeDetail.value) {
+    return timelineScopeDetail.value.tasks.map(task => {
+      const normalizedTaskId = normalizeTaskScopeId(task.id)
+      const taskContext = getTaskContext(normalizedTaskId)
+
+      return {
+        id: normalizedTaskId,
+        scopeId: task.id,
+        title: task.title,
+        meta: [
+          task.assigneeLabels.length ? task.assigneeLabels.join(', ') : 'Исполнитель не назначен',
+          task.statusLabel,
+          task.secondary,
+        ].filter(Boolean).join(' · '),
+        sprintId: taskContext?.sprint.id || (selectedTimelineRowDetails.value?.type === 'sprint' ? selectedTimelineRowDetails.value.id : ''),
+      }
+    })
+  }
+
+  if (selectedTimelineRowDetails.value?.scopeType !== 'sprint') {
+    return []
+  }
+
+  return (selectedTimelineSprint.value?.tasks || []).map(task => ({
+    id: task.id,
+    scopeId: task.id,
+    title: task.title,
+    meta: `${task.assignee || 'Исполнитель не назначен'} · ${taskStatusLabels[task.status]}`,
+    sprintId: selectedTimelineRowDetails.value?.id || '',
+  }))
+})
+
+const timelineGovernanceParticipants = computed(() => {
+  return (timelineScopeDetail.value?.participants || []).map(participant => ({
+    ...participant,
+    editable: participant.origin === 'direct' && /^assignment:\d+$/.test(participant.assignmentId),
+    originLabel: timelineGovernanceOriginLabels[participant.origin],
+  }))
+})
+
+const canCreateTimelineGovernanceParticipant = computed(() => {
+  return Boolean(
+    timelineScopeDetail.value
+    && timelineGovernanceParticipantDraft.displayName.trim()
+    && !timelineGovernancePending.value,
+  )
+})
+
+const timelineGovernanceEditableSettings = computed(() => {
+  const detail = timelineScopeDetail.value
+  if (!detail) {
+    return [] as Array<{
+      key: string
+      label: string
+      kind: TimelineGovernanceSettingFieldKind
+      value: string | number | boolean | null
+    }>
+  }
+
+  const labelMap = new Map(detail.settingItems.map(item => [item.key, item.label]))
+  const knownKeys = timelineGovernanceSettingOrder.filter(key => key in timelineGovernanceSettingsDraft.value)
+  const dynamicKeys = Object.keys(timelineGovernanceSettingsDraft.value).filter(key => !knownKeys.includes(key as typeof timelineGovernanceSettingOrder[number]))
+  const keys = [...knownKeys, ...dynamicKeys]
+
+  return keys.map((key) => {
+    const rawValue = timelineGovernanceSettingsDraft.value[key]
+
+    if (key === 'communicationChannel') {
+      return {
+        key,
+        label: labelMap.get(key) || timelineGovernanceSettingLabels[key] || key,
+        kind: 'select' as const,
+        value: typeof rawValue === 'string' ? rawValue : '',
+      }
+    }
+
+    if (key === 'reviewCadenceDays' || key === 'reminderCadenceDays' || key === 'slaHours') {
+      return {
+        key,
+        label: labelMap.get(key) || timelineGovernanceSettingLabels[key] || key,
+        kind: 'number' as const,
+        value: typeof rawValue === 'number' ? rawValue : rawValue == null ? null : Number(rawValue),
+      }
+    }
+
+    if (key === 'escalateOnBlocked') {
+      return {
+        key,
+        label: labelMap.get(key) || timelineGovernanceSettingLabels[key] || key,
+        kind: 'boolean' as const,
+        value: Boolean(rawValue),
+      }
+    }
+
+    if (key === 'requiredResponsibilities') {
+      return {
+        key,
+        label: labelMap.get(key) || timelineGovernanceSettingLabels[key] || key,
+        kind: 'list' as const,
+        value: Array.isArray(rawValue) ? rawValue.join(', ') : typeof rawValue === 'string' ? rawValue : '',
+      }
+    }
+
+    return {
+      key,
+      label: labelMap.get(key) || timelineGovernanceSettingLabels[key] || key,
+      kind: 'text' as const,
+      value: Array.isArray(rawValue) ? rawValue.join(', ') : typeof rawValue === 'string' ? rawValue : rawValue == null ? '' : String(rawValue),
+    }
+  })
+})
+
+watch(() => timelineScopeDetail.value?.revision, () => {
+  timelineGovernanceSettingsDraft.value = cloneTimelineGovernanceSettings(timelineScopeDetail.value?.settings || {})
+  timelineGovernanceError.value = ''
+  timelineGovernanceNotice.value = ''
+}, { immediate: true })
+
 function getMemberName(id: string) {
   const m = control.team?.find((t: any) => t.id === id)
   return m ? m.name : id
+}
+
+function cloneTimelineGovernanceSettings(settings: Record<string, unknown>) {
+  return JSON.parse(JSON.stringify(settings || {})) as Record<string, unknown>
+}
+
+function normalizeTimelineGovernanceError(error: unknown, fallback: string) {
+  if (!error || typeof error !== 'object') {
+    return fallback
+  }
+
+  const record = error as {
+    statusMessage?: string
+    message?: string
+    data?: { statusMessage?: string; message?: string }
+  }
+
+  return String(record.data?.statusMessage || record.statusMessage || record.data?.message || record.message || fallback).trim() || fallback
+}
+
+function extractTimelineGovernanceAssignmentId(assignmentId: string) {
+  const match = assignmentId.match(/^assignment:(\d+)$/)
+  return match ? Number(match[1]) : 0
+}
+
+function normalizeTimelineGovernanceSettingValue(kind: TimelineGovernanceSettingFieldKind, value: unknown) {
+  if (kind === 'boolean') {
+    return Boolean(value)
+  }
+
+  if (kind === 'number') {
+    const normalized = typeof value === 'number' ? value : Number(String(value || '').trim())
+    return Number.isFinite(normalized) ? normalized : null
+  }
+
+  if (kind === 'list') {
+    return String(value || '')
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+  }
+
+  return typeof value === 'string' ? value.trim() : value == null ? '' : String(value)
+}
+
+function updateTimelineGovernanceSettingDraft(key: string, kind: TimelineGovernanceSettingFieldKind, value: unknown) {
+  timelineGovernanceSettingsDraft.value = {
+    ...timelineGovernanceSettingsDraft.value,
+    [key]: normalizeTimelineGovernanceSettingValue(kind, value),
+  }
+}
+
+async function refreshTimelineGovernanceView(refreshControl = false) {
+  const selectedRow = selectedTimelineRowDetails.value
+  const jobs: Array<Promise<unknown>> = []
+
+  if (selectedRow) {
+    jobs.push(fetchTimelineScopeDetail(selectedRow))
+  }
+
+  if (refreshControl) {
+    jobs.push(refresh())
+  }
+
+  if (!jobs.length) {
+    return
+  }
+
+  await Promise.allSettled(jobs)
+}
+
+async function runTimelineGovernanceMutation(
+  execute: () => Promise<void>,
+  successMessage: string,
+  refreshControl = false,
+  fallbackMessage = 'Не удалось обновить контур проекта.',
+) {
+  timelineGovernancePending.value = true
+  timelineGovernanceError.value = ''
+  timelineGovernanceNotice.value = ''
+
+  try {
+    await execute()
+    await refreshTimelineGovernanceView(refreshControl)
+    timelineGovernanceNotice.value = successMessage
+    return true
+  } catch (error) {
+    timelineGovernanceError.value = normalizeTimelineGovernanceError(error, fallbackMessage)
+    return false
+  } finally {
+    timelineGovernancePending.value = false
+  }
+}
+
+async function createTimelineGovernanceParticipant() {
+  const detail = timelineScopeDetail.value
+  const displayName = timelineGovernanceParticipantDraft.displayName.trim()
+
+  if (!detail || !displayName) {
+    timelineGovernanceError.value = 'Сначала откройте контур и заполните имя участника.'
+    return
+  }
+
+  await runTimelineGovernanceMutation(async () => {
+    const participantResponse = await $fetch<TimelineGovernanceMutationResponse>(`/api/projects/${props.slug}/coordination/participants`, {
+      method: 'POST',
+      body: {
+        displayName,
+        roleKey: timelineGovernanceParticipantDraft.roleKey,
+        sourceKind: 'custom',
+      },
+    })
+
+    await $fetch(`/api/projects/${props.slug}/coordination/assignments`, {
+      method: 'POST',
+      body: {
+        participantId: participantResponse.participant.persistedId,
+        scopeType: detail.scope.scopeType,
+        scopeSource: detail.scope.scopeSource,
+        scopeId: detail.scope.scopeId,
+        responsibility: timelineGovernanceParticipantDraft.responsibility,
+      },
+    })
+
+    timelineGovernanceParticipantDraft.displayName = ''
+  }, 'Участник добавлен в контур.', true, 'Не удалось добавить участника в контур.')
+}
+
+async function updateTimelineGovernanceAssignment(assignmentId: string, responsibility: ProjectResponsibilityKey) {
+  const persistedAssignmentId = extractTimelineGovernanceAssignmentId(assignmentId)
+  if (!persistedAssignmentId) {
+    timelineGovernanceError.value = 'Не удалось определить назначение для обновления.'
+    return
+  }
+
+  await runTimelineGovernanceMutation(async () => {
+    await $fetch(`/api/projects/${props.slug}/coordination/assignments/${persistedAssignmentId}`, {
+      method: 'PATCH',
+      body: { responsibility },
+    })
+  }, 'Назначение обновлено.', true, 'Не удалось обновить назначение.')
+}
+
+async function deleteTimelineGovernanceAssignment(assignmentId: string) {
+  const persistedAssignmentId = extractTimelineGovernanceAssignmentId(assignmentId)
+  if (!persistedAssignmentId) {
+    timelineGovernanceError.value = 'Не удалось определить назначение для удаления.'
+    return
+  }
+
+  await runTimelineGovernanceMutation(async () => {
+    await $fetch(`/api/projects/${props.slug}/coordination/assignments/${persistedAssignmentId}`, {
+      method: 'DELETE',
+    })
+  }, 'Назначение удалено.', true, 'Не удалось удалить назначение.')
+}
+
+async function commitTimelineGovernanceSettings() {
+  const detail = timelineScopeDetail.value
+  if (!detail) {
+    return
+  }
+
+  await runTimelineGovernanceMutation(async () => {
+    await $fetch(`/api/projects/${props.slug}/coordination/scopes/${detail.scope.scopeType}/${encodeURIComponent(detail.scope.scopeId)}/settings`, {
+      method: 'PATCH',
+      body: {
+        settings: cloneTimelineGovernanceSettings(timelineGovernanceSettingsDraft.value),
+      },
+    })
+  }, 'Настройки контура обновлены.', false, 'Не удалось обновить настройки контура.')
+}
+
+function handleTimelineGovernanceResponsibilityChange(assignmentId: string, event: Event) {
+  const value = (event.target as HTMLSelectElement | null)?.value as ProjectResponsibilityKey | undefined
+  if (!value) {
+    return
+  }
+
+  void updateTimelineGovernanceAssignment(assignmentId, value)
+}
+
+function handleTimelineGovernanceSelectSettingChange(key: string, event: Event) {
+  const value = (event.target as HTMLSelectElement | null)?.value || ''
+  updateTimelineGovernanceSettingDraft(key, 'select', value)
+  void commitTimelineGovernanceSettings()
+}
+
+function handleTimelineGovernanceBooleanSettingChange(key: string, event: Event) {
+  const checked = Boolean((event.target as HTMLInputElement | null)?.checked)
+  updateTimelineGovernanceSettingDraft(key, 'boolean', checked)
+  void commitTimelineGovernanceSettings()
+}
+
+function handleTimelineGovernanceTextSettingInput(key: string, kind: TimelineGovernanceSettingFieldKind, event: Event) {
+  const value = (event.target as HTMLInputElement | HTMLTextAreaElement | null)?.value || ''
+  updateTimelineGovernanceSettingDraft(key, kind, value)
 }
 
 function resolveSaveOptions(value?: unknown): SaveOptions {
@@ -2112,8 +2782,9 @@ async function openTimelineSprintInKanban(sprintId?: string) {
 }
 
 function openTimelineTask(taskId: string, sprintId?: string) {
+  const normalizedTaskId = normalizeTaskScopeId(taskId)
   closeTimelineRowDetails()
-  void focusTask(taskId, sprintId, 'kanban')
+  void focusTask(normalizedTaskId, sprintId, 'kanban')
 }
 
 function openTimelinePhaseEditor() {
@@ -2607,7 +3278,79 @@ async function executeMessageDispatch() {
 }
 
 function isTimelineRowSelected(row: HybridTimelineRow) {
-  return selectedTimelineRowDetails.value?.id === row.id && selectedTimelineRowDetails.value?.type === row.type
+  return selectedTimelineRowDetails.value?.scopeId === row.id && selectedTimelineRowDetails.value?.scopeType === row.type
+}
+
+function normalizeTaskScopeId(taskId: string) {
+  return taskId.startsWith('hybrid:') ? taskId.slice('hybrid:'.length) : taskId
+}
+
+function buildSelectedTimelineScopeState(row: HybridTimelineRow): SelectedTimelineRowState {
+  return {
+    id: row.id,
+    scopeType: row.type,
+    scopeId: row.id,
+    type: row.type,
+    typeLabel: row.typeLabel,
+    title: row.title,
+    meta: row.meta,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    progressLabel: row.progressLabel,
+    statusLabel: row.statusLabel,
+    phaseKey: row.phaseKey,
+    linkedPhaseKey: row.linkedPhaseKey,
+  }
+}
+
+function buildProjectScopeState(): SelectedTimelineRowState {
+  return {
+    id: props.slug,
+    scopeType: 'project',
+    scopeId: props.slug,
+    type: 'project',
+    typeLabel: 'Проект',
+    title: project.value?.title || 'Проект',
+    meta: [project.value?.status, summary.value.activePhase?.title, summary.value.activeSprint?.name].filter(Boolean).join(' · '),
+    statusLabel: project.value?.status || 'Проект',
+  }
+}
+
+function buildTaskScopeState(taskId: string, sprintId?: string): SelectedTimelineRowState | null {
+  const normalizedTaskId = normalizeTaskScopeId(taskId)
+  const taskContext = getTaskContext(normalizedTaskId)
+  const resolvedSprintId = sprintId || taskContext?.sprint.id || ''
+  const resolvedSprintName = taskContext?.sprint.name || selectedSprint.value?.name || 'Спринт'
+  const resolvedPhaseTitle = taskContext?.sprint.linkedPhaseKey ? getPhaseTitleByKey(taskContext.sprint.linkedPhaseKey) : selectedSprintPhaseTitle.value
+
+  if (!taskContext && !normalizedTaskId) {
+    return null
+  }
+
+  return {
+    id: normalizedTaskId,
+    taskId: normalizedTaskId,
+    sprintId: resolvedSprintId,
+    scopeType: 'task',
+    scopeId: taskId,
+    type: 'task',
+    typeLabel: 'Задача',
+    title: taskContext?.task.title || 'Задача',
+    meta: [resolvedSprintName, resolvedPhaseTitle].filter(Boolean).join(' · '),
+    progressLabel: taskContext?.task.points ? `${taskContext.task.points} pt` : '',
+    statusLabel: taskContext?.task ? taskStatusLabels[taskContext.task.status] : 'Задача',
+    linkedPhaseKey: taskContext?.sprint.linkedPhaseKey || '',
+  }
+}
+
+async function scrollTimelineDetailModalIntoView() {
+  if (!import.meta.client || typeof document === 'undefined') return
+
+  await nextTick()
+  document.querySelector<HTMLElement>('.hpc-timeline-details-modal')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  })
 }
 
 const timelineTooltip = ref({
@@ -2679,27 +3422,107 @@ function hideTimelineTooltip() {
   timelineTooltip.value.visible = false
 }
 
-async function openTimelineRowDetails(row: HybridTimelineRow) {
+function resetTimelineScopeDetailState() {
+  timelineScopeDetail.value = null
+  timelineScopeDetailPending.value = false
+  timelineScopeDetailError.value = ''
+  timelineGovernanceSettingsDraft.value = {}
+  timelineGovernanceError.value = ''
+  timelineGovernanceNotice.value = ''
+}
+
+async function fetchTimelineScopeDetail(scope: SelectedTimelineRowState | null) {
+  if (!scope?.scopeType || !scope.scopeId) {
+    resetTimelineScopeDetailState()
+    return
+  }
+
+  const preserveCurrentDetail = Boolean(
+    timelineScopeDetail.value
+    && timelineScopeDetail.value.scope.scopeType === scope.scopeType
+    && timelineScopeDetail.value.scope.scopeId === scope.scopeId,
+  )
+
+  const requestId = timelineScopeDetailRequestId.value + 1
+  timelineScopeDetailRequestId.value = requestId
+  timelineScopeDetailPending.value = true
+  timelineScopeDetailError.value = ''
+
+  if (!preserveCurrentDetail) {
+    timelineScopeDetail.value = null
+    timelineGovernanceSettingsDraft.value = {}
+    timelineGovernanceError.value = ''
+    timelineGovernanceNotice.value = ''
+  }
+
+  try {
+    const detail = await $fetch<ProjectScopeDetailBundle>(`/api/projects/${props.slug}/coordination/scopes/${scope.scopeType}/${encodeURIComponent(scope.scopeId)}`)
+
+    if (timelineScopeDetailRequestId.value !== requestId) {
+      return
+    }
+
+    timelineScopeDetail.value = detail
+  } catch {
+    if (timelineScopeDetailRequestId.value !== requestId) {
+      return
+    }
+
+    if (!preserveCurrentDetail) {
+      timelineScopeDetail.value = null
+    }
+    timelineScopeDetailError.value = 'Не удалось загрузить детали контура проекта.'
+  } finally {
+    if (timelineScopeDetailRequestId.value === requestId) {
+      timelineScopeDetailPending.value = false
+    }
+  }
+}
+
+async function openSelectedTimelineScope(scope: SelectedTimelineRowState) {
   hideTimelineTooltip()
-  selectedTimelineRowState.value = { id: row.id, type: row.type }
+  if (activeModule.value !== 'timeline') {
+    activeModule.value = 'timeline'
+  }
 
-  if (!import.meta.client || typeof document === 'undefined') return
-  await nextTick()
+  selectedTimelineRowState.value = scope
+  void fetchTimelineScopeDetail(scope)
 
-  if (window.innerWidth >= 1180) return
-  document.querySelector<HTMLElement>('.hpc-timeline-details-modal')?.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-  })
+  if (import.meta.client && typeof window !== 'undefined' && window.innerWidth >= 1180) return
+  await scrollTimelineDetailModalIntoView()
+}
+
+async function openTimelineRowDetails(row: HybridTimelineRow) {
+  await openSelectedTimelineScope(buildSelectedTimelineScopeState(row))
+}
+
+async function openProjectScopeDetails() {
+  await openSelectedTimelineScope(buildProjectScopeState())
+}
+
+async function openTaskScopeDetails(taskId?: string, sprintId?: string) {
+  if (!taskId) return
+  const scope = buildTaskScopeState(taskId, sprintId)
+  if (!scope) return
+  await openSelectedTimelineScope(scope)
 }
 
 function closeTimelineRowDetails() {
   hideTimelineTooltip()
+  timelineScopeDetailRequestId.value += 1
+  resetTimelineScopeDetailState()
   selectedTimelineRowState.value = null
 }
 </script>
 
 <style scoped>
+
+.hpc-timeline-task-item__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
 .hpc-module-nav {
   position: fixed;
@@ -2874,6 +3697,59 @@ function closeTimelineRowDetails() {
   scroll-margin-top: calc(var(--admin-nav-top, 96px) + 12px);
 }
 
+.hpc-timeline-cluster--governance {
+  gap: 14px;
+}
+
+.hpc-timeline-governance-list {
+  display: grid;
+  gap: 10px;
+}
+
+.hpc-timeline-governance-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.hpc-timeline-governance-card__head,
+.hpc-timeline-governance-card__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hpc-timeline-governance-card__title {
+  font-size: .88rem;
+  letter-spacing: .02em;
+}
+
+.hpc-timeline-governance-card__controls {
+  align-items: end;
+}
+
+.hpc-timeline-governance-form,
+.hpc-timeline-governance-settings {
+  align-items: start;
+}
+
+.hpc-timeline-governance-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  color: var(--glass-text);
+}
+
+.hpc-timeline-governance-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
 @media (max-width: 900px) {
   .hpc-module-nav {
     left: max(12px, env(safe-area-inset-left, 0px));
@@ -2882,6 +3758,11 @@ function closeTimelineRowDetails() {
 
   .hpc-module-hero {
     flex-direction: column;
+  }
+
+  .hpc-timeline-governance-card__controls {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

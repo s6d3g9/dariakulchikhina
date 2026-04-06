@@ -2,11 +2,20 @@
 import type {
   MessengerPlatformActionCatalog,
   MessengerPlatformProjectSummary,
+  MessengerPlatformScopeDetailBundle,
+  MessengerPlatformScopeType,
+  MessengerPlatformSprintOption,
   ProjectActionCategoryGroup,
   ProjectActionDefinition,
   ProjectActionExecutePayload,
   ProjectActionId,
 } from '../../composables/useMessengerProjectActions'
+
+type ProjectOverviewPane = 'timeline' | 'sprints' | 'scope-detail'
+
+type GovernanceRoleKey = 'client' | 'manager' | 'designer' | 'lawyer' | 'contractor' | 'seller' | 'engineer' | 'consultant' | 'service' | 'other'
+type GovernanceResponsibilityKey = 'lead' | 'owner' | 'executor' | 'reviewer' | 'approver' | 'observer' | 'consultant'
+type ScopeSettingFieldKind = 'select' | 'number' | 'boolean' | 'list' | 'text'
 
 const props = defineProps<{
   open: boolean
@@ -20,6 +29,12 @@ const props = defineProps<{
   catalog: MessengerPlatformActionCatalog | null
   catalogPending: boolean
   catalogError: string
+  scopeDetail: MessengerPlatformScopeDetailBundle | null
+  scopeDetailPending: boolean
+  scopeDetailError: string
+  governanceMutationPending: boolean
+  governanceMutationError: string
+  governanceMutationNotice: string
 }>()
 
 const emit = defineEmits<{
@@ -27,11 +42,16 @@ const emit = defineEmits<{
   execute: [actionId: ProjectActionId, payload?: ProjectActionExecutePayload]
   selectProject: [slug: string]
   selectAction: [actionId: ProjectActionId | null]
+  openScopeDetail: [target: { scopeType: MessengerPlatformScopeType; scopeId: string }]
+  createScopeParticipant: [payload: { displayName: string; roleKey: GovernanceRoleKey; responsibility: GovernanceResponsibilityKey }]
+  updateScopeAssignment: [payload: { assignmentId: string; responsibility: GovernanceResponsibilityKey }]
+  deleteScopeAssignment: [payload: { assignmentId: string }]
+  updateScopeSettings: [payload: { settings: Record<string, unknown> }]
 }>()
 
-const manualProjectSlug = ref('')
 const projectPickerOpen = ref(false)
 const searchPanelOpen = ref(false)
+const overviewPane = ref<ProjectOverviewPane | ''>('')
 const taskMode = ref<'existing' | 'new'>('new')
 const selectedTaskId = ref('')
 const taskTitle = ref('')
@@ -47,11 +67,17 @@ const rangeEnd = ref('')
 const detailsText = ref('')
 const formError = ref('')
 const actionSearch = ref('')
+const projectSearch = ref('')
 const selectedCategory = ref<ProjectActionCategoryGroup['category'] | ''>('')
+const scopeParticipantName = ref('')
+const scopeParticipantRole = ref<GovernanceRoleKey>('manager')
+const scopeParticipantResponsibility = ref<GovernanceResponsibilityKey>('owner')
+const scopeSettingsDraft = ref<Record<string, unknown>>({})
 
 const allActions = computed(() => props.groups.flatMap(group => group.actions))
 const currentAction = computed(() => allActions.value.find(action => action.id === props.selectedActionId) || null)
 const normalizedActionSearch = computed(() => actionSearch.value.trim().toLowerCase())
+const normalizedProjectSearch = computed(() => projectSearch.value.trim().toLowerCase())
 const selectedProjectLabel = computed(() => {
   return props.catalog?.project.title
     || props.projects.find(project => project.slug === props.selectedProjectSlug)?.title
@@ -59,22 +85,61 @@ const selectedProjectLabel = computed(() => {
     || 'Проект'
 })
 const searchChipLabel = computed(() => actionSearch.value.trim() || 'Поиск')
+const activeProjectCatalog = computed(() => {
+  if (!props.catalog || props.catalog.project.slug !== props.selectedProjectSlug) {
+    return null
+  }
+
+  return props.catalog
+})
 const showProjectPane = computed(() => projectPickerOpen.value)
 const showSearchPane = computed(() => searchPanelOpen.value)
+const showTimelinePane = computed(() => overviewPane.value === 'timeline')
+const showSprintsPane = computed(() => overviewPane.value === 'sprints')
+const showScopeDetailPane = computed(() => overviewPane.value === 'scope-detail')
+const canShowProjectOverview = computed(() => Boolean(props.selectedProjectSlug))
+const miniTimelineCatalog = computed(() => {
+  if (!activeProjectCatalog.value || props.catalogPending || !activeProjectCatalog.value.phases.length) {
+    return null
+  }
+
+  return activeProjectCatalog.value
+})
+const sprintOverviewItems = computed(() => {
+  if (!activeProjectCatalog.value || props.catalogPending) {
+    return []
+  }
+
+  return activeProjectCatalog.value.sprints
+})
+const timelineChipCount = computed(() => activeProjectCatalog.value?.phases.length || 0)
+const sprintChipCount = computed(() => activeProjectCatalog.value?.sprints.length || 0)
 const showExpansion = computed(() => {
-  return showProjectPane.value || showSearchPane.value || Boolean(currentAction.value) || Boolean(formError.value)
+  return showProjectPane.value
+    || showSearchPane.value
+    || showTimelinePane.value
+    || showSprintsPane.value
+    || showScopeDetailPane.value
+    || Boolean(currentAction.value)
+    || Boolean(formError.value)
 })
 
-const projectModel = computed({
-  get: () => props.selectedProjectSlug,
-  set: (value: string | null) => emit('selectProject', value || ''),
-})
+const filteredProjectItems = computed(() => {
+  const query = normalizedProjectSearch.value
+  const projects = !query
+    ? [...props.projects]
+    : props.projects.filter(project => projectMatchesSearch(project, query))
 
-const projectItems = computed(() => props.projects.map(project => ({
-  title: project.title,
-  value: project.slug,
-  subtitle: [project.status, project.activePhaseTitle].filter(Boolean).join(' · '),
-})))
+  return projects.sort((left, right) => {
+    const leftSelected = Number(left.slug === props.selectedProjectSlug)
+    const rightSelected = Number(right.slug === props.selectedProjectSlug)
+    if (leftSelected !== rightSelected) {
+      return rightSelected - leftSelected
+    }
+
+    return left.title.localeCompare(right.title, 'ru')
+  })
+})
 
 const taskItems = computed(() => {
   const catalogTasks = props.catalog?.tasks || []
@@ -121,6 +186,13 @@ const selectedObject = computed(() => objectItems.value.find(object => object.id
 const selectedDocument = computed(() => documentItems.value.find(document => document.id === selectedDocumentId.value) || null)
 const selectedService = computed(() => serviceItems.value.find(service => service.id === selectedServiceId.value) || null)
 
+const sprintStatusLabels: Record<MessengerPlatformSprintOption['status'], string> = {
+  planned: 'Запланирован',
+  active: 'Активен',
+  review: 'На ревью',
+  done: 'Завершён',
+}
+
 const catalogRecommendations = computed(() => props.catalog?.coordination.recommendations?.slice(0, 3) || [])
 
 const workTaskStatusItems = [
@@ -166,6 +238,135 @@ const selectedTaskStatusItems = computed(() => {
 
 const selectedTaskStatusLabel = computed(() => {
   return selectedTaskStatusItems.value.find(option => option.value === selectedTaskStatus.value)?.title || ''
+})
+
+const governanceRoleItems = [
+  { title: 'Клиент', value: 'client' },
+  { title: 'Менеджер', value: 'manager' },
+  { title: 'Дизайнер', value: 'designer' },
+  { title: 'Юрист', value: 'lawyer' },
+  { title: 'Подрядчик', value: 'contractor' },
+  { title: 'Поставщик', value: 'seller' },
+  { title: 'Инженер', value: 'engineer' },
+  { title: 'Консультант', value: 'consultant' },
+  { title: 'Сервис', value: 'service' },
+  { title: 'Другая роль', value: 'other' },
+] as const satisfies ReadonlyArray<{ title: string; value: GovernanceRoleKey }>
+
+const governanceResponsibilityItems = [
+  { title: 'Лидирует', value: 'lead' },
+  { title: 'Владелец', value: 'owner' },
+  { title: 'Исполняет', value: 'executor' },
+  { title: 'Проверяет', value: 'reviewer' },
+  { title: 'Согласует', value: 'approver' },
+  { title: 'Наблюдает', value: 'observer' },
+  { title: 'Консультирует', value: 'consultant' },
+] as const satisfies ReadonlyArray<{ title: string; value: GovernanceResponsibilityKey }>
+
+const governanceChannelItems = [
+  { title: 'Проектный room', value: 'project-room' },
+  { title: 'Прямой тред', value: 'direct-thread' },
+  { title: 'Передача', value: 'handoff' },
+  { title: 'Согласование', value: 'approval' },
+  { title: 'Дайджест', value: 'daily-digest' },
+]
+
+const governanceSettingOrder = [
+  'communicationChannel',
+  'approvalMode',
+  'visibility',
+  'requiredResponsibilities',
+  'reviewCadenceDays',
+  'reminderCadenceDays',
+  'slaHours',
+  'escalateOnBlocked',
+] as const
+
+const governanceSettingLabels: Record<string, string> = {
+  communicationChannel: 'Канал коммуникации',
+  approvalMode: 'Режим согласования',
+  visibility: 'Видимость',
+  requiredResponsibilities: 'Обязательные роли',
+  reviewCadenceDays: 'Ревью, дней',
+  reminderCadenceDays: 'Напоминание, дней',
+  slaHours: 'SLA, часов',
+  escalateOnBlocked: 'Эскалация при блокере',
+}
+
+const governanceOriginLabels: Record<MessengerPlatformScopeParticipant['origin'], string> = {
+  direct: 'контур',
+  project: 'проект',
+  derived: 'legacy',
+}
+
+const canCreateScopeParticipant = computed(() => {
+  return Boolean(props.scopeDetail && scopeParticipantName.value.trim() && !props.governanceMutationPending)
+})
+
+const editableScopeSettings = computed(() => {
+  const detail = props.scopeDetail
+  if (!detail) {
+    return [] as Array<{
+      key: string
+      label: string
+      kind: ScopeSettingFieldKind
+      value: string | number | boolean | null
+      items?: ReadonlyArray<{ title: string; value: string }>
+    }>
+  }
+
+  const labelMap = new Map(detail.settingItems.map(item => [item.key, item.label]))
+  const knownKeys = governanceSettingOrder.filter(key => key in scopeSettingsDraft.value)
+  const dynamicKeys = Object.keys(scopeSettingsDraft.value).filter(key => !knownKeys.includes(key as typeof governanceSettingOrder[number]))
+  const keys = [...knownKeys, ...dynamicKeys]
+
+  return keys.map((key) => {
+    const rawValue = scopeSettingsDraft.value[key]
+
+    if (key === 'communicationChannel') {
+      return {
+        key,
+        label: labelMap.get(key) || governanceSettingLabels[key] || key,
+        kind: 'select' as const,
+        value: typeof rawValue === 'string' ? rawValue : '',
+        items: governanceChannelItems,
+      }
+    }
+
+    if (key === 'reviewCadenceDays' || key === 'reminderCadenceDays' || key === 'slaHours') {
+      return {
+        key,
+        label: labelMap.get(key) || governanceSettingLabels[key] || key,
+        kind: 'number' as const,
+        value: typeof rawValue === 'number' ? rawValue : rawValue == null ? null : Number(rawValue),
+      }
+    }
+
+    if (key === 'escalateOnBlocked') {
+      return {
+        key,
+        label: labelMap.get(key) || governanceSettingLabels[key] || key,
+        kind: 'boolean' as const,
+        value: Boolean(rawValue),
+      }
+    }
+
+    if (key === 'requiredResponsibilities') {
+      return {
+        key,
+        label: labelMap.get(key) || governanceSettingLabels[key] || key,
+        kind: 'list' as const,
+        value: Array.isArray(rawValue) ? rawValue.join(', ') : typeof rawValue === 'string' ? rawValue : '',
+      }
+    }
+
+    return {
+      key,
+      label: labelMap.get(key) || governanceSettingLabels[key] || key,
+      kind: 'text' as const,
+      value: Array.isArray(rawValue) ? rawValue.join(', ') : typeof rawValue === 'string' ? rawValue : rawValue == null ? '' : String(rawValue),
+    }
+  })
 })
 
 const submitLabel = computed(() => {
@@ -260,6 +461,53 @@ function resetFormState() {
   formError.value = ''
 }
 
+function cloneScopeSettings(settings: Record<string, unknown>) {
+  return JSON.parse(JSON.stringify(settings || {})) as Record<string, unknown>
+}
+
+function normalizeScopeSettingValue(kind: ScopeSettingFieldKind, value: unknown) {
+  if (kind === 'boolean') {
+    return Boolean(value)
+  }
+
+  if (kind === 'number') {
+    const normalized = typeof value === 'number' ? value : Number(String(value || '').trim())
+    return Number.isFinite(normalized) ? normalized : null
+  }
+
+  if (kind === 'list') {
+    return String(value || '')
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+  }
+
+  return typeof value === 'string' ? value.trim() : value == null ? '' : String(value)
+}
+
+function updateScopeSettingDraft(key: string, kind: ScopeSettingFieldKind, value: unknown) {
+  scopeSettingsDraft.value = {
+    ...scopeSettingsDraft.value,
+    [key]: normalizeScopeSettingValue(kind, value),
+  }
+}
+
+function commitScopeSettings() {
+  emit('updateScopeSettings', { settings: cloneScopeSettings(scopeSettingsDraft.value) })
+}
+
+function submitScopeParticipant() {
+  if (!canCreateScopeParticipant.value) {
+    return
+  }
+
+  emit('createScopeParticipant', {
+    displayName: scopeParticipantName.value.trim(),
+    roleKey: scopeParticipantRole.value,
+    responsibility: scopeParticipantResponsibility.value,
+  })
+}
+
 function matchesText(value: string | undefined, query: string) {
   if (!query) {
     return true
@@ -276,6 +524,27 @@ function matchesActionSearch(action: ProjectActionDefinition, query: string) {
   return [action.label, action.description].some(text => matchesText(text, query))
 }
 
+function projectMatchesSearch(project: MessengerPlatformProjectSummary, query: string) {
+  return [
+    project.title,
+    project.slug,
+    project.status,
+    project.projectType,
+    project.activePhaseTitle,
+    project.activeSprintName,
+  ].some(value => matchesText(value, query))
+}
+
+function buildProjectPickerMeta(project: MessengerPlatformProjectSummary) {
+  return [
+    project.slug,
+    project.status,
+    project.activePhaseTitle,
+    project.activeSprintName,
+    project.taskTotal ? formatCountLabel(project.taskTotal, 'задача', 'задачи', 'задач') : '',
+  ].filter(Boolean).join(' · ')
+}
+
 function formatActionCount(count: number) {
   const mod10 = count % 10
   const mod100 = count % 100
@@ -289,6 +558,42 @@ function formatActionCount(count: number) {
   }
 
   return `${count} сценариев`
+}
+
+function formatCountLabel(count: number, singular: string, paucal: string, plural: string) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+
+  if (mod10 === 1 && mod100 !== 11) {
+    return `${count} ${singular}`
+  }
+
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return `${count} ${paucal}`
+  }
+
+  return `${count} ${plural}`
+}
+
+function formatRangeLabel(startDate?: string, endDate?: string) {
+  if (startDate && endDate) {
+    return `${startDate} - ${endDate}`
+  }
+
+  return startDate || endDate || 'Период не задан'
+}
+
+function resetCategorySelection() {
+  selectedCategory.value = ''
+  formError.value = ''
+  emit('selectAction', null)
+}
+
+function closeUtilityPanes() {
+  projectPickerOpen.value = false
+  projectSearch.value = ''
+  searchPanelOpen.value = false
+  overviewPane.value = ''
 }
 
 function primeDefaults() {
@@ -314,23 +619,23 @@ function primeDefaults() {
 }
 
 function handleActionClick(action: ProjectActionDefinition) {
+  closeUtilityPanes()
+
   const parentGroup = props.groups.find(group => group.actions.some(candidate => candidate.id === action.id))
   if (parentGroup) {
     selectedCategory.value = parentGroup.category
   }
 
-  searchPanelOpen.value = false
-
   emit('selectAction', props.selectedActionId === action.id ? null : action.id)
 }
 
 function clearCategorySelection() {
-  selectedCategory.value = ''
-  formError.value = ''
-  emit('selectAction', null)
+  resetCategorySelection()
 }
 
 function selectCategory(category: ProjectActionCategoryGroup['category']) {
+  closeUtilityPanes()
+
   if (selectedCategory.value === category) {
     clearCategorySelection()
     return
@@ -338,7 +643,6 @@ function selectCategory(category: ProjectActionCategoryGroup['category']) {
 
   selectedCategory.value = category
   formError.value = ''
-  searchPanelOpen.value = false
 
   const nextGroup = props.groups.find(group => group.category === category)
   if (props.selectedActionId && nextGroup && !nextGroup.actions.some(action => action.id === props.selectedActionId)) {
@@ -347,23 +651,57 @@ function selectCategory(category: ProjectActionCategoryGroup['category']) {
 }
 
 function toggleProjectPane() {
-  projectPickerOpen.value = !projectPickerOpen.value
+  const shouldOpen = !projectPickerOpen.value
+  closeUtilityPanes()
+  resetCategorySelection()
 
-  if (projectPickerOpen.value) {
-    searchPanelOpen.value = false
+  if (shouldOpen) {
+    projectPickerOpen.value = true
   }
+}
+
+function selectProjectFromPicker(slug: string) {
+  emit('selectProject', slug)
+  projectSearch.value = ''
+  projectPickerOpen.value = false
 }
 
 function toggleSearchPane() {
-  searchPanelOpen.value = !searchPanelOpen.value
+  const shouldOpen = !searchPanelOpen.value
+  closeUtilityPanes()
+  resetCategorySelection()
 
-  if (searchPanelOpen.value) {
-    projectPickerOpen.value = false
+  if (shouldOpen) {
+    searchPanelOpen.value = true
   }
 }
 
-function applyManualProjectSlug() {
-  emit('selectProject', manualProjectSlug.value.trim())
+function toggleOverviewPane(pane: ProjectOverviewPane) {
+  const shouldOpen = overviewPane.value !== pane
+  closeUtilityPanes()
+  resetCategorySelection()
+
+  if (shouldOpen) {
+    overviewPane.value = pane
+  }
+}
+
+function updateParticipantResponsibility(assignmentId: string, responsibility: GovernanceResponsibilityKey) {
+  emit('updateScopeAssignment', {
+    assignmentId,
+    responsibility,
+  })
+}
+
+function removeParticipantAssignment(assignmentId: string) {
+  emit('deleteScopeAssignment', { assignmentId })
+}
+
+function openScopeDetail(scopeType: MessengerPlatformScopeType, scopeId: string) {
+  closeUtilityPanes()
+  resetCategorySelection()
+  overviewPane.value = 'scope-detail'
+  emit('openScopeDetail', { scopeType, scopeId })
 }
 
 function buildExecutePayload(): ProjectActionExecutePayload {
@@ -476,10 +814,13 @@ function resolveNextTaskStatus() {
   }
 }
 
-watch(() => props.selectedProjectSlug, (value) => {
-  manualProjectSlug.value = value
+watch(() => props.selectedProjectSlug, (value, previousValue) => {
   resetFormState()
   primeDefaults()
+
+  if (value !== previousValue) {
+    closeUtilityPanes()
+  }
 })
 
 watch(currentAction, (action) => {
@@ -488,7 +829,7 @@ watch(currentAction, (action) => {
     return
   }
 
-  searchPanelOpen.value = false
+  closeUtilityPanes()
 
   const parentGroup = props.groups.find(group => group.actions.some(candidate => candidate.id === action.id))
   if (parentGroup) {
@@ -506,13 +847,19 @@ watch(() => props.catalog, () => {
   primeDefaults()
 }, { immediate: true })
 
+watch(() => props.scopeDetail, (detail) => {
+  if (detail) {
+    overviewPane.value = 'scope-detail'
+    scopeSettingsDraft.value = cloneScopeSettings(detail.settings)
+  }
+})
+
 watch(() => props.open, (open) => {
   if (open) {
     return
   }
 
-  projectPickerOpen.value = false
-  searchPanelOpen.value = false
+  closeUtilityPanes()
   actionSearch.value = ''
   if (!props.selectedActionId) {
     selectedCategory.value = ''
@@ -528,6 +875,12 @@ watch(serviceItems, (items) => {
     selectedServiceId.value = items[0]?.id || ''
   }
 }, { immediate: true })
+
+watch(() => props.governanceMutationNotice, (value) => {
+  if (value.includes('Участник добавлен')) {
+    scopeParticipantName.value = ''
+  }
+})
 
 watch(selectedTask, (task) => {
   if (!task || taskMode.value !== 'existing') {
@@ -566,35 +919,42 @@ watch(selectedTask, (task) => {
             <span class="pa-pane__value">{{ selectedProjectLabel }}</span>
           </div>
 
-          <VAutocomplete
-            v-model="projectModel"
-            :items="projectItems"
-            item-title="title"
-            item-value="value"
-            variant="outlined"
+          <VTextField
+            v-model="projectSearch"
+            class="pa-search-field"
+            variant="solo-filled"
             density="comfortable"
-            label="Проект платформы"
-            placeholder="Начните вводить название проекта"
+            flat
             clearable
             hide-details
-            :loading="props.projectsPending"
+            bg-color="surface-container-highest"
+            prepend-inner-icon="mdi-magnify"
+            label="Поиск проекта"
+            placeholder="Название, slug, фаза, статус"
           />
 
-          <div class="pa-project-manual">
-            <VTextField
-              v-model="manualProjectSlug"
-              variant="outlined"
-              density="comfortable"
-              label="Slug проекта"
-              placeholder="project-slug"
-              hide-details
-            />
-            <VBtn color="primary" variant="tonal" @click="applyManualProjectSlug">Открыть</VBtn>
+          <div v-if="!props.projectsPending && filteredProjectItems.length" class="pa-project-list">
+            <button
+              v-for="project in filteredProjectItems"
+              :key="project.slug"
+              type="button"
+              class="pa-project-card"
+              :class="{ 'pa-project-card--active': project.slug === props.selectedProjectSlug }"
+              @click="selectProjectFromPicker(project.slug)"
+            >
+              <div class="pa-project-card__head">
+                <span class="pa-project-card__title">{{ project.title }}</span>
+                <span v-if="project.slug === props.selectedProjectSlug" class="pa-project-card__badge">выбран</span>
+              </div>
+              <span class="pa-project-card__meta">{{ buildProjectPickerMeta(project) }}</span>
+            </button>
           </div>
 
           <p v-if="props.projectsError" class="pa-state pa-state--error">{{ props.projectsError }}</p>
           <p v-else-if="props.catalogError" class="pa-state pa-state--error">{{ props.catalogError }}</p>
           <p v-else-if="props.catalogPending" class="pa-state pa-state--muted">Загружаю каталог проекта…</p>
+          <p v-else-if="props.projectsPending" class="pa-state pa-state--muted">Загружаю список проектов…</p>
+          <p v-else-if="!filteredProjectItems.length" class="pa-empty-state">По этому запросу проекты не найдены.</p>
         </section>
 
         <section v-if="showSearchPane" class="pa-pane pa-pane--search">
@@ -611,6 +971,313 @@ watch(selectedTask, (task) => {
             label="Поиск"
             placeholder="Счёт, отчёт, этап, задача"
           />
+        </section>
+
+        <section v-if="showTimelinePane" class="pa-pane pa-pane--timeline">
+          <div class="pa-pane__head">
+            <span class="pa-pane__title">Таймлайн</span>
+            <div class="pa-pane__head-actions">
+              <span class="pa-pane__value">{{ selectedProjectLabel }}</span>
+              <VBtn
+                v-if="props.selectedProjectSlug"
+                color="primary"
+                variant="tonal"
+                size="small"
+                @click="openScopeDetail('project', props.selectedProjectSlug)"
+              >
+                Контур проекта
+              </VBtn>
+            </div>
+          </div>
+
+          <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
+            Сначала выберите проект.
+          </div>
+
+          <div v-else-if="props.catalogPending" class="pa-empty-state">
+            Загружаю таймлайн проекта…
+          </div>
+
+          <MessengerProjectMiniTimeline v-else-if="miniTimelineCatalog" :catalog="miniTimelineCatalog" @select-phase="openScopeDetail('phase', $event)" />
+
+          <div v-else class="pa-empty-state">
+            В проекте пока нет фаз для таймлайна.
+          </div>
+        </section>
+
+        <section v-if="showScopeDetailPane" class="pa-pane pa-pane--scope-detail">
+          <div class="pa-pane__head">
+            <span class="pa-pane__title">{{ props.scopeDetail?.scope.title || 'Детали контура' }}</span>
+            <span class="pa-pane__value">{{ props.scopeDetail?.scope.subtitle || selectedProjectLabel }}</span>
+          </div>
+
+          <div v-if="props.scopeDetailPending" class="pa-empty-state">
+            Загружаю детали контура…
+          </div>
+
+          <div v-else-if="props.scopeDetailError" class="pa-state pa-state--error">
+            {{ props.scopeDetailError }}
+          </div>
+
+          <template v-else-if="props.scopeDetail">
+            <div class="pa-scope-hero">
+              <span class="pa-scope-hero__status">{{ props.scopeDetail.scope.statusLabel || props.scopeDetail.scope.status || 'Контур проекта' }}</span>
+              <span class="pa-scope-hero__revision">{{ props.scopeDetail.revision }}</span>
+            </div>
+
+            <section class="pa-scope-cluster">
+              <div class="pa-scope-cluster__head">
+                <span class="pa-pane__title">Участники и роли</span>
+                <span class="pa-pane__value">{{ formatCountLabel(props.scopeDetail.participants.length, 'участник', 'участника', 'участников') }}</span>
+              </div>
+
+              <div v-if="props.scopeDetail.participants.length" class="pa-scope-list">
+                <article v-for="participant in props.scopeDetail.participants" :key="participant.assignmentId" class="pa-scope-item">
+                  <div class="pa-scope-item__head">
+                    <span class="pa-scope-item__title">{{ participant.displayName }}</span>
+                    <span class="pa-scope-item__badge">{{ governanceOriginLabels[participant.origin] }}</span>
+                  </div>
+                  <span class="pa-scope-item__meta">{{ participant.roleLabel }} · {{ participant.responsibilityLabel }}</span>
+                  <span v-if="participant.secondary" class="pa-scope-item__meta">{{ participant.secondary }}</span>
+                  <div v-if="participant.origin === 'direct'" class="pa-scope-item__controls">
+                    <VSelect
+                      :model-value="participant.responsibility"
+                      :items="governanceResponsibilityItems"
+                      item-title="title"
+                      item-value="value"
+                      density="comfortable"
+                      variant="outlined"
+                      label="Роль в контуре"
+                      hide-details
+                      :disabled="props.governanceMutationPending"
+                      @update:model-value="updateParticipantResponsibility(participant.assignmentId, $event as GovernanceResponsibilityKey)"
+                    />
+                    <VBtn
+                      color="error"
+                      variant="tonal"
+                      :disabled="props.governanceMutationPending"
+                      @click="removeParticipantAssignment(participant.assignmentId)"
+                    >
+                      Убрать
+                    </VBtn>
+                  </div>
+                </article>
+              </div>
+              <p v-else class="pa-empty-state">Для этого контура пока нет прямых назначений.</p>
+
+              <div class="pa-scope-manage-grid">
+                <VTextField
+                  v-model="scopeParticipantName"
+                  variant="outlined"
+                  density="comfortable"
+                  label="Новый участник"
+                  placeholder="Например: Юрист проекта"
+                  hide-details
+                  :disabled="props.governanceMutationPending"
+                />
+                <VSelect
+                  v-model="scopeParticipantRole"
+                  :items="governanceRoleItems"
+                  item-title="title"
+                  item-value="value"
+                  variant="outlined"
+                  density="comfortable"
+                  label="Роль"
+                  hide-details
+                  :disabled="props.governanceMutationPending"
+                />
+                <VSelect
+                  v-model="scopeParticipantResponsibility"
+                  :items="governanceResponsibilityItems"
+                  item-title="title"
+                  item-value="value"
+                  variant="outlined"
+                  density="comfortable"
+                  label="Ответственность"
+                  hide-details
+                  :disabled="props.governanceMutationPending"
+                />
+                <VBtn color="primary" variant="flat" :disabled="!canCreateScopeParticipant" @click="submitScopeParticipant">
+                  Добавить в контур
+                </VBtn>
+              </div>
+
+              <p v-if="props.governanceMutationError" class="pa-state pa-state--error">{{ props.governanceMutationError }}</p>
+              <p v-else-if="props.governanceMutationNotice" class="pa-state pa-state--muted">{{ props.governanceMutationNotice }}</p>
+            </section>
+
+            <section v-if="editableScopeSettings.length" class="pa-scope-cluster">
+              <div class="pa-scope-cluster__head">
+                <span class="pa-pane__title">Настройки</span>
+                <span class="pa-pane__value">{{ formatCountLabel(editableScopeSettings.length, 'настройка', 'настройки', 'настроек') }}</span>
+              </div>
+              <div class="pa-scope-setting-grid">
+                <article v-for="field in editableScopeSettings" :key="field.key" class="pa-scope-item">
+                  <span class="pa-scope-item__title">{{ field.label }}</span>
+
+                  <VSelect
+                    v-if="field.kind === 'select'"
+                    :model-value="field.value as string"
+                    :items="field.items || []"
+                    item-title="title"
+                    item-value="value"
+                    density="comfortable"
+                    variant="outlined"
+                    hide-details
+                    :disabled="props.governanceMutationPending"
+                    @update:model-value="updateScopeSettingDraft(field.key, field.kind, $event); commitScopeSettings()"
+                  />
+
+                  <VSwitch
+                    v-else-if="field.kind === 'boolean'"
+                    :model-value="Boolean(field.value)"
+                    inset
+                    color="primary"
+                    hide-details
+                    :disabled="props.governanceMutationPending"
+                    @update:model-value="updateScopeSettingDraft(field.key, field.kind, $event); commitScopeSettings()"
+                  />
+
+                  <VTextField
+                    v-else
+                    :model-value="field.value == null ? '' : String(field.value)"
+                    :type="field.kind === 'number' ? 'number' : 'text'"
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details
+                    :disabled="props.governanceMutationPending"
+                    @update:model-value="updateScopeSettingDraft(field.key, field.kind, $event)"
+                    @blur="commitScopeSettings()"
+                  />
+
+                  <span class="pa-scope-item__meta">{{ field.kind === 'list' ? 'Укажите роли через запятую' : 'Изменения отправляются сразу' }}</span>
+                </article>
+              </div>
+            </section>
+
+            <section v-if="props.scopeDetail.objectItems.length" class="pa-scope-cluster">
+              <div class="pa-scope-cluster__head">
+                <span class="pa-pane__title">Объекты</span>
+                <span class="pa-pane__value">{{ props.scopeDetail.objectItems.length }}</span>
+              </div>
+              <div class="pa-scope-list">
+                <article v-for="item in props.scopeDetail.objectItems" :key="item.key" class="pa-scope-item">
+                  <span class="pa-scope-item__title">{{ item.label }}</span>
+                  <span class="pa-scope-item__meta">{{ item.value }}</span>
+                </article>
+              </div>
+            </section>
+
+            <section v-if="props.scopeDetail.actionItems.length" class="pa-scope-cluster">
+              <div class="pa-scope-cluster__head">
+                <span class="pa-pane__title">Действия и статусы</span>
+                <span class="pa-pane__value">{{ props.scopeDetail.actionItems.length }}</span>
+              </div>
+              <div class="pa-scope-list">
+                <article v-for="item in props.scopeDetail.actionItems" :key="item.key" class="pa-scope-item">
+                  <span class="pa-scope-item__title">{{ item.label }}</span>
+                  <span class="pa-scope-item__meta">{{ item.value }}</span>
+                </article>
+              </div>
+            </section>
+
+            <section v-if="props.scopeDetail.tasks.length" class="pa-scope-cluster">
+              <div class="pa-scope-cluster__head">
+                <span class="pa-pane__title">Задачи</span>
+                <span class="pa-pane__value">{{ props.scopeDetail.tasks.length }}</span>
+              </div>
+              <div class="pa-scope-list">
+                <article v-for="task in props.scopeDetail.tasks" :key="task.id" class="pa-scope-item">
+                  <span class="pa-scope-item__title">{{ task.title }}</span>
+                  <span class="pa-scope-item__meta">{{ task.statusLabel }}{{ task.assigneeLabels.length ? ` · ${task.assigneeLabels.join(', ')}` : '' }}</span>
+                  <span v-if="task.secondary" class="pa-scope-item__meta">{{ task.secondary }}</span>
+                  <div class="pa-scope-item__actions">
+                    <VBtn color="primary" variant="text" size="small" @click="openScopeDetail('task', task.id)">Открыть контур</VBtn>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section v-if="props.scopeDetail.linkedScopes.length" class="pa-scope-cluster">
+              <div class="pa-scope-cluster__head">
+                <span class="pa-pane__title">Связанные контуры</span>
+                <span class="pa-pane__value">{{ props.scopeDetail.linkedScopes.length }}</span>
+              </div>
+              <div class="pa-scope-list">
+                <article v-for="linkedScope in props.scopeDetail.linkedScopes" :key="`${linkedScope.scopeType}:${linkedScope.scopeId}`" class="pa-scope-item">
+                  <span class="pa-scope-item__title">{{ linkedScope.title }}</span>
+                  <span class="pa-scope-item__meta">{{ linkedScope.statusLabel || linkedScope.status || linkedScope.scopeType }}</span>
+                  <div class="pa-scope-item__actions">
+                    <VBtn color="primary" variant="text" size="small" @click="openScopeDetail(linkedScope.scopeType, linkedScope.scopeId)">Открыть контур</VBtn>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section v-if="props.scopeDetail.ruleItems.length" class="pa-scope-cluster">
+              <div class="pa-scope-cluster__head">
+                <span class="pa-pane__title">Контур коммуникации</span>
+                <span class="pa-pane__value">{{ props.scopeDetail.ruleItems.length }}</span>
+              </div>
+              <div class="pa-scope-list">
+                <article v-for="rule in props.scopeDetail.ruleItems" :key="rule.id" class="pa-scope-item">
+                  <span class="pa-scope-item__title">{{ rule.title }}</span>
+                  <span class="pa-scope-item__meta">{{ rule.channel }} · {{ rule.audience }}</span>
+                  <span class="pa-scope-item__meta">{{ rule.trigger }}</span>
+                </article>
+              </div>
+            </section>
+          </template>
+
+          <div v-else class="pa-empty-state">
+            Выберите фазу или другой контур проекта.
+          </div>
+        </section>
+
+        <section v-if="showSprintsPane" class="pa-pane pa-pane--sprints">
+          <div class="pa-pane__head">
+            <span class="pa-pane__title">Спринты</span>
+            <span class="pa-pane__value">{{ selectedProjectLabel }}</span>
+          </div>
+
+          <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
+            Сначала выберите проект.
+          </div>
+
+          <div v-else-if="props.catalogPending" class="pa-empty-state">
+            Загружаю спринты проекта…
+          </div>
+
+          <div v-else-if="sprintOverviewItems.length" class="pa-sprint-list">
+            <article
+              v-for="sprint in sprintOverviewItems"
+              :key="sprint.id"
+              class="pa-sprint-card"
+              :class="`pa-sprint-card--${sprint.status}`"
+            >
+              <div class="pa-sprint-card__head">
+                <span class="pa-sprint-card__title">{{ sprint.name }}</span>
+                <span class="pa-sprint-card__status">{{ sprintStatusLabels[sprint.status] }}</span>
+              </div>
+
+              <span class="pa-sprint-card__meta">{{ sprint.linkedPhaseTitle || 'Без связанного этапа' }}</span>
+              <span class="pa-sprint-card__meta">{{ formatRangeLabel(sprint.startDate, sprint.endDate) }}</span>
+
+              <p v-if="sprint.goal" class="pa-sprint-card__goal">{{ sprint.goal }}</p>
+
+              <div class="pa-sprint-card__foot">
+                <span>{{ formatCountLabel(sprint.taskCount, 'задача', 'задачи', 'задач') }}</span>
+                <div class="pa-scope-item__actions">
+                  <span>{{ sprint.secondary }}</span>
+                  <VBtn color="primary" variant="text" size="small" @click="openScopeDetail('sprint', sprint.id)">Контур</VBtn>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div v-else class="pa-empty-state">
+            В проекте пока нет спринтов.
+          </div>
         </section>
 
         <section v-if="currentAction" class="pa-pane pa-pane--builder">
@@ -841,7 +1508,31 @@ watch(selectedTask, (task) => {
             </button>
           </template>
 
-          <template v-else-if="!selectedCategoryGroup && filteredCategoryGroups.length">
+          <template v-else-if="!selectedCategoryGroup">
+            <button
+              v-if="canShowProjectOverview"
+              type="button"
+              class="pa-rail-chip"
+              :class="{ 'pa-rail-chip--active': showTimelinePane }"
+              @click="toggleOverviewPane('timeline')"
+            >
+              <VIcon icon="mdi-chart-timeline-variant" size="16" />
+              <span>Таймлайн</span>
+              <span class="pa-rail-chip__count">{{ timelineChipCount }}</span>
+            </button>
+
+            <button
+              v-if="canShowProjectOverview"
+              type="button"
+              class="pa-rail-chip"
+              :class="{ 'pa-rail-chip--active': showSprintsPane }"
+              @click="toggleOverviewPane('sprints')"
+            >
+              <VIcon icon="mdi-flag-outline" size="16" />
+              <span>Спринты</span>
+              <span class="pa-rail-chip__count">{{ sprintChipCount }}</span>
+            </button>
+
             <button
               v-for="group in filteredCategoryGroups"
               :key="group.category"
@@ -873,6 +1564,7 @@ watch(selectedTask, (task) => {
 <style scoped>
 .pa-shell {
   width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -882,6 +1574,8 @@ watch(selectedTask, (task) => {
 
 .pa-expand {
   display: grid;
+  width: 100%;
+  box-sizing: border-box;
   gap: 10px;
   max-height: min(62vh, 640px);
   padding: 12px;
@@ -915,6 +1609,14 @@ watch(selectedTask, (task) => {
   gap: 2px;
 }
 
+.pa-pane__head-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .pa-pane__title,
 .pa-field-block__title {
   font-size: 13px;
@@ -932,6 +1634,8 @@ watch(selectedTask, (task) => {
 .pa-base {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr) auto;
+  width: 100%;
+  box-sizing: border-box;
   align-items: center;
   gap: 8px;
   min-height: 58px;
@@ -1006,6 +1710,7 @@ watch(selectedTask, (task) => {
 }
 
 .pa-base__rail {
+  width: 100%;
   min-width: 0;
 }
 
@@ -1013,6 +1718,7 @@ watch(selectedTask, (task) => {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -1060,14 +1766,224 @@ watch(selectedTask, (task) => {
   white-space: nowrap;
 }
 
-.pa-project-manual,
 .pa-range-row {
   display: grid;
   gap: 10px;
 }
 
+.pa-sprint-list {
+  display: grid;
+  gap: 10px;
+}
+
+.pa-sprint-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.pa-sprint-card__head,
+.pa-sprint-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pa-sprint-card__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.pa-sprint-card__status,
+.pa-sprint-card__meta,
+.pa-sprint-card__foot {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.pa-sprint-card__goal {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.pa-sprint-card--active {
+  border-color: rgba(var(--v-theme-primary), 0.26);
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.pa-sprint-card--review {
+  border-color: rgba(var(--v-theme-error), 0.24);
+  background: rgba(var(--v-theme-error), 0.06);
+}
+
+.pa-sprint-card--done {
+  border-color: rgba(var(--v-theme-secondary), 0.24);
+  background: rgba(var(--v-theme-secondary), 0.08);
+}
+
 .pa-search-field {
   margin: 0;
+}
+
+.pa-project-list {
+  display: grid;
+  gap: 8px;
+}
+
+.pa-project-card {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  color: rgb(var(--v-theme-on-surface));
+  cursor: pointer;
+  text-align: left;
+}
+
+.pa-project-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pa-project-card__title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pa-project-card__meta {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.pa-project-card__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-primary), 0.14);
+  color: rgb(var(--v-theme-primary));
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pa-project-card--active {
+  border-color: rgba(var(--v-theme-primary), 0.28);
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.pa-scope-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pa-scope-hero__status,
+.pa-scope-hero__revision,
+.pa-scope-item__meta {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.pa-scope-hero__status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary));
+  font-weight: 600;
+}
+
+.pa-scope-cluster {
+  display: grid;
+  gap: 10px;
+}
+
+.pa-scope-cluster__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pa-scope-list {
+  display: grid;
+  gap: 8px;
+}
+
+.pa-scope-item {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.pa-scope-item__head,
+.pa-scope-item__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pa-scope-item__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pa-scope-item__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pa-scope-item__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.pa-scope-manage-grid,
+.pa-scope-setting-grid {
+  display: grid;
+  gap: 10px;
 }
 
 .pa-form-grid {
@@ -1147,7 +2063,6 @@ watch(selectedTask, (task) => {
   }
 
   .pa-form-grid,
-  .pa-project-manual,
   .pa-range-row {
     grid-template-columns: 1fr;
   }
@@ -1182,7 +2097,6 @@ watch(selectedTask, (task) => {
     max-width: 176px;
   }
 
-  .pa-project-manual,
   .pa-range-row {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
