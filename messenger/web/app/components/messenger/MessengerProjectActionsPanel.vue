@@ -3,7 +3,9 @@ import type {
   MessengerPlatformActionCatalog,
   MessengerPlatformProjectSummary,
   MessengerPlatformScopeDetailBundle,
+  MessengerPlatformScopeParticipant,
   MessengerPlatformScopeType,
+  MessengerPlatformSubjectOption,
   MessengerPlatformSprintOption,
   ProjectActionCategoryGroup,
   ProjectActionDefinition,
@@ -11,7 +13,14 @@ import type {
   ProjectActionId,
 } from '../../composables/useMessengerProjectActions'
 
-type ProjectOverviewPane = 'timeline' | 'sprints' | 'scope-detail'
+type ProjectOverviewPane = 'timeline' | 'sprints' | 'subjects' | 'scope-detail'
+
+type SubjectFabulaPreset = {
+  title: string
+  summary: string
+  icon: string
+  actionIds: ProjectActionId[]
+}
 
 type GovernanceRoleKey = 'client' | 'manager' | 'designer' | 'lawyer' | 'contractor' | 'seller' | 'engineer' | 'consultant' | 'service' | 'other'
 type GovernanceResponsibilityKey = 'lead' | 'owner' | 'executor' | 'reviewer' | 'approver' | 'observer' | 'consultant'
@@ -24,6 +33,7 @@ const props = defineProps<{
   projects: MessengerPlatformProjectSummary[]
   projectsPending: boolean
   projectsError: string
+  projectsRequirePlatformSession: boolean
   selectedProjectSlug: string
   selectedActionId: ProjectActionId | null
   catalog: MessengerPlatformActionCatalog | null
@@ -52,6 +62,7 @@ const emit = defineEmits<{
 const projectPickerOpen = ref(false)
 const searchPanelOpen = ref(false)
 const overviewPane = ref<ProjectOverviewPane | ''>('')
+const activeSubjectContextId = ref('')
 const taskMode = ref<'existing' | 'new'>('new')
 const selectedTaskId = ref('')
 const taskTitle = ref('')
@@ -96,8 +107,11 @@ const showProjectPane = computed(() => projectPickerOpen.value)
 const showSearchPane = computed(() => searchPanelOpen.value)
 const showTimelinePane = computed(() => overviewPane.value === 'timeline')
 const showSprintsPane = computed(() => overviewPane.value === 'sprints')
+const showSubjectsPane = computed(() => overviewPane.value === 'subjects')
 const showScopeDetailPane = computed(() => overviewPane.value === 'scope-detail')
 const canShowProjectOverview = computed(() => Boolean(props.selectedProjectSlug))
+const catalogLockedBySession = computed(() => Boolean(props.selectedProjectSlug && props.projectsRequirePlatformSession && !props.catalogPending && !props.catalog))
+const canUseCatalogFeatures = computed(() => Boolean(props.selectedProjectSlug && !catalogLockedBySession.value))
 const miniTimelineCatalog = computed(() => {
   if (!activeProjectCatalog.value || props.catalogPending || !activeProjectCatalog.value.phases.length) {
     return null
@@ -114,11 +128,13 @@ const sprintOverviewItems = computed(() => {
 })
 const timelineChipCount = computed(() => activeProjectCatalog.value?.phases.length || 0)
 const sprintChipCount = computed(() => activeProjectCatalog.value?.sprints.length || 0)
+const subjectChipCount = computed(() => subjectItems.value.length)
 const showExpansion = computed(() => {
   return showProjectPane.value
     || showSearchPane.value
     || showTimelinePane.value
     || showSprintsPane.value
+    || showSubjectsPane.value
     || showScopeDetailPane.value
     || Boolean(currentAction.value)
     || Boolean(formError.value)
@@ -298,6 +314,72 @@ const governanceOriginLabels: Record<MessengerPlatformScopeParticipant['origin']
   project: 'проект',
   derived: 'legacy',
 }
+
+const subjectFabulaPresets: Record<MessengerPlatformSubjectOption['kind'], SubjectFabulaPreset> = {
+  client: {
+    title: 'Клиентский контур',
+    summary: 'Согласования, запросы на варианты, акты и доп. услуги.',
+    icon: 'mdi-account-heart-outline',
+    actionIds: ['approve_selection', 'request_variants', 'order_extra_service', 'approve_act', 'ask_designer', 'create_invoice', 'request_response', 'share_file'],
+  },
+  contractor: {
+    title: 'Подрядный контур',
+    summary: 'Задачи, правки, фотоотчёты и отчётность по выполнению.',
+    icon: 'mdi-hammer-wrench',
+    actionIds: ['assign_task', 'request_report', 'send_corrections', 'update_work_status', 'report_completion', 'upload_photo_report', 'request_clarification', 'create_task', 'share_file'],
+  },
+  designer: {
+    title: 'Дизайнерский контур',
+    summary: 'Проектные решения, варианты, правки и быстрая обратная связь.',
+    icon: 'mdi-pencil-ruler',
+    actionIds: ['ask_designer', 'request_variants', 'send_corrections', 'request_response', 'share_file', 'create_task'],
+  },
+  seller: {
+    title: 'Контур поставки',
+    summary: 'Позиции, документы, ответы по поставке и счётные сценарии.',
+    icon: 'mdi-package-variant-closed',
+    actionIds: ['create_invoice', 'request_response', 'share_file', 'create_task', 'send_corrections'],
+  },
+  manager: {
+    title: 'Контур координации',
+    summary: 'Переключение фаз, поручения и управленческие ответы по проекту.',
+    icon: 'mdi-briefcase-account-outline',
+    actionIds: ['assign_task', 'create_task', 'change_phase', 'accept_stage', 'create_invoice', 'request_response', 'share_file'],
+  },
+  custom: {
+    title: 'Спецконтур',
+    summary: 'Точечные поручения, файлы и адресные запросы по роли участника.',
+    icon: 'mdi-account-cog-outline',
+    actionIds: ['create_task', 'request_response', 'share_file', 'assign_task'],
+  },
+}
+
+const fallbackSubjectActionCategoryOrder = ['communication', 'documents', 'tasks', 'finance', 'stages'] as const
+
+const activeSubjectContext = computed(() => {
+  return subjectItems.value.find(subject => subject.id === activeSubjectContextId.value) || null
+})
+
+const subjectActionMenus = computed(() => {
+  return subjectItems.value.map((subject) => {
+    const preset = subjectFabulaPresets[subject.kind] || subjectFabulaPresets.custom
+    const preferredActions = preset.actionIds
+      .map(actionId => allActions.value.find(action => action.id === actionId) || null)
+      .filter(Boolean) as ProjectActionDefinition[]
+
+    const fallbackActions = fallbackSubjectActionCategoryOrder
+      .flatMap(category => allActions.value.filter(action => action.category === category))
+      .filter(action => !preferredActions.some(preferred => preferred.id === action.id))
+
+    return {
+      subject,
+      fabulaTitle: preset.title,
+      fabulaSummary: preset.summary,
+      fabulaIcon: preset.icon,
+      actions: [...preferredActions, ...fallbackActions].slice(0, 4),
+    }
+  })
+})
 
 const canCreateScopeParticipant = computed(() => {
   return Boolean(props.scopeDetail && scopeParticipantName.value.trim() && !props.governanceMutationPending)
@@ -619,6 +701,7 @@ function primeDefaults() {
 }
 
 function handleActionClick(action: ProjectActionDefinition) {
+  activeSubjectContextId.value = ''
   closeUtilityPanes()
 
   const parentGroup = props.groups.find(group => group.actions.some(candidate => candidate.id === action.id))
@@ -627,6 +710,24 @@ function handleActionClick(action: ProjectActionDefinition) {
   }
 
   emit('selectAction', props.selectedActionId === action.id ? null : action.id)
+}
+
+function openSubjectAction(subjectId: string, action: ProjectActionDefinition) {
+  activeSubjectContextId.value = subjectId
+  selectedSubjectId.value = subjectId
+  formError.value = ''
+  closeUtilityPanes()
+
+  const parentGroup = props.groups.find(group => group.actions.some(candidate => candidate.id === action.id))
+  if (parentGroup) {
+    selectedCategory.value = parentGroup.category
+  }
+
+  if (props.selectedActionId === action.id) {
+    return
+  }
+
+  emit('selectAction', action.id)
 }
 
 function clearCategorySelection() {
@@ -816,11 +917,28 @@ function resolveNextTaskStatus() {
 
 watch(() => props.selectedProjectSlug, (value, previousValue) => {
   resetFormState()
+  activeSubjectContextId.value = ''
   primeDefaults()
 
   if (value !== previousValue) {
     closeUtilityPanes()
   }
+})
+
+const platformSessionNotice = computed(() => {
+  if (!props.projectsRequirePlatformSession) {
+    return ''
+  }
+
+  return 'Список проектов взят из messenger. Для таймлайна, каталога и отправки проектных действий нужна активная сессия основной платформы на основном домене.'
+})
+
+const catalogUnavailableMessage = computed(() => {
+  if (!props.selectedProjectSlug) {
+    return ''
+  }
+
+  return props.catalogError || ''
 })
 
 watch(currentAction, (action) => {
@@ -840,10 +958,18 @@ watch(currentAction, (action) => {
     taskMode.value = 'existing'
   }
 
+  if (activeSubjectContextId.value && subjectItems.value.some(subject => subject.id === activeSubjectContextId.value)) {
+    selectedSubjectId.value = activeSubjectContextId.value
+  }
+
   primeDefaults()
 }, { immediate: true })
 
 watch(() => props.catalog, () => {
+  if (activeSubjectContextId.value && !subjectItems.value.some(subject => subject.id === activeSubjectContextId.value)) {
+    activeSubjectContextId.value = ''
+  }
+
   primeDefaults()
 }, { immediate: true })
 
@@ -951,6 +1077,7 @@ watch(selectedTask, (task) => {
           </div>
 
           <p v-if="props.projectsError" class="pa-state pa-state--error">{{ props.projectsError }}</p>
+          <p v-else-if="platformSessionNotice" class="pa-state pa-state--muted">{{ platformSessionNotice }}</p>
           <p v-else-if="props.catalogError" class="pa-state pa-state--error">{{ props.catalogError }}</p>
           <p v-else-if="props.catalogPending" class="pa-state pa-state--muted">Загружаю каталог проекта…</p>
           <p v-else-if="props.projectsPending" class="pa-state pa-state--muted">Загружаю список проектов…</p>
@@ -998,10 +1125,75 @@ watch(selectedTask, (task) => {
             Загружаю таймлайн проекта…
           </div>
 
+          <div v-else-if="catalogUnavailableMessage" class="pa-state pa-state--error">
+            {{ catalogUnavailableMessage }}
+          </div>
+
           <MessengerProjectMiniTimeline v-else-if="miniTimelineCatalog" :catalog="miniTimelineCatalog" @select-phase="openScopeDetail('phase', $event)" />
 
           <div v-else class="pa-empty-state">
             В проекте пока нет фаз для таймлайна.
+          </div>
+        </section>
+
+        <section v-if="showSubjectsPane" class="pa-pane pa-pane--subjects">
+          <div class="pa-pane__head">
+            <span class="pa-pane__title">Субъекты</span>
+            <span class="pa-pane__value">{{ formatCountLabel(subjectActionMenus.length, 'субъект', 'субъекта', 'субъектов') }}</span>
+          </div>
+
+          <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
+            Сначала выберите проект.
+          </div>
+
+          <div v-else-if="props.catalogPending" class="pa-empty-state">
+            Подготавливаю субъектный контур проекта…
+          </div>
+
+          <div v-else-if="catalogUnavailableMessage" class="pa-state pa-state--error">
+            {{ catalogUnavailableMessage }}
+          </div>
+
+          <div v-else-if="subjectActionMenus.length" class="pa-subject-list">
+            <article
+              v-for="entry in subjectActionMenus"
+              :key="entry.subject.id"
+              class="pa-subject-card"
+              :class="{ 'pa-subject-card--active': activeSubjectContextId === entry.subject.id }"
+            >
+              <div class="pa-subject-card__head">
+                <div class="pa-subject-card__title-wrap">
+                  <span class="pa-subject-card__title">{{ entry.subject.label }}</span>
+                  <span class="pa-subject-card__meta">{{ entry.subject.secondary || entry.fabulaSummary }}</span>
+                </div>
+                <span class="pa-subject-card__badge">
+                  <VIcon :icon="entry.fabulaIcon" size="14" />
+                  <span>{{ entry.fabulaTitle }}</span>
+                </span>
+              </div>
+
+              <p class="pa-subject-card__fabula">{{ entry.fabulaSummary }}</p>
+
+              <div v-if="entry.actions.length" class="pa-subject-card__actions">
+                <VBtn
+                  v-for="action in entry.actions"
+                  :key="`${entry.subject.id}:${action.id}`"
+                  color="primary"
+                  variant="tonal"
+                  size="small"
+                  :prepend-icon="action.icon"
+                  @click="openSubjectAction(entry.subject.id, action)"
+                >
+                  {{ action.label }}
+                </VBtn>
+              </div>
+
+              <p v-else class="pa-empty-state">Для этого субъекта пока нет релевантных сценариев в текущем чате.</p>
+            </article>
+          </div>
+
+          <div v-else class="pa-empty-state">
+            В проекте пока нет субъектов для адресных сценариев.
           </div>
         </section>
 
@@ -1248,6 +1440,10 @@ watch(selectedTask, (task) => {
             Загружаю спринты проекта…
           </div>
 
+          <div v-else-if="catalogUnavailableMessage" class="pa-state pa-state--error">
+            {{ catalogUnavailableMessage }}
+          </div>
+
           <div v-else-if="sprintOverviewItems.length" class="pa-sprint-list">
             <article
               v-for="sprint in sprintOverviewItems"
@@ -1286,12 +1482,24 @@ watch(selectedTask, (task) => {
             <span class="pa-pane__value">{{ currentAction.description }}</span>
           </div>
 
+          <div v-if="activeSubjectContext" class="pa-subject-context">
+            <div class="pa-subject-context__head">
+              <span class="pa-subject-context__title">{{ activeSubjectContext.label }}</span>
+              <span class="pa-subject-context__badge">Субъектный контур</span>
+            </div>
+            <span class="pa-subject-context__meta">{{ activeSubjectContext.secondary || 'Действие будет собрано в контексте этого субъекта.' }}</span>
+          </div>
+
           <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
             Сначала выберите проект.
           </div>
 
           <div v-else-if="props.catalogPending" class="pa-empty-state">
             Подготавливаю каталог проекта…
+          </div>
+
+          <div v-else-if="catalogUnavailableMessage" class="pa-state pa-state--error">
+            {{ catalogUnavailableMessage }}
           </div>
 
           <div v-else-if="props.catalog" class="pa-form-grid">
@@ -1514,6 +1722,7 @@ watch(selectedTask, (task) => {
               type="button"
               class="pa-rail-chip"
               :class="{ 'pa-rail-chip--active': showTimelinePane }"
+              :disabled="!canUseCatalogFeatures"
               @click="toggleOverviewPane('timeline')"
             >
               <VIcon icon="mdi-chart-timeline-variant" size="16" />
@@ -1526,6 +1735,7 @@ watch(selectedTask, (task) => {
               type="button"
               class="pa-rail-chip"
               :class="{ 'pa-rail-chip--active': showSprintsPane }"
+              :disabled="!canUseCatalogFeatures"
               @click="toggleOverviewPane('sprints')"
             >
               <VIcon icon="mdi-flag-outline" size="16" />
@@ -1534,12 +1744,25 @@ watch(selectedTask, (task) => {
             </button>
 
             <button
+              v-if="canShowProjectOverview && subjectChipCount"
+              type="button"
+              class="pa-rail-chip"
+              :class="{ 'pa-rail-chip--active': showSubjectsPane }"
+              :disabled="!canUseCatalogFeatures"
+              @click="toggleOverviewPane('subjects')"
+            >
+              <VIcon icon="mdi-account-group-outline" size="16" />
+              <span>Субъекты</span>
+              <span class="pa-rail-chip__count">{{ subjectChipCount }}</span>
+            </button>
+
+            <button
               v-for="group in filteredCategoryGroups"
               :key="group.category"
               type="button"
               class="pa-rail-chip"
               :class="{ 'pa-rail-chip--active': selectedCategory === group.category }"
-              :disabled="Boolean(props.pendingAction)"
+              :disabled="Boolean(props.pendingAction) || !canUseCatalogFeatures"
               @click="selectCategory(group.category)"
             >
               <VIcon :icon="group.icon" size="16" />
@@ -1774,6 +1997,83 @@ watch(selectedTask, (task) => {
 .pa-sprint-list {
   display: grid;
   gap: 10px;
+}
+
+.pa-subject-list {
+  display: grid;
+  gap: 10px;
+}
+
+.pa-subject-card,
+.pa-subject-context {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.pa-subject-card--active,
+.pa-subject-context {
+  border-color: rgba(var(--v-theme-primary), 0.28);
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.pa-subject-card__head,
+.pa-subject-context__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pa-subject-card__title-wrap {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pa-subject-card__title,
+.pa-subject-context__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.pa-subject-card__meta,
+.pa-subject-card__fabula,
+.pa-subject-context__meta {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.pa-subject-card__fabula {
+  margin: 0;
+}
+
+.pa-subject-card__badge,
+.pa-subject-context__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.pa-subject-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .pa-sprint-card {

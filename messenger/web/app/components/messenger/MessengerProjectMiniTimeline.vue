@@ -41,6 +41,9 @@ const emit = defineEmits<{
   selectPhase: [phaseId: string]
 }>()
 
+const scrollerEl = ref<HTMLDivElement | null>(null)
+const scrollerDragging = ref(false)
+
 const MIN_SPAN_MS = 69 * 86400000
 const CELL_WIDTH = 36
 
@@ -155,6 +158,11 @@ const summaryCounter = computed(() => formatCountLabel(phases.value.length, 'ф�
 
 const windowLabel = computed(() => `${formatCompactDate(bounds.value.start)} - ${formatCompactDate(bounds.value.end)}`)
 
+let activePointerId: number | null = null
+let pointerStartX = 0
+let pointerStartScrollLeft = 0
+let suppressClickUntil = 0
+
 function parseIsoDate(value?: string) {
   if (!value) return null
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
@@ -262,6 +270,68 @@ function formatCountLabel(count: number, singular: string, paucal: string, plura
 
   return `${count} ${plural}`
 }
+
+function handleSelectPhase(phaseId: string) {
+  if (Date.now() < suppressClickUntil) {
+    return
+  }
+
+  emit('selectPhase', phaseId)
+}
+
+function beginScrollerDrag(event: PointerEvent) {
+  if (event.pointerType === 'touch' || event.button !== 0 || !scrollerEl.value) {
+    return
+  }
+
+  activePointerId = event.pointerId
+  pointerStartX = event.clientX
+  pointerStartScrollLeft = scrollerEl.value.scrollLeft
+  scrollerDragging.value = false
+  scrollerEl.value.setPointerCapture?.(event.pointerId)
+}
+
+function updateScrollerDrag(event: PointerEvent) {
+  if (activePointerId !== event.pointerId || !scrollerEl.value) {
+    return
+  }
+
+  const deltaX = event.clientX - pointerStartX
+  if (!scrollerDragging.value && Math.abs(deltaX) < 6) {
+    return
+  }
+
+  scrollerDragging.value = true
+  scrollerEl.value.scrollLeft = pointerStartScrollLeft - deltaX
+  event.preventDefault()
+}
+
+function endScrollerDrag(event: PointerEvent) {
+  if (activePointerId !== event.pointerId || !scrollerEl.value) {
+    return
+  }
+
+  if (scrollerDragging.value) {
+    suppressClickUntil = Date.now() + 180
+  }
+
+  scrollerEl.value.releasePointerCapture?.(event.pointerId)
+  activePointerId = null
+  scrollerDragging.value = false
+}
+
+function handleScrollerWheel(event: WheelEvent) {
+  if (!scrollerEl.value || scrollerEl.value.scrollWidth <= scrollerEl.value.clientWidth + 1) {
+    return
+  }
+
+  if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+    return
+  }
+
+  scrollerEl.value.scrollLeft += event.deltaY
+  event.preventDefault()
+}
 </script>
 
 <template>
@@ -274,7 +344,16 @@ function formatCountLabel(count: number, singular: string, paucal: string, plura
       <span class="pmtl__counter">{{ summaryCounter }}</span>
     </div>
 
-    <div class="pmtl__scroller">
+    <div
+      ref="scrollerEl"
+      class="pmtl__scroller"
+      :class="{ 'pmtl__scroller--dragging': scrollerDragging }"
+      @pointerdown="beginScrollerDrag"
+      @pointermove="updateScrollerDrag"
+      @pointerup="endScrollerDrag"
+      @pointercancel="endScrollerDrag"
+      @wheel="handleScrollerWheel"
+    >
       <div class="pmtl__board" :style="boardStyle">
         <div class="pmtl__months" :style="gridStyle">
           <div
@@ -290,7 +369,7 @@ function formatCountLabel(count: number, singular: string, paucal: string, plura
         <div class="pmtl__rows">
           <div v-for="bar in phaseBars" :key="bar.id" class="pmtl__row">
             <div class="pmtl__row-head">
-              <button type="button" class="pmtl__row-link" @click="emit('selectPhase', bar.id)">
+              <button type="button" class="pmtl__row-link" @click="handleSelectPhase(bar.id)">
                 <span class="pmtl__row-title">{{ bar.title }}</span>
               </button>
               <span class="pmtl__row-status">{{ bar.statusLabel }}</span>
@@ -310,7 +389,7 @@ function formatCountLabel(count: number, singular: string, paucal: string, plura
                 :style="bar.style"
                 type="button"
                 :aria-label="`Открыть детали фазы ${bar.title}`"
-                @click="emit('selectPhase', bar.id)"
+                @click="handleSelectPhase(bar.id)"
               />
             </div>
           </div>
@@ -380,10 +459,17 @@ function formatCountLabel(count: number, singular: string, paucal: string, plura
   overflow-y: hidden;
   padding-bottom: 2px;
   scrollbar-width: none;
+  cursor: grab;
+  touch-action: pan-x;
 }
 
 .pmtl__scroller::-webkit-scrollbar {
   display: none;
+}
+
+.pmtl__scroller--dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .pmtl__board {

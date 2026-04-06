@@ -2724,6 +2724,7 @@ onBeforeUnmount(() => {
             :projects="projectActions.platformProjects.value"
             :projects-pending="projectActions.platformProjectsPending.value"
             :projects-error="projectActions.platformProjectsError.value"
+            :projects-require-platform-session="projectActions.platformProjectsRequirePlatformSession.value"
             :selected-project-slug="projectActions.selectedProjectSlug.value"
             :selected-action-id="projectActions.selectedActionId.value"
             :catalog="projectActions.platformCatalog.value"

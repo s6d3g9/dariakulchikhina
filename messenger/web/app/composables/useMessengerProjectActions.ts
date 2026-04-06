@@ -6,6 +6,7 @@
  */
 
 import { normalizeMessengerProjectRoot } from '../utils/messenger-project-root'
+import type { MessengerProjectRecord } from './useMessengerProjectEngine'
 import { buildMessengerUrl } from '../utils/messenger-url'
 
 export type ProjectActionRole = 'designer' | 'client' | 'contractor' | 'general'
@@ -388,6 +389,16 @@ function normalizePlatformApiError(error: unknown, fallback: string) {
   return fallback
 }
 
+function isPlatformSessionAccessError(error: unknown) {
+  const { statusCode, statusMessage } = extractPlatformErrorMeta(error)
+
+  if (statusCode === 401) {
+    return true
+  }
+
+  return statusCode === 403 && (!statusMessage || /csrf/i.test(statusMessage))
+}
+
 function appendStructuredLine(lines: string[], label: string, value?: string) {
   const normalized = value?.trim()
   if (!normalized) {
@@ -585,6 +596,7 @@ export interface ProjectActionCategoryGroup {
 
 export function useMessengerProjectActions() {
   const runtimeConfig = useRuntimeConfig()
+  const projectEngine = useMessengerProjectEngine()
   const panelOpen = useState<boolean>('messenger-project-actions-panel', () => false)
   const pendingAction = useState<ProjectActionId | null>('messenger-project-actions-pending', () => null)
   const lastResult = useState<ProjectActionResult | null>('messenger-project-actions-last-result', () => null)
@@ -594,6 +606,7 @@ export function useMessengerProjectActions() {
   const platformProjects = useState<MessengerPlatformProjectSummary[]>('messenger-project-actions-platform-projects', () => [])
   const platformProjectsPending = useState<boolean>('messenger-project-actions-platform-projects-pending', () => false)
   const platformProjectsError = useState<string>('messenger-project-actions-platform-projects-error', () => '')
+  const platformProjectsRequirePlatformSession = useState<boolean>('messenger-project-actions-projects-require-platform-session', () => false)
   const selectedProjectSlug = useState<string>('messenger-project-actions-selected-project-slug', () => '')
   const platformCatalog = useState<MessengerPlatformActionCatalog | null>('messenger-project-actions-platform-catalog', () => null)
   const platformCatalogPending = useState<boolean>('messenger-project-actions-platform-catalog-pending', () => false)
@@ -660,6 +673,84 @@ export function useMessengerProjectActions() {
 
   const projectRoot = computed(() => normalizeMessengerProjectRoot(runtimeConfig.public.messengerProjectRoot || ''))
 
+  function mapMessengerProjectToPlatformSummary(project: MessengerProjectRecord): MessengerPlatformProjectSummary {
+    return {
+      slug: project.slug,
+      title: project.label,
+      status: project.targetKind === 'platform' ? 'platform' : 'messenger',
+      projectType: project.targetKind,
+      activePhaseTitle: '',
+      activeSprintName: '',
+      taskTotal: project.contexts.length,
+    }
+  }
+
+  function pickDefaultProjectSlug(projects: MessengerPlatformProjectSummary[]) {
+    if (!projects.length) {
+      return ''
+    }
+
+    const engineSlug = projectEngine.activeProject.value?.slug?.trim() || ''
+    if (engineSlug && projects.some(project => project.slug === engineSlug)) {
+      return engineSlug
+    }
+
+    if (projects.length === 1) {
+      return projects[0]?.slug || ''
+    }
+
+    return ''
+  }
+
+  function reconcileSelectedProject(projects: MessengerPlatformProjectSummary[]) {
+    if (!selectedProjectSlug.value) {
+      const fallbackSlug = pickDefaultProjectSlug(projects)
+      if (fallbackSlug) {
+        setSelectedProjectSlug(fallbackSlug)
+      }
+      return
+    }
+
+    if (!projects.some(project => project.slug === selectedProjectSlug.value) && projects.length) {
+      setSelectedProjectSlug(projects[0]?.slug || '')
+    }
+  }
+
+  async function loadMessengerProjectFallback(force = false) {
+    if (!force && projectEngine.projects.value.length) {
+      return projectEngine.projects.value.map(mapMessengerProjectToPlatformSummary)
+    }
+
+    try {
+      await projectEngine.refresh()
+    } catch {
+      // Fallback is best-effort and should never block the platform-backed flow.
+    }
+
+    return projectEngine.projects.value.map(mapMessengerProjectToPlatformSummary)
+  }
+
+  function mergeProjectSources(
+    platformList: MessengerPlatformProjectSummary[],
+    fallbackList: MessengerPlatformProjectSummary[],
+  ) {
+    const merged = new Map<string, MessengerPlatformProjectSummary>()
+
+    for (const project of fallbackList) {
+      merged.set(project.slug, project)
+    }
+
+    for (const project of platformList) {
+      const fallback = merged.get(project.slug)
+      merged.set(project.slug, {
+        ...fallback,
+        ...project,
+      })
+    }
+
+    return Array.from(merged.values())
+  }
+
   async function requestPlatform<T>(
     path: string,
     options: { method?: GovernanceMutationRequestMethod; body?: BodyInit | Record<string, any> | null } = {},
@@ -690,9 +781,11 @@ export function useMessengerProjectActions() {
     platformProjectsPending.value = true
     platformProjectsError.value = ''
 
+    const fallbackProjects = await loadMessengerProjectFallback(force)
+
     try {
       const response = await requestPlatform<Array<Partial<MessengerPlatformProjectSummary> & { slug: string; title: string }>>('/api/projects')
-      platformProjects.value = response.map((project) => ({
+      const platformProjectSummaries = response.map((project) => ({
         slug: project.slug,
         title: project.title,
         status: project.status || '',
@@ -701,16 +794,21 @@ export function useMessengerProjectActions() {
         activeSprintName: project.activeSprintName || '',
         taskTotal: Number(project.taskTotal || 0),
       }))
+      platformProjects.value = mergeProjectSources(platformProjectSummaries, fallbackProjects)
+      platformProjectsRequirePlatformSession.value = false
 
-      if (!selectedProjectSlug.value && platformProjects.value.length === 1) {
-        setSelectedProjectSlug(platformProjects.value[0]?.slug || '')
-      }
-
-      if (selectedProjectSlug.value && !platformProjects.value.some(project => project.slug === selectedProjectSlug.value) && platformProjects.value.length) {
-        setSelectedProjectSlug(platformProjects.value[0]?.slug || '')
-      }
+      reconcileSelectedProject(platformProjects.value)
     } catch (error) {
-      platformProjectsError.value = normalizePlatformApiError(error, 'Не удалось загрузить список проектов платформы.')
+      if (isPlatformSessionAccessError(error) && fallbackProjects.length) {
+        platformProjects.value = fallbackProjects
+        platformProjectsRequirePlatformSession.value = true
+        clearPlatformCatalogState()
+        clearPlatformScopeDetailState()
+        cancelPlatformCatalogRequest()
+        reconcileSelectedProject(platformProjects.value)
+      } else {
+        platformProjectsError.value = normalizePlatformApiError(error, 'Не удалось загрузить список проектов платформы.')
+      }
     } finally {
       platformProjectsPending.value = false
     }
@@ -817,6 +915,11 @@ export function useMessengerProjectActions() {
     const nextSlug = slug.trim()
     if (nextSlug === selectedProjectSlug.value) {
       return
+    }
+
+    const engineProject = projectEngine.projects.value.find(project => project.slug === nextSlug)
+    if (engineProject) {
+      projectEngine.activeProjectId.value = engineProject.id
     }
 
     selectedProjectSlug.value = nextSlug
@@ -1090,9 +1193,9 @@ export function useMessengerProjectActions() {
       return
     }
 
-    await fetchPlatformProjects()
+    await fetchPlatformProjects(platformProjectsRequirePlatformSession.value)
 
-    if (selectedProjectSlug.value) {
+    if (selectedProjectSlug.value && !platformProjectsRequirePlatformSession.value) {
       await fetchPlatformCatalog(selectedProjectSlug.value, true)
     }
   })
@@ -1105,6 +1208,10 @@ export function useMessengerProjectActions() {
     resetGovernanceMutationState()
 
     if (!panelOpen.value) {
+      return
+    }
+
+    if (platformProjectsRequirePlatformSession.value) {
       return
     }
 
@@ -1300,6 +1407,7 @@ export function useMessengerProjectActions() {
     platformProjects: readonly(platformProjects),
     platformProjectsPending: readonly(platformProjectsPending),
     platformProjectsError: readonly(platformProjectsError),
+    platformProjectsRequirePlatformSession: readonly(platformProjectsRequirePlatformSession),
     selectedProjectSlug: readonly(selectedProjectSlug),
     selectedProject,
     platformCatalog: readonly(platformCatalog),
