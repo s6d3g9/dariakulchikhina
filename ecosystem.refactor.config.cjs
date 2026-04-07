@@ -2,6 +2,7 @@ module.exports = {
   apps: [
     {
       name: process.env.APP_NAME || 'daria-nuxt-refactor',
+      cwd: process.env.APP_CWD || '/opt/daria-nuxt-refactor',
       script: '.output/server/index.mjs',
       instances: 1,
       exec_mode: 'fork',
