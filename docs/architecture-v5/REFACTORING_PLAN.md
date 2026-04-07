@@ -9,11 +9,14 @@
 3. Backend + Shared: матрица переноса в DDD-структуру: ./11-backend-shared-refactor-map.md
 4. Messenger + Services: матрица realtime-контуров: ./12-messenger-services-refactor-map.md
 5. Волны рефакторинга: ./13-refactor-waves.md
+6. Рабочий roadmap исполнения: ./14-refactor-roadmap.md
 
 ## Роль этого файла
 - зафиксировать общую стратегию
 - связать подробные документы между собой
 - определить безопасный старт миграции
+
+Оперативная фиксация уже выполненных батчей и следующих шагов ведется в `14-refactor-roadmap.md`.
 
 ## Приоритет старта
 1. Создать пустой каркас директорий и отдельный refactor runtime.
