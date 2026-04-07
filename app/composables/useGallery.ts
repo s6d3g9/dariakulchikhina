@@ -8,7 +8,7 @@
  * Вдохновлено: Unsplash (masonry + lightbox), Pinterest (infinite scroll),
  * Behance (multi-image carousels), Dribbble (filter UX).
  */
-import type { GalleryItem, GalleryViewMode, GallerySortField, GallerySortDir } from '~~/shared/types/gallery'
+import type { GalleryItem, GalleryViewMode, GallerySortField, GallerySortDir } from '~~/shared/types/gallery/gallery'
 
 export function useGallery(category?: Ref<string> | string) {
   const items = ref<GalleryItem[]>([])

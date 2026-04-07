@@ -177,7 +177,7 @@
 import type { Component } from 'vue'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
-import { getClientPages } from '~~/shared/constants/pages'
+import { getClientPages } from '~~/shared/constants/navigation/pages'
 import ClientInitiation      from '~/components/ClientInitiation.vue'
 import ClientSelfProfile     from '~/components/ClientSelfProfile.vue'
 import ClientContactDetails  from '~/components/ClientContactDetails.vue'

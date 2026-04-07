@@ -3,7 +3,7 @@ import type { H3Event } from 'h3'
 
 import { requireChatSession } from '~/server/utils/auth'
 import { findStandaloneChatUserById, listStandaloneChatUsers } from '~/server/utils/standalone-chat-users'
-import type { ProjectCommunicationBootstrap } from '~/shared/types/communications'
+import type { ProjectCommunicationBootstrap } from '~/shared/types/communications/communications'
 
 type BootstrapParticipant = ProjectCommunicationBootstrap['roomParticipants'][number]
 

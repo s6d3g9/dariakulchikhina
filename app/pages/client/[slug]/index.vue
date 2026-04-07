@@ -120,7 +120,7 @@
 
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { getClientPages } from '~~/shared/constants/pages'
+import { getClientPages } from '~~/shared/constants/navigation/pages'
 
 // Client-facing components
 import ClientInitiation    from '~/components/ClientInitiation.vue'

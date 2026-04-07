@@ -115,6 +115,7 @@
 - navigation/navigation.ts
 - navigation/app-catalog.ts
 - project/project.ts
+- project/project-governance.ts
 - project/phase-steps.ts
 - project/catalogs.ts
 - contractor/contractor.ts
@@ -130,6 +131,7 @@
 - designer/designer-catalogs.ts
 - project/project-control.ts
 - project/project-control-timeline.ts
+- project/project-governance.ts
 - project/work-status.ts
 - ui/status-maps.ts
 

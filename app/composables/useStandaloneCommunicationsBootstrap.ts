@@ -1,4 +1,4 @@
-import type { ProjectCommunicationBootstrap } from '~~/shared/types/communications'
+import type { ProjectCommunicationBootstrap } from '~~/shared/types/communications/communications'
 
 export function useStandaloneCommunicationsBootstrap() {
   return useFetch<ProjectCommunicationBootstrap>('/api/chat/communications/bootstrap', {

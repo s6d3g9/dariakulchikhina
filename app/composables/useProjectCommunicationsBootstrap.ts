@@ -1,4 +1,4 @@
-import type { ProjectCommunicationBootstrap } from '~~/shared/types/communications'
+import type { ProjectCommunicationBootstrap } from '~~/shared/types/communications/communications'
 
 export function useProjectCommunicationsBootstrap(projectSlug: MaybeRefOrGetter<string | null | undefined>) {
   const slug = computed(() => toValue(projectSlug)?.trim() || '')

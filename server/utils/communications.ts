@@ -6,8 +6,8 @@ import { useDb } from '~/server/db'
 import { contractors, projectContractors, projects, users } from '~/server/db/schema'
 import { getAdminSession, getClientSession, getContractorSession } from '~/server/utils/auth'
 import { getProjectRelationsSnapshot } from '~/server/utils/project-relations'
-import type { ProjectCommunicationBootstrap } from '~/shared/types/communications'
-import { buildHybridCoordinationBrief, ensureHybridControl } from '~/shared/utils/project-control'
+import type { ProjectCommunicationBootstrap } from '~/shared/types/communications/communications'
+import { buildHybridCoordinationBrief, ensureHybridControl } from '~/shared/utils/project/project-control'
 
 type BootstrapRoomParticipant = ProjectCommunicationBootstrap['roomParticipants'][number]
 

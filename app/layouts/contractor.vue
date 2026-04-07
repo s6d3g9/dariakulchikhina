@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Contractor } from '~~/shared/types/contractor'
+import type { Contractor } from '~~/shared/types/contractor/contractor'
 
 const router = useRouter()
 const route = useRoute()

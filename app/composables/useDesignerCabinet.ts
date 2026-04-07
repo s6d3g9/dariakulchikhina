@@ -8,7 +8,7 @@ import {
   type DesignerSubscription,
   type DesignerServiceCategory,
   type DesignerProjectStatus,
-} from '~~/shared/types/designer'
+} from '~~/shared/types/designer/designer'
 
 // ── Types ──────────────────────────────────────────────────────
 

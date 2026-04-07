@@ -1,6 +1,6 @@
 import { useDb } from '~/server/db/index'
 import { contractors } from '~/server/db/schema'
-import { CreateContractorSchema } from '~/shared/types/contractor'
+import { CreateContractorSchema } from '~/shared/types/contractor/contractor'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)

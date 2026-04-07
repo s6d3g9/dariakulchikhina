@@ -1,7 +1,7 @@
 import { useDb } from '~/server/db/index'
 import { projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { UpdateProjectSchema } from '~/shared/types/project'
+import { UpdateProjectSchema } from '~/shared/types/project/project'
 
 const projectReturning = {
   id: projects.id,

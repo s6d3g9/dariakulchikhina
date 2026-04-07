@@ -1,8 +1,8 @@
 import { useDb } from '~/server/db/index'
 import { projects } from '~/server/db/schema'
-import { CreateProjectSchema } from '~/shared/types/project'
-import { findPreset } from '~/shared/constants/presets'
-import { CORE_PAGES } from '~/shared/constants/pages'
+import { CreateProjectSchema } from '~/shared/types/project/project'
+import { findPreset } from '~/shared/constants/design-system/presets'
+import { CORE_PAGES } from '~/shared/constants/navigation/pages'
 
 const projectReturning = {
   id: projects.id,
