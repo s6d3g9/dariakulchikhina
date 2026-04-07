@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+/** Safe JSON meta record — keys ≤200 chars, values: string/number/boolean/null */
+const zMetaRecord = z.record(z.string().max(200), z.union([z.string().max(10_000), z.number(), z.boolean(), z.null()])).default({})
+
 export const PROJECT_PARTICIPANT_SOURCE_KINDS = ['client', 'contractor', 'designer', 'seller', 'manager', 'custom'] as const
 export const PROJECT_PARTICIPANT_ROLE_KEYS = ['client', 'manager', 'designer', 'lawyer', 'contractor', 'seller', 'engineer', 'consultant', 'service', 'other'] as const
 export const PROJECT_SCOPE_TYPES = ['project', 'phase', 'sprint', 'task', 'document', 'service'] as const
@@ -39,7 +42,7 @@ export const ProjectParticipantSchema = z.object({
   isPrimary: z.boolean().default(false),
   status: ProjectParticipantStatusSchema.default('active'),
   notes: z.string().trim().optional(),
-  meta: z.record(z.unknown()).default({}),
+  meta: zMetaRecord,
 })
 
 export const ProjectScopeAssignmentSchema = z.object({
@@ -56,7 +59,7 @@ export const ProjectScopeAssignmentSchema = z.object({
   status: ProjectScopeAssignmentStatusSchema.default('active'),
   dueDate: z.string().trim().optional(),
   notes: z.string().trim().optional(),
-  meta: z.record(z.unknown()).default({}),
+  meta: zMetaRecord,
   assignedBy: z.string().trim().optional(),
   assignedAt: z.string().trim().min(1),
   updatedAt: z.string().trim().min(1),
@@ -69,7 +72,7 @@ export const ProjectScopeSettingsSchema = z.object({
   scopeType: ProjectScopeTypeSchema,
   scopeSource: ProjectScopeSourceSchema,
   scopeId: z.string().trim().min(1),
-  settings: z.record(z.unknown()).default({}),
+  settings: zMetaRecord,
   updatedAt: z.string().trim().min(1),
 })
 
@@ -138,8 +141,8 @@ export const ProjectScopeDetailBundleSchema = z.object({
     status: z.string().trim().default(''),
     statusLabel: z.string().trim().default(''),
   }),
-  core: z.record(z.unknown()).default({}),
-  settings: z.record(z.unknown()).default({}),
+  core: zMetaRecord,
+  settings: zMetaRecord,
   settingItems: z.array(ProjectGovernanceDetailItemSchema).default([]),
   participants: z.array(ProjectScopeParticipantSummarySchema).default([]),
   subjectItems: z.array(ProjectGovernanceDetailItemSchema).default([]),
@@ -161,7 +164,7 @@ export const CreateProjectParticipantSchema = z.object({
   messengerNick: z.string().trim().max(120).optional(),
   isPrimary: z.boolean().optional(),
   notes: z.string().trim().max(4000).optional(),
-  meta: z.record(z.unknown()).optional(),
+  meta: zMetaRecord.optional(),
 }).superRefine((value, ctx) => {
   if (value.sourceKind === 'custom' && value.sourceId !== undefined) {
     ctx.addIssue({
@@ -192,7 +195,7 @@ export const UpdateProjectParticipantSchema = z.object({
   isPrimary: z.boolean().optional(),
   status: ProjectParticipantStatusSchema.optional(),
   notes: z.string().trim().max(4000).nullable().optional(),
-  meta: z.record(z.unknown()).nullable().optional(),
+  meta: zMetaRecord.nullable().optional(),
 })
 
 export const CreateProjectScopeAssignmentSchema = z.object({
@@ -205,7 +208,7 @@ export const CreateProjectScopeAssignmentSchema = z.object({
   status: ProjectScopeAssignmentStatusSchema.optional(),
   dueDate: z.string().trim().max(64).optional(),
   notes: z.string().trim().max(4000).optional(),
-  meta: z.record(z.unknown()).optional(),
+  meta: zMetaRecord.optional(),
   assignedBy: z.string().trim().max(120).optional(),
 })
 
@@ -219,12 +222,12 @@ export const UpdateProjectScopeAssignmentSchema = z.object({
   status: ProjectScopeAssignmentStatusSchema.optional(),
   dueDate: z.string().trim().max(64).nullable().optional(),
   notes: z.string().trim().max(4000).nullable().optional(),
-  meta: z.record(z.unknown()).nullable().optional(),
+  meta: zMetaRecord.nullable().optional(),
   assignedBy: z.string().trim().max(120).nullable().optional(),
 })
 
 export const UpdateProjectScopeSettingsSchema = z.object({
-  settings: z.record(z.unknown()),
+  settings: z.record(z.string().max(200), z.union([z.string().max(10_000), z.number(), z.boolean(), z.null()])),
 })
 
 export type ProjectParticipantSourceKind = z.infer<typeof ProjectParticipantSourceKindSchema>

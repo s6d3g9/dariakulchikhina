@@ -2,11 +2,15 @@ import { z } from 'zod'
 
 const LoginValueSchema = z.string().min(3).max(100).trim().toLowerCase().regex(/^[a-z0-9._-]+$/, 'Допустимы только a-z, 0-9, ., _, -')
 const PasswordSchema = z.string().min(8).max(200)
+  .refine(
+    (val) => /[a-zA-Zа-яА-ЯёЁ]/.test(val) && /\d/.test(val),
+    { message: 'Пароль должен содержать хотя бы одну букву и одну цифру' },
+  )
 const NameSchema = z.string().min(1).max(120).trim()
 
 export const LoginSchema = z.object({
   login: z.string().min(3).max(100).trim().toLowerCase(),
-  password: z.string().min(1),
+  password: z.string().min(1).max(200),
 })
 export type LoginInput = z.infer<typeof LoginSchema>
 

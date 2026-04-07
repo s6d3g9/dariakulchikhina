@@ -21,7 +21,7 @@ export const HybridControlTeamMemberSchema = z.object({
   role: HybridControlTeamMemberRoleSchema.default('contractor'),
   contact: z.string().optional(),
   notifyBy: HybridControlTeamMemberChannelSchema.default('manual'),
-  notifyOptions: z.record(z.any()).optional()
+  notifyOptions: z.record(z.string().max(200), z.union([z.string().max(1000), z.number(), z.boolean(), z.null()])).optional()
 })
 
 export const HybridControlGateSchema = z.object({
@@ -316,7 +316,7 @@ export const ClientProfileSchema = z.object({
   brief_rt_fitting_rooms: z.string().optional(),
   brief_rt_checkout:    z.string().optional(),
   // Кастомизация структуры брифа (редактор)
-  brief_config:         z.record(z.unknown()).optional(),
+  brief_config:         z.record(z.string().max(200), z.union([z.string().max(10_000), z.number(), z.boolean(), z.null()])).optional(),
   // ── Phase 0: Site Survey ─────────────────────────────────────
   survey_status:        z.string().optional(),
   survey_date:          z.string().optional(),
@@ -328,7 +328,7 @@ export const ClientProfileSchema = z.object({
   survey_issues:        z.string().optional(),
   survey_recommendations: z.string().optional(),
   survey_notes:         z.string().optional(),
-  survey_files:         z.array(z.any()).optional(),
+  survey_files:         z.array(z.record(z.string().max(200), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()]))).max(100).optional(),
   mep_ventilation:      z.boolean().optional(),
   mep_plumbing:         z.boolean().optional(),
   mep_electrical:       z.boolean().optional(),
@@ -469,14 +469,14 @@ export const ProjectSchema = z.object({
   profile: ClientProfileSchema,
 })
 export const CreateProjectSchema = z.object({
-  slug: z.string().min(1).regex(/^[a-z0-9_-]+$/),
-  title: z.string().min(1),
-  projectType: z.string().optional(),
+  slug: z.string().min(1).max(200).regex(/^[a-z0-9_-]+$/),
+  title: z.string().min(1).max(500),
+  projectType: z.string().max(100).optional(),
 })
 export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
-  status: z.string().optional(),
-  projectType: z.string().optional(),
-  pages: z.array(z.string()).optional(),
+  status: z.string().max(50).optional(),
+  projectType: z.string().max(100).optional(),
+  pages: z.array(z.string().max(200)).max(200).optional(),
   profile: ClientProfileSchema.optional(),
 })
 export type Project = z.infer<typeof ProjectSchema>

@@ -7,15 +7,15 @@
  *   ctxStack  — NavCtx[] для бизнес-логики (contentSpec)
  */
 
-import type { NavigationNode, PayloadItem } from '~~/shared/types/navigation'
-import type { AppBlueprintDef, MenuBlockDef } from '~~/shared/types/app-catalog'
+import type { NavigationNode, PayloadItem } from '~~/shared/types/navigation/navigation'
+import type { AppBlueprintDef, MenuBlockDef } from '~~/shared/types/navigation/app-catalog'
 import {
   getAdminCategoryRoute,
   getAdminSectionRoute,
   getProjectRoute,
   getRegistryItemId,
   getRegistryItemLabel,
-} from '~~/shared/constants/admin-navigation'
+} from '~~/shared/constants/navigation/admin-navigation'
 import {
   ADMIN_ROOT_MENU_GROUP,
   CLIENT_CABINET_BLOCKS,
@@ -28,7 +28,7 @@ import {
   PROJECT_PHASE_BLOCKS,
   SELLER_CABINET_BLOCKS,
   toPayloadItems,
-} from '~~/shared/constants/app-catalog'
+} from '~~/shared/constants/navigation/app-catalog'
 
 interface NavCtx {
   section: string

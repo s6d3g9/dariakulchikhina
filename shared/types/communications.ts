@@ -168,7 +168,7 @@ export const CommunicationCreateRoomDtoSchema = z.object({
   title: z.string().trim().min(1).max(255).optional(),
   kind: CommunicationRoomKindSchema.optional(),
   participants: z.array(CommunicationCreateRoomParticipantDtoSchema).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  metadata: z.record(z.string().max(200), z.union([z.string().max(10_000), z.number(), z.boolean(), z.null()])).optional(),
 })
 
 export const CommunicationUpdateNicknameDtoSchema = z.object({
@@ -189,7 +189,7 @@ export const CommunicationCreateSignalDtoSchema = z.object({
   kind: CommunicationSignalKindSchema,
   callId: z.string().trim().min(1).optional(),
   targetActorKey: z.string().trim().min(1).nullable().optional(),
-  payload: z.unknown().optional(),
+  payload: z.record(z.string().max(200), z.union([z.string().max(10_000), z.number(), z.boolean(), z.null()])).optional(),
 })
 
 export const CommunicationListRoomsQuerySchema = z.object({
