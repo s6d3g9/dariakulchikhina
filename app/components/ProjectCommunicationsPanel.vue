@@ -257,7 +257,7 @@
             <div class="comm-block-title">Менеджеры проекта</div>
             <p class="comm-setting-note">Активная фаза: {{ coordinationBrief.summary.activePhaseTitle }}. Активный спринт: {{ coordinationBrief.summary.activeSprintTitle }}.</p>
             <div class="comm-agent-pills">
-              <span v-for="agent in coordinationBrief.agents.filter(item => item.enabled)" :key="agent.id" class="comm-person-badge">{{ agent.title }}</span>
+              <span v-for="agent in coordinationBrief.agents.filter((item: any) => item.enabled)" :key="agent.id" class="comm-person-badge">{{ agent.title }}</span>
             </div>
             <div class="comm-coordination-list">
               <div v-for="recommendation in coordinationBrief.recommendations" :key="recommendation.id" class="comm-coordination-row">

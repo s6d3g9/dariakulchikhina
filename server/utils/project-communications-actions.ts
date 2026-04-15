@@ -3,13 +3,12 @@ import { and, eq, sql } from 'drizzle-orm'
 import { useDb } from '~/server/db'
 import { contractors, projectExtraServices, projects, workStatusItems } from '~/server/db/schema'
 import { generateExtraServiceDocuments } from '~/server/utils/extra-service-documents'
-import { PROJECT_STATUSES, PROJECT_STATUS_LABELS } from '~/shared/types/catalogs'
+import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, type ProjectStatus } from '~/shared/types/catalogs'
 import type {
   HybridControl,
   HybridControlSprint,
   HybridControlTask,
   HybridControlTaskStatus,
-  ProjectStatus,
 } from '~/shared/types/project'
 import { buildHybridControlSummary, ensureHybridControl } from '~/shared/utils/project-control'
 import { normalizeWorkStatus, workStatusLabel, type CanonicalWorkStatus } from '~/shared/utils/work-status'

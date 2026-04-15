@@ -39,6 +39,7 @@ export default defineEventHandler(async (event) => {
       projectType: projects.projectType,
       pages: projects.pages,
       profile: projects.profile,
+      updatedAt: projects.updatedAt,
     })
     .from(projects)
     .where(eq(projects.slug, slug))

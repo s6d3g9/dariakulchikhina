@@ -45,7 +45,7 @@
       </div>
 
       <div class="cpc-agent-list">
-        <div v-for="agent in coordinationBrief.agents.filter(item => item.enabled)" :key="agent.id" class="cpc-agent-card">
+        <div v-for="agent in coordinationBrief.agents.filter((item: any) => item.enabled)" :key="agent.id" class="cpc-agent-card">
           <div>
             <div class="cpc-phase-row__title">{{ agent.title }}</div>
             <div class="cpc-phase-row__meta">{{ agent.mission || agent.linkedChannelLabel }}</div>

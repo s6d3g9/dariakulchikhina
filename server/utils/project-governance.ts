@@ -13,13 +13,15 @@ import {
 } from '~/server/db/schema'
 import { getProjectRelationsSnapshot, type ProjectRelationsSnapshot } from '~/server/utils/project-relations'
 import type {
-  CreateProjectParticipant,
-  CreateProjectScopeAssignment,
   HybridControl,
   HybridControlPhase,
   HybridControlSprint,
   HybridControlTask,
 } from '~/shared/types/project'
+import type {
+  CreateProjectParticipant,
+  CreateProjectScopeAssignment,
+} from '~/shared/types/project-governance'
 import {
   PROJECT_PARTICIPANT_ROLE_KEYS,
   PROJECT_PARTICIPANT_SOURCE_KINDS,
@@ -97,7 +99,7 @@ type GovernanceState = {
     scopeType: string
     scopeSource: string
     scopeId: string
-    settings: Record<string, unknown>
+    settings: Record<string, string | number | boolean | null>
     updatedAt: Date | string
   }>
   revision: string
@@ -606,7 +608,7 @@ function mergeParticipants(
       isPrimary: Boolean(row.isPrimary),
       status: row.status === 'archived' ? 'archived' : 'active',
       notes: row.notes || undefined,
-      meta: isRecord(row.meta) ? row.meta : {},
+      meta: (isRecord(row.meta) ? row.meta : {}) as Record<string, string | number | boolean | null>,
       secondary: buildParticipantSecondary([
         getProjectParticipantRoleLabel(roleKey),
         row.companyName,
@@ -671,7 +673,7 @@ async function getGovernanceState(projectInput: ProjectGovernanceProjectRow, opt
     assignmentRows,
     settingsRows: settingsRows.map(row => ({
       ...row,
-      settings: isRecord(row.settings) ? row.settings : {},
+      settings: (isRecord(row.settings) ? row.settings : {}) as Record<string, string | number | boolean | null>,
     })),
     revision: getRevision(project.updatedAt),
     coordination: buildHybridCoordinationBrief(control, { projectSlug: project.slug }),
@@ -1359,7 +1361,7 @@ export async function buildProjectScopeDetail(project: ProjectGovernanceProjectR
   const normalizedSettings = {
     ...buildDefaultProjectScopeSettings(context.scopeType),
     ...(scopeSettingsRow?.settings || {}),
-  }
+  } as Record<string, string | number | boolean | null>
   const participants = buildScopeParticipantSummaries(state, context.scopeType, context.scopeSource, context.scopeId, context.legacyParticipants)
 
   return {
@@ -1407,9 +1409,9 @@ function sanitizeGovernanceJsonValue(value: unknown): unknown {
   return clean
 }
 
-function sanitizeGovernanceRecord(value?: Record<string, unknown> | null) {
+function sanitizeGovernanceRecord(value?: Record<string, unknown> | null): Record<string, string | number | boolean | null> {
   const sanitized = sanitizeGovernanceJsonValue(isRecord(value) ? value : {})
-  return isRecord(sanitized) ? sanitized : {}
+  return (isRecord(sanitized) ? sanitized : {}) as Record<string, string | number | boolean | null>
 }
 
 function toNullableTrimmedString(value?: string | null) {
@@ -1543,7 +1545,7 @@ function mapParticipantRowToContract(row: Record<string, any>): ProjectParticipa
     isPrimary: Boolean(row.isPrimary),
     status: row.status === 'archived' ? 'archived' : 'active',
     notes: row.notes || undefined,
-    meta: isRecord(row.meta) ? row.meta : {},
+    meta: (isRecord(row.meta) ? row.meta : {}) as Record<string, string | number | boolean | null>,
   }
 }
 
@@ -1562,7 +1564,7 @@ function mapAssignmentRowToContract(row: Record<string, any>): ProjectScopeAssig
     status: normalizeAssignmentStatus(row.status),
     dueDate: row.dueDate || undefined,
     notes: row.notes || undefined,
-    meta: isRecord(row.meta) ? row.meta : {},
+    meta: (isRecord(row.meta) ? row.meta : {}) as Record<string, string | number | boolean | null>,
     assignedBy: row.assignedBy || undefined,
     assignedAt: normalizeIsoDate(row.assignedAt),
     updatedAt: normalizeIsoDate(row.updatedAt),
@@ -1577,7 +1579,7 @@ function mapSettingsRowToContract(row: Record<string, any>): ProjectScopeSetting
     scopeType: normalizeScopeType(row.scopeType),
     scopeSource: normalizeScopeSource(row.scopeSource),
     scopeId: String(row.scopeId || '').trim(),
-    settings: isRecord(row.settings) ? row.settings : {},
+    settings: (isRecord(row.settings) ? row.settings : {}) as Record<string, string | number | boolean | null>,
     updatedAt: normalizeIsoDate(row.updatedAt),
   }
 }
@@ -1838,7 +1840,7 @@ export async function createProjectGovernanceAssignment(projectSlug: string, inp
           scopeSource: context.scopeSource,
           scopeId: context.scopeId,
           responsibility: input.responsibility,
-          allocationPercent: input.allocationPercent ?? null,
+          ...(input.allocationPercent != null ? { allocationPercent: input.allocationPercent } : {}),
           status: input.status || 'active',
           dueDate: toNullableTrimmedString(input.dueDate),
           notes: toNullableTrimmedString(input.notes),

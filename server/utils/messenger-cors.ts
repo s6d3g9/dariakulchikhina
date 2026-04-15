@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { getResponseHeader, setResponseHeader } from 'h3'
 
 const DEV_MESSENGER_ORIGINS = [
   'http://127.0.0.1:3327',
@@ -23,8 +24,7 @@ function parseConfiguredOrigins() {
 }
 
 function appendVaryHeader(event: H3Event, nextValue: string) {
-  const res = event.node?.res ?? event.res
-  const current = res.getHeader('Vary')
+  const current = getResponseHeader(event, 'Vary')
   const values = new Set(
     [current]
       .flat()
@@ -35,7 +35,7 @@ function appendVaryHeader(event: H3Event, nextValue: string) {
   )
 
   values.add(nextValue)
-  res.setHeader('Vary', Array.from(values).join(', '))
+  setResponseHeader(event, 'Vary', Array.from(values).join(', '))
 }
 
 export function applyMessengerCors(event: H3Event, options: { methods?: string[] } = {}) {
@@ -49,11 +49,10 @@ export function applyMessengerCors(event: H3Event, options: { methods?: string[]
     return false
   }
 
-  const res = event.node?.res ?? event.res
-  res.setHeader('Access-Control-Allow-Origin', origin)
-  res.setHeader('Access-Control-Allow-Credentials', 'true')
-  res.setHeader('Access-Control-Allow-Methods', (options.methods || ['GET']).join(', '))
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-csrf-token')
+  setResponseHeader(event, 'Access-Control-Allow-Origin', origin)
+  setResponseHeader(event, 'Access-Control-Allow-Credentials', 'true')
+  setResponseHeader(event, 'Access-Control-Allow-Methods', (options.methods || ['GET']).join(', '))
+  setResponseHeader(event, 'Access-Control-Allow-Headers', 'Content-Type, x-csrf-token')
   appendVaryHeader(event, 'Origin')
   return true
 }

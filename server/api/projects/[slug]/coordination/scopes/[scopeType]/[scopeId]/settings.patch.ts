@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedNodeBody(event, UpdateProjectScopeSettingsSchema)
   const sanitizedBody = auth.role === 'client'
     ? {
-        settings: filterProjectScopeSettingsForEditor(scopeType, body.settings, 'client'),
+        settings: filterProjectScopeSettingsForEditor(scopeType, body.settings, 'client') as Record<string, string | number | boolean | null>,
       }
     : body
 

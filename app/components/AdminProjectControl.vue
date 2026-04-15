@@ -3246,7 +3246,7 @@ async function executeMessageDispatch() {
   msgModalSending.value = true
 
   try {
-    const res = await $fetch(`/api/projects/${props.slug}/communications/dispatch`, {
+    const res = await $fetch<{ success: boolean }>(`/api/projects/${props.slug}/communications/dispatch`, {
       method: 'POST',
       body: {
         memberId: msgModalTarget.value.id,

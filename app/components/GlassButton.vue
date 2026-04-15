@@ -75,7 +75,7 @@ const mergedButtonStyle = computed<StyleValue>(() => [buttonStyle.value, attrsSt
     :class="[buttonClasses, attrsClass]"
     :style="mergedButtonStyle"
     :disabled="disabled || loading"
-    @click="(e) => !loading && !disabled && emit('click', e)"
+    @click="(e: MouseEvent) => !loading && !disabled && emit('click', e)"
   >
     <div
       v-if="loading"
