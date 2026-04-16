@@ -9,3 +9,5 @@ drizzle/
 admin2_id_ed25519
 id_ed25519_oxo
 builds/
+.claude/settings.local.json
+.claude/worktrees/
