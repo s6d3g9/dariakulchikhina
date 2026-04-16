@@ -26,26 +26,50 @@
 - **Для E2EE файлов**: `encryption_iv` (вектор инициализации), `encrypted_aes_key` (если прикреплено не к сообщению, а к сущности).
 
 ## 3.2. Структура директорий
+
+> **Статус:** целевая раскладка. Фактический прогресс см. в `15-target-alignment-audit.md` и `14-refactor-roadmap.md`.
+
 ```text
 server/
-├── api/                        # КОНТРОЛЛЕРЫ (Тонкий слой)
-│   ├── projects/
+├── api/                        # КОНТРОЛЛЕРЫ (Тонкий слой, thin-controller)
+│   ├── projects/               # Zod/readValidatedBody + вызов modules/projects/*.service.ts
 │   ├── chat/
-│   ├── theme/                  # Эндпоинты дизайн-системы
+│   ├── gallery/
+│   ├── documents/
 │   └── uploads/
 │       └── presigned-url.get.ts# Выдает ссылку S3 для прямой загрузки
 │
-├── services/                   # БИЗНЕС-ЛОГИКА
-│   ├── project.service.ts      # Вся логика фаз, проверка версий (OCC)
-│   ├── document.service.ts     
-│   └── theme.service.ts        
-│
-├── event-bus/                  # ИНТЕГРАЦИЯ
-│   └── publisher.ts            # Отправка событий в Redis
+├── modules/                    # БИЗНЕС-ЛОГИКА (DDD-lite bounded domains)
+│   ├── auth/                   # auth.service.ts, session.service.ts, recovery.service.ts
+│   ├── projects/               # projects.service.ts, project-work-status.service.ts, ...
+│   ├── communications/         # communications-bootstrap + project-communications-relay
+│   │   └── communications-publisher.ts  # Отправка событий в Redis (интеграция с messenger)
+│   ├── chat/
+│   ├── gallery/
+│   ├── documents/
+│   ├── uploads/
+│   ├── admin/                  # admin-search, admin-notifications
+│   ├── admin-settings/
+│   ├── agent-registry/
+│   └── ai/                     # rag.service.ts, gemma.service.ts, document-stream.service.ts
 │
 ├── db/                         # СЛОЙ ДАННЫХ
-│   ├── schema/                 # Таблицы (см. пункт 3.1)
-│   └── index.ts                # Клиент Drizzle (через PgBouncer)
+│   ├── index.ts                # Клиент Drizzle (через PgBouncer)
+│   ├── schema/                 # Таблицы, разбитые по доменам (см. 3.1 и 11)
+│   └── relations/              # Drizzle-relations, изолированные от определений таблиц
 │
-└── utils/
+├── middleware/                 # requireAdmin*, CSRF, security headers
+├── plugins/                    # Nitro-плагины (Redis pub/sub subscribers и т.п.)
+└── utils/                      # Только инфраструктурные хелперы:
+                                # auth, body, query, messenger-cors, gemma (доменные utils
+                                # перенесены в modules/**)
 ```
+
+**Правило владения:**
+
+- `server/api/**` — HTTP/validation/auth, никакой прямой работы с БД или MinIO.
+- `server/modules/**` — единственное место, где живут Drizzle-запросы, транзакции, бизнес-правила и публикация событий.
+- `server/utils/**` — только platform-agnostic инфраструктурные хелперы, которые нужны контроллерам (парсинг тела, query, auth-guards).
+- `server/db/**` — только определения таблиц, relations и клиент Drizzle.
+
+Интеграция с Redis Pub/Sub и MinIO всегда оформляется как сервис внутри профильного модуля (`communications-publisher.ts`, `upload-storage.service.ts`), а не как глобальный `event-bus/`.

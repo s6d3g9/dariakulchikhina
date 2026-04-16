@@ -266,7 +266,7 @@ Commit:
 Долги:
 - не все домены `server/api/**` еще полностью переведены на чистый service-only слой
 
-### [done] 2026-04-16 — Wave 0+ / refactor reporting sync
+### [done] 2026-04-16 — Meta / docs sync
 Цель: зафиксировать финальные хвосты и аудит server-контуров в operational-документах.
 
 Файлы:

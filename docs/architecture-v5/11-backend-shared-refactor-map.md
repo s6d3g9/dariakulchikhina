@@ -156,6 +156,24 @@
 
 Это и есть реальный серверный каркас: сначала сервисы и схемы, потом чистка legacy-импортов.
 
+## Правила владения пересекающихся доменов
+
+Чтобы не размывать ответственность между соседними модулями, границы фиксируются явно:
+
+### Agents (три модуля, три роли)
+- `server/modules/agent-registry/**` — **CRUD + audit** реестра агентов, пресетов знаний, workspace-ов. Единственный источник записи в соответствующие таблицы.
+- `server/modules/chat/chat-agents.service.ts` — **runtime-прокси** между chat-endpoints и `messenger/core/src/agents`. Не имеет права писать в БД агентов напрямую, только читать снапшоты и вызывать registry-сервис.
+- `messenger/core/src/agents/**` — **исполнение** агентов (LLM runs, knowledge lookup, workspace state) в отдельном процессе. Обменивается с CRM только через Redis Pub/Sub и HTTP.
+- `app/entities/agents/**` — **UI-модели** (composables useAgent*) для консоли агентов в CRM и мессенджере.
+
+### Communications (четыре зоны)
+- `server/modules/communications/communications-bootstrap.service.ts` — bootstrap контекста для фронта.
+- `server/modules/communications/project-communications-relay.service.ts` — маршрутизация событий проекта в Pub/Sub.
+- `messenger/core/src/realtime/**` — доставка WS-сообщений и WebRTC signaling.
+- `services/communications-service/**` — E2EE-реле и тикеты звонков между клиентами.
+
+Каждая зона должна иметь ровно один owner-файл. Любая попытка продублировать функцию «как удобнее» в соседней зоне считается архитектурной регрессией.
+
 ## Current Status vs Target (2026-04-16)
 
 - Status source: `14-refactor-roadmap.md` + `server-audit-report.md`.

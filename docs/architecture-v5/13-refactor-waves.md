@@ -66,6 +66,7 @@ Definition of done:
 - переносим весь Client-кабинет в widgets/client-cabinet/**
 - переносим кабинеты и проектные workspace-блоки в widgets/cabinets и widgets/project-cabinet
 - режем giant-file contractor/[id]/index.vue на shell и секции
+- выносим формы авторизации из pages/** в features/auth/{admin,client,contractor}/ui/*Form.vue (см. 10)
 
 ## Wave 5. Server module migration
 Порядок:

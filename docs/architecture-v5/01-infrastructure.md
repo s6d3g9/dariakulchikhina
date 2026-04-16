@@ -14,11 +14,32 @@
 - **Coturn (TURN/STUN)**: Сервер для пробития NAT при WebRTC видеозвонках.
 
 ## Мониторинг и Логирование
-- **Loki / ELK**: Все сервисы пишут логи в JSON.
-- **Trace IDs**: Сквозная трассировка запросов (`X-Request-ID`) между Nuxt -> Redis -> AI-worker -> БД.
-- **Sentry**: Отлов ошибок на фронтенде.
+
+> **Статус:** целевая модель. Частично реализовано через локальные JSON-логи PM2; централизованный sink ещё не развернут.
+
+- **Loki / ELK** *(планируется)*: Все сервисы пишут логи в JSON через общий logger.
+- **Trace IDs** *(частично)*: Сквозная трассировка запросов (`X-Request-ID`) между Nuxt → Redis → AI-worker → БД.
+- **Sentry** *(планируется)*: Отлов ошибок на фронтенде и в Nitro.
+- **Health-эндпоинты:** каждый отдельный рантайм (Nuxt-app, messenger/core, communications-service, cityfarm/web, будущие сервисы) обязан экспортировать `/health` с кодом 200 при готовности.
 
 ## Развертывание и CI/CD
+
 - **Миграции БД**: Drizzle migrations выполняются в обход PgBouncer.
 - **Кэширование сборки**: Использование `pnpm fetch` / Turborepo для монорепозитория.
 - **Zero-Downtime**: Rolling updates через PM2 Cluster mode или Docker Swarm.
+
+## Реестр рантаймов и портов
+
+Каждый запускаемый процесс должен быть явно зарегистрирован здесь при добавлении (см. [16. Playbook расширения](./16-extensibility-playbook.md)). Таблица — единственный source of truth по портам.
+
+| Рантайм                            | Порт (prod) | Порт (refactor) | PM2-блок                | Назначение                         |
+|------------------------------------|-------------|-----------------|-------------------------|------------------------------------|
+| Главный Nuxt-app                   | 3000        | 3018            | `daria-nuxt`            | CRM/ERP SSR + REST                 |
+| Messenger Core                     | 3001        | —               | `daria-messenger-core`  | WebSocket + WebRTC signaling       |
+| Messenger Web (standalone)         | 3002        | —               | `daria-messenger-web`   | Consumer chat UI                   |
+| Communications Service             | 3010        | —               | `daria-comms`           | E2EE реле и тикеты звонков         |
+| Cityfarm Web                       | 3400        | —               | `daria-cityfarm`        | Публичный сайт калькуляторов       |
+| *(слот) AI Worker*                 | 3020+       | —               | `daria-ai-worker`       | Фоновые задачи BullMQ              |
+| *(слот) Billing Service*           | 3030+       | —               | `daria-billing`         | Будущий биллинг                    |
+
+**Правило:** новый рантайм получает следующий свободный порт из диапазона 30xx, регистрируется в этой таблице и в `ecosystem.config.cjs`.

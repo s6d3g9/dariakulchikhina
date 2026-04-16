@@ -30,6 +30,16 @@
 Фронтенд читает `type` системного сообщения в таблице `messages` (напр. `widget_moodboard_approval`), берет данные из колонки `payload` (JSONB) и рендерит Vue-компонент прямо внутри ленты чата.
 
 ## 5.8. Headless Design System
-- **Реактивный CSSOM**: При движении ползунка `useThemeStore` мгновенно обновляет CSS-переменные (`setProperty`).
-- **Persistence**: Сохранение токенов идет в БД (`page_configs.ts`).
+- **Реактивный CSSOM**: При движении ползунка composable `useDesignSystem` (owner: `app/entities/design-system/model/useDesignSystem.runtime.ts`) мгновенно обновляет CSS-переменные через `setProperty`.
+- **Persistence**: Сохранение токенов идет в БД через `server/modules/admin-settings/**` (таблица `page_configs`).
 - **Кэширование**: Бэкенд кэширует тему в Redis для мгновенного SSR рендера новым пользователям.
+
+## 5.9. Horizontal Extensibility (добавление нового микросервиса)
+
+Каждый новый рантайм подключается к системе по одному из трёх паттернов:
+
+1. **HTTP-consumer**: сервис ходит в `server/api/**` главного Nuxt-app через внутренний HTTP и получает данные по REST. Используется для не-realtime интеграций (биллинг, отчёты).
+2. **Pub/Sub-listener**: сервис подписывается на Redis-каналы (например, `chat`, `entity_updates`) и реагирует на события, опубликованные `server/modules/**/communications-publisher.ts`. Используется для фоновых воркеров и внешних нотификаций.
+3. **Ticket-based realtime**: сервис принимает WebSocket/WebRTC-подключения от клиента, но авторизует их только через одноразовый тикет в Redis, выпущенный главным Nuxt-app. Используется для `messenger/core` и `communications-service`.
+
+**Запрещено:** прямое подключение нового сервиса к Postgres главного app. Любой обмен данными — только через один из трёх паттернов выше. Подробный чек-лист: [16. Playbook расширения](./16-extensibility-playbook.md).
