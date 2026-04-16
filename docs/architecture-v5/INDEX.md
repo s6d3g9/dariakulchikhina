@@ -20,6 +20,7 @@
 13. [Волны рефакторинга](./13-refactor-waves.md)
 14. [Roadmap исполнения рефакторинга](./14-refactor-roadmap.md)
 15. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
+16. [Аудит соответствия target-архитектуре](./15-target-alignment-audit.md)
 
 ## Операционные отчеты
 1. [Refactor tail report](./refactor-tail-report.md)
