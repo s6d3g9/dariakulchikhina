@@ -207,7 +207,7 @@
               <template v-if="contractorPreviewMode">
                 <div v-if="contractorPending" class="ent-content-loading proj-contractor-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
                 <template v-else-if="contractorData">
-                  <AdminContractorCabinet :contractor-id="contractorPreviewId" />
+                  <AdminContractorCabinetWidget :contractor-id="contractorPreviewId" />
                 </template>
                 <div v-else class="proj-project-state proj-project-state--inline">
                   <p class="proj-project-state__title">{{ contractorPreviewStateTitle }}</p>
@@ -238,7 +238,7 @@
               </template>
               <template v-else-if="currentProjectPage === 'project_control'">
                 <section class="proj-section-shell" :class="{ 'proj-section-shell--brutalist': isBrutalistProjectMode }">
-                  <AdminProjectControl :slug="slug" />
+                  <AdminProjectControlWidget :slug="slug" />
                 </section>
               </template>
               <!-- Клиенты проекта — inline без модала -->
@@ -588,47 +588,16 @@ import { getBriefSections } from '~~/shared/constants/brief-sections'
 import { presetLabel } from '~~/shared/constants/presets'
 import type { Component } from 'vue'
 import {
-  AdminWorkStatus,
-  AdminClientProfile,
-  AdminFirstContact,
-  AdminSmartBrief,
-  AdminSiteSurvey,
-  AdminToRContract,
-  AdminExtraServices,
-  AdminSpacePlanning,
-  AdminMoodboard,
-  AdminConceptApproval,
-  AdminWorkingDrawings,
-  AdminSpecifications,
-  AdminMepIntegration,
-  AdminDesignAlbumFinal,
-  AdminProcurementList,
-  AdminSuppliers,
-  AdminProcurementStatus,
-  AdminConstructionPlan,
-  AdminWorkLog,
-  AdminSitePhotos,
-  AdminPunchList,
-  AdminCommissioningAct,
-  AdminClientSignOff,
   AdminPageContent,
   AdminMaterials,
-  ClientPageContent,
-  ClientInitiation,
-  ClientContactDetails,
-  ClientTimeline,
-  ClientDesignAlbum,
-  ClientContracts,
-  ClientExtraServices,
-  ClientSelfProfile,
-  ClientBrief,
-  ClientTZ,
-  ClientWorkProgress,
-  ClientPassport,
   AdminProjectOverview,
-  AdminProjectControl,
   AdminProjectSettings,
 } from '#components'
+import ClientProjectCabinetWidget from '~/widgets/cabinets/client/ClientProjectCabinetWidget.vue'
+import AdminProjectPhasesWidget from '~/widgets/projects/phases/AdminProjectPhasesWidget.vue'
+import AdminWorkStatusWidget from '~/widgets/projects/board/AdminWorkStatusWidget.vue'
+import AdminContractorCabinetWidget from '~/widgets/cabinets/contractor/AdminContractorCabinetWidget.vue'
+import AdminProjectControlWidget from '~/widgets/projects/control/AdminProjectControlWidget.vue'
 
 definePageMeta({ layout: 'admin', middleware: ['admin', 'admin-project-canonical'] })
 
@@ -1640,32 +1609,32 @@ const editForm = reactive({
 })
 
 const pageComponentMap: Record<string, Component> = {
-  project_control: AdminProjectControl,
+  project_control: AdminProjectControlWidget,
   settings: AdminProjectSettings,
-  work_status: AdminWorkStatus,
-  profile_customer: AdminClientProfile,
-  first_contact: AdminFirstContact,
-  self_profile: AdminSmartBrief,
-  brief: AdminSmartBrief,
-  site_survey: AdminSiteSurvey,
-  tor_contract: AdminToRContract,
-  extra_services: AdminExtraServices,
-  space_planning: AdminSpacePlanning,
-  moodboard: AdminMoodboard,
-  concept_approval: AdminConceptApproval,
-  working_drawings: AdminWorkingDrawings,
-  specifications: AdminSpecifications,
-  mep_integration: AdminMepIntegration,
-  design_album_final: AdminDesignAlbumFinal,
-  procurement_list: AdminProcurementList,
-  suppliers: AdminSuppliers,
-  procurement_status: AdminProcurementStatus,
-  construction_plan: AdminConstructionPlan,
-  work_log: AdminWorkLog,
-  site_photos: AdminSitePhotos,
-  punch_list: AdminPunchList,
-  commissioning_act: AdminCommissioningAct,
-  client_sign_off: AdminClientSignOff,
+  work_status: AdminWorkStatusWidget,
+  profile_customer: AdminProjectPhasesWidget,
+  first_contact: AdminProjectPhasesWidget,
+  self_profile: AdminProjectPhasesWidget,
+  brief: AdminProjectPhasesWidget,
+  site_survey: AdminProjectPhasesWidget,
+  tor_contract: AdminProjectPhasesWidget,
+  extra_services: AdminProjectPhasesWidget,
+  space_planning: AdminProjectPhasesWidget,
+  moodboard: AdminProjectPhasesWidget,
+  concept_approval: AdminProjectPhasesWidget,
+  working_drawings: AdminProjectPhasesWidget,
+  specifications: AdminProjectPhasesWidget,
+  mep_integration: AdminProjectPhasesWidget,
+  design_album_final: AdminProjectPhasesWidget,
+  procurement_list: AdminProjectPhasesWidget,
+  suppliers: AdminProjectPhasesWidget,
+  procurement_status: AdminProjectPhasesWidget,
+  construction_plan: AdminProjectPhasesWidget,
+  work_log: AdminProjectPhasesWidget,
+  site_photos: AdminProjectPhasesWidget,
+  punch_list: AdminProjectPhasesWidget,
+  commissioning_act: AdminProjectPhasesWidget,
+  client_sign_off: AdminProjectPhasesWidget,
 }
 // ── Contractor preview mode ─────────────────────────────────────────
 const contractorPreviewMode = computed(() => route.query.view === 'contractor')
@@ -1818,18 +1787,18 @@ function scrollMobileBarToActive() {
 }
 
 const clientPageComponentMap: Record<string, Component> = {
-  phase_init:            ClientInitiation,
-  self_profile:          ClientSelfProfile,
-  brief:                 ClientSelfProfile,
-  client_contacts:       ClientContactDetails,
-  client_passport:       ClientPassport,
-  client_brief:          ClientBrief,
-  client_tz:             ClientTZ,
-  contracts:             ClientContracts,
-  extra_services:        ClientExtraServices,
-  work_progress:         ClientWorkProgress,
-  design_timeline:       ClientTimeline,
-  design_album:          ClientDesignAlbum,
+  phase_init:            ClientProjectCabinetWidget,
+  self_profile:          ClientProjectCabinetWidget,
+  brief:                 ClientProjectCabinetWidget,
+  client_contacts:       ClientProjectCabinetWidget,
+  client_passport:       ClientProjectCabinetWidget,
+  client_brief:          ClientProjectCabinetWidget,
+  client_tz:             ClientProjectCabinetWidget,
+  contracts:             ClientProjectCabinetWidget,
+  extra_services:        ClientProjectCabinetWidget,
+  work_progress:         ClientProjectCabinetWidget,
+  design_timeline:       ClientProjectCabinetWidget,
+  design_album:          ClientProjectCabinetWidget,
 }
 
 const allClientPages = getClientPages()
@@ -1857,13 +1826,11 @@ const clientNormalizedPage = computed(() =>
 )
 
 const clientActiveComponent = computed<Component>(() =>
-  clientPageComponentMap[clientNormalizedPage.value] || ClientPageContent,
+  clientPageComponentMap[clientNormalizedPage.value] || ClientProjectCabinetWidget,
 )
 
 const clientActiveComponentProps = computed(() => {
-  const base = { slug: slug.value }
-  if (clientActiveComponent.value === ClientPageContent) return { ...base, page: clientNormalizedPage.value }
-  return base
+  return { slug: slug.value, page: clientNormalizedPage.value }
 })
 
 // ── Admin page state ───────────────────────────────────────────
@@ -1876,6 +1843,9 @@ const activeComponent = computed<Component>(() => pageComponentMap[normalizedAct
 const activeComponentProps = computed(() => {
   const base = { slug: slug.value }
   if (activeComponent.value === AdminPageContent) {
+    return { ...base, page: normalizedActivePage.value }
+  }
+  if (activeComponent.value === AdminProjectPhasesWidget) {
     return { ...base, page: normalizedActivePage.value }
   }
   return base

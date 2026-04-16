@@ -1,7 +1,7 @@
 <template>
   <div>
     <template v-if="activeCategory">
-        <AdminGallery
+        <AdminGalleryWidget
           :key="activeCategory"
           :category="activeCategory"
           :title="GALLERY_ITEMS.find((g: any) => g.key === activeCategory)?.title ?? activeCategory"
@@ -15,6 +15,7 @@
 </template>
 
 <script setup lang="ts">
+import AdminGalleryWidget from '~/widgets/gallery/AdminGalleryWidget.vue'
 definePageMeta({ layout: 'admin', middleware: 'admin', pageTransition: false })
 
 const GALLERY_ITEMS: { key: string; icon: string; title: string }[] = [

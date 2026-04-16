@@ -27,7 +27,7 @@
         <template #headerActions>
           <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
         </template>
-        <AdminContractorCabinet v-show="!isWipe2Mode" :key="selectedId" :contractor-id="selectedId" :show-sidebar="false" v-model="activeContractorSection" />
+        <AdminContractorCabinetWidget v-show="!isWipe2Mode" :key="selectedId" :contractor-id="selectedId" :show-sidebar="false" v-model="activeContractorSection" />
         <Wipe2Renderer
           v-if="isWipe2Mode && wipe2State"
           :entity="wipe2State"
@@ -200,6 +200,7 @@
 <script setup lang="ts">
 import { useWipe2State } from '~/composables/useWipe2'
 import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
+import AdminContractorCabinetWidget from '~/widgets/cabinets/contractor/AdminContractorCabinetWidget.vue'
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()

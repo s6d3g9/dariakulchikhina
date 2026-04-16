@@ -13,7 +13,7 @@
         <template #heroActions>
           <button class="admin-entity-hero__action" @click="showCreate = true">новый дизайнер</button>
         </template>
-        <AdminDesignerCabinet
+            <AdminDesignerCabinetWidget
           v-show="!isWipe2Mode"
           :key="selectedDesignerId!"
           :designer-id="selectedDesignerId!"
@@ -61,6 +61,7 @@
 <script setup lang="ts">
 import { useWipe2State } from '~/composables/useWipe2'
 import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
+import AdminDesignerCabinetWidget from '~/widgets/cabinets/designer/AdminDesignerCabinetWidget.vue'
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
