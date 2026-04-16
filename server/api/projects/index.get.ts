@@ -1,30 +1,9 @@
-import { useDb } from '~/server/db/index'
-import { projects, workStatusItems } from '~/server/db/schema'
-import { sql, eq } from 'drizzle-orm'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
+import { listProjectsWithTaskStats } from '~/server/modules/projects/projects.service'
 
 export default defineEventHandler(async (event) => {
-  applyMessengerCors(event)
   requireAdmin(event)
-  const db = useDb()
+  applyMessengerCors(event)
 
-  const rows = await db
-    .select({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      status: projects.status,
-      projectType: projects.projectType,
-      pages: projects.pages,
-      createdAt: projects.createdAt,
-      taskTotal: sql<number>`cast(count(${workStatusItems.id}) as int)`,
-      taskDone: sql<number>`cast(sum(case when ${workStatusItems.status} = 'done' then 1 else 0 end) as int)`,
-      taskOverdue: sql<number>`cast(sum(case when ${workStatusItems.status} not in ('done','cancelled') and ${workStatusItems.dateEnd} is not null and ${workStatusItems.dateEnd} < current_date::text then 1 else 0 end) as int)`,
-    })
-    .from(projects)
-    .leftJoin(workStatusItems, eq(workStatusItems.projectId, projects.id))
-    .groupBy(projects.id)
-    .orderBy(projects.createdAt)
-
-  return rows
+  return listProjectsWithTaskStats()
 })

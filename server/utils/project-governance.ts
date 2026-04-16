@@ -1375,7 +1375,7 @@ export async function buildProjectScopeDetail(project: ProjectGovernanceProjectR
       status: context.status,
       statusLabel: context.statusLabel,
     },
-    core: context.core,
+    core: sanitizeGovernanceRecord(context.core),
     settings: normalizedSettings,
     settingItems: buildProjectScopeSettingEntries(context.scopeType, normalizedSettings),
     participants,
@@ -1823,6 +1823,7 @@ export async function createProjectGovernanceAssignment(projectSlug: string, inp
   if (!participant?.persistedId) {
     throw createError({ statusCode: 404, statusMessage: 'Участник проекта не найден' })
   }
+  const participantPersistedId = participant.persistedId
 
   const context = await resolveCanonicalScopeContextForMutation(state, input.scopeType, input.scopeSource, input.scopeId)
   if (!context) {
@@ -1832,23 +1833,28 @@ export async function createProjectGovernanceAssignment(projectSlug: string, inp
   const db = useDb()
   try {
     return await db.transaction(async (tx) => {
+      const assignmentInsert: typeof projectScopeAssignments.$inferInsert = {
+        projectId: project.id,
+        participantId: participantPersistedId,
+        scopeType: context.scopeType,
+        scopeSource: context.scopeSource,
+        scopeId: context.scopeId,
+        responsibility: input.responsibility,
+        status: input.status || 'active',
+        dueDate: toNullableTrimmedString(input.dueDate),
+        notes: toNullableTrimmedString(input.notes),
+        meta: sanitizeGovernanceRecord(input.meta),
+        assignedBy: toNullableTrimmedString(input.assignedBy) || toNullableTrimmedString(options.assignedBy),
+        assignedAt: new Date(),
+        updatedAt: new Date(),
+      }
+
+      if (typeof input.allocationPercent === 'number') {
+        assignmentInsert.allocationPercent = input.allocationPercent
+      }
+
       const [assignmentRow] = await tx.insert(projectScopeAssignments)
-        .values({
-          projectId: project.id,
-          participantId: participant.persistedId,
-          scopeType: context.scopeType,
-          scopeSource: context.scopeSource,
-          scopeId: context.scopeId,
-          responsibility: input.responsibility,
-          ...(input.allocationPercent != null ? { allocationPercent: input.allocationPercent } : {}),
-          status: input.status || 'active',
-          dueDate: toNullableTrimmedString(input.dueDate),
-          notes: toNullableTrimmedString(input.notes),
-          meta: sanitizeGovernanceRecord(input.meta),
-          assignedBy: toNullableTrimmedString(input.assignedBy) || toNullableTrimmedString(options.assignedBy),
-          assignedAt: new Date(),
-          updatedAt: new Date(),
-        })
+        .values(assignmentInsert)
         .returning(projectScopeAssignmentReturning)
 
       const { revision } = await syncProjectGovernanceLegacySnapshotsTx(tx, project)
