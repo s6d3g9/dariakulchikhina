@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+set -eu
+
+echo "[pre-commit] Running architecture docs checks..."
+
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm docs:v5:verify
+else
+  node scripts/verify-architecture-docs.mjs
+fi

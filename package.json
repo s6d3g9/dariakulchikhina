@@ -31,7 +31,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "migrate:json": "node --experimental-vm-modules scripts/migrate-json-to-pg.mjs",
-    "migrate:designer-catalog-keys": "node scripts/migrate-designer-catalog-keys.mjs"
+    "migrate:designer-catalog-keys": "node scripts/migrate-designer-catalog-keys.mjs",
+    "docs:v5:verify": "node scripts/verify-architecture-docs.mjs",
+    "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1"
   },
   "dependencies": {
     "@nuxt/ui": "^3.1.0",
