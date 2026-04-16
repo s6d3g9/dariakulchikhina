@@ -36,3 +36,10 @@
 - отдельная БД и отдельная Redis DB
 
 Это позволяет вести рефакторинг без давления на production-контур.
+
+## Current Status vs Target (2026-04-16)
+
+- Стратегический статус: refactor-программа активна, operational-log ведется в `14-refactor-roadmap.md`.
+- Зафиксированные завершения: frontend widget-shell cutover (ключевые CRM admin pages), backend projects/work-status service cutover, operational audit/tail reports.
+- Открытые направления до полного target-match: окончательное выравнивание FSD слоев (`app/shared`, `app/features`), доменных server-модулей, и DB schema split.
+- Правило управления риском: движение только батчами с обязательной compile/runtime валидацией и фиксацией residual-debt.

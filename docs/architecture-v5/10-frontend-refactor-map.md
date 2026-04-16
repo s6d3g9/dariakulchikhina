@@ -103,3 +103,10 @@
 - app/features/auth/contractor/ui/ContractorRegisterForm.vue
 
 Этот список и есть рабочая матрица фронтенд-миграции.
+
+## Current Status vs Target (2026-04-16)
+
+- Status source: `14-refactor-roadmap.md`.
+- Что уже достигнуто: выполнен безопасный widget-shell cutover для ключевых CRM admin-страниц и создан базовый слой `app/widgets/**` для project/cabinets/gallery/documents.
+- Что еще не доведено до полного match: системное наполнение `app/shared/ui/**`, перенос primary-flow в `app/features/**`, снятие оставшихся bridge-зависимостей на legacy `app/components/**`.
+- Критерий завершения этого документа: страницы остаются route-shell, бизнес-UI живет в `features/widgets/entities/shared` без legacy fallback.

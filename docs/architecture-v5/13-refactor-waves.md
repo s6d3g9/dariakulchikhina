@@ -7,7 +7,7 @@
 - обновляем docs/architecture-v5
 - собираем точный список app/components, app/composables, server/api, server/utils, shared, messenger/core и messenger/web
 
-Результат: актуальный source of truth. Текущая стадия проекта находится именно здесь.
+Результат: актуальный source of truth для старта последующих волн.
 
 ## Wave 1. Создание пустого каркаса
 - создаем app/core, app/shared/ui, app/entities, app/features, app/widgets
@@ -117,3 +117,10 @@ Definition of done:
 8. только потом крупные widgets/**
 
 Этот порядок минимизирует регрессии и позволяет идти итеративно.
+
+## Current Status vs Target (2026-04-16)
+
+- Status source: `14-refactor-roadmap.md`.
+- Что уже достигнуто: Wave 0-3 реализованы частично/по батчам; для CRM admin и projects backend выполнены безопасные cutover-батчи с валидацией typecheck.
+- Что еще не доведено до полного match: завершение Wave 4-6 (полный frontend domain migration, полный server module migration, db schema split) и финальный Wave 7-8 cleanup.
+- Правило выполнения: каждая следующая волна подтверждается batch-записями в roadmap с проверкой и residual-risk.

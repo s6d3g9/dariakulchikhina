@@ -58,7 +58,6 @@
 - upload-validation.ts -> modules/uploads/upload-validation.service.ts
 - communications.ts -> modules/communications/communications-bootstrap.service.ts
 - project-communications-relay.ts -> modules/communications/project-communications-relay.service.ts
-- standalone-communications-relay.ts -> modules/communications/standalone-communications-relay.service.ts
 - standalone-chat-communications.ts -> modules/chat/chat-communications.service.ts
 - standalone-chat-users.ts -> modules/chat/chat-users.service.ts
 - projects.ts -> modules/projects/projects.service.ts
@@ -156,3 +155,10 @@
 - shared/constants/system/status-colors.ts
 
 Это и есть реальный серверный каркас: сначала сервисы и схемы, потом чистка legacy-импортов.
+
+## Current Status vs Target (2026-04-16)
+
+- Status source: `14-refactor-roadmap.md` + `server-audit-report.md`.
+- Что уже достигнуто: `projects/work-status` hot-path переведен на service-layer с thin-controller API и prepared queries; shared system-константы и ключевые DTO вынесены.
+- Что еще не доведено до полного match: часть доменов `server/api/**` все еще частично зависит от legacy `server/utils/**`; db-schema split в целевой вид не завершен.
+- Критерий завершения этого документа: `server/api/**` только HTTP/validation/auth, вся доменная логика в `server/modules/**`, shared-контракты используются как единственный source of truth.

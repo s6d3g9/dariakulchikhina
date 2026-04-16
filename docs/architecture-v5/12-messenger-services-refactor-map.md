@@ -139,3 +139,10 @@
 - src/store/pg-store.ts
 
 Эти файлы замыкают отдельный realtime-контур и позволяют рефакторить его независимо от main app.
+
+## Current Status vs Target (2026-04-16)
+
+- Status source: `14-refactor-roadmap.md` и профильные messenger-документы.
+- Что уже достигнуто: отдельные runtime-контуры `messenger/core`, `messenger/web`, `services/communications-service` сохранены; базовая декомпозиция по auth/store/core закреплена.
+- Что еще не доведено до полного match: полный FSD-срез `messenger/web/app/{entities,features}` и финальная alignment-раскладка bounded contexts в `messenger/core/src/**`.
+- Критерий завершения этого документа: realtime-контур полностью независим от main Nuxt app и использует shared-контракты без дублирования.

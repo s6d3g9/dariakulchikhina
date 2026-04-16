@@ -220,6 +220,68 @@ Commit:
 - `server/modules/**` пока в основном re-export поверх legacy utils
 - `app/entities/**` пока в основном re-export поверх legacy composables
 
+### [done] 2026-04-16 — Wave 3 / frontend widgets shell cutover
+Цель: перевести admin-страницы на widget-shell слой без изменения публичных маршрутов.
+
+Файлы:
+- app/pages/admin/designers/index.vue
+- app/pages/admin/contractors/index.vue
+- app/pages/admin/gallery/index.vue
+- app/pages/admin/gallery/art.vue
+- app/pages/admin/gallery/furniture.vue
+- app/pages/admin/gallery/interiors.vue
+- app/pages/admin/gallery/materials.vue
+- app/pages/admin/gallery/moodboards.vue
+- app/pages/admin/projects/[slug].vue
+- app/widgets/**
+
+Commit:
+- eccf94d refactor(crm): migrate admin pages to v5 widget shells
+
+Проверка:
+- `pnpm exec nuxi typecheck` — ok
+
+Долги:
+- часть `app/components/**` все еще используется как внутренний implementation layer под widget-обертками
+
+### [done] 2026-04-16 — Wave 5 / backend projects service cutover
+Цель: сделать projects/work-status endpoints thin-controller и вынести hot-path в сервисный слой.
+
+Файлы:
+- server/api/projects/index.get.ts
+- server/api/projects/[slug].get.ts
+- server/api/projects/[slug]/work-status.get.ts
+- server/api/projects/[slug]/work-status.put.ts
+- server/utils/projects.ts
+- server/utils/project-work-status.ts
+- server/modules/projects/project-work-status.service.ts
+- server/utils/project-governance.ts
+
+Commit:
+- 6afc029 refactor(server): route projects hot paths through v5 services
+
+Проверка:
+- `pnpm exec nuxi typecheck` — ok
+
+Долги:
+- не все домены `server/api/**` еще полностью переведены на чистый service-only слой
+
+### [done] 2026-04-16 — Wave 0+ / refactor reporting sync
+Цель: зафиксировать финальные хвосты и аудит server-контуров в operational-документах.
+
+Файлы:
+- docs/architecture-v5/refactor-tail-report.md
+- docs/architecture-v5/server-audit-report.md
+
+Commit:
+- 254fff5 docs(v5): add refactor tail and server audit reports
+
+Проверка:
+- отчеты добавлены в репозиторий и согласованы с INDEX
+
+Долги:
+- поддерживать их синхронно после каждого следующего batch
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:
@@ -234,13 +296,13 @@ Commit:
 
 ## Следующий рекомендуемый шаг
 
-### [next] Wave 2 / shared cutover batch 2
-Цель: продолжить перевод старых shared-imports в чистых файлах, не трогая файлы с пользовательским WIP.
+### [next] Wave 4-6 / final structure alignment
+Цель: довести фактическую структуру до полного соответствия target-tree из 09-12.
 
 Приоритет:
-1. `app/components/*`, где есть только import-cutover без логических изменений
-2. `server/api/projects/**` и `server/utils/**`, где можно безопасно поменять импорты на новые shared target-path
-3. только после этого — переход от bridge-файлов к реальной декомпозиции логики в `server/modules/**`
+1. заполнить `app/shared/**` и `app/features/**` как основные точки входа (с минимизацией bridge-слоя)
+2. завершить migration `server/api/** -> server/modules/**` для оставшихся доменов
+3. закрыть DB-schema target alignment (`server/db/schema/**`, `relations.ts`) без поломки runtime
 
 ## Отдельный технический долг
 
@@ -250,3 +312,11 @@ Commit `48e10f0` нужно позднее либо:
 - либо вычистить через отдельную git-операцию в refactor fork.
 
 Пока это не блокирует развитие v5, но ухудшает читаемость истории рефакторинга.
+
+## Current Status vs Target (2026-04-16)
+
+- Относительно `09-target-repository-tree.md`: базовый каркас в основном создан, но остаются незавершенные зоны в `app/shared/**`, `app/features/**`, частично в messenger web FSD.
+- Относительно `10-frontend-refactor-map.md`: выполнен widget-shell cutover ключевых CRM admin-страниц, продолжается вынос из legacy `app/components/**`.
+- Относительно `11-backend-shared-refactor-map.md`: закрыт projects/work-status hot-path batch; полный service-only перенос остальных доменов еще в процессе.
+- Относительно `12-messenger-services-refactor-map.md`: контуры изолированы, детальная bounded-context/FSD alignment требует отдельной волны.
+- Следующий milestone: финальный structure-alignment batch по приоритетам из секции `[next]`.

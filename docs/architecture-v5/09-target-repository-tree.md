@@ -169,27 +169,10 @@ dariakulchikhina/
 - `shared/constants/system/{roles,status-colors,websocket-events}.ts`
 
 Если смотреть практично, этот target-tree уже достаточно точен, чтобы начать Wave 1 и Wave 2 без придумывания новых директорий на ходу.
-│   ├── auth/
-│   │   ├── csrf.get.ts
-│   │   ├── login.post.ts
-│   │   ├── logout.post.ts
-│   │   ├── me.get.ts
-│   │   ├── recover.post.ts
-│   │   ├── register.post.ts
-│   │   ├── client-id-logout.post.ts
-│   │   ├── client-login.post.ts
-│   │   ├── client-open.get.ts
-│   │   ├── client-recover.post.ts
-│   │   ├── client-register.post.ts
-│   │   ├── contractor-login.post.ts
-│   │   ├── contractor-logout.post.ts
-│   │   ├── contractor-recover.post.ts
-│   │   └── contractor-register.post.ts
-│   ├── chat/
-│   │   ├── profile.put.ts
-│   │   ├── agents/
-│   │   │   ├── index.get.ts
-│   │   │   └── [agentId]/
-│   │   │       ├── descriptor.put.ts
-│   │       ...
-```
+
+## Current Status vs Target (2026-04-16)
+
+- Status source: `14-refactor-roadmap.md` и operational-отчеты.
+- Что уже достигнуто: базовый каркас репозитория, `server/modules/auth/**`, `server/modules/projects/**`, `shared/constants/system/**`, отдельные runtime-контуры messenger и communications-service.
+- Что еще не доведено до полного match: наполнение `app/shared/**` и `app/features/**` как primary-layer, финальное выравнивание `server/db/schema/**` и `relations.ts`, полная FSD-раскладка `messenger/web/app/**`.
+- Правило интерпретации: этот файл фиксирует целевую структуру, а не текущий процент готовности.
