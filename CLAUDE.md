@@ -89,6 +89,23 @@ pnpm snapshot:list                # List pre-deploy snapshots
 | Messenger realtime | `messenger/core/` |
 | E2EE calls/signaling | `services/communications-service/` |
 
+## Git auto-sync
+
+This repo is configured so every commit on a tracked branch is pushed to
+`origin` immediately via `.githooks/post-commit`. The hook is a no-op on
+branches without an upstream (e.g. local `claude/*` worktrees), so scratch
+work never accidentally publishes.
+
+Repo-local git config (installed by `pnpm hooks:install`):
+- `push.default = current` — `git push` pushes the current branch
+- `push.autoSetupRemote = true` — first push creates the remote branch
+- `fetch.prune = true` — stale remote refs are removed on fetch
+
+What this means in practice:
+- Any commit on `main` or `refactor/architecture-v5` is on GitHub within seconds.
+- A failed push (e.g. remote diverged) does not fail the commit — it warns and leaves the commit local. Reconcile with `git pull --rebase`.
+- To opt a branch out of auto-push, keep it local (no upstream) or unset the upstream: `git branch --unset-upstream`.
+
 ## What is out of scope for agents
 
 - Running production deploys without explicit confirmation.

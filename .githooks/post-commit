@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+# post-commit: auto-push the current branch to its upstream.
+#
+# Safe-by-design:
+#   - Only pushes if the current branch has an upstream tracking ref.
+#     Local-only branches (e.g. claude/*, scratch work) never get
+#     auto-published.
+#   - Never force-pushes. A rejected push is reported and the commit
+#     stays local until the user reconciles.
+#   - Runs synchronously so the push result is visible in the tool
+#     that made the commit.
+
+set -u
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo HEAD)
+UPSTREAM=$(git rev-parse --abbrev-ref "$BRANCH@{upstream}" 2>/dev/null || true)
+
+if [ -z "${UPSTREAM:-}" ]; then
+  echo "[post-commit] branch '$BRANCH' has no upstream — skipping auto-push"
+  exit 0
+fi
+
+echo "[post-commit] auto-push: $BRANCH -> $UPSTREAM"
+if git push; then
+  echo "[post-commit] pushed $BRANCH"
+else
+  rc=$?
+  echo "[post-commit] WARN: push failed ($rc). Commit kept locally — reconcile with 'git pull --rebase' or force when intended."
+fi
+
+exit 0
