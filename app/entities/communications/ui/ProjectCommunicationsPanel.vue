@@ -371,7 +371,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { useProjectCommunicationsBootstrap } from '~~/app/composables/useProjectCommunicationsBootstrap'
+import { useProjectCommunicationsBootstrap } from '~/entities/communications/model/useProjectCommunicationsBootstrap'
 import { getHealthTone, getHybridStakeholderRoleLabel } from '~~/shared/utils/project-control'
 import type {
   CommunicationActorRole,

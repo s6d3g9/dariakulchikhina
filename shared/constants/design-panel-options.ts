@@ -1,4 +1,4 @@
-import type { DesignTokens } from '~/composables/useDesignSystem'
+import type { DesignTokens } from '~/entities/design-system/model/useDesignSystem.core'
 
 /* ── Option lists ────────────────────────────────── */
 export const btnStyles = [
