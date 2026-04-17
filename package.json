@@ -36,7 +36,9 @@
     "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1",
     "lint": "eslint . --max-warnings=99999",
     "lint:errors": "eslint . --quiet",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "lint:baseline": "node scripts/lint-ratchet.mjs update",
+    "lint:ratchet": "node scripts/lint-ratchet.mjs check"
   },
   "dependencies": {
     "@nuxt/ui": "^3.1.0",

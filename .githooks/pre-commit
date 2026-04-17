@@ -8,3 +8,13 @@ if command -v pnpm >/dev/null 2>&1; then
 else
   node scripts/verify-architecture-docs.mjs
 fi
+
+echo "[pre-commit] Running lint ratchet..."
+# Per-file ratchet against .lint-baseline.json — existing debt is tolerated,
+# regressions are not. Update baseline via `pnpm lint:baseline` after
+# legitimate cleanup.
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm lint:ratchet
+else
+  node scripts/lint-ratchet.mjs check
+fi
