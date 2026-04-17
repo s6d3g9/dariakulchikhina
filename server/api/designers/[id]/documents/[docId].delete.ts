@@ -1,9 +1,9 @@
-import { useDb } from '~/server/db/index'
-import { documents } from '~/server/db/schema'
-import { and, eq, like, isNull } from 'drizzle-orm'
-import { unlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { deleteDesignerDocument } from '~/server/modules/designers/designer-documents.service'
 
+/**
+ * DELETE /api/designers/[id]/documents/[docId] — remove a designer
+ * document. Verifies the `designer:<id>:` prefix before deletion.
+ */
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const designerId = Number(getRouterParam(event, 'id'))
@@ -12,27 +12,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid params' })
   }
 
-  const db = useDb()
-  const [doc] = await db
-    .select()
-    .from(documents)
-    .where(and(
-      eq(documents.id, docId),
-      like(documents.category, `designer:${designerId}:%`),
-      isNull(documents.projectId),
-    ))
-    .limit(1)
-
-  if (!doc) throw createError({ statusCode: 404, statusMessage: 'Document not found' })
-
-  if (doc.filename) {
-    try {
-      await unlink(join(process.cwd(), 'public', 'uploads', 'designer-docs', doc.filename))
-    } catch {
-      // ignore fs errors
-    }
-  }
-
-  await db.delete(documents).where(eq(documents.id, docId))
+  const deleted = await deleteDesignerDocument(designerId, docId)
+  if (!deleted) throw createError({ statusCode: 404, statusMessage: 'Document not found' })
   return { ok: true }
 })

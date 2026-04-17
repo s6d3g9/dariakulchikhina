@@ -1,23 +1,15 @@
-import { useDb } from '~/server/db/index'
-import { designerProjectClients, designerProjectContractors } from '~/server/db/schema'
-import { eq } from 'drizzle-orm'
-import { z } from 'zod'
+import {
+  removeLink,
+  RemoveLinkSchema,
+} from '~/server/modules/designers/designers.service'
 
-const RemoveLinkSchema = z.object({
-  type: z.enum(['client', 'contractor']),
-  linkId: z.number(),
-})
-
+/**
+ * POST /api/designers/[id]/remove-link — remove a client or contractor
+ * link by its link-row id.
+ */
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const body = await readValidatedNodeBody(event, RemoveLinkSchema)
-  const db = useDb()
-
-  if (body.type === 'client') {
-    await db.delete(designerProjectClients).where(eq(designerProjectClients.id, body.linkId))
-  } else {
-    await db.delete(designerProjectContractors).where(eq(designerProjectContractors.id, body.linkId))
-  }
-
+  await removeLink(body)
   return { ok: true }
 })

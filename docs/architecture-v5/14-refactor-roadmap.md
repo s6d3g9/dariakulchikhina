@@ -612,6 +612,33 @@ Commit:
 Долги:
 - Next: designers (сложные packages/services JSONB поля), sellers, managers.
 
+### [done] 2026-04-17 — Wave 5 / designers full domain → modules/designers (2 сервиса)
+Цель: перенести 14 endpoint'ов designers — CRUD + designer-projects (create/update) + links (add-client/add-contractor/remove) + linked-entities aggregator + document scoping. Delta −24 (123 → 99). Baseline впервые опустился ниже 100.
+
+Файлы:
+- server/modules/designers/designers.service.ts (новый):
+  - Schemas: CreateDesignerSchema, UpdateDesignerSchema, CreateDesignerProjectSchema, UpdateDesignerProjectSchema, AddClientLinkSchema, AddContractorLinkSchema, RemoveLinkSchema.
+  - `listDesigners` — normalize services/packages/subscriptions через shared designer-catalogs.
+  - `getDesignerWithProjects(id)` — один designer со встроенными designerProjects, clients и contractors + validation package keys.
+  - CRUD: createDesigner, updateDesigner (в транзакции с optional clearProjectPackageKeysForIds), deleteDesigner.
+  - Designer-projects: createDesignerProject (create-or-reuse by slug, backfill CORE_PAGES, catch 23505 для дубль-слуга и дубль-линка), updateDesignerProject (propagate title в projects).
+  - Links: addClientLink, addContractorLink, removeLink (union client | contractor).
+  - `getDesignerLinkedEntities` — агрегатор sellers/managers/gallery/moodboards через designer-projects → projects, dedup по id через Map.
+  - Helper `getDuplicateCode` для 23505.
+- server/modules/designers/designer-documents.service.ts (новый): list/upload/delete с префиксом `designer:<id>:<kind>` в category, файлы в `public/uploads/designer-docs/`.
+- 14 thin handlers в server/api/designers/.
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — ok (прошёл с первого раза)
+- `pnpm lint:ratchet` — 99 (baseline 123 → 99, ровно −24)
+- Runtime идентичен: тот же packageKey validation, CORE_PAGES backfill, 23505-catches для дубль-линков.
+
+Долги:
+- Next: sellers (5-10 endpoints), managers (~5 endpoints), projects/** (20+ endpoints со связями).
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:

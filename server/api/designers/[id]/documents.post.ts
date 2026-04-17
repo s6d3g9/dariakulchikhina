@@ -1,10 +1,9 @@
-import { useDb } from '~/server/db/index'
-import { documents } from '~/server/db/schema'
-import { writeFile, mkdir } from 'node:fs/promises'
-import { join, extname } from 'node:path'
-import { randomUUID } from 'node:crypto'
-import { validateUploadedFile } from '~/server/utils/upload-validation'
+import { uploadDesignerDocument } from '~/server/modules/designers/designer-documents.service'
 
+/**
+ * POST /api/designers/[id]/documents — multipart upload of a
+ * designer-scoped document.
+ */
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const designerId = Number(getRouterParam(event, 'id'))
@@ -15,35 +14,20 @@ export default defineEventHandler(async (event) => {
   const form = await readMultipartFormData(event)
   if (!form) throw createError({ statusCode: 400, message: 'No multipart data' })
 
-  const fileField = form.find(f => f.name === 'file')
-  const title = form.find(f => f.name === 'title')?.data?.toString() || 'Документ'
-  const kind = form.find(f => f.name === 'category')?.data?.toString() || 'other'
-  const notes = form.find(f => f.name === 'notes')?.data?.toString() || null
-
+  const fileField = form.find((f) => f.name === 'file')
   if (!fileField?.data) throw createError({ statusCode: 400, message: 'File required' })
 
-  const validation = validateUploadedFile(fileField.data, fileField.filename, fileField.type)
-  if (!validation.valid) throw createError({ statusCode: 400, message: validation.error })
+  const title = form.find((f) => f.name === 'title')?.data?.toString() || 'Документ'
+  const kind = form.find((f) => f.name === 'category')?.data?.toString() || 'other'
+  const notes = form.find((f) => f.name === 'notes')?.data?.toString() || null
 
-  const ext = extname(fileField.filename || '.pdf')
-  const filename = `designer_${designerId}_${randomUUID()}${ext}`
-  const uploadDir = join(process.cwd(), 'public', 'uploads', 'designer-docs')
-  await mkdir(uploadDir, { recursive: true })
-  await writeFile(join(uploadDir, filename), fileField.data)
-
-  const url = `/uploads/designer-docs/${filename}`
-  const db = useDb()
-  const [doc] = await db.insert(documents).values({
-    projectId: null,
-    category: `designer:${designerId}:${kind}`,
+  return await uploadDesignerDocument({
+    designerId,
+    fileData: fileField.data,
+    filename: fileField.filename,
+    mimeType: fileField.type,
     title,
-    filename,
-    url,
+    kind,
     notes,
-  }).returning()
-
-  return {
-    ...doc,
-    category: kind,
-  }
+  })
 })

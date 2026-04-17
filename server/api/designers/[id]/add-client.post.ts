@@ -1,28 +1,14 @@
-import { useDb } from '~/server/db/index'
-import { designerProjectClients } from '~/server/db/schema'
-import { z } from 'zod'
+import {
+  addClientLink,
+  AddClientLinkSchema,
+} from '~/server/modules/designers/designers.service'
 
-const AddClientSchema = z.object({
-  designerProjectId: z.number(),
-  clientId: z.number(),
-})
-
+/**
+ * POST /api/designers/[id]/add-client — link a client to one of the
+ * designer's projects.
+ */
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const body = await readValidatedNodeBody(event, AddClientSchema)
-  const db = useDb()
-
-  try {
-    const [row] = await db.insert(designerProjectClients).values({
-      designerProjectId: body.designerProjectId,
-      clientId: body.clientId,
-    }).returning()
-    return row
-  } catch (e: any) {
-    const code = e?.cause?.code ?? e?.code
-    if (code === '23505') {
-      throw createError({ statusCode: 400, statusMessage: 'Клиент уже привязан к проекту' })
-    }
-    throw e
-  }
+  const body = await readValidatedNodeBody(event, AddClientLinkSchema)
+  return await addClientLink(body)
 })
