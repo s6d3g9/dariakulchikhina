@@ -736,3 +736,6 @@ nuxt.config.ts расширен: добавлены пути ~/shared/ui, ~/widg
 - 11-backend: source-пути admin-settings (admin-settings → admin/), extra-services (flat → nested directory), suggest и upload отмечены как stays (no DB). Целевые service-файлы уточнены: project-status/client-profile → project-mutations.service.ts, page-content/page-answers → project-pages.service.ts. Удалены несуществующие agent-registry/agent-chat entries.
 - 10-frontend: удалена запись StandaloneChatPanel.vue (файл никогда не существовал в репозитории).
 Результат: 10-frontend: 47/47 done, 0 pending, 0 missing. 11-backend: 0 pending, 0 missing. Проверка: pnpm docs:v5:verify — ok.
+
+### [done] 2026-04-17 — Wave 7 / infrastructure: config + domain errors + handler plugin
+Создано: server/config.ts (Zod-валидация 16 env vars на старте, fail-fast; derived helpers getMessengerOriginAllowList, getSessionSecret), server/utils/errors.ts (DomainError + NotFound/Conflict/Validation/Forbidden/Unauthorized/RateLimit/UpstreamError + resolveDomainErrorStatus), server/plugins/error-handler.ts (Nitro plugin маппит DomainError → HTTP JSON). Coexist с legacy createError. Проверки: vue-tsc ok.
