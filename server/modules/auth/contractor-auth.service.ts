@@ -1,8 +1,5 @@
 import type { H3Event } from 'h3'
-import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { useDb } from '~/server/db/index'
-import { contractors } from '~/server/db/schema'
 import {
   hashPassword,
   verifyPassword,
@@ -14,6 +11,7 @@ import type {
   ContractorRegisterInput,
   ContractorRecoverInput,
 } from '~/shared/types/auth'
+import * as repo from './auth.repository'
 
 /**
  * Contractor login accepts two shapes:
@@ -38,14 +36,8 @@ export type ContractorLoginInput = z.infer<typeof ContractorLoginSchema>
  * any mismatch.
  */
 export async function contractorLogin(event: H3Event, body: ContractorLoginInput) {
-  const db = useDb()
-
   if ('id' in body) {
-    const [contractor] = await db
-      .select()
-      .from(contractors)
-      .where(eq(contractors.id, body.id))
-      .limit(1)
+    const contractor = await repo.findContractorById(body.id)
     if (!contractor) {
       throw createError({ statusCode: 404, statusMessage: 'Подрядчик не найден' })
     }
@@ -56,15 +48,7 @@ export async function contractorLogin(event: H3Event, body: ContractorLoginInput
     return { ok: true, id: contractor.id, name: contractor.name }
   }
 
-  const [contractor] = await db
-    .select({
-      id: contractors.id,
-      name: contractors.name,
-      passwordHash: contractors.passwordHash,
-    })
-    .from(contractors)
-    .where(eq(contractors.login, body.login))
-    .limit(1)
+  const contractor = await repo.findContractorWithPasswordByLogin(body.login)
 
   if (!contractor || !contractor.passwordHash) {
     throw createError({ statusCode: 401, statusMessage: 'Неверный логин или пароль' })
@@ -84,13 +68,7 @@ export async function contractorLogin(event: H3Event, body: ContractorLoginInput
  * phrase. Returns the phrase (shown once).
  */
 export async function contractorRegister(body: ContractorRegisterInput) {
-  const db = useDb()
-
-  const [existing] = await db
-    .select({ id: contractors.id })
-    .from(contractors)
-    .where(eq(contractors.login, body.login))
-    .limit(1)
+  const existing = await repo.findContractorByLogin(body.login)
 
   if (existing) {
     throw createError({
@@ -100,26 +78,19 @@ export async function contractorRegister(body: ContractorRegisterInput) {
   }
 
   const recoveryPhrase = generateRecoveryPhrase()
-  const slug = await createUniqueContractorSlug(db, body.login)
+  const slug = await createUniqueContractorSlug(body.login)
   const passwordHash = await hashPassword(body.password)
   const recoveryPhraseHash = await hashPassword(recoveryPhrase)
   const contractorName = body.name?.trim() || body.login
 
-  const [contractor] = await db
-    .insert(contractors)
-    .values({
-      slug,
-      login: body.login,
-      passwordHash,
-      recoveryPhraseHash,
-      name: contractorName,
-      companyName: body.companyName,
-    })
-    .returning({
-      id: contractors.id,
-      name: contractors.name,
-      login: contractors.login,
-    })
+  const contractor = await repo.insertContractor({
+    slug,
+    login: body.login,
+    passwordHash,
+    recoveryPhraseHash,
+    name: contractorName,
+    companyName: body.companyName,
+  })
 
   return { ok: true, contractor, recoveryPhrase }
 }
@@ -128,16 +99,7 @@ export async function contractorRegister(body: ContractorRegisterInput) {
  * Reset a contractor password given the recovery phrase.
  */
 export async function contractorRecover(body: ContractorRecoverInput) {
-  const db = useDb()
-
-  const [contractor] = await db
-    .select({
-      id: contractors.id,
-      recoveryPhraseHash: contractors.recoveryPhraseHash,
-    })
-    .from(contractors)
-    .where(eq(contractors.login, body.login))
-    .limit(1)
+  const contractor = await repo.findContractorWithRecoveryByLogin(body.login)
 
   if (!contractor || !contractor.recoveryPhraseHash) {
     throw createError({
@@ -152,10 +114,7 @@ export async function contractorRecover(body: ContractorRecoverInput) {
   }
 
   const passwordHash = await hashPassword(body.newPassword)
-  await db
-    .update(contractors)
-    .set({ passwordHash })
-    .where(eq(contractors.id, contractor.id))
+  await repo.updateContractorPassword(contractor.id, passwordHash)
 
   return { ok: true as const }
 }

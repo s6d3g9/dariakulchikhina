@@ -1,44 +1,32 @@
-import { eq } from 'drizzle-orm'
-import { useDb } from '~/server/db'
-import { contractors, projects } from '~/server/db/schema'
+import * as repo from './auth.repository'
 
-export async function createUniqueProjectSlug(db: ReturnType<typeof useDb>, login: string) {
+/**
+ * Generate a project slug that is guaranteed unique in the projects table.
+ * Tries `<login>-project`, then `<login>-project-2`, `-3`, etc.
+ */
+export async function createUniqueProjectSlug(login: string): Promise<string> {
   const baseSlug = `${login}-project`
   let slug = baseSlug
   let suffix = 2
 
   while (true) {
-    const [existing] = await db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(eq(projects.slug, slug))
-      .limit(1)
-
-    if (!existing) {
-      return slug
-    }
-
+    if (!(await repo.projectSlugExists(slug))) return slug
     slug = `${baseSlug}-${suffix}`
     suffix += 1
   }
 }
 
-export async function createUniqueContractorSlug(db: ReturnType<typeof useDb>, login: string) {
+/**
+ * Generate a contractor slug that is guaranteed unique in the contractors table.
+ * Tries `<login>-contractor`, then `<login>-contractor-2`, `-3`, etc.
+ */
+export async function createUniqueContractorSlug(login: string): Promise<string> {
   const baseSlug = `${login}-contractor`
   let slug = baseSlug
   let suffix = 2
 
   while (true) {
-    const [existing] = await db
-      .select({ id: contractors.id })
-      .from(contractors)
-      .where(eq(contractors.slug, slug))
-      .limit(1)
-
-    if (!existing) {
-      return slug
-    }
-
+    if (!(await repo.contractorSlugExists(slug))) return slug
     slug = `${baseSlug}-${suffix}`
     suffix += 1
   }

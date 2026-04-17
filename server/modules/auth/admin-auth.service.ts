@@ -1,7 +1,4 @@
 import type { H3Event } from 'h3'
-import { eq, or } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import { users } from '~/server/db/schema'
 import {
   hashPassword,
   verifyPassword,
@@ -12,6 +9,7 @@ import type {
   LoginInput,
   RegisterInput,
 } from '~/shared/types/auth'
+import * as repo from './auth.repository'
 
 /**
  * Admin (designer) login by `login` or `email`. On a first-time login
@@ -20,7 +18,6 @@ import type {
  * a manual seed step.
  */
 export async function adminLogin(event: H3Event, body: LoginInput) {
-  const db = useDb()
   const preferredEmail = (
     process.env.DESIGNER_INITIAL_EMAIL || 'admin@dariakulchikhina.com'
   ).trim()
@@ -31,44 +28,25 @@ export async function adminLogin(event: H3Event, body: LoginInput) {
     .toLowerCase()
   const initialPassword = (process.env.DESIGNER_INITIAL_PASSWORD || '').trim()
 
-  const columns = {
-    id: users.id,
-    email: users.email,
-    login: users.login,
-    name: users.name,
-    passwordHash: users.passwordHash,
-  }
-
-  let [user] = await db
-    .select(columns)
-    .from(users)
-    .where(or(eq(users.login, body.login), eq(users.email, body.login)))
-    .limit(1)
+  let user = await repo.findUserByLoginOrEmail(body.login)
 
   if (!user) {
     const matchesBootstrap =
       body.login === preferredLogin ||
       body.login === preferredEmail.toLowerCase()
     if (matchesBootstrap && initialPassword && body.password === initialPassword) {
-      ;[user] = await db
-        .select(columns)
-        .from(users)
-        .where(
-          or(eq(users.login, preferredLogin), eq(users.email, preferredEmail)),
-        )
-        .limit(1)
+      user =
+        (await repo.findUserByLoginOrEmail(preferredLogin)) ??
+        (await repo.findUserByEmail(preferredEmail))
 
       if (!user) {
         const passwordHash = await hashPassword(initialPassword)
-        ;[user] = await db
-          .insert(users)
-          .values({
-            email: preferredEmail,
-            login: preferredLogin,
-            passwordHash,
-            name: 'Designer',
-          })
-          .returning(columns)
+        user = await repo.insertUser({
+          email: preferredEmail,
+          login: preferredLogin,
+          passwordHash,
+          name: 'Designer',
+        })
       }
     }
   }
@@ -92,18 +70,10 @@ export async function adminLogin(event: H3Event, body: LoginInput) {
  * Returns the fresh recovery phrase — the only time it is ever revealed.
  */
 export async function adminRegister(body: RegisterInput) {
-  const db = useDb()
-
-  const [existing] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(
-      or(
-        eq(users.login, body.login),
-        eq(users.email, `${body.login}@auth.local`),
-      ),
-    )
-    .limit(1)
+  const existing = await repo.findUserByLoginOrEmailExists(
+    body.login,
+    `${body.login}@auth.local`,
+  )
 
   if (existing) {
     throw createError({
@@ -116,21 +86,13 @@ export async function adminRegister(body: RegisterInput) {
   const passwordHash = await hashPassword(body.password)
   const recoveryPhraseHash = await hashPassword(recoveryPhrase)
 
-  const [created] = await db
-    .insert(users)
-    .values({
-      email: `${body.login}@auth.local`,
-      login: body.login,
-      passwordHash,
-      recoveryPhraseHash,
-      name: body.name || body.login,
-    })
-    .returning({
-      id: users.id,
-      login: users.login,
-      email: users.email,
-      name: users.name,
-    })
+  const created = await repo.insertUser({
+    email: `${body.login}@auth.local`,
+    login: body.login,
+    passwordHash,
+    recoveryPhraseHash,
+    name: body.name || body.login,
+  })
 
   return { ok: true, user: created, recoveryPhrase }
 }

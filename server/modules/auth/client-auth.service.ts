@@ -1,8 +1,5 @@
 import type { H3Event } from 'h3'
-import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { useDb } from '~/server/db/index'
-import { projects } from '~/server/db/schema'
 import {
   hashPassword,
   verifyPassword,
@@ -14,6 +11,7 @@ import type {
   ClientRegisterInput,
   ClientRecoverInput,
 } from '~/shared/types/auth'
+import * as repo from './auth.repository'
 
 /**
  * Client login accepts two shapes:
@@ -39,19 +37,8 @@ export type ClientLoginInput = z.infer<typeof ClientLoginSchema>
  * for invalid slug / credentials.
  */
 export async function clientLogin(event: H3Event, body: ClientLoginInput) {
-  const db = useDb()
-
   if ('slug' in body) {
-    const [project] = await db
-      .select({
-        id: projects.id,
-        slug: projects.slug,
-        title: projects.title,
-        status: projects.status,
-      })
-      .from(projects)
-      .where(eq(projects.slug, body.slug))
-      .limit(1)
+    const project = await repo.findProjectByClientSlug(body.slug)
 
     if (!project) {
       throw createError({
@@ -64,16 +51,7 @@ export async function clientLogin(event: H3Event, body: ClientLoginInput) {
     return { ok: true, slug: project.slug, title: project.title }
   }
 
-  const [project] = await db
-    .select({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      clientPasswordHash: projects.clientPasswordHash,
-    })
-    .from(projects)
-    .where(eq(projects.clientLogin, body.login))
-    .limit(1)
+  const project = await repo.findProjectWithPasswordByClientLogin(body.login)
 
   if (!project || !project.clientPasswordHash) {
     throw createError({ statusCode: 401, statusMessage: 'Неверный логин или пароль' })
@@ -93,13 +71,7 @@ export async function clientLogin(event: H3Event, body: ClientLoginInput) {
  * recovery phrase (shown once). Slug is unique by construction.
  */
 export async function clientRegister(body: ClientRegisterInput) {
-  const db = useDb()
-
-  const [existing] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.clientLogin, body.login))
-    .limit(1)
+  const existing = await repo.findProjectByClientLogin(body.login)
 
   if (existing) {
     throw createError({
@@ -109,28 +81,20 @@ export async function clientRegister(body: ClientRegisterInput) {
   }
 
   const recoveryPhrase = generateRecoveryPhrase()
-  const slug = await createUniqueProjectSlug(db, body.login)
+  const slug = await createUniqueProjectSlug(body.login)
   const clientPasswordHash = await hashPassword(body.password)
   const clientRecoveryPhraseHash = await hashPassword(recoveryPhrase)
   const projectTitle = body.projectTitle?.trim() || `Проект ${body.login}`
   const clientName = body.name?.trim() || body.login
 
-  const [project] = await db
-    .insert(projects)
-    .values({
-      slug,
-      title: projectTitle,
-      clientLogin: body.login,
-      clientPasswordHash,
-      clientRecoveryPhraseHash,
-      profile: { clientName, clientLogin: body.login },
-    })
-    .returning({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      clientLogin: projects.clientLogin,
-    })
+  const project = await repo.insertClientProject({
+    slug,
+    title: projectTitle,
+    clientLogin: body.login,
+    clientPasswordHash,
+    clientRecoveryPhraseHash,
+    profile: { clientName, clientLogin: body.login },
+  })
 
   return { ok: true, project, recoveryPhrase }
 }
@@ -139,16 +103,7 @@ export async function clientRegister(body: ClientRegisterInput) {
  * Reset a client password given the recovery phrase.
  */
 export async function clientRecover(body: ClientRecoverInput) {
-  const db = useDb()
-
-  const [project] = await db
-    .select({
-      id: projects.id,
-      clientRecoveryPhraseHash: projects.clientRecoveryPhraseHash,
-    })
-    .from(projects)
-    .where(eq(projects.clientLogin, body.login))
-    .limit(1)
+  const project = await repo.findProjectWithRecoveryByClientLogin(body.login)
 
   if (!project || !project.clientRecoveryPhraseHash) {
     throw createError({
@@ -166,10 +121,7 @@ export async function clientRecover(body: ClientRecoverInput) {
   }
 
   const clientPasswordHash = await hashPassword(body.newPassword)
-  await db
-    .update(projects)
-    .set({ clientPasswordHash })
-    .where(eq(projects.id, project.id))
+  await repo.updateProjectClientPassword(project.id, clientPasswordHash)
 
   return { ok: true as const }
 }
