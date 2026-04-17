@@ -349,7 +349,7 @@
 
 <script setup lang="ts">
 import type { GalleryItem, GalleryFilterState } from '~~/shared/types/gallery'
-import type { GalleryFilterStateExtended } from './GalleryFilterBar.vue'
+import type { GalleryFilterStateExtended } from '~/entities/gallery/ui/GalleryFilterBar.vue'
 import type { MaterialProperties } from '~~/shared/types/material'
 
 const props = defineProps<{ category: string; title: string }>()

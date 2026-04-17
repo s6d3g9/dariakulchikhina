@@ -7,8 +7,9 @@ export default defineNuxtConfig({
   components: [
     { path: '~/components', pathPrefix: false },
     { path: '~/shared/ui', pathPrefix: false },
-    { path: '~/widgets/shells', pathPrefix: false },
-    { path: '~/entities/admin-navigation/ui', pathPrefix: false },
+    { path: '~/widgets', pathPrefix: false },
+    { path: '~/entities', pathPrefix: false, extensions: ['.vue'] },
+    { path: '~/features', pathPrefix: false, extensions: ['.vue'] },
   ],
 
   ui: {

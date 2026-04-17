@@ -137,7 +137,7 @@ import ClientDesignAlbum   from '~/components/ClientDesignAlbum.vue'
 import ClientPageContent   from '~/features/page-content/ui/ClientPageContent.vue'
 import ClientOverview      from '~/components/ClientOverview.vue'
 import ClientProjectControl from '~/components/ClientProjectControl.vue'
-import ProjectCommunicationsPanel from '~~/app/components/ProjectCommunicationsPanel.vue'
+import ProjectCommunicationsPanel from '~/entities/communications/ui/ProjectCommunicationsPanel.vue'
 
 definePageMeta({ middleware: 'client', layout: 'default' })
 
