@@ -1,14 +1,6 @@
 import { z } from 'zod'
-import { desc, eq, isNull, or } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { useDb } from '~/server/db/index'
-import {
-  contractors,
-  documents,
-  projectExtraServices,
-  projects,
-  workStatusItems,
-} from '~/server/db/schema'
+import * as repo from '~/server/modules/projects/project-communications-api.repository'
 import { getProjectRelationsSnapshot } from '~/server/modules/projects/project-relations.service'
 import {
   buildProjectGovernanceCatalogSubjects,
@@ -61,21 +53,7 @@ function buildSubjectSecondary(parts: Array<string | null | undefined>) {
  * every action selector without extra round-trips.
  */
 export async function buildProjectActionCatalog(slug: string) {
-  const db = useDb()
-  const [project] = await db
-    .select({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      status: projects.status,
-      projectType: projects.projectType,
-      pages: projects.pages,
-      profile: projects.profile,
-      updatedAt: projects.updatedAt,
-    })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
+  const project = await repo.findProjectBySlug(slug)
 
   if (!project) {
     throw createError({ statusCode: 404, statusMessage: 'Проект не найден' })
@@ -95,51 +73,7 @@ export async function buildProjectActionCatalog(slug: string) {
     relations,
   })
 
-  const [workItems, projectDocuments, extraServices] = await Promise.all([
-    db
-      .select({
-        id: workStatusItems.id,
-        title: workStatusItems.title,
-        status: workStatusItems.status,
-        workType: workStatusItems.workType,
-        contractorId: workStatusItems.contractorId,
-        contractorName: contractors.name,
-        dateStart: workStatusItems.dateStart,
-        dateEnd: workStatusItems.dateEnd,
-        notes: workStatusItems.notes,
-      })
-      .from(workStatusItems)
-      .leftJoin(contractors, eq(workStatusItems.contractorId, contractors.id))
-      .where(eq(workStatusItems.projectId, project.id))
-      .orderBy(workStatusItems.sortOrder),
-    db
-      .select({
-        id: documents.id,
-        projectId: documents.projectId,
-        category: documents.category,
-        title: documents.title,
-        filename: documents.filename,
-        url: documents.url,
-        notes: documents.notes,
-        templateKey: documents.templateKey,
-        createdAt: documents.createdAt,
-      })
-      .from(documents)
-      .where(or(eq(documents.projectId, project.id), isNull(documents.projectId)))
-      .orderBy(desc(documents.createdAt)),
-    db
-      .select({
-        id: projectExtraServices.id,
-        title: projectExtraServices.title,
-        status: projectExtraServices.status,
-        requestedBy: projectExtraServices.requestedBy,
-        totalPrice: projectExtraServices.totalPrice,
-        description: projectExtraServices.description,
-      })
-      .from(projectExtraServices)
-      .where(eq(projectExtraServices.projectId, project.id))
-      .orderBy(desc(projectExtraServices.createdAt)),
-  ])
+  const [workItems, projectDocuments, extraServices] = await repo.listActionCatalogData(project.id)
 
   const phases = control.phases.map((phase) => ({
     id: phase.id,
@@ -331,16 +265,10 @@ export async function buildProjectActionCatalog(slug: string) {
  * Appends the log entry to `profile.hybridControl.communicationLog`.
  */
 export async function dispatchProjectMessage(slug: string, body: DispatchInput) {
-  const db = useDb()
-  const [row] = await db
-    .select({ profile: projects.profile })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
+  const project = await repo.findProjectBySlug(slug)
+  if (!project) throw createError({ statusCode: 404, message: 'Project not found' })
 
-  if (!row) throw createError({ statusCode: 404, message: 'Project not found' })
-
-  const profile = (row.profile as Record<string, unknown>) ?? {}
+  const profile = (project.profile as Record<string, unknown>) ?? {}
   const hybridControl = (profile.hybridControl as Record<string, unknown> | undefined) ?? {}
   const team = (hybridControl.team as Array<Record<string, unknown>>) || []
 
@@ -377,10 +305,7 @@ export async function dispatchProjectMessage(slug: string, body: DispatchInput) 
   }
   const nextProfile = { ...profile, hybridControl: nextHybridControl }
 
-  await db
-    .update(projects)
-    .set({ profile: nextProfile as unknown as Record<string, string> })
-    .where(eq(projects.slug, slug))
+  await repo.updateProjectProfile(slug, nextProfile)
 
   return {
     success: true as const,
@@ -403,20 +328,8 @@ export async function ingestCallInsight(
   body: CallInsightIngestInput,
 ) {
   const bootstrap = await buildProjectCommunicationBootstrap(event, slug)
-  const db = useDb()
 
-  const [project] = await db
-    .select({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      pages: projects.pages,
-      status: projects.status,
-      profile: projects.profile,
-    })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
+  const project = await repo.findProjectBySlug(slug)
 
   if (!project) {
     throw createError({ statusCode: 404, statusMessage: 'Проект не найден' })
@@ -434,16 +347,10 @@ export async function ingestCallInsight(
     roomExternalRef: body.roomExternalRef || bootstrap.roomExternalRef,
   })
 
-  await db
-    .update(projects)
-    .set({
-      profile: {
-        ...profile,
-        hybridControl: result.control,
-      } as unknown as Record<string, string>,
-      updatedAt: new Date(),
-    })
-    .where(eq(projects.slug, slug))
+  await repo.updateProjectProfile(slug, {
+    ...profile,
+    hybridControl: result.control,
+  })
 
   return {
     insight: result.insight,
@@ -467,19 +374,7 @@ export async function applyCallInsight(
   insightId: string,
   body: ApplyCallInsightInput,
 ) {
-  const db = useDb()
-  const [project] = await db
-    .select({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      pages: projects.pages,
-      status: projects.status,
-      profile: projects.profile,
-    })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
+  const project = await repo.findProjectBySlug(slug)
 
   if (!project) {
     throw createError({ statusCode: 404, statusMessage: 'Проект не найден' })
@@ -504,16 +399,10 @@ export async function applyCallInsight(
     throw error
   }
 
-  await db
-    .update(projects)
-    .set({
-      profile: {
-        ...profile,
-        hybridControl: result.control,
-      } as unknown as Record<string, string>,
-      updatedAt: new Date(),
-    })
-    .where(eq(projects.slug, slug))
+  await repo.updateProjectProfile(slug, {
+    ...profile,
+    hybridControl: result.control,
+  })
 
   return {
     hybridControl: result.control,

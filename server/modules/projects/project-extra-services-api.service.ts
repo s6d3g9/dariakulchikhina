@@ -1,7 +1,5 @@
 import { z } from 'zod'
-import { eq, and, desc } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import { projectExtraServices, projects } from '~/server/db/schema'
+import * as repo from '~/server/modules/projects/project-extra-services.repository'
 
 // Renamed from `project-extra-services.service.ts` (which already exists
 // as a legacy utils bridge) — this file owns the new API-facing logic
@@ -40,14 +38,9 @@ export type UpdateExtraServiceInput = z.infer<typeof UpdateExtraServiceSchema>
 const CLIENT_ALLOWED_STATUSES = ['approved', 'cancelled']
 
 async function resolveProjectId(slug: string): Promise<number> {
-  const db = useDb()
-  const [project] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
-  if (!project) throw createError({ statusCode: 404, message: 'Project not found' })
-  return project.id
+  const id = await repo.findProjectIdBySlug(slug)
+  if (id === null) throw createError({ statusCode: 404, message: 'Project not found' })
+  return id
 }
 
 /**
@@ -56,12 +49,7 @@ async function resolveProjectId(slug: string): Promise<number> {
  */
 export async function listProjectExtraServices(slug: string, caller: ExtraServicesCaller) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  const services = await db
-    .select()
-    .from(projectExtraServices)
-    .where(eq(projectExtraServices.projectId, projectId))
-    .orderBy(desc(projectExtraServices.createdAt))
+  const services = await repo.listExtraServices(projectId)
 
   if (caller.role === 'client') {
     return services.map((s) => ({ ...s, adminNotes: undefined }))
@@ -81,27 +69,22 @@ export async function createProjectExtraService(
   body: CreateExtraServiceInput,
 ) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
   const isAdmin = caller.role === 'admin'
 
-  const [created] = await db
-    .insert(projectExtraServices)
-    .values({
-      projectId,
-      requestedBy: isAdmin ? 'admin' : 'client',
-      serviceKey: body.serviceKey?.trim() || null,
-      title: body.title.trim(),
-      description: body.description?.trim() || null,
-      quantity: body.quantity?.trim() || '1',
-      unit: body.unit?.trim() || 'услуга',
-      unitPrice: body.unitPrice ?? null,
-      totalPrice: body.totalPrice ?? null,
-      status: isAdmin ? 'quoted' : 'requested',
-      clientNotes: body.clientNotes?.trim() || null,
-      adminNotes: isAdmin ? body.adminNotes?.trim() || null : null,
-    })
-    .returning()
-  return created
+  return repo.insertExtraService({
+    projectId,
+    requestedBy: isAdmin ? 'admin' : 'client',
+    serviceKey: body.serviceKey?.trim() || null,
+    title: body.title.trim(),
+    description: body.description?.trim() || null,
+    quantity: body.quantity?.trim() || '1',
+    unit: body.unit?.trim() || 'услуга',
+    unitPrice: body.unitPrice ?? null,
+    totalPrice: body.totalPrice ?? null,
+    status: isAdmin ? 'quoted' : 'requested',
+    clientNotes: body.clientNotes?.trim() || null,
+    adminNotes: isAdmin ? body.adminNotes?.trim() || null : null,
+  })
 }
 
 /**
@@ -116,18 +99,8 @@ export async function updateProjectExtraService(
   body: UpdateExtraServiceInput,
 ) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
 
-  const [service] = await db
-    .select()
-    .from(projectExtraServices)
-    .where(
-      and(
-        eq(projectExtraServices.id, serviceId),
-        eq(projectExtraServices.projectId, projectId),
-      ),
-    )
-    .limit(1)
+  const service = await repo.findExtraService(serviceId, projectId)
   if (!service) throw createError({ statusCode: 404, message: 'Service not found' })
 
   const update: Record<string, unknown> = { updatedAt: new Date() }
@@ -160,12 +133,7 @@ export async function updateProjectExtraService(
     }
   }
 
-  const [updated] = await db
-    .update(projectExtraServices)
-    .set(update as Record<string, unknown>)
-    .where(eq(projectExtraServices.id, serviceId))
-    .returning()
-  return updated
+  return repo.updateExtraService(serviceId, update)
 }
 
 /**
@@ -178,18 +146,8 @@ export async function deleteProjectExtraService(
   caller: ExtraServicesCaller,
 ) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
 
-  const [service] = await db
-    .select()
-    .from(projectExtraServices)
-    .where(
-      and(
-        eq(projectExtraServices.id, serviceId),
-        eq(projectExtraServices.projectId, projectId),
-      ),
-    )
-    .limit(1)
+  const service = await repo.findExtraService(serviceId, projectId)
   if (!service) throw createError({ statusCode: 404, message: 'Service not found' })
 
   if (caller.role === 'client') {
@@ -207,6 +165,6 @@ export async function deleteProjectExtraService(
     }
   }
 
-  await db.delete(projectExtraServices).where(eq(projectExtraServices.id, serviceId))
+  await repo.deleteExtraService(serviceId)
   return { ok: true as const }
 }

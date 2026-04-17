@@ -1,7 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
-
-import { useDb } from '~/server/db'
-import { contractors, projectExtraServices, projects, workStatusItems } from '~/server/db/schema'
+import * as repo from '~/server/modules/projects/project-comms-action-helpers.repository'
 import { generateExtraServiceDocuments } from '~/server/modules/projects/project-extra-service-documents.service'
 import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, type ProjectStatus } from '~/shared/types/catalogs'
 import type {
@@ -140,43 +137,25 @@ export function buildTaskNotes(
 }
 
 export async function loadProject(slug: string) {
-  const db = useDb()
-  const [project] = await db
-    .select({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      status: projects.status,
-      pages: projects.pages,
-      profile: projects.profile,
-    })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
+  const row = await repo.findProjectBySlug(slug)
 
-  if (!project) {
+  if (!row) {
     throw createError({ statusCode: 404, statusMessage: 'Проект не найден' })
   }
 
   return {
-    db,
     project: {
-      ...project,
-      pages: Array.isArray(project.pages) ? project.pages : [],
-      profile: project.profile && typeof project.profile === 'object'
-        ? project.profile as Record<string, unknown>
+      ...row,
+      pages: Array.isArray(row.pages) ? row.pages : [],
+      profile: row.profile && typeof row.profile === 'object'
+        ? row.profile as Record<string, unknown>
         : {},
     } satisfies ProjectRow,
   }
 }
 
 export async function assertContractorExists(contractorId: number) {
-  const db = useDb()
-  const [contractor] = await db
-    .select({ id: contractors.id })
-    .from(contractors)
-    .where(eq(contractors.id, contractorId))
-    .limit(1)
+  const contractor = await repo.findContractorById(contractorId)
 
   if (!contractor) {
     throw createError({ statusCode: 404, statusMessage: 'Подрядчик не найден' })
@@ -184,39 +163,27 @@ export async function assertContractorExists(contractorId: number) {
 }
 
 export async function createWorkStatusTask(project: ProjectRow, payload: MessengerProjectMutationPayload) {
-  const db = useDb()
   const contractorId = parsePrefixedNumber(payload.subjectId, 'contractor:')
   if (contractorId) {
     await assertContractorExists(contractorId)
   }
 
-  const [sortRow] = await db
-    .select({ maxSort: sql<number>`coalesce(max(${workStatusItems.sortOrder}), -1)` })
-    .from(workStatusItems)
-    .where(eq(workStatusItems.projectId, project.id))
+  const maxSort = await repo.findMaxWorkStatusSortOrder(project.id)
 
   const notes = buildTaskNotes(payload, {
     includeSubjectLabel: Boolean(payload.subjectLabel) && !contractorId,
   })
 
-  const [created] = await db
-    .insert(workStatusItems)
-    .values({
-      projectId: project.id,
-      contractorId: contractorId || null,
-      title: normalizePayloadText(payload.taskTitle) || 'Новая задача',
-      status: 'pending',
-      dateStart: normalizePayloadText(payload.rangeStart) || null,
-      dateEnd: normalizePayloadText(payload.rangeEnd) || null,
-      notes: notes || null,
-      sortOrder: Number(sortRow?.maxSort ?? -1) + 1,
-    })
-    .returning({
-      id: workStatusItems.id,
-      title: workStatusItems.title,
-    })
-
-  return created
+  return repo.insertWorkStatusItem({
+    projectId: project.id,
+    contractorId: contractorId || null,
+    title: normalizePayloadText(payload.taskTitle) || 'Новая задача',
+    status: 'pending',
+    dateStart: normalizePayloadText(payload.rangeStart) || null,
+    dateEnd: normalizePayloadText(payload.rangeEnd) || null,
+    notes: notes || null,
+    sortOrder: maxSort + 1,
+  })
 }
 
 export async function updateWorkStatusTask(
@@ -224,7 +191,6 @@ export async function updateWorkStatusTask(
   payload: MessengerProjectMutationPayload,
   actionId: 'assign_task' | 'update_work_status',
 ) {
-  const db = useDb()
   const taskId = parsePrefixedNumber(payload.taskId, 'work:')
   if (!taskId) {
     throw createError({ statusCode: 400, statusMessage: 'Нужна задача из статуса работ' })
@@ -239,7 +205,7 @@ export async function updateWorkStatusTask(
     includeSubjectLabel: Boolean(payload.subjectLabel) && !contractorId,
   })
 
-  const nextValues: Partial<typeof workStatusItems.$inferInsert> = {}
+  const nextValues: Record<string, unknown> = {}
   if (actionId === 'update_work_status') {
     nextValues.status = resolveWorkStatusStatus(payload.taskStatus)
   }
@@ -264,18 +230,7 @@ export async function updateWorkStatusTask(
     nextValues.notes = notes
   }
 
-  const [updated] = await db
-    .update(workStatusItems)
-    .set(nextValues)
-    .where(and(
-      eq(workStatusItems.id, taskId),
-      eq(workStatusItems.projectId, project.id),
-    ))
-    .returning({
-      id: workStatusItems.id,
-      title: workStatusItems.title,
-      status: workStatusItems.status,
-    })
+  const updated = await repo.updateWorkStatusItem(taskId, project.id, nextValues)
 
   if (!updated) {
     throw createError({ statusCode: 404, statusMessage: 'Задача не найдена' })
@@ -438,25 +393,17 @@ export function updateHybridTask(control: HybridControl, payload: MessengerProje
 }
 
 export async function persistHybridControl(project: ProjectRow, control: HybridControl) {
-  const db = useDb()
   const nextControl = ensureHybridControl(control, project)
 
-  await db
-    .update(projects)
-    .set({
-      profile: {
-        ...project.profile,
-        hybridControl: nextControl,
-      } as any,
-      updatedAt: new Date(),
-    })
-    .where(eq(projects.id, project.id))
+  await repo.updateProjectControl(project.slug, {
+    ...project.profile,
+    hybridControl: nextControl,
+  })
 
   return nextControl
 }
 
 export async function setProjectStatus(project: ProjectRow, actionId: 'accept_stage' | 'change_phase', payload: MessengerProjectMutationPayload) {
-  const db = useDb()
   const currentStatus = resolveProjectStatus(project.status)
   const requestedStatus = normalizePayloadText(payload.phaseKey)
   const resolvedTarget = PROJECT_STATUSES.includes(requestedStatus as ProjectStatus)
@@ -466,51 +413,30 @@ export async function setProjectStatus(project: ProjectRow, actionId: 'accept_st
     ? resolveNextProjectStatus(resolvedTarget)
     : resolvedTarget
 
-  const [updated] = await db
-    .update(projects)
-    .set({
-      status: targetStatus,
-      updatedAt: new Date(),
-    })
-    .where(eq(projects.id, project.id))
-    .returning({
-      slug: projects.slug,
-      status: projects.status,
-    })
+  await repo.updateProjectStatus(project.slug, targetStatus)
 
-  if (!updated) {
-    throw createError({ statusCode: 404, statusMessage: 'Проект не найден' })
+  return {
+    slug: project.slug,
+    status: targetStatus,
   }
-
-  return updated
 }
 
 export async function createExtraService(project: ProjectRow, payload: MessengerProjectMutationPayload) {
-  const db = useDb()
   const title = normalizePayloadText(payload.serviceTitle)
     || normalizePayloadText(payload.objectLabel)
     || normalizePayloadText(payload.note).slice(0, 120)
     || 'Дополнительная услуга'
   const description = buildTaskNotes(payload)
 
-  const [created] = await db
-    .insert(projectExtraServices)
-    .values({
-      projectId: project.id,
-      requestedBy: 'admin',
-      title,
-      description: description || null,
-      quantity: '1',
-      unit: 'услуга',
-      status: 'quoted',
-      adminNotes: normalizePayloadText(payload.note) || null,
-    })
-    .returning({
-      id: projectExtraServices.id,
-      title: projectExtraServices.title,
-    })
-
-  return created
+  return repo.insertExtraService(project.id, {
+    requestedBy: 'admin',
+    title,
+    description: description || null,
+    quantity: '1',
+    unit: 'услуга',
+    status: 'quoted',
+    adminNotes: normalizePayloadText(payload.note) || null,
+  })
 }
 
 export async function createExtraServiceInvoice(project: ProjectRow, payload: MessengerProjectMutationPayload) {

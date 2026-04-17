@@ -765,3 +765,27 @@ Created paired repositories: server/modules/admin-settings/admin-settings.reposi
 
 ### [done] 2026-04-17 — Wave 7 / ai + rag repository split
 server/modules/ai/ai.repository.ts (listLegalSourceCounts, findProjectBySlug, listPageContentByProject, findClientById, findContractorById) + server/modules/ai/rag.repository.ts (searchLegalChunksByEmbedding, countLegalChunks). Services теперь чистые: ai.service делает shape/whitelist контекста для LLM, rag.service делает embeddings HTTP + markdown-форматирование. rag.service переведён с `process.env.GEMMA_URL` на `config.GEMMA_URL`. Delta: 89 → 83 (−6). Проверки: vue-tsc ok.
+
+### [done] 2026-04-18 — Wave 7 / projects repository layer split
+Цель: вынести все Drizzle-запросы из 15 service-файлов домена `projects` в 10 отдельных `*.repository.ts` файлов. После сплита ни один `.service.ts` в домене не импортирует `drizzle-orm` или `~/server/db/schema` напрямую.
+
+Создано 10 файлов репозиториев (`server/modules/projects/`):
+- `projects.repository.ts` — findProjectById, listProjectsWithTaskStats, findProjectIdBySlug, findProjectDetailBySlug, findProjectWorkStatusByProjectId, getWorkStatusPhotoCounts, getWorkStatusCommentCounts, insertProject, updateProjectBySlug, updateProjectStatusBySlug, findProjectForDelete, findProjectUploads, findProjectWorkItemIds, findProjectWorkItemPhotosByItemIds, nullifyDocumentsProjectId, deleteProjectById, findProjectFull, updateProjectProfileBySlug
+- `project-pages.repository.ts` — findProjectIdBySlug, listPageContent, findPageContent, findPageContentId, insertPageContent, updatePageContent
+- `project-extra-services.repository.ts` — findProjectIdBySlug, listExtraServices, findExtraService, insertExtraService, updateExtraService, deleteExtraService, findProjectBySlug, findExtraServiceByIdAndProject, insertDocument, updateExtraServiceDocIds
+- `project-partners.repository.ts` — findProjectIdBySlug, listProjectContractorRows, insertProjectContractor, deleteProjectContractor, listProjectDesignerRows, insertProjectDesigner, deleteProjectDesigner, listProjectSellerRows, insertProjectSeller, deleteProjectSeller
+- `project-relations.repository.ts` — findProjectWithProfile, findClientsByIds, findProjectContractorsForProject, findProjectDesignersForProject, findProjectSellersForProject, findProjectManagersForProject
+- `project-governance.repository.ts` — findGovernanceProject, readGovernanceParticipants, readGovernanceAssignments, readGovernanceSettings, findParticipantByProjectAndId, insertParticipantInTx, updateParticipantInTx, findAssignmentByProjectAndId, insertAssignmentInTx, updateAssignmentInTx, deleteAssignmentInTx, findScopeSettingsByContext, findScopeSettingsByContextInTx, insertScopeSettingsInTx, updateScopeSettingsInTx, findWorkTaskForScope, findDocumentForScope, findExtraServiceForScope, readGovernanceSyncData, updateProjectHybridControlInTx
+- `project-work-status.repository.ts` — listWorkItemIdsByProject, deleteWorkItemsByIds, insertWorkItem, updateWorkItem, listWorkItemsByProject
+- `project-work-status-items.repository.ts` — findProjectId, findWorkItemInProject, listItemComments, findUserName, insertItemComment, listItemPhotos
+- `project-comms-action-helpers.repository.ts` — findProjectBySlug, findContractorById, findMaxWorkStatusSortOrder, insertWorkStatusItem, findWorkStatusItem, updateWorkStatusItem, updateProjectControl, updateProjectStatus, insertExtraService
+- `project-communications-api.repository.ts` — findProjectBySlug, listActionCatalogData, updateProjectProfile
+
+Обновлено 14 service-файлов (все `import * as repo from './<name>.repository'`):
+- `projects.service.ts`, `project-mutations.service.ts`, `project-pages.service.ts`, `project-extra-services-api.service.ts`, `project-extra-service-documents.service.ts`, `project-partners.service.ts`, `project-relations.service.ts`, `project-work-status.service.ts`, `project-work-status-items.service.ts`, `project-comms-action-helpers.service.ts`, `project-communications-api.service.ts`, `project-governance-state.service.ts`, `project-governance-summary.service.ts`, `project-governance.service.ts`
+
+Исключения (по правилам задания):
+- `project-work-status.service.ts` и `project-governance.service.ts` сохраняют `import { useDb } from '~/server/db'` только для `db.transaction()`.
+- `project-governance-state.service.ts` оставлен без изменений относительно drizzle — не импортировал его до сплита.
+
+Проверки: vue-tsc exit 0, lint:errors 0 новых нарушений.

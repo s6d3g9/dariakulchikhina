@@ -1,15 +1,5 @@
 import { z } from 'zod'
-import { eq, and } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import {
-  projects,
-  contractors,
-  projectContractors,
-  designers,
-  designerProjects,
-  sellers,
-  sellerProjects,
-} from '~/server/db/schema'
+import * as repo from '~/server/modules/projects/project-partners.repository'
 
 // ── Schemas ────────────────────────────────────────────────────────────
 
@@ -31,14 +21,9 @@ export type AddSellerInput = z.infer<typeof AddSellerSchema>
 // ── Helper ─────────────────────────────────────────────────────────────
 
 async function resolveProjectId(slug: string): Promise<number> {
-  const db = useDb()
-  const [project] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
-  if (!project) throw createError({ statusCode: 404, message: 'Проект не найден' })
-  return project.id
+  const id = await repo.findProjectIdBySlug(slug)
+  if (id === null) throw createError({ statusCode: 404, message: 'Проект не найден' })
+  return id
 }
 
 // ── Contractors ────────────────────────────────────────────────────────
@@ -50,61 +35,7 @@ async function resolveProjectId(slug: string): Promise<number> {
  */
 export async function listProjectContractors(slug: string) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  const rows = await db
-    .select({
-      contractor: {
-        id: contractors.id,
-        slug: contractors.slug,
-        name: contractors.name,
-        companyName: contractors.companyName,
-        contactPerson: contractors.contactPerson,
-        phone: contractors.phone,
-        email: contractors.email,
-        inn: contractors.inn,
-        kpp: contractors.kpp,
-        ogrn: contractors.ogrn,
-        bankName: contractors.bankName,
-        bik: contractors.bik,
-        settlementAccount: contractors.settlementAccount,
-        correspondentAccount: contractors.correspondentAccount,
-        legalAddress: contractors.legalAddress,
-        factAddress: contractors.factAddress,
-        workTypes: contractors.workTypes,
-        roleTypes: contractors.roleTypes,
-        contractorType: contractors.contractorType,
-        parentId: contractors.parentId,
-        notes: contractors.notes,
-        messenger: contractors.messenger,
-        messengerNick: contractors.messengerNick,
-        website: contractors.website,
-        passportSeries: contractors.passportSeries,
-        passportNumber: contractors.passportNumber,
-        passportIssuedBy: contractors.passportIssuedBy,
-        passportIssueDate: contractors.passportIssueDate,
-        passportDepartmentCode: contractors.passportDepartmentCode,
-        birthDate: contractors.birthDate,
-        birthPlace: contractors.birthPlace,
-        registrationAddress: contractors.registrationAddress,
-        snils: contractors.snils,
-        telegram: contractors.telegram,
-        whatsapp: contractors.whatsapp,
-        city: contractors.city,
-        workRadius: contractors.workRadius,
-        taxSystem: contractors.taxSystem,
-        paymentMethods: contractors.paymentMethods,
-        hourlyRate: contractors.hourlyRate,
-        hasInsurance: contractors.hasInsurance,
-        insuranceDetails: contractors.insuranceDetails,
-        education: contractors.education,
-        certifications: contractors.certifications,
-        experienceYears: contractors.experienceYears,
-      },
-    })
-    .from(projectContractors)
-    .innerJoin(contractors, eq(projectContractors.contractorId, contractors.id))
-    .where(eq(projectContractors.projectId, projectId))
-    .orderBy(contractors.name)
+  const rows = await repo.listProjectContractorRows(projectId)
 
   return rows.map((r) => {
     const c = r.contractor as Record<string, unknown>
@@ -130,11 +61,7 @@ export async function listProjectContractors(slug: string) {
 /** Idempotent: no-op if contractor is already linked. */
 export async function addContractorToProject(slug: string, contractorId: number) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  await db
-    .insert(projectContractors)
-    .values({ projectId, contractorId })
-    .onConflictDoNothing()
+  await repo.insertProjectContractor(projectId, contractorId)
   return { ok: true as const }
 }
 
@@ -143,15 +70,7 @@ export async function removeContractorFromProject(
   contractorId: number,
 ) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  await db
-    .delete(projectContractors)
-    .where(
-      and(
-        eq(projectContractors.projectId, projectId),
-        eq(projectContractors.contractorId, contractorId),
-      ),
-    )
+  await repo.deleteProjectContractor(projectId, contractorId)
   return { ok: true as const }
 }
 
@@ -159,38 +78,20 @@ export async function removeContractorFromProject(
 
 export async function listProjectDesigners(slug: string) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  const rows = await db
-    .select({ designer: designers })
-    .from(designerProjects)
-    .innerJoin(designers, eq(designerProjects.designerId, designers.id))
-    .where(eq(designerProjects.projectId, projectId))
-    .orderBy(designers.name)
+  const rows = await repo.listProjectDesignerRows(projectId)
   return rows.map((r) => r.designer)
 }
 
 /** Idempotent via onConflictDoNothing (unique key on (designerId, projectId)). */
 export async function addDesignerToProject(slug: string, designerId: number) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  await db
-    .insert(designerProjects)
-    .values({ projectId, designerId })
-    .onConflictDoNothing()
+  await repo.insertProjectDesigner(projectId, designerId)
   return { ok: true as const }
 }
 
 export async function removeDesignerFromProject(slug: string, designerId: number) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  await db
-    .delete(designerProjects)
-    .where(
-      and(
-        eq(designerProjects.projectId, projectId),
-        eq(designerProjects.designerId, designerId),
-      ),
-    )
+  await repo.deleteProjectDesigner(projectId, designerId)
   return { ok: true as const }
 }
 
@@ -198,36 +99,18 @@ export async function removeDesignerFromProject(slug: string, designerId: number
 
 export async function listProjectSellers(slug: string) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  const rows = await db
-    .select({ seller: sellers })
-    .from(sellerProjects)
-    .innerJoin(sellers, eq(sellerProjects.sellerId, sellers.id))
-    .where(eq(sellerProjects.projectId, projectId))
-    .orderBy(sellers.name)
+  const rows = await repo.listProjectSellerRows(projectId)
   return rows.map((r) => r.seller)
 }
 
 export async function addSellerToProject(slug: string, sellerId: number) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  await db
-    .insert(sellerProjects)
-    .values({ projectId, sellerId })
-    .onConflictDoNothing()
+  await repo.insertProjectSeller(projectId, sellerId)
   return { ok: true as const }
 }
 
 export async function removeSellerFromProject(slug: string, sellerId: number) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-  await db
-    .delete(sellerProjects)
-    .where(
-      and(
-        eq(sellerProjects.projectId, projectId),
-        eq(sellerProjects.sellerId, sellerId),
-      ),
-    )
+  await repo.deleteProjectSeller(projectId, sellerId)
   return { ok: true as const }
 }

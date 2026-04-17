@@ -1,13 +1,5 @@
-import { asc, eq } from 'drizzle-orm'
-
-import { useDb } from '~/server/db'
-import {
-  projectParticipants,
-  projectScopeAssignments,
-  projectScopeSettings,
-  projects,
-} from '~/server/db/schema'
 import { getProjectRelationsSnapshot, type ProjectRelationsSnapshot } from '~/server/modules/projects/project-relations.service'
+import * as repo from '~/server/modules/projects/project-governance.repository'
 import type {
   HybridControl,
 } from '~/shared/types/project'
@@ -222,58 +214,11 @@ export function sortParticipants(left: ProjectGovernanceSummaryParticipant, righ
 }
 
 export async function readPersistedGovernanceState(projectId: number) {
-  const db = useDb()
-
   const [participantRows, assignmentRows, settingsRows] = await Promise.all([
-    safeGovernanceQuery(() => db
-      .select({
-        id: projectParticipants.id,
-        projectId: projectParticipants.projectId,
-        sourceKind: projectParticipants.sourceKind,
-        sourceId: projectParticipants.sourceId,
-        roleKey: projectParticipants.roleKey,
-        displayName: projectParticipants.displayName,
-        companyName: projectParticipants.companyName,
-        phone: projectParticipants.phone,
-        email: projectParticipants.email,
-        messengerNick: projectParticipants.messengerNick,
-        isPrimary: projectParticipants.isPrimary,
-        status: projectParticipants.status,
-        notes: projectParticipants.notes,
-        meta: projectParticipants.meta,
-      })
-      .from(projectParticipants)
-      .where(eq(projectParticipants.projectId, projectId))
-      .orderBy(asc(projectParticipants.displayName)), []),
-    safeGovernanceQuery(() => db
-      .select({
-        id: projectScopeAssignments.id,
-        participantId: projectScopeAssignments.participantId,
-        scopeType: projectScopeAssignments.scopeType,
-        scopeSource: projectScopeAssignments.scopeSource,
-        scopeId: projectScopeAssignments.scopeId,
-        responsibility: projectScopeAssignments.responsibility,
-        status: projectScopeAssignments.status,
-        dueDate: projectScopeAssignments.dueDate,
-        notes: projectScopeAssignments.notes,
-        assignedAt: projectScopeAssignments.assignedAt,
-        updatedAt: projectScopeAssignments.updatedAt,
-      })
-      .from(projectScopeAssignments)
-      .where(eq(projectScopeAssignments.projectId, projectId)), []),
-    safeGovernanceQuery(() => db
-      .select({
-        id: projectScopeSettings.id,
-        scopeType: projectScopeSettings.scopeType,
-        scopeSource: projectScopeSettings.scopeSource,
-        scopeId: projectScopeSettings.scopeId,
-        settings: projectScopeSettings.settings,
-        updatedAt: projectScopeSettings.updatedAt,
-      })
-      .from(projectScopeSettings)
-      .where(eq(projectScopeSettings.projectId, projectId)), []),
+    repo.readGovernanceParticipants(projectId),
+    repo.readGovernanceAssignments(projectId),
+    repo.readGovernanceSettings(projectId),
   ])
-
   return { participantRows, assignmentRows, settingsRows }
 }
 
@@ -532,23 +477,8 @@ export function mapParticipantSourceToCatalogKind(sourceKind: ProjectParticipant
 }
 
 export async function getProjectGovernanceProject(projectSlug: string): Promise<ProjectGovernanceProjectRow | null> {
-  const db = useDb()
-  const [project] = await db
-    .select({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      status: projects.status,
-      projectType: projects.projectType,
-      pages: projects.pages,
-      profile: projects.profile,
-      updatedAt: projects.updatedAt,
-    })
-    .from(projects)
-    .where(eq(projects.slug, projectSlug))
-    .limit(1)
-
-  return normalizeProjectRow(project)
+  const project = await repo.findGovernanceProject(projectSlug)
+  return normalizeProjectRow(project as ProjectGovernanceProjectRow | null)
 }
 
 export async function getProjectGovernanceProjectOrThrow(projectSlug: string) {

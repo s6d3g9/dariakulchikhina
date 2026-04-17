@@ -1,12 +1,4 @@
-import { and, eq } from 'drizzle-orm'
-
-import { useDb } from '~/server/db'
-import {
-  contractors,
-  documents,
-  projectExtraServices,
-  workStatusItems,
-} from '~/server/db/schema'
+import * as repo from '~/server/modules/projects/project-governance.repository'
 import type {
   HybridControl,
   HybridControlPhase,
@@ -508,27 +500,12 @@ async function buildTaskScopeContext(state: GovernanceState, scopeId: string): P
     }
   }
 
-  const db = useDb()
   const numericId = Number(scopeId.replace(/^work:/, '').trim())
   if (!Number.isInteger(numericId) || numericId <= 0) {
     return null
   }
 
-  const [workTask] = await db
-    .select({
-      id: workStatusItems.id,
-      title: workStatusItems.title,
-      status: workStatusItems.status,
-      workType: workStatusItems.workType,
-      notes: workStatusItems.notes,
-      dateStart: workStatusItems.dateStart,
-      dateEnd: workStatusItems.dateEnd,
-      contractorName: contractors.name,
-    })
-    .from(workStatusItems)
-    .leftJoin(contractors, eq(workStatusItems.contractorId, contractors.id))
-    .where(and(eq(workStatusItems.projectId, state.project.id), eq(workStatusItems.id, numericId)))
-    .limit(1)
+  const workTask = await repo.findWorkTaskForScope(state.project.id, numericId)
 
   if (!workTask) {
     return null
@@ -579,19 +556,7 @@ async function buildDocumentScopeContext(state: GovernanceState, scopeId: string
     return null
   }
 
-  const db = useDb()
-  const [document] = await db
-    .select({
-      id: documents.id,
-      title: documents.title,
-      category: documents.category,
-      filename: documents.filename,
-      notes: documents.notes,
-      templateKey: documents.templateKey,
-    })
-    .from(documents)
-    .where(and(eq(documents.projectId, state.project.id), eq(documents.id, numericId)))
-    .limit(1)
+  const document = await repo.findDocumentForScope(state.project.id, numericId)
 
   if (!document) {
     return null
@@ -631,19 +596,7 @@ async function buildServiceScopeContext(state: GovernanceState, scopeId: string)
     return null
   }
 
-  const db = useDb()
-  const [service] = await db
-    .select({
-      id: projectExtraServices.id,
-      title: projectExtraServices.title,
-      status: projectExtraServices.status,
-      requestedBy: projectExtraServices.requestedBy,
-      totalPrice: projectExtraServices.totalPrice,
-      description: projectExtraServices.description,
-    })
-    .from(projectExtraServices)
-    .where(and(eq(projectExtraServices.projectId, state.project.id), eq(projectExtraServices.id, numericId)))
-    .limit(1)
+  const service = await repo.findExtraServiceForScope(state.project.id, numericId)
 
   if (!service) {
     return null

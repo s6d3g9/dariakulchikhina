@@ -1,7 +1,5 @@
 import { z } from 'zod'
-import { eq, and } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import { pageContent, projects } from '~/server/db/schema'
+import * as repo from '~/server/modules/projects/project-pages.repository'
 
 const ANSWERS_PREFIX = '__answers__:'
 
@@ -21,14 +19,9 @@ function sanitizeContent(obj: Record<string, unknown>): Record<string, unknown> 
 }
 
 async function resolveProjectId(slug: string): Promise<number> {
-  const db = useDb()
-  const [project] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
-  if (!project) throw createError({ statusCode: 404 })
-  return project.id
+  const id = await repo.findProjectIdBySlug(slug)
+  if (id === null) throw createError({ statusCode: 404 })
+  return id
 }
 
 // ── page-content ──────────────────────────────────────────────────────
@@ -46,18 +39,13 @@ export type UpsertPageContentInput = z.infer<typeof UpsertPageContentSchema>
  */
 export async function getPageContent(slug: string, page: string | undefined) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
 
   if (page) {
-    const [content] = await db
-      .select()
-      .from(pageContent)
-      .where(and(eq(pageContent.projectId, projectId), eq(pageContent.pageSlug, page)))
-      .limit(1)
+    const content = await repo.findPageContent(projectId, page)
     return content || { projectId, pageSlug: page, content: {} }
   }
 
-  return db.select().from(pageContent).where(eq(pageContent.projectId, projectId))
+  return repo.listPageContent(projectId)
 }
 
 /**
@@ -66,36 +54,15 @@ export async function getPageContent(slug: string, page: string | undefined) {
  */
 export async function upsertPageContent(slug: string, body: UpsertPageContentInput) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
   const safeContent = sanitizeContent(body.content as Record<string, unknown>)
 
-  const existing = await db
-    .select({ id: pageContent.id })
-    .from(pageContent)
-    .where(
-      and(eq(pageContent.projectId, projectId), eq(pageContent.pageSlug, body.pageSlug)),
-    )
-    .limit(1)
+  const existing = await repo.findPageContentId(projectId, body.pageSlug)
 
-  if (existing.length > 0) {
-    const [updated] = await db
-      .update(pageContent)
-      .set({ content: safeContent, updatedAt: new Date() })
-      .where(
-        and(
-          eq(pageContent.projectId, projectId),
-          eq(pageContent.pageSlug, body.pageSlug),
-        ),
-      )
-      .returning()
-    return updated
+  if (existing) {
+    return repo.updatePageContent(projectId, body.pageSlug, safeContent)
   }
 
-  const [inserted] = await db
-    .insert(pageContent)
-    .values({ projectId, pageSlug: body.pageSlug, content: safeContent })
-    .returning()
-  return inserted
+  return repo.insertPageContent({ projectId, pageSlug: body.pageSlug, content: safeContent })
 }
 
 // ── page-answers ──────────────────────────────────────────────────────
@@ -131,19 +98,8 @@ export async function getPageAnswers(
   }
 
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
-
   const storageSlug = `${ANSWERS_PREFIX}${page}`
-  const [row] = await db
-    .select({ content: pageContent.content })
-    .from(pageContent)
-    .where(
-      and(
-        eq(pageContent.projectId, projectId),
-        eq(pageContent.pageSlug, storageSlug),
-      ),
-    )
-    .limit(1)
+  const row = await repo.findPageContent(projectId, storageSlug)
 
   const content = (row?.content || {}) as Record<string, unknown>
 
@@ -157,7 +113,6 @@ export async function getPageAnswers(
 
 export async function upsertPageAnswers(slug: string, body: PageAnswersInput) {
   const projectId = await resolveProjectId(slug)
-  const db = useDb()
 
   const normalizedNumberAnswers = Object.fromEntries(
     Object.entries(body.numberAnswers).map(([key, value]) => [
@@ -173,31 +128,11 @@ export async function upsertPageAnswers(slug: string, body: PageAnswersInput) {
     numberAnswers: normalizedNumberAnswers,
   }
 
-  const existing = await db
-    .select({ id: pageContent.id })
-    .from(pageContent)
-    .where(
-      and(eq(pageContent.projectId, projectId), eq(pageContent.pageSlug, storageSlug)),
-    )
-    .limit(1)
+  const existing = await repo.findPageContentId(projectId, storageSlug)
 
-  if (existing.length > 0) {
-    const [updated] = await db
-      .update(pageContent)
-      .set({ content, updatedAt: new Date() })
-      .where(
-        and(
-          eq(pageContent.projectId, projectId),
-          eq(pageContent.pageSlug, storageSlug),
-        ),
-      )
-      .returning()
-    return updated
+  if (existing) {
+    return repo.updatePageContent(projectId, storageSlug, content)
   }
 
-  const [inserted] = await db
-    .insert(pageContent)
-    .values({ projectId, pageSlug: storageSlug, content })
-    .returning()
-  return inserted
+  return repo.insertPageContent({ projectId, pageSlug: storageSlug, content })
 }

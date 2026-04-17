@@ -1,15 +1,6 @@
 import { z } from 'zod'
 import { unlink } from 'node:fs/promises'
 import { join } from 'node:path'
-import { eq, inArray } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import {
-  projects,
-  uploads,
-  workStatusItems,
-  workStatusItemPhotos,
-  documents,
-} from '~/server/db/schema'
 import type {
   CreateProject as CreateProjectInput,
   UpdateProject as UpdateProjectInput,
@@ -18,19 +9,7 @@ import { findPreset } from '~/shared/constants/design-system/presets'
 import { CORE_PAGES } from '~/shared/constants/navigation/pages'
 import { PROJECT_STATUSES } from '~/shared/types/catalogs'
 import { CLIENT_PROFILE_EDITABLE_KEYS } from '~/shared/constants/profile-fields'
-
-const projectReturning = {
-  id: projects.id,
-  slug: projects.slug,
-  title: projects.title,
-  status: projects.status,
-  projectType: projects.projectType,
-  userId: projects.userId,
-  pages: projects.pages,
-  profile: projects.profile,
-  createdAt: projects.createdAt,
-  updatedAt: projects.updatedAt,
-}
+import * as repo from '~/server/modules/projects/projects.repository'
 
 export const UpdateProjectStatusSchema = z.object({
   status: z.enum(PROJECT_STATUSES),
@@ -62,23 +41,18 @@ function getDuplicateCode(e: unknown): string | undefined {
  * CORE_PAGES. Maps unique-slug violation (23505) to a user-facing 400.
  */
 export async function createProject(body: CreateProjectInput) {
-  const db = useDb()
   const preset = body.projectType ? findPreset(body.projectType) : undefined
   const pages = preset ? [...preset.pages] : [...CORE_PAGES]
   const initialProfile = preset ? { ...preset.defaultProfile } : {}
 
   try {
-    const [project] = await db
-      .insert(projects)
-      .values({
-        slug: body.slug,
-        title: body.title,
-        projectType: body.projectType ?? 'apartment',
-        pages,
-        profile: initialProfile,
-      })
-      .returning(projectReturning)
-    return project
+    return await repo.insertProject({
+      slug: body.slug,
+      title: body.title,
+      projectType: body.projectType ?? 'apartment',
+      pages,
+      profile: initialProfile,
+    })
   } catch (e: unknown) {
     if (getDuplicateCode(e) === '23505') {
       throw createError({
@@ -92,26 +66,14 @@ export async function createProject(body: CreateProjectInput) {
 }
 
 export async function updateProject(slug: string, body: UpdateProjectInput) {
-  const db = useDb()
-  const [updated] = await db
-    .update(projects)
-    .set({ ...body, updatedAt: new Date() } as Record<string, unknown>)
-    .where(eq(projects.slug, slug))
-    .returning(projectReturning)
-  return updated ?? null
+  return repo.updateProjectBySlug(slug, { ...body, updatedAt: new Date() } as Record<string, unknown>)
 }
 
 export async function updateProjectStatus(
   slug: string,
   body: UpdateProjectStatusInput,
 ) {
-  const db = useDb()
-  const [updated] = await db
-    .update(projects)
-    .set({ status: body.status, updatedAt: new Date() })
-    .where(eq(projects.slug, slug))
-    .returning(projectReturning)
-  return updated ?? null
+  return repo.updateProjectStatusBySlug(slug, body.status)
 }
 
 /**
@@ -122,43 +84,15 @@ export async function updateProjectStatus(
  * project row. File unlinks are best-effort.
  */
 export async function deleteProjectBySlug(slug: string) {
-  const db = useDb()
-
-  const [proj] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
+  const proj = await repo.findProjectForDelete(slug)
   if (!proj) return false
 
-  const uploadRows = await db
-    .select({ filename: uploads.filename })
-    .from(uploads)
-    .where(eq(uploads.projectId, proj.id))
-  const workItems = await db
-    .select({ id: workStatusItems.id })
-    .from(workStatusItems)
-    .where(eq(workStatusItems.projectId, proj.id))
+  const uploadRows = await repo.findProjectUploads(proj.id)
+  const workItems = await repo.findProjectWorkItemIds(proj.id)
+  const photoUrls = await repo.findProjectWorkItemPhotosByItemIds(workItems.map(w => w.id))
 
-  let photoUrls: { url: string | null }[] = []
-  if (workItems.length) {
-    photoUrls = await db
-      .select({ url: workStatusItemPhotos.url })
-      .from(workStatusItemPhotos)
-      .where(
-        inArray(
-          workStatusItemPhotos.itemId,
-          workItems.map((w) => w.id),
-        ),
-      )
-  }
-
-  await db
-    .update(documents)
-    .set({ projectId: null } as Record<string, unknown>)
-    .where(eq(documents.projectId, proj.id))
-
-  await db.delete(projects).where(eq(projects.id, proj.id))
+  await repo.nullifyDocumentsProjectId(proj.id)
+  await repo.deleteProjectById(proj.id)
 
   const base = join(process.cwd(), 'public')
   for (const row of uploadRows) {
@@ -190,13 +124,7 @@ export async function deleteProjectBySlug(slug: string) {
  * `== null` uniformly. Returns null when the slug doesn't exist.
  */
 export async function updateClientProfile(slug: string, body: ClientProfileInput) {
-  const db = useDb()
-
-  const [current] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
+  const current = await repo.findProjectFull(slug)
   if (!current) return null
 
   const safeFields: Record<string, string | null> = {}
@@ -213,13 +141,7 @@ export async function updateClientProfile(slug: string, body: ClientProfileInput
     ...safeFields,
   }
 
-  await db
-    .update(projects)
-    .set({
-      profile: merged as unknown as Record<string, string>,
-      updatedAt: new Date(),
-    })
-    .where(eq(projects.slug, slug))
+  await repo.updateProjectProfileBySlug(slug, merged)
 
   return { ok: true as const }
 }

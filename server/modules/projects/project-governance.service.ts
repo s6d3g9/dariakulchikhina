@@ -1,12 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
-
 import { useDb } from '~/server/db'
-import {
-  projectParticipants,
-  projectScopeAssignments,
-  projectScopeSettings,
-  projects,
-} from '~/server/db/schema'
 import type {
   CreateProjectParticipant,
   CreateProjectScopeAssignment,
@@ -48,6 +40,7 @@ import {
   resolveScopeContext,
   sanitizeGovernanceRecord,
 } from '~/server/modules/projects/project-governance-summary.service'
+import * as repo from '~/server/modules/projects/project-governance.repository'
 
 export {
   getProjectGovernanceProject,
@@ -62,51 +55,6 @@ type CanonicalScopeRef = {
   scopeType: ProjectScopeType
   scopeSource: ProjectScopeSource
   scopeId: string
-}
-
-const projectParticipantReturning = {
-  id: projectParticipants.id,
-  projectId: projectParticipants.projectId,
-  sourceKind: projectParticipants.sourceKind,
-  sourceId: projectParticipants.sourceId,
-  roleKey: projectParticipants.roleKey,
-  displayName: projectParticipants.displayName,
-  companyName: projectParticipants.companyName,
-  phone: projectParticipants.phone,
-  email: projectParticipants.email,
-  messengerNick: projectParticipants.messengerNick,
-  isPrimary: projectParticipants.isPrimary,
-  status: projectParticipants.status,
-  notes: projectParticipants.notes,
-  meta: projectParticipants.meta,
-}
-
-const projectScopeAssignmentReturning = {
-  id: projectScopeAssignments.id,
-  projectId: projectScopeAssignments.projectId,
-  participantId: projectScopeAssignments.participantId,
-  scopeType: projectScopeAssignments.scopeType,
-  scopeSource: projectScopeAssignments.scopeSource,
-  scopeId: projectScopeAssignments.scopeId,
-  responsibility: projectScopeAssignments.responsibility,
-  allocationPercent: projectScopeAssignments.allocationPercent,
-  status: projectScopeAssignments.status,
-  dueDate: projectScopeAssignments.dueDate,
-  notes: projectScopeAssignments.notes,
-  meta: projectScopeAssignments.meta,
-  assignedBy: projectScopeAssignments.assignedBy,
-  assignedAt: projectScopeAssignments.assignedAt,
-  updatedAt: projectScopeAssignments.updatedAt,
-}
-
-const projectScopeSettingsReturning = {
-  id: projectScopeSettings.id,
-  projectId: projectScopeSettings.projectId,
-  scopeType: projectScopeSettings.scopeType,
-  scopeSource: projectScopeSettings.scopeSource,
-  scopeId: projectScopeSettings.scopeId,
-  settings: projectScopeSettings.settings,
-  updatedAt: projectScopeSettings.updatedAt,
 }
 
 function toNullableTrimmedString(value?: string | null) {
@@ -280,29 +228,7 @@ function mapSettingsRowToContract(row: Record<string, any>): ProjectScopeSetting
 }
 
 async function syncProjectGovernanceLegacySnapshotsTx(tx: any, project: ProjectGovernanceProjectRow) {
-  const [participantRows, assignmentRows] = await Promise.all([
-    tx
-      .select({
-        id: projectParticipants.id,
-        displayName: projectParticipants.displayName,
-      })
-      .from(projectParticipants)
-      .where(eq(projectParticipants.projectId, project.id)),
-    tx
-      .select({
-        id: projectScopeAssignments.id,
-        participantId: projectScopeAssignments.participantId,
-        scopeType: projectScopeAssignments.scopeType,
-        scopeSource: projectScopeAssignments.scopeSource,
-        scopeId: projectScopeAssignments.scopeId,
-        responsibility: projectScopeAssignments.responsibility,
-        status: projectScopeAssignments.status,
-        assignedAt: projectScopeAssignments.assignedAt,
-      })
-      .from(projectScopeAssignments)
-      .where(eq(projectScopeAssignments.projectId, project.id))
-      .orderBy(asc(projectScopeAssignments.assignedAt), asc(projectScopeAssignments.id)),
-  ])
+  const { participantRows, assignmentRows } = await repo.readGovernanceSyncData(tx, project.id)
 
   const participantNames = new Map<number, string>(
     participantRows.map((row: { id: number; displayName: string }) => [row.id, String(row.displayName || '').trim()]),
@@ -348,16 +274,7 @@ async function syncProjectGovernanceLegacySnapshotsTx(tx: any, project: ProjectG
     })),
   }, project)
 
-  const revisionDate = new Date()
-  await tx.update(projects)
-    .set({
-      profile: {
-        ...profile,
-        hybridControl: nextControl,
-      } as any,
-      updatedAt: revisionDate,
-    })
-    .where(eq(projects.id, project.id))
+  const revisionDate = await repo.updateProjectHybridControlInTx(tx, project.id, profile, nextControl)
 
   return {
     control: nextControl,
@@ -406,24 +323,22 @@ export async function createProjectGovernanceParticipant(projectSlug: string, in
   const db = useDb()
   try {
     return await db.transaction(async (tx) => {
-      const [participantRow] = await tx.insert(projectParticipants)
-        .values({
-          projectId: project.id,
-          sourceKind,
-          sourceId: sourceId || null,
-          roleKey: input.roleKey,
-          displayName: input.displayName.trim(),
-          companyName: toNullableTrimmedString(input.companyName),
-          phone: toNullableTrimmedString(input.phone),
-          email: toNullableTrimmedString(input.email),
-          messengerNick: toNullableTrimmedString(input.messengerNick),
-          isPrimary: Boolean(input.isPrimary),
-          status: 'active',
-          notes: toNullableTrimmedString(input.notes),
-          meta: sanitizeGovernanceRecord(input.meta),
-          updatedAt: new Date(),
-        })
-        .returning(projectParticipantReturning)
+      const participantRow = await repo.insertParticipantInTx(tx, {
+        projectId: project.id,
+        sourceKind,
+        sourceId: sourceId || null,
+        roleKey: input.roleKey,
+        displayName: input.displayName.trim(),
+        companyName: toNullableTrimmedString(input.companyName),
+        phone: toNullableTrimmedString(input.phone),
+        email: toNullableTrimmedString(input.email),
+        messengerNick: toNullableTrimmedString(input.messengerNick),
+        isPrimary: Boolean(input.isPrimary),
+        status: 'active',
+        notes: toNullableTrimmedString(input.notes),
+        meta: sanitizeGovernanceRecord(input.meta),
+        updatedAt: new Date(),
+      })
 
       const { revision } = await syncProjectGovernanceLegacySnapshotsTx(tx, project)
 
@@ -447,12 +362,7 @@ export async function createProjectGovernanceParticipant(projectSlug: string, in
 
 export async function updateProjectGovernanceParticipant(projectSlug: string, participantId: number, input: UpdateProjectParticipant) {
   const project = await getProjectGovernanceProjectOrThrow(projectSlug)
-  const db = useDb()
-  const [currentParticipant] = await db
-    .select(projectParticipantReturning)
-    .from(projectParticipants)
-    .where(and(eq(projectParticipants.projectId, project.id), eq(projectParticipants.id, participantId)))
-    .limit(1)
+  const currentParticipant = await repo.findParticipantByProjectAndId(project.id, participantId)
 
   if (!currentParticipant) {
     throw createError({ statusCode: 404, statusMessage: 'Участник проекта не найден' })
@@ -484,12 +394,10 @@ export async function updateProjectGovernanceParticipant(projectSlug: string, pa
   if (input.notes !== undefined) updates.notes = toNullableTrimmedString(input.notes)
   if (input.meta !== undefined) updates.meta = sanitizeGovernanceRecord(input.meta)
 
+  const db = useDb()
   try {
     return await db.transaction(async (tx) => {
-      const [participantRow] = await tx.update(projectParticipants)
-        .set(updates)
-        .where(and(eq(projectParticipants.projectId, project.id), eq(projectParticipants.id, participantId)))
-        .returning(projectParticipantReturning)
+      const participantRow = await repo.updateParticipantInTx(tx, project.id, participantId, updates)
 
       if (!participantRow) {
         throw createError({ statusCode: 404, statusMessage: 'Участник проекта не найден' })
@@ -532,7 +440,7 @@ export async function createProjectGovernanceAssignment(projectSlug: string, inp
   const db = useDb()
   try {
     return await db.transaction(async (tx) => {
-      const assignmentInsert: typeof projectScopeAssignments.$inferInsert = {
+      const assignmentValues: Record<string, unknown> = {
         projectId: project.id,
         participantId: participantPersistedId,
         scopeType: context.scopeType,
@@ -549,12 +457,10 @@ export async function createProjectGovernanceAssignment(projectSlug: string, inp
       }
 
       if (typeof input.allocationPercent === 'number') {
-        assignmentInsert.allocationPercent = input.allocationPercent
+        assignmentValues.allocationPercent = input.allocationPercent
       }
 
-      const [assignmentRow] = await tx.insert(projectScopeAssignments)
-        .values(assignmentInsert)
-        .returning(projectScopeAssignmentReturning)
+      const assignmentRow = await repo.insertAssignmentInTx(tx, assignmentValues)
 
       const { revision } = await syncProjectGovernanceLegacySnapshotsTx(tx, project)
 
@@ -583,12 +489,7 @@ export async function createProjectGovernanceAssignment(projectSlug: string, inp
 
 export async function updateProjectGovernanceAssignment(projectSlug: string, assignmentId: number, input: UpdateProjectScopeAssignment) {
   const project = await getProjectGovernanceProjectOrThrow(projectSlug)
-  const db = useDb()
-  const [currentAssignment] = await db
-    .select(projectScopeAssignmentReturning)
-    .from(projectScopeAssignments)
-    .where(and(eq(projectScopeAssignments.projectId, project.id), eq(projectScopeAssignments.id, assignmentId)))
-    .limit(1)
+  const currentAssignment = await repo.findAssignmentByProjectAndId(project.id, assignmentId)
 
   if (!currentAssignment) {
     throw createError({ statusCode: 404, statusMessage: 'Назначение не найдено' })
@@ -626,12 +527,10 @@ export async function updateProjectGovernanceAssignment(projectSlug: string, ass
   if (input.meta !== undefined) updates.meta = sanitizeGovernanceRecord(input.meta)
   if (input.assignedBy !== undefined) updates.assignedBy = toNullableTrimmedString(input.assignedBy)
 
+  const db = useDb()
   try {
     return await db.transaction(async (tx) => {
-      const [assignmentRow] = await tx.update(projectScopeAssignments)
-        .set(updates)
-        .where(and(eq(projectScopeAssignments.projectId, project.id), eq(projectScopeAssignments.id, assignmentId)))
-        .returning(projectScopeAssignmentReturning)
+      const assignmentRow = await repo.updateAssignmentInTx(tx, project.id, assignmentId, updates)
 
       if (!assignmentRow) {
         throw createError({ statusCode: 404, statusMessage: 'Назначение не найдено' })
@@ -664,21 +563,16 @@ export async function updateProjectGovernanceAssignment(projectSlug: string, ass
 
 export async function deleteProjectGovernanceAssignment(projectSlug: string, assignmentId: number) {
   const project = await getProjectGovernanceProjectOrThrow(projectSlug)
-  const db = useDb()
-  const [currentAssignment] = await db
-    .select(projectScopeAssignmentReturning)
-    .from(projectScopeAssignments)
-    .where(and(eq(projectScopeAssignments.projectId, project.id), eq(projectScopeAssignments.id, assignmentId)))
-    .limit(1)
+  const currentAssignment = await repo.findAssignmentByProjectAndId(project.id, assignmentId)
 
   if (!currentAssignment) {
     throw createError({ statusCode: 404, statusMessage: 'Назначение не найдено' })
   }
 
+  const db = useDb()
   try {
     return await db.transaction(async (tx) => {
-      await tx.delete(projectScopeAssignments)
-        .where(and(eq(projectScopeAssignments.projectId, project.id), eq(projectScopeAssignments.id, assignmentId)))
+      await repo.deleteAssignmentInTx(tx, project.id, assignmentId)
 
       const { revision } = await syncProjectGovernanceLegacySnapshotsTx(tx, project)
 
@@ -715,49 +609,40 @@ export async function updateProjectGovernanceScopeSettings(
 
   try {
     return await db.transaction(async (tx) => {
-      const existingRows = await tx
-        .select(projectScopeSettingsReturning)
-        .from(projectScopeSettings)
-        .where(and(
-          eq(projectScopeSettings.projectId, project.id),
-          eq(projectScopeSettings.scopeType, context.scopeType),
-          eq(projectScopeSettings.scopeSource, context.scopeSource),
-          eq(projectScopeSettings.scopeId, context.scopeId),
-        ))
-        .limit(1)
+      const existingRow = await repo.findScopeSettingsByContextInTx(
+        tx,
+        project.id,
+        context.scopeType,
+        context.scopeSource,
+        context.scopeId,
+      )
 
-      let settingsRow = existingRows[0]
-      const nextSettings = options.merge && settingsRow
+      const nextSettings = options.merge && existingRow
         ? {
-            ...(isRecord(settingsRow.settings) ? settingsRow.settings : {}),
+            ...(isRecord(existingRow.settings) ? existingRow.settings : {}),
             ...sanitizedSettings,
           }
         : sanitizedSettings
 
-      if (settingsRow) {
-        ;[settingsRow] = await tx.update(projectScopeSettings)
-          .set({
-            settings: nextSettings,
-            updatedAt: new Date(),
-          })
-          .where(and(
-            eq(projectScopeSettings.projectId, project.id),
-            eq(projectScopeSettings.scopeType, context.scopeType),
-            eq(projectScopeSettings.scopeSource, context.scopeSource),
-            eq(projectScopeSettings.scopeId, context.scopeId),
-          ))
-          .returning(projectScopeSettingsReturning)
+      let settingsRow: typeof existingRow
+      if (existingRow) {
+        settingsRow = await repo.updateScopeSettingsInTx(
+          tx,
+          project.id,
+          context.scopeType,
+          context.scopeSource,
+          context.scopeId,
+          { settings: nextSettings, updatedAt: new Date() },
+        )
       } else {
-        ;[settingsRow] = await tx.insert(projectScopeSettings)
-          .values({
-            projectId: project.id,
-            scopeType: context.scopeType,
-            scopeSource: context.scopeSource,
-            scopeId: context.scopeId,
-            settings: nextSettings,
-            updatedAt: new Date(),
-          })
-          .returning(projectScopeSettingsReturning)
+        settingsRow = await repo.insertScopeSettingsInTx(tx, {
+          projectId: project.id,
+          scopeType: context.scopeType,
+          scopeSource: context.scopeSource,
+          scopeId: context.scopeId,
+          settings: nextSettings,
+          updatedAt: new Date(),
+        })
       }
 
       const { revision } = await syncProjectGovernanceLegacySnapshotsTx(tx, project)

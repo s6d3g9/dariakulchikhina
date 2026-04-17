@@ -1,7 +1,4 @@
-import { and, eq } from 'drizzle-orm'
-
-import { useDb } from '~/server/db'
-import { documents, projectExtraServices, projects } from '~/server/db/schema'
+import * as repo from '~/server/modules/projects/project-extra-services.repository'
 
 function rubles(amount: number): string {
   const rublesAmount = Math.floor(amount)
@@ -46,25 +43,13 @@ export async function generateExtraServiceDocuments(projectSlug: string, service
     throw createError({ statusCode: 400, statusMessage: 'Некорректный идентификатор услуги' })
   }
 
-  const db = useDb()
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.slug, projectSlug))
-    .limit(1)
+  const project = await repo.findProjectBySlug(projectSlug)
 
   if (!project) {
     throw createError({ statusCode: 404, statusMessage: 'Проект не найден' })
   }
 
-  const [service] = await db
-    .select()
-    .from(projectExtraServices)
-    .where(and(
-      eq(projectExtraServices.id, serviceId),
-      eq(projectExtraServices.projectId, project.id),
-    ))
-    .limit(1)
+  const service = await repo.findExtraServiceByIdAndProject(serviceId, project.id)
 
   if (!service) {
     throw createError({ statusCode: 404, statusMessage: 'Доп. услуга не найдена' })
@@ -195,38 +180,23 @@ ${clientName}
 Дополнительного соглашения № ${contractNumber}.
 `
 
-  const [contractDoc] = await db
-    .insert(documents)
-    .values({
-      projectId: project.id,
-      category: 'contract',
-      title: `Доп. соглашение ${contractNumber} — ${service.title}`,
-      templateKey: 'extra_service_contract',
-      content: contractContent,
-    })
-    .returning()
+  const contractDoc = await repo.insertDocument({
+    projectId: project.id,
+    category: 'contract',
+    title: `Доп. соглашение ${contractNumber} — ${service.title}`,
+    templateKey: 'extra_service_contract',
+    content: contractContent,
+  })
 
-  const [invoiceDoc] = await db
-    .insert(documents)
-    .values({
-      projectId: project.id,
-      category: 'invoice',
-      title: `Счёт ${invoiceNumber} — ${service.title}`,
-      templateKey: 'extra_service_invoice',
-      content: invoiceContent,
-    })
-    .returning()
+  const invoiceDoc = await repo.insertDocument({
+    projectId: project.id,
+    category: 'invoice',
+    title: `Счёт ${invoiceNumber} — ${service.title}`,
+    templateKey: 'extra_service_invoice',
+    content: invoiceContent,
+  })
 
-  const [updatedService] = await db
-    .update(projectExtraServices)
-    .set({
-      contractDocId: contractDoc.id,
-      invoiceDocId: invoiceDoc.id,
-      status: 'contract_sent',
-      updatedAt: new Date(),
-    })
-    .where(eq(projectExtraServices.id, serviceId))
-    .returning()
+  const updatedService = await repo.updateExtraServiceDocIds(serviceId, contractDoc.id, invoiceDoc.id)
 
   return {
     service: updatedService,

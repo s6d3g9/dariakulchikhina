@@ -1,13 +1,5 @@
 import { z } from 'zod'
-import { eq, and } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import {
-  workStatusItemComments,
-  workStatusItemPhotos,
-  workStatusItems,
-  projects,
-  users,
-} from '~/server/db/schema'
+import * as repo from '~/server/modules/projects/project-work-status-items.repository'
 
 // Admin-side comments and photos on a work-status item. Separate file
 // from the legacy `project-work-status.service.ts` bridge which handles
@@ -24,21 +16,10 @@ export type CommentInput = z.infer<typeof CommentSchema>
  * comments/photos sub-endpoints to avoid leaking items across projects.
  */
 async function assertItemInProject(slug: string, itemId: number): Promise<number> {
-  const db = useDb()
-  const [project] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.slug, slug))
-    .limit(1)
+  const project = await repo.findProjectId(slug)
   if (!project) throw createError({ statusCode: 404 })
 
-  const [item] = await db
-    .select({ id: workStatusItems.id })
-    .from(workStatusItems)
-    .where(
-      and(eq(workStatusItems.id, itemId), eq(workStatusItems.projectId, project.id)),
-    )
-    .limit(1)
+  const item = await repo.findWorkItemInProject(itemId, project.id)
   if (!item) throw createError({ statusCode: 404 })
 
   return item.id
@@ -46,12 +27,7 @@ async function assertItemInProject(slug: string, itemId: number): Promise<number
 
 export async function listWorkStatusItemComments(slug: string, itemId: number) {
   await assertItemInProject(slug, itemId)
-  const db = useDb()
-  return db
-    .select()
-    .from(workStatusItemComments)
-    .where(eq(workStatusItemComments.itemId, itemId))
-    .orderBy(workStatusItemComments.createdAt)
+  return repo.listItemComments(itemId)
 }
 
 /**
@@ -66,34 +42,20 @@ export async function addWorkStatusItemComment(
   body: CommentInput,
 ) {
   await assertItemInProject(slug, itemId)
-  const db = useDb()
 
   let authorName = 'Дизайнер'
-  const [user] = await db
-    .select({ name: users.name })
-    .from(users)
-    .where(eq(users.id, adminUserId))
-    .limit(1)
-  if (user?.name) authorName = user.name
+  const name = await repo.findUserName(adminUserId)
+  if (name) authorName = name
 
-  const [comment] = await db
-    .insert(workStatusItemComments)
-    .values({
-      itemId,
-      authorType: 'admin',
-      authorName,
-      text: body.text,
-    })
-    .returning()
-  return comment
+  return repo.insertItemComment({
+    itemId,
+    authorType: 'admin',
+    authorName,
+    text: body.text,
+  })
 }
 
 export async function listWorkStatusItemPhotos(slug: string, itemId: number) {
   await assertItemInProject(slug, itemId)
-  const db = useDb()
-  return db
-    .select()
-    .from(workStatusItemPhotos)
-    .where(eq(workStatusItemPhotos.itemId, itemId))
-    .orderBy(workStatusItemPhotos.createdAt)
+  return repo.listItemPhotos(itemId)
 }

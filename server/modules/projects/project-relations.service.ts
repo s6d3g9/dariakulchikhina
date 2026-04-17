@@ -1,18 +1,4 @@
-import { asc, eq, inArray } from 'drizzle-orm'
-
-import { useDb } from '~/server/db'
-import {
-  clients,
-  contractors,
-  designerProjects,
-  designers,
-  managerProjects,
-  managers,
-  projectContractors,
-  projects,
-  sellerProjects,
-  sellers,
-} from '~/server/db/schema'
+import * as repo from '~/server/modules/projects/project-relations.repository'
 
 type ProjectLinkedClient = {
   id: number
@@ -94,16 +80,7 @@ function extractLinkedClientIds(profile: Record<string, unknown> | null | undefi
 }
 
 export async function getProjectRelationsSnapshot(projectSlug: string): Promise<ProjectRelationsSnapshot | null> {
-  const db = useDb()
-
-  const [project] = await db
-    .select({
-      id: projects.id,
-      profile: projects.profile,
-    })
-    .from(projects)
-    .where(eq(projects.slug, projectSlug))
-    .limit(1)
+  const project = await repo.findProjectWithProfile(projectSlug)
 
   if (!project) {
     return null
@@ -112,69 +89,11 @@ export async function getProjectRelationsSnapshot(projectSlug: string): Promise<
   const linkedClientIds = extractLinkedClientIds(project.profile as Record<string, unknown> | undefined)
 
   const [linkedClients, linkedContractorsRows, linkedDesignersRows, linkedSellersRows, linkedManagersRows] = await Promise.all([
-    linkedClientIds.length
-      ? db
-          .select({
-            id: clients.id,
-            name: clients.name,
-            phone: clients.phone,
-            email: clients.email,
-            messengerNick: clients.messengerNick,
-          })
-          .from(clients)
-          .where(inArray(clients.id, linkedClientIds))
-          .orderBy(asc(clients.name))
-      : Promise.resolve([]),
-    db
-      .select({
-        id: contractors.id,
-        name: contractors.name,
-        companyName: contractors.companyName,
-        phone: contractors.phone,
-        email: contractors.email,
-        messengerNick: contractors.messengerNick,
-      })
-      .from(projectContractors)
-      .innerJoin(contractors, eq(projectContractors.contractorId, contractors.id))
-      .where(eq(projectContractors.projectId, project.id))
-      .orderBy(asc(contractors.name)),
-    db
-      .select({
-        id: designers.id,
-        name: designers.name,
-        companyName: designers.companyName,
-        phone: designers.phone,
-        email: designers.email,
-      })
-      .from(designerProjects)
-      .innerJoin(designers, eq(designerProjects.designerId, designers.id))
-      .where(eq(designerProjects.projectId, project.id))
-      .orderBy(asc(designers.name)),
-    db
-      .select({
-        id: sellers.id,
-        name: sellers.name,
-        companyName: sellers.companyName,
-        city: sellers.city,
-        contactPerson: sellers.contactPerson,
-        messengerNick: sellers.messengerNick,
-      })
-      .from(sellerProjects)
-      .innerJoin(sellers, eq(sellerProjects.sellerId, sellers.id))
-      .where(eq(sellerProjects.projectId, project.id))
-      .orderBy(asc(sellers.name)),
-    db
-      .select({
-        id: managers.id,
-        name: managers.name,
-        role: managers.role,
-        phone: managers.phone,
-        email: managers.email,
-      })
-      .from(managerProjects)
-      .innerJoin(managers, eq(managerProjects.managerId, managers.id))
-      .where(eq(managerProjects.projectId, project.id))
-      .orderBy(asc(managers.name)),
+    repo.findClientsByIds(linkedClientIds),
+    repo.findProjectContractorsForProject(project.id),
+    repo.findProjectDesignersForProject(project.id),
+    repo.findProjectSellersForProject(project.id),
+    repo.findProjectManagersForProject(project.id),
   ])
 
   return {

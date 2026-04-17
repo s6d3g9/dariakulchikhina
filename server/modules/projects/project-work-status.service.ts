@@ -1,8 +1,6 @@
-import { and, eq, inArray } from 'drizzle-orm'
-
 import { useDb } from '~/server/db'
-import { workStatusItems } from '~/server/db/schema'
-import { getProjectBySlug } from '~/server/modules/projects/projects.service'
+import * as repo from '~/server/modules/projects/project-work-status.repository'
+import * as projectsRepo from '~/server/modules/projects/projects.repository'
 
 export type ProjectWorkStatusInputItem = {
   id?: number
@@ -19,7 +17,7 @@ export type ProjectWorkStatusInputItem = {
 
 export async function replaceProjectWorkStatusBySlug(slug: string, items: ProjectWorkStatusInputItem[]) {
   const db = useDb()
-  const project = await getProjectBySlug(slug)
+  const project = await projectsRepo.findProjectIdBySlug(slug)
   if (!project) {
     return null
   }
@@ -29,18 +27,13 @@ export async function replaceProjectWorkStatusBySlug(slug: string, items: Projec
     .filter((id): id is number => typeof id === 'number')
 
   await db.transaction(async (tx) => {
-    const existing = await tx
-      .select({ id: workStatusItems.id })
-      .from(workStatusItems)
-      .where(eq(workStatusItems.projectId, project.id))
+    const existing = await repo.listWorkItemIdsByProject(project.id)
 
     const toDelete = existing
       .map(row => row.id)
       .filter(id => !incomingIds.includes(id))
 
-    if (toDelete.length > 0) {
-      await tx.delete(workStatusItems).where(inArray(workStatusItems.id, toDelete))
-    }
+    await repo.deleteWorkItemsByIds(tx, toDelete)
 
     for (let index = 0; index < items.length; index += 1) {
       const item = items[index]
@@ -58,19 +51,12 @@ export async function replaceProjectWorkStatusBySlug(slug: string, items: Projec
       }
 
       if (typeof item.id === 'number') {
-        await tx
-          .update(workStatusItems)
-          .set(values)
-          .where(and(eq(workStatusItems.id, item.id), eq(workStatusItems.projectId, project.id)))
+        await repo.updateWorkItem(tx, item.id, project.id, values)
       } else {
-        await tx.insert(workStatusItems).values(values)
+        await repo.insertWorkItem(tx, values)
       }
     }
   })
 
-  return db
-    .select()
-    .from(workStatusItems)
-    .where(eq(workStatusItems.projectId, project.id))
-    .orderBy(workStatusItems.sortOrder)
+  return repo.listWorkItemsByProject(project.id)
 }
