@@ -553,6 +553,33 @@ Commit:
 - Uploads table (`server/db/schema/uploads.ts`) не имеет отдельных API-ручек — только файл upload через `/api/upload.post.ts`, gallery теперь изолирована. Отдельный modules/uploads/ пока не нужен.
 - Следующая крупная цель: clients/contractors/designers/sellers/managers CRUD. Каждый домен ≈ 5-10 endpoints с 2 lint-errors, суммарно ~50 errors.
 
+### [done] 2026-04-17 — Wave 5 / clients full CRUD + docs + link → modules/clients
+Цель: перевести все 9 endpoint'ов домена `clients` на thin handlers. Delta −16 (175 → 159).
+
+Файлы:
+- server/modules/clients/clients.service.ts (новый): 
+  - `CreateClientSchema`, `UpdateClientSchema`, `LinkProjectSchema` + types
+  - `listClients({ projectSlug? })` — list + вычисление `linkedProjects` из `projects.profile.client_id(s)`
+  - `createClient`, `updateClient` (возвращает null на 404)
+  - `deleteClient` — **scrub client_id и client_ids[] в projects.profile** чтобы не оставалось ghost-ссылок
+  - `listClientDocuments(clientId)` — документы с префиксом `client:<id>:<kind>` в category
+  - `uploadClientDocument({ clientId, fileData, filename, mimeType, title, kind, notes })` — multipart-extract сделан в handler'е, service принимает уже распарсенные данные (чтобы не зависеть от H3 event)
+  - `deleteClientDocument(clientId, docId)` — верифицирует через prefix + unlink файла из `public/uploads/client-docs/`
+  - `linkClientToProject(clientId, projectSlug)` — idempotent, denormalize identity в profile
+  - `unlinkClientFromProject(clientId, projectSlug)` — promote next id как primary, clear всё если клиентов не осталось
+- server/api/clients/{index.get,index.post,[id].put,[id].delete,[id]/documents.get,[id]/documents.post,[id]/documents/[docId].delete,[id]/link-project.post,[id]/unlink-project.post}.ts: thin handlers.
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — ok (исправлены 3 type-error после первого прохода: Buffer|Uint8Array для multipart data, cast profile Record<string,unknown> → Record<string,string> при update).
+- `pnpm lint:ratchet` — 159 (baseline 175 → 159, ровно −16).
+- Runtime идентичен: все валидации, 400/404 mapping, ghost-reference scrub при delete, мульти-шаг promote в unlink.
+
+Долги:
+- Следующая цель: contractors (ещё крупнее, с document scoping); designers, sellers, managers (средний объём).
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:

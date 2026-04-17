@@ -1,9 +1,10 @@
-import { useDb } from '~/server/db/index'
-import { documents } from '~/server/db/schema'
-import { and, eq, like, isNull } from 'drizzle-orm'
-import { unlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { deleteClientDocument } from '~/server/modules/clients/clients.service'
 
+/**
+ * DELETE /api/clients/[id]/documents/[docId] — remove a client-scoped
+ * document. Verifies the doc belongs to this client via the
+ * `client:<id>:` category prefix before deletion.
+ */
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const clientId = Number(getRouterParam(event, 'id'))
@@ -12,27 +13,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid params' })
   }
 
-  const db = useDb()
-  const [doc] = await db
-    .select()
-    .from(documents)
-    .where(and(
-      eq(documents.id, docId),
-      like(documents.category, `client:${clientId}:%`),
-      isNull(documents.projectId),
-    ))
-    .limit(1)
-
-  if (!doc) throw createError({ statusCode: 404, statusMessage: 'Document not found' })
-
-  if (doc.filename) {
-    try {
-      await unlink(join(process.cwd(), 'public', 'uploads', 'client-docs', doc.filename))
-    } catch {
-      // ignore fs errors
-    }
-  }
-
-  await db.delete(documents).where(eq(documents.id, docId))
+  const deleted = await deleteClientDocument(clientId, docId)
+  if (!deleted) throw createError({ statusCode: 404, statusMessage: 'Document not found' })
   return { ok: true }
 })

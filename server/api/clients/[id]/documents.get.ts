@@ -1,27 +1,14 @@
-import { useDb } from '~/server/db/index'
-import { documents } from '~/server/db/schema'
-import { like, and, isNull } from 'drizzle-orm'
+import { listClientDocuments } from '~/server/modules/clients/clients.service'
 
+/**
+ * GET /api/clients/[id]/documents — list documents filed under the
+ * client (documents.category encoded as `client:<id>:<kind>`).
+ */
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const clientId = Number(getRouterParam(event, 'id'))
   if (!clientId || !Number.isFinite(clientId)) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid client id' })
   }
-
-  const db = useDb()
-  const prefix = `client:${clientId}:`
-  const rows = await db
-    .select()
-    .from(documents)
-    .where(and(
-      like(documents.category, `${prefix}%`),
-      isNull(documents.projectId),
-    ))
-    .orderBy(documents.createdAt)
-
-  return rows.map((row) => ({
-    ...row,
-    category: row.category.replace(prefix, ''),
-  }))
+  return await listClientDocuments(clientId)
 })
