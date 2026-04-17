@@ -1,5 +1,5 @@
 import { ElementVisibilityConfigSchema, normalizeElementVisibilityConfig } from '~/shared/types/element-visibility'
-import { setAdminSetting } from '~/server/utils/admin-settings'
+import { setAdminSetting } from '~/server/modules/admin-settings/admin-settings.service'
 
 const ELEMENT_VISIBILITY_SETTING_KEY = 'element-visibility'
 

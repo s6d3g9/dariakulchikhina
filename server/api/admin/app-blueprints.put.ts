@@ -1,5 +1,5 @@
 import { AppBlueprintCatalogConfigSchema, normalizeAppBlueprintCatalogConfig } from '~/shared/types/app-catalog'
-import { setAdminSetting } from '~/server/utils/admin-settings'
+import { setAdminSetting } from '~/server/modules/admin-settings/admin-settings.service'
 
 const APP_BLUEPRINTS_SETTING_KEY = 'app-blueprints'
 

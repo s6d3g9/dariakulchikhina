@@ -1,5 +1,5 @@
 import { createDefaultDesignModules, normalizeDesignModulesConfig } from '~/shared/types/design-modules'
-import { getAdminSetting } from '~/server/utils/admin-settings'
+import { getAdminSetting } from '~/server/modules/admin-settings/admin-settings.service'
 
 const DESIGN_MODULES_SETTING_KEY = 'design-modules'
 
