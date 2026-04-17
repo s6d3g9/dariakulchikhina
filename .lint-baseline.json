@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-17T11:18:21.260Z",
-  "totalErrors": 99,
+  "generatedAt": "2026-04-17T12:07:38.409Z",
+  "totalErrors": 87,
   "perFile": {
     "app/components/AdminDocumentEditor.vue": 2,
     "app/components/AdminSitePhotos.vue": 1,
@@ -8,7 +8,6 @@
     "messenger/core/src/agent-knowledge-store.ts": 1,
     "messenger/web/app/components/messenger/MessengerAuthField.vue": 1,
     "messenger/web/app/composables/useMessengerSettings.ts": 3,
-    "server/api/admin/contractors/[id]/preview.get.ts": 2,
     "server/api/ai/document-stream.post.ts": 5,
     "server/api/ai/legal-status.get.ts": 1,
     "server/api/managers/[id].delete.ts": 2,
@@ -47,12 +46,6 @@
     "server/api/projects/[slug]/work-status/[itemId]/comments.post.ts": 2,
     "server/api/projects/[slug]/work-status/[itemId]/photos.get.ts": 2,
     "server/api/projects/index.post.ts": 1,
-    "server/api/sellers/[id].delete.ts": 2,
-    "server/api/sellers/[id].get.ts": 2,
-    "server/api/sellers/[id].put.ts": 1,
-    "server/api/sellers/[id]/projects.get.ts": 2,
-    "server/api/sellers/index.get.ts": 2,
-    "server/api/sellers/index.post.ts": 1,
     "server/utils/project-communications-relay.ts": 1,
     "services/communications-service/src/pg-store.ts": 1
   }

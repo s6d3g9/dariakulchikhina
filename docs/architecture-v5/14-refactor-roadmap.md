@@ -677,3 +677,6 @@ Commit `48e10f0` нужно позднее либо:
 - Относительно `11-backend-shared-refactor-map.md`: закрыт projects/work-status hot-path batch; полный service-only перенос остальных доменов еще в процессе.
 - Относительно `12-messenger-services-refactor-map.md`: контуры изолированы, детальная bounded-context/FSD alignment требует отдельной волны.
 - Следующий milestone: финальный structure-alignment batch по приоритетам из секции `[next]`.
+
+### [done] 2026-04-17 — Wave 5 / sellers → modules/sellers
+Перенос 6 endpoints. Delta: −12 (99 → 87). Файлы: server/modules/sellers/sellers.service.ts, 6 thin handlers. Проверки: vue-tsc ok, lint-ratchet ok.
