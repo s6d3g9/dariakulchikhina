@@ -5,9 +5,7 @@
  */
 
 import type { ServerResponse } from 'node:http'
-import { useDb } from '~/server/db/index'
-import { projects, clients, contractors, pageContent } from '~/server/db/schema'
-import { eq, inArray } from 'drizzle-orm'
+import { buildAiStreamContext } from '~/server/modules/ai/ai.service'
 import { retrieveLegalContextWithChunks, type LegalChunkWithScore } from '~/server/utils/rag'
 import { GEMMA_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from '~/server/utils/gemma-prompts'
 import { z } from 'zod'
@@ -47,12 +45,10 @@ export default defineEventHandler(async (event) => {
     aiModel,
   } = body
 
-  // action already validated by Zod enum
-
   // ── Собираем контекст (не нужен для простого чата) ──────────────
   const needsCtx = action !== 'chat'
   const ctx = needsCtx
-    ? await buildStreamContext(projectSlug || '', clientId ? Number(clientId) : 0, contractorId ? Number(contractorId) : 0)
+    ? await buildAiStreamContext(projectSlug || '', clientId ? Number(clientId) : 0, contractorId ? Number(contractorId) : 0)
     : {}
 
   // ── Формируем промпты ─────────────────────────────────────────
@@ -317,62 +313,6 @@ function buildStreamReviewPrompt(opts: { templateName: string; currentText?: str
   return `Проверь следующий документ «${opts.templateName}» и составь список замечаний.\n\nДОКУМЕНТ:\n---\n${opts.currentText || '(пустой документ)'}\n---\n\nПроверь и перечисли замечания в формате:\n⚠️ [описание проблемы]\n💡 [предложение по улучшению]\n\nПроверяй:\n- Незаполненные поля (__________)\n- Отсутствующие обязательные разделы\n- Юридические риски и неточности\n- Несоответствия в данных (суммы, даты, ФИО)\n- Отсутствие подписей, реквизитов, печатей\n- Некорректные формулировки по ГК РФ\n\nЕсли документ в порядке, напиши: ✅ Документ составлен корректно.`
 }
 
-// ── Системный промпт ──────────────────────────────────────────────────────
-// ── Контекст из БД ────────────────────────────────────────────────────────
-async function buildStreamContext(projectSlug: string, clientId: number, contractorId: number) {
-  const db = useDb()
-  const ctx: Record<string, any> = {}
-
-  if (projectSlug) {
-    const [proj] = await db.select().from(projects).where(eq(projects.slug, projectSlug)).limit(1)
-    if (proj) {
-      const profile = (proj.profile || {}) as Record<string, any>
-      ctx.project = {
-        title: proj.title,
-        objectAddress: profile.objectAddress || '',
-        objectType: profile.objectType || '',
-        objectArea: profile.objectArea || '',
-        budget: profile.budget || '',
-        deadline: profile.deadline || '',
-        style: profile.style || '',
-        client_name: profile.client_name || '',
-        phone: profile.phone || '',
-        email: profile.email || '',
-        passport_series: profile.passport_series || '',
-        passport_number: profile.passport_number || '',
-        passport_issued_by: profile.passport_issued_by || '',
-        passport_issue_date: profile.passport_issue_date || '',
-        passport_registration_address: profile.passport_registration_address || '',
-        passport_inn: profile.passport_inn || '',
-      }
-
-      const pages = await db.select().from(pageContent).where(eq(pageContent.projectId, proj.id))
-      ctx.pages = {}
-      for (const pg of pages) {
-        if (['first-contact', 'smart-brief', 'client-tz', 'moodboard', 'specifications'].includes(pg.pageSlug || '')) {
-          const clean: Record<string, string> = {}
-          for (const [k, v] of Object.entries((pg.content || {}) as Record<string, any>)) {
-            if (v && (typeof v === 'string' || typeof v === 'number')) clean[k] = String(v)
-          }
-          if (Object.keys(clean).length) ctx.pages[pg.pageSlug!] = clean
-        }
-      }
-    }
-  }
-
-  if (clientId) {
-    const [c] = await db.select().from(clients).where(eq(clients.id, clientId)).limit(1)
-    if (c) ctx.client = c
-  }
-
-  if (contractorId) {
-    const [c] = await db.select().from(contractors).where(eq(contractors.id, contractorId)).limit(1)
-    if (c) ctx.contractor = c
-  }
-
-  return ctx
-}
-
 // ── Форматирование контекста ──────────────────────────────────────────────
 function formatStreamCtx(ctx: Record<string, any>): string {
   const lines: string[] = []
@@ -467,17 +407,13 @@ ${contextBlock}
 }
 
 function buildStreamChatPrompt(opts: { templateName: string; currentText?: string; customInstruction?: string; ctx: Record<string, any> }): string {
-  // Передаём ПОЛНЫЙ документ — иначе модель не может делать точечные правки
   const doc = opts.currentText || ''
   const hasDoc = doc.length > 0
 
   if (!hasDoc) {
-    // Нет документа — просто отвечаем на вопрос
     return `ВОПРОС: ${opts.customInstruction || ''}`
   }
 
-  // Передаём документ целиком (до 8000 символов — влезает в num_ctx=8192)
-  // Если длиннее — берём начало+конец, сообщаем модели об обрезке
   let docSnippet = doc
   let truncNote = ''
   if (doc.length > 8000) {
