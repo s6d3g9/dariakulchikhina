@@ -695,3 +695,6 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / projects partners (contractors/designers/sellers links) → modules/projects
 10 endpoints thinned: contractors.get/post/delete + contractors/[contractorId].delete + designers.get/post/delete + sellers.get/post/delete. Файл: server/modules/projects/project-partners.service.ts (listProject*/addPartnerToProject/removePartnerFromProject для трёх ролей + auth slug & PII stripping в contractors list). Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / projects extra-services → modules/projects
+4 endpoints thinned. Файл: server/modules/projects/project-extra-services-api.service.ts (list/create/update/delete с admin-vs-client field whitelist). Проверки: vue-tsc ok, lint-ratchet ok.
