@@ -328,6 +328,36 @@ Commit:
 - Остальные auth-эндпоинты (login.post, register.post, recover.post, logout.post, client/contractor варианты) должны быть перенесены аналогично, 18+ error'ов уйдут за один wave.
 - Помечен как шаблон для refactor-wave-executor агента.
 
+### [done] 2026-04-17 — Wave 5 / server/api/auth/* полный перенос в modules
+Цель: завершить API → module перенос для всего auth-контура. 9 файлов, 18 no-restricted-imports errors.
+
+Файлы:
+- server/modules/auth/admin-auth.service.ts (новый): adminLogin, adminRegister. Содержит legacy bootstrap-логику DESIGNER_INITIAL_* для первой учётки дизайнера.
+- server/modules/auth/admin-recovery.service.ts (новый): adminRecover.
+- server/modules/auth/client-auth.service.ts (новый): clientLogin, clientRegister, clientRecover + локальная ClientLoginSchema (slug или credentials union).
+- server/modules/auth/contractor-auth.service.ts (новый): contractorLogin, contractorRegister, contractorRecover + ContractorLoginSchema (id+slug или credentials union).
+- server/api/auth/login.post.ts (thin): читает body через LoginSchema, зовёт adminLogin.
+- server/api/auth/register.post.ts (thin): adminRegister.
+- server/api/auth/recover.post.ts (thin): adminRecover.
+- server/api/auth/client-login.post.ts (thin): ClientLoginSchema + clientLogin.
+- server/api/auth/client-register.post.ts (thin): clientRegister.
+- server/api/auth/client-recover.post.ts (thin): clientRecover.
+- server/api/auth/contractor-login.post.ts (thin): contractorLogin.
+- server/api/auth/contractor-register.post.ts (thin): contractorRegister.
+- server/api/auth/contractor-recover.post.ts (thin): contractorRecover.
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — ok
+- `pnpm lint:ratchet` — 200 (baseline 218 → 200, -18). Все 9 endpoint'ов сведены к ~5-7 строк каждый.
+- Runtime-поведение идентично: те же статус-коды (401, 404, 409), те же сообщения, та же логика bootstrap-seed для admin.
+
+Долги:
+- Существующие bridge-файлы `auth.service.ts` (re-export из utils/auth + auth-registration) и `recovery.service.ts` (re-export из utils/recovery-phrase) намеренно не тронуты, т.к. на них ссылается другой код. Их удаление — отдельный batch cleanup-wave.
+- csrf.get.ts и client-id-logout/contractor-logout — мелкие endpoint'ы без DB, invariant-ошибок не имеют, остаются как есть.
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:
