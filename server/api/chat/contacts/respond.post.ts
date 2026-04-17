@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { requireChatSession } from '~/server/utils/auth'
-import { respondToStandaloneChatInvite } from '~/server/utils/standalone-chat-users'
+import { respondToStandaloneChatInvite } from '~/server/modules/chat/chat-users.service'
 
 const Schema = z.object({
   inviteId: z.string().uuid(),

@@ -1,5 +1,5 @@
 import { getChatSession } from '~/server/utils/auth'
-import { findStandaloneChatUserById } from '~/server/utils/standalone-chat-users'
+import { findStandaloneChatUserById } from '~/server/modules/chat/chat-users.service'
 
 export default defineEventHandler(async (event) => {
   const session = getChatSession(event)

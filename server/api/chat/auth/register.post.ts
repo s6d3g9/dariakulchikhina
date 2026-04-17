@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { setChatSession } from '~/server/utils/auth'
-import { createStandaloneChatUser } from '~/server/utils/standalone-chat-users'
+import { createStandaloneChatUser } from '~/server/modules/chat/chat-users.service'
 
 const Schema = z.object({
   login: z.string().min(3).max(32),

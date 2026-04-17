@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { requireChatSession } from '~/server/utils/auth'
 import { safeGetQuery } from '~/server/utils/query'
-import { searchStandaloneChatDirectory } from '~/server/utils/standalone-chat-users'
+import { searchStandaloneChatDirectory } from '~/server/modules/chat/chat-users.service'
 
 const QuerySchema = z.object({
   search: z.string().trim().max(100).optional(),
