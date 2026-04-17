@@ -456,6 +456,51 @@ Commit:
 Долги:
 - Для новых .vue файлов стоит отдельно отслеживать, что имя компонента совпадает с именем файла (17.2.1). Можно сделать через eslint-plugin-vue правило `vue/match-component-file-name` — отдельный batch.
 
+### [audit] 2026-04-17 — refactor-auditor snapshot после governance + partial Wave 5/6
+Цель: зафиксировать состояние на конец дня, чтобы завтрашняя сессия могла продолжить с чёткого пункта, не делая повторно аудит.
+
+Источник: agent `.claude/agents/refactor-auditor.md` (Explore-прогон).
+
+**Wave statuses:**
+- Wave 0 (freeze + docs) — done
+- Wave 1 (empty scaffold) — done
+- Wave 2 (shared-first migration) — done
+- Wave 3 (frontend widget shell cutover) — done
+- Wave 4 (giant-file slicing) — **NOT STARTED** (25 компонентов >500 строк нетронуты; UIDesignPanel 6624, AdminProjectControl 5844, AdminDesignerCabinet 4332, ClientProjectControl 3405, ProjectCommunicationsPanel 2639, AdminDocumentEditor 2595, ещё 19 файлов 500-1654 строк)
+- Wave 5 (server module migration) — **~70% done** (auth 9 файлов, admin search+notifications, projects hot-path. Осталось: clients, contractors, designers, sellers, managers, documents, gallery, suggest, chat — ~50 endpoints)
+- Wave 6 (DB schema split) — done
+- Wave 7 (messenger cutover) — not started (matrix 12: 0/68)
+- Wave 8 (legacy cleanup) — not started (bridge-only modules в `auth/recovery` ещё живут)
+
+**Lint baseline сейчас:** 196 errors в 106 файлах.
+
+**Top-10 приоритеты на следующий wave (по impact / risk / deps):**
+
+1. **Drizzle-orm в server/api/** — 71 errors в 44 файлах. Expected delta: −71. Effort: L. Unblocker для остатка Wave 5.
+2. **CRUD clients/contractors/designers/sellers/managers** — 50+ errors, 48 endpoints. Delta: −50. Effort: L. Закрывает 48 строк matrix 11.
+3. **server/utils/project-governance.ts (2082 строк) → modules** — Delta: −5 (embedded drizzle). Effort: M. Риск: используется в 6+ endpoints.
+4. **Distributed slice UIDesignPanel.vue (6624)** — Delta: −3 (size warns). Effort: L.
+5. **Заполнить bridge-only сервисы реальной логикой** (auth/recovery, projects/relations re-exports) — Delta: 0 (уже переносили в Wave 5). Effort: S. Убирает ambiguous-строки в matrix 11.
+6. **Messenger/core bounded-context split** — Delta: 0 (не в baseline). Effort: L. Matrix 12: 0 → 10 done.
+7. **app/shared/ui + composables** — Delta: −2. Effort: M. Unblocker для всего frontend FSD alignment.
+8. **Documents/gallery/uploads модули** — Delta: −18. Effort: M. Low-risk, self-contained.
+9. **AdminProjectControl (5844) + AdminDocumentEditor (2595) slice** — Delta: −4 (size). Effort: M. Блокер: Wave 5 projects.
+10. **services/communications-service/pg-store isolation** — Delta: −1 (postgres import). Effort: S.
+
+**Matrix 11 ambiguous-строки (35):** чаще всего bridge-only (target существует как re-export, source-util тоже на месте). Главные: `server/modules/auth/{admin,session,client}-auth.service.ts` (хотя мы их уже написали реально — скрипт не различает because old utils ещё существуют), `projects/{projects,project-relations,project-governance}.service.ts`, `chat/chat-communications.service.ts`, `ai/gemma.service.ts`, `uploads/upload-storage.service.ts`, `admin-settings/app-blueprints.service.ts`.
+
+**Invariants не закрытые ESLint:**
+- Шаблон `.repository.ts` не существует в кодовой базе. Сейчас drizzle-orm живёт в `.service.ts`. Архитектура призывает к отдельному repository-слою, но пока не реализован. Планово в 17-coding-standards.md §17.3 упомянут, но не enforced.
+- `postgres` клиент импортируется только в `services/communications-service/src/pg-store.ts` (1 нарушение, в baseline) и `server/db/index.ts` (правильно).
+- `messenger/**` не импортирует из `~/server/db` — 0 нарушений ✓.
+
+**Рекомендованный следующий batch (30-60 мин):**
+- Scope: Documents CRUD (documents/index.*)
+- Файлы: новый `server/modules/documents/documents.service.ts` + 5 thin handlers в `server/api/documents/`.
+- Delta: −12 (196 → 184).
+- Verification: `pnpm lint:errors | grep 'documents/'` = 0, `pnpm lint:ratchet`, `pnpm exec vue-tsc --noEmit`.
+- Риск: низкий (self-contained, нет multi-domain relations как в projects).
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:
