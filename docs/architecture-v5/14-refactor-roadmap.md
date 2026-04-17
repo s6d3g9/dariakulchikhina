@@ -707,3 +707,9 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / projects communications → modules/projects
 4 endpoints thinned: action-catalog.get, dispatch.post, call-insights/index.post, call-insights/[insightId]/apply.post. Файл: server/modules/projects/project-communications-api.service.ts (buildProjectActionCatalog + dispatchProjectMessage + ingestCallInsight + applyCallInsight, catch CALL_INSIGHT_NOT_FOUND → 404). Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / admin-settings → modules/admin-settings
+Перенос getAdminSetting/setAdminSetting из server/utils/admin-settings.ts в server/modules/admin-settings/admin-settings.service.ts. Utility стала re-export bridge. 8 handlers обновлены. Delta: 0 lint (не было drizzle в api/**). Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / chat-users → modules/chat
+Перенос standalone-chat-users.ts в server/modules/chat/chat-users.service.ts. Utility стала re-export bridge. 8 chat handlers обновлены. Delta: 0 lint. Проверки: vue-tsc ok, lint-ratchet ok.
