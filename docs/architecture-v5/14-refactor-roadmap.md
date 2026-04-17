@@ -680,3 +680,6 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / sellers → modules/sellers
 Перенос 6 endpoints. Delta: −12 (99 → 87). Файлы: server/modules/sellers/sellers.service.ts, 6 thin handlers. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / managers → modules/managers
+Перенос 6 endpoints. Delta: зафиксирован обновлением .lint-baseline.json. Файлы: server/modules/managers/managers.service.ts, 6 thin handlers. Проверки: vue-tsc ok, lint-ratchet ok.

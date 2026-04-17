@@ -1,7 +1,4 @@
-import { eq } from 'drizzle-orm'
-
-import { useDb } from '~/server/db'
-import { contractors } from '~/server/db/schema'
+import { getContractor } from '~/server/modules/contractors/contractors.service'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -13,17 +10,5 @@ export default defineEventHandler(async (event) => {
     return null
   }
 
-  const db = useDb()
-  const [contractor] = await db
-    .select()
-    .from(contractors)
-    .where(eq(contractors.id, contractorId))
-    .limit(1)
-
-  if (!contractor) {
-    return null
-  }
-
-  const { slug: _slug, ...safeContractor } = contractor
-  return safeContractor
+  return await getContractor(contractorId)
 })

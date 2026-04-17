@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-17T12:07:38.409Z",
-  "totalErrors": 87,
+  "generatedAt": "2026-04-17T12:12:15.061Z",
+  "totalErrors": 76,
   "perFile": {
     "app/components/AdminDocumentEditor.vue": 2,
     "app/components/AdminSitePhotos.vue": 1,
@@ -10,12 +10,6 @@
     "messenger/web/app/composables/useMessengerSettings.ts": 3,
     "server/api/ai/document-stream.post.ts": 5,
     "server/api/ai/legal-status.get.ts": 1,
-    "server/api/managers/[id].delete.ts": 2,
-    "server/api/managers/[id].get.ts": 2,
-    "server/api/managers/[id].put.ts": 2,
-    "server/api/managers/[id]/projects.get.ts": 2,
-    "server/api/managers/index.get.ts": 2,
-    "server/api/managers/index.post.ts": 1,
     "server/api/projects/[slug].delete.ts": 2,
     "server/api/projects/[slug].put.ts": 2,
     "server/api/projects/[slug]/client-profile.put.ts": 2,
