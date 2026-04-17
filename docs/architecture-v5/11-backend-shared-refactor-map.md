@@ -26,17 +26,19 @@
 - server/api/auth/contractor-register.post.ts -> server/modules/auth/contractor-auth.service.ts
 - server/api/auth/contractor-recover.post.ts -> server/modules/auth/contractor-auth.service.ts
 - server/api/auth/contractor-logout.post.ts -> server/modules/auth/session.service.ts
-- server/api/auth/csrf.get.ts -> server/modules/auth/csrf.service.ts
+- server/api/auth/csrf.get.ts -> server/api/auth/csrf.get.ts  (2-liner, no DB, stays)
 
 ### Admin + settings
 - server/api/admin/search.get.ts -> server/modules/admin/admin-search.service.ts
 - server/api/admin/notifications.get.ts -> server/modules/admin/admin-notifications.service.ts
-- server/api/admin-settings/app-blueprints.ts -> server/modules/admin-settings/app-blueprints.service.ts
-- server/api/admin-settings/design-modules.ts -> server/modules/admin-settings/design-modules.service.ts
-- server/api/admin-settings/element-alignment.ts -> server/modules/admin-settings/element-alignment.service.ts
-- server/api/admin-settings/element-visibility.ts -> server/modules/admin-settings/element-visibility.service.ts
-- server/api/agent-registry/index.get.ts -> server/modules/agent-registry/agent-registry.service.ts
-- server/api/agent-registry/audit.get.ts -> server/modules/agent-registry/agent-registry-audit.service.ts
+- server/api/admin/app-blueprints.get.ts -> server/modules/admin-settings/admin-settings.service.ts
+- server/api/admin/app-blueprints.put.ts -> server/modules/admin-settings/admin-settings.service.ts
+- server/api/admin/design-modules.get.ts -> server/modules/admin-settings/admin-settings.service.ts
+- server/api/admin/design-modules.put.ts -> server/modules/admin-settings/admin-settings.service.ts
+- server/api/admin/element-alignment.get.ts -> server/modules/admin-settings/admin-settings.service.ts
+- server/api/admin/element-alignment.put.ts -> server/modules/admin-settings/admin-settings.service.ts
+- server/api/admin/element-visibility.get.ts -> server/modules/admin-settings/admin-settings.service.ts
+- server/api/admin/element-visibility.put.ts -> server/modules/admin-settings/admin-settings.service.ts
 
 ### Projects
 - server/api/projects/index.get.ts -> server/modules/projects/projects.service.ts
@@ -44,18 +46,20 @@
 - server/api/projects/[slug].get.ts -> server/modules/projects/projects.service.ts
 - server/api/projects/[slug].put.ts -> server/modules/projects/projects.service.ts
 - server/api/projects/[slug].delete.ts -> server/modules/projects/projects.service.ts
-- server/api/projects/[slug]/status.put.ts -> server/modules/projects/project-status.service.ts
-- server/api/projects/[slug]/client-profile.put.ts -> server/modules/projects/project-client-profile.service.ts
-- server/api/projects/[slug]/page-content.get.ts -> server/modules/projects/page-content.service.ts
-- server/api/projects/[slug]/page-content.put.ts -> server/modules/projects/page-content.service.ts
-- server/api/projects/[slug]/page-answers.get.ts -> server/modules/projects/page-answers.service.ts
-- server/api/projects/[slug]/page-answers.put.ts -> server/modules/projects/page-answers.service.ts
+- server/api/projects/[slug]/status.put.ts -> server/modules/projects/project-mutations.service.ts
+- server/api/projects/[slug]/client-profile.put.ts -> server/modules/projects/project-mutations.service.ts
+- server/api/projects/[slug]/page-content.get.ts -> server/modules/projects/project-pages.service.ts
+- server/api/projects/[slug]/page-content.put.ts -> server/modules/projects/project-pages.service.ts
+- server/api/projects/[slug]/page-answers.get.ts -> server/modules/projects/project-pages.service.ts
+- server/api/projects/[slug]/page-answers.put.ts -> server/modules/projects/project-pages.service.ts
 - server/api/projects/[slug]/relations.get.ts -> server/modules/projects/project-relations.service.ts
 - server/api/projects/[slug]/relations.put.ts -> server/modules/projects/project-relations.service.ts
 - server/api/projects/[slug]/work-status.get.ts -> server/modules/projects/project-work-status.service.ts
 - server/api/projects/[slug]/work-status.put.ts -> server/modules/projects/project-work-status.service.ts
-- server/api/projects/[slug]/extra-services.get.ts -> server/modules/projects/project-extra-services.service.ts
-- server/api/projects/[slug]/extra-services.put.ts -> server/modules/projects/project-extra-services.service.ts
+- server/api/projects/[slug]/extra-services/index.get.ts -> server/modules/projects/project-extra-services-api.service.ts
+- server/api/projects/[slug]/extra-services/index.post.ts -> server/modules/projects/project-extra-services-api.service.ts
+- server/api/projects/[slug]/extra-services/[id].put.ts -> server/modules/projects/project-extra-services-api.service.ts
+- server/api/projects/[slug]/extra-services/[id].delete.ts -> server/modules/projects/project-extra-services-api.service.ts
 - server/api/projects/[slug]/communications-bootstrap.get.ts -> server/modules/communications/communications-bootstrap.service.ts
 
 ### Остальные домены
@@ -66,8 +70,8 @@
 - server/api/managers/ -> server/modules/managers/
 - server/api/documents/ -> server/modules/documents/
 - server/api/gallery/ -> server/modules/gallery/
-- server/api/upload.post.ts -> server/modules/uploads/upload.service.ts
-- server/api/suggest/ -> server/modules/suggest/
+- server/api/upload.post.ts -> server/api/upload.post.ts  (no DB, multipart-only, stays)
+- server/api/suggest/address.get.ts -> server/api/suggest/address.get.ts  (external Yandex proxy, no DB, stays)
 - server/api/chat/ -> server/modules/chat/
 
 ## server/utils -> target layout
@@ -88,8 +92,6 @@
 - server/utils/gemma-prompts.ts -> server/modules/ai/gemma-prompts.ts
 - server/utils/rag.ts -> server/modules/ai/rag.service.ts
 - server/utils/recovery-phrase.ts -> server/modules/auth/admin-recovery.service.ts
-- server/utils/agent-chat.ts -> server/modules/chat/chat-agents.service.ts
-- server/utils/agent-chat-audit.ts -> server/modules/agent-registry/agent-registry-audit.service.ts
 - server/utils/admin-settings.ts -> server/modules/admin-settings/admin-settings.service.ts
 
 ## server/db/schema split (done)
