@@ -4,6 +4,11 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/ui', '@pinia/nuxt'],
 
+  components: [
+    { path: '~/components', pathPrefix: false },
+    { path: '~/shared/ui', pathPrefix: false },
+  ],
+
   ui: {
     fonts: false,
   },
