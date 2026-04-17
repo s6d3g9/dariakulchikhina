@@ -170,6 +170,14 @@ export default tseslint.config(
           message:
             'Default exports are reserved for Nuxt/Nitro plumbing and Vue SFCs. Use a named export here (see docs/architecture-v5/17-coding-standards.md §17.7.1).',
         },
+        {
+          // Ban `process.env.X` reads outside the central config module.
+          // See docs/architecture-v5/20-config-and-logging.md §1.
+          selector:
+            "MemberExpression[object.type='MemberExpression'][object.object.name='process'][object.property.name='env']",
+          message:
+            'Read environment variables through `config` from `~/server/config`, not `process.env` directly. This keeps fail-fast validation centralized. See docs/architecture-v5/20-config-and-logging.md §1.',
+        },
       ],
 
       // TypeScript sanity
@@ -453,6 +461,54 @@ export default tseslint.config(
       complexity: 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       'no-restricted-syntax': 'off',
+    },
+  },
+
+  // Central config files — allowed to read process.env directly. Each
+  // runtime has exactly one: main Nuxt app -> server/config.ts,
+  // messenger -> messenger/core/src/config.ts, communications relay ->
+  // services/communications-service/src/config.ts.
+  {
+    files: [
+      'server/config.ts',
+      'messenger/core/src/config.ts',
+      'services/communications-service/src/config.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+
+  // server/modules/**/*.service.ts — business logic. The DB layer
+  // (drizzle-orm, schema tables, postgres client) is forbidden here;
+  // it belongs in the paired *.repository.ts. See
+  // docs/architecture-v5/18-repository-layer.md.
+  {
+    files: ['server/modules/**/*.service.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'drizzle-orm',
+                'drizzle-orm/*',
+                'postgres',
+                '~/server/db',
+                '~/server/db/index',
+                '~/server/db/schema',
+                '~/server/db/schema/**',
+                '~/server/db/schema/*',
+                '**/server/db/schema',
+                '**/server/db/schema/**',
+              ],
+              message:
+                'Services must not access the DB directly. Put Drizzle queries in a paired `*.repository.ts` and call it via `import * as repo from "./<domain>.repository"`. See docs/architecture-v5/18-repository-layer.md.',
+            },
+          ],
+        },
+      ],
     },
   },
 

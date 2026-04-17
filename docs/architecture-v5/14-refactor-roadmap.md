@@ -756,3 +756,6 @@ Pino-logger + AsyncLocalStorage для correlation-id. Файлы: server/utils/
 - **contractors** — `contractors.repository.ts` (9 функций: CRUD + staff + resolveAndStaffIds); `contractor-documents.repository.ts` (4 функции); `contractor-work-items.repository.ts` (13 функций: workItems + comments + photos)
 
 Проверки: vue-tsc exit 0, lint:errors 0 новых нарушений.
+
+### [done] 2026-04-17 — Wave 7 / enforce repository + config invariants via ESLint
+Добавлены 2 архитектурных правила в eslint.config.mjs: (1) `no-restricted-imports` в `server/modules/**/*.service.ts` запрещает `drizzle-orm`, `postgres`, `~/server/db/**` — услуги работают через `*.repository.ts` (см. doc 18); (2) `no-restricted-syntax` на MemberExpression `process.env.*` глобально с exemptions для трёх central config файлов (main, messenger, communications-service). Baseline: 98 errors в 34 файлах — backlog для оставшихся repository-split доменов (auth, admin, admin-settings, ai, chat, communications, projects — 8 доменов). Ratchet блокирует регрессии. Проверки: vue-tsc ok.
