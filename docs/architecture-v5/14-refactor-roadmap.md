@@ -501,6 +501,33 @@ Commit:
 - Verification: `pnpm lint:errors | grep 'documents/'` = 0, `pnpm lint:ratchet`, `pnpm exec vue-tsc --noEmit`.
 - Риск: низкий (self-contained, нет multi-domain relations как в projects).
 
+### [done] 2026-04-17 — Wave 5 / documents CRUD → modules/documents (выполнено по аудит-плану)
+Цель: перевести 6 файлов `server/api/documents/*.ts` на thin handlers, логика — в `server/modules/documents/documents.service.ts`. Прогноз аудита: delta −12. Результат: ровно −12.
+
+Файлы:
+- server/modules/documents/documents.service.ts (новый): единый service-файл с экспортами:
+  - `CreateDocumentSchema`, `UpdateDocumentSchema` + типы — локальные Zod-контракты (не пересекают границы процесса, поэтому не в shared)
+  - `listDocuments({ category?, projectSlug? })` — list + filter
+  - `createDocument(body)` — insert с resolve projectSlug → projectId
+  - `getDocument(id)` — single row (возвращает null вместо throw — handler решает 404)
+  - `updateDocument(id, body)` — partial update с whitelist полей
+  - `deleteDocument(id)` — delete + cleanup файла с диска (через `~/server/utils/storage.getUploadDir`)
+  - `getDocumentContext(projectSlug)` — агрегация project+clients+contractors+pageContent для auto-fill шаблонов
+- server/api/documents/{index.get,index.post,[id].get,[id].put,[id].delete,context.get}.ts: thin handlers (3-10 строк каждый), вся DB-логика делегирована в service.
+- Не тронут: `server/api/documents/export-docx.post.ts` (185 строк, не было lint-ошибок — работает с `docx` npm-пакетом, БД не касается, отдельный concern).
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — ok
+- `pnpm lint:ratchet` — 184 (baseline 196 → 184, ровно −12)
+- `pnpm docs:v5:verify` — ok, 21 file
+- Runtime идентичен: те же категории, те же статусы 400/401/404, те же fallback'и в context (empty projectSlug → вернуть все clients/contractors; missing project → вернуть пустой контекст с today), та же очистка файла при delete.
+
+Долги:
+- Следующая цель по аудиту: либо CRUD clients/contractors/designers/sellers/managers (Delta −50, L), либо uploads+gallery (Delta −18, M). Documents — шаблон для этих batches.
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:
