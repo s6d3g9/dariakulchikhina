@@ -701,3 +701,6 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / projects pages (page-content + page-answers) → modules/projects
 4 endpoints thinned. Файл: server/modules/projects/project-pages.service.ts (getPageContent/upsertPageContent + getPageAnswers/upsertPageAnswers, с prototype-pollution sanitization). Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / projects work-status items (comments + photos) → modules/projects
+3 endpoints thinned. Файл: server/modules/projects/project-work-status-items.service.ts (admin-authored comments + photos listing, с shared assertItemInProject guard). Проверки: vue-tsc ok, lint-ratchet ok.
