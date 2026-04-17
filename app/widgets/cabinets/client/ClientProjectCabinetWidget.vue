@@ -5,17 +5,17 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
 import ClientPageContent from '~/features/page-content/ui/ClientPageContent.vue'
-import ClientInitiation from '~/components/ClientInitiation.vue'
-import ClientContactDetails from '~/components/ClientContactDetails.vue'
-import ClientTimeline from '~/components/ClientTimeline.vue'
-import ClientDesignAlbum from '~/components/ClientDesignAlbum.vue'
-import ClientContracts from '~/components/ClientContracts.vue'
-import ClientExtraServices from '~/components/ClientExtraServices.vue'
-import ClientSelfProfile from '~/components/ClientSelfProfile.vue'
-import ClientBrief from '~/components/ClientBrief.vue'
-import ClientTZ from '~/components/ClientTZ.vue'
-import ClientWorkProgress from '~/components/ClientWorkProgress.vue'
-import ClientPassport from '~/components/ClientPassport.vue'
+import ClientInitiation from '~/widgets/phases/initiation/ClientInitiation.vue'
+import ClientContactDetails from '~/widgets/cabinets/client/ClientContactDetails.vue'
+import ClientTimeline from '~/widgets/projects/ClientTimeline.vue'
+import ClientDesignAlbum from '~/widgets/phases/working-project/ClientDesignAlbum.vue'
+import ClientContracts from '~/widgets/projects/ClientContracts.vue'
+import ClientExtraServices from '~/widgets/projects/ClientExtraServices.vue'
+import ClientSelfProfile from '~/widgets/cabinets/client/ClientSelfProfile.vue'
+import ClientBrief from '~/widgets/projects/ClientBrief.vue'
+import ClientTZ from '~/widgets/phases/concept/ClientTZ.vue'
+import ClientWorkProgress from '~/widgets/phases/construction/ClientWorkProgress.vue'
+import ClientPassport from '~/widgets/projects/ClientPassport.vue'
 
 const props = defineProps<{
   slug: string
