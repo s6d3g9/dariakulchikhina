@@ -437,6 +437,25 @@ Commit:
 Долги:
 - `docs/architecture-v5/10-frontend-refactor-map.md` уже использует короткие basenames в "Shared UI" секции — формально работает через индекс `app/components/**`, но для консистентности стоит тоже переписать на repo-root. Отдельный batch.
 
+### [done] 2026-04-17 — Governance / enable no-default-export (17.7.1)
+Цель: включить ESLint-блокировку `export default` в обычных `.ts` файлах. Это обеспечивает reference-by-name стабильность для LLM-агентов.
+
+Файлы:
+- eslint.config.mjs: добавлено правило `no-restricted-syntax` с селектором `ExportDefaultDeclaration` как ERROR. Расширен override-блок для framework-contract путей (`*.config`, `*.options`, Nuxt middleware/plugins/pages/layouts, `server/api/**`, `server/middleware/**`, `server/plugins/**`, `scripts/**`, все `.vue`), чтобы default export там оставался разрешён.
+- docs/architecture-v5/17-coding-standards.md: 17.7.1 обновлён, пункт снят с `[planned]` → enforced. Changelog обновлён.
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm lint:ratchet` — 196 (baseline не сдвинулся). Обычные `.ts` файлы в `server/modules/`, `server/utils/`, `shared/`, `app/composables/`, `app/entities/`, `app/widgets/` уже не использовали default export — правило включено "на зелёном поле", без backlog.
+- 2 ложных срабатывания устранены через overrides:
+  - `app/router.options.ts` — Nuxt router config, требует default.
+  - `messenger/web/vuetify.options.ts` — Vuetify plugin config, требует default.
+
+Долги:
+- Для новых .vue файлов стоит отдельно отслеживать, что имя компонента совпадает с именем файла (17.2.1). Можно сделать через eslint-plugin-vue правило `vue/match-component-file-name` — отдельный batch.
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:

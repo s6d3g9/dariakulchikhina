@@ -178,9 +178,9 @@ shared/
 
 ### 17.7.1. Именованные экспорты
 
-- **`.ts` файлы вне Nuxt-plumbing (`middleware/`, `plugins/`, `pages/`, `layouts/`, `*.config.ts`) используют только named exports.** Это даёт стабильные идентификаторы `<path>::<symbol>` для reference-by-name в промптах и агентских операциях.
+- **`.ts` файлы вне Nuxt-plumbing (`middleware/`, `plugins/`, `pages/`, `layouts/`, `*.config.ts`, `*.options.ts`, `server/api/**`, `scripts/**`) используют только named exports.** Это даёт стабильные идентификаторы `<path>::<symbol>` для reference-by-name в промптах и агентских операциях.
 - `.vue` файлы — default export через `<script setup>` (это контракт Vue), но именование компонента должно совпадать с именем файла (`AdminEntityHeader.vue` → компонент называется `AdminEntityHeader`).
-- `[planned]` ESLint `import/no-default-export` с overrides для Nuxt-plumbing и `.vue`.
+- Enforced: ESLint `no-restricted-syntax` блокирует `ExportDefaultDeclaration` в обычных `.ts`. Overrides для framework-contract путей перечислены в `eslint.config.mjs`.
 
 ### 17.7.2. Стабильная структура файла
 
@@ -271,3 +271,4 @@ function buildWhere(q: ListQuery) { /* ... */ }
 | Дата | Изменение |
 |---|---|
 | 2026-04-17 | Документ создан. Правила 17.1, 17.2.1, 17.2.2, 17.3, 17.4, 17.5, 17.7 подключены к ESLint. 17.6 и `no-default-export` помечены `[planned]`. |
+| 2026-04-17 | 17.7.1 (no-default-export для обычных `.ts`) включён как ESLint error через `no-restricted-syntax`. Framework-contract пути (`*.config.{ts,cjs,mjs}`, `*.options.ts`, Nuxt middleware/plugins/pages/layouts, `server/api/**`, `server/middleware/**`, `server/plugins/**`, `scripts/**`, все `.vue`) остаются c разрешённым default export. |

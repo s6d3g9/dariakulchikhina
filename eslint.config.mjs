@@ -156,8 +156,21 @@ export default tseslint.config(
       'max-depth': ['warn', { max: 4 }],
       'max-params': ['warn', { max: 5 }],
 
-      // LLM-friendly authorship
-      'no-default-export': 'off',
+      // LLM-friendly authorship: ban default exports in regular .ts files.
+      // Default exports erase the symbol name at the import site, which
+      // breaks reference-by-name tooling (agents, IDE go-to). Nuxt/Nitro
+      // plumbing (middleware, plugins, api routes, pages, layouts, vue
+      // SFCs, config files, scripts) is excluded via the overrides block
+      // below — those paths REQUIRE default export to satisfy framework
+      // contracts.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ExportDefaultDeclaration',
+          message:
+            'Default exports are reserved for Nuxt/Nitro plumbing and Vue SFCs. Use a named export here (see docs/architecture-v5/17-coding-standards.md §17.7.1).',
+        },
+      ],
 
       // TypeScript sanity
       '@typescript-eslint/no-explicit-any': 'warn',
@@ -394,26 +407,44 @@ export default tseslint.config(
   // Overrides for Nuxt / Vue / tooling files where default-export
   // and certain patterns are part of the framework contract.
   // ----------------------------------------------------------------
+
+  // Framework-contract files: default export is REQUIRED here.
+  // - Nuxt routes/middleware/plugins/layouts/pages expect default export.
+  // - Nitro h3 event handlers use `export default defineEventHandler(...)`.
+  // - Nuxt/drizzle/pm2 config files export config objects by default.
+  // - Vue SFCs always emit a default export via <script setup>.
   {
     files: [
       '**/*.config.{ts,js,mjs,cjs}',
+      '**/*.options.{ts,js,mjs}',
       'nuxt.config.ts',
       'drizzle.config.ts',
       'ecosystem*.config.cjs',
+      'eslint.config.mjs',
       'app/middleware/**/*.ts',
       'app/plugins/**/*.ts',
-      'server/middleware/**/*.ts',
-      'server/plugins/**/*.ts',
       'app/layouts/**/*.vue',
       'app/pages/**/*.vue',
       'app/app.vue',
+      'server/api/**/*.ts',
+      'server/middleware/**/*.ts',
+      'server/plugins/**/*.ts',
+      'server/routes/**/*.ts',
+      'messenger/**/*.vue',
+      'messenger/web/app/pages/**/*.ts',
+      'messenger/web/app/middleware/**/*.ts',
+      'messenger/web/app/plugins/**/*.ts',
+      'messenger/web/app/layouts/**/*.vue',
+      '**/*.vue',
     ],
     rules: {
       'max-lines-per-function': 'off',
+      'no-restricted-syntax': 'off',
     },
   },
 
-  // Scripts — relax size limits; they are intentional data-migration helpers.
+  // Scripts — relax size limits and default-export ban; they are
+  // intentional data-migration helpers invoked by shell or node directly.
   {
     files: ['scripts/**/*.{ts,js,mjs,cjs}'],
     rules: {
@@ -421,6 +452,7 @@ export default tseslint.config(
       'max-lines-per-function': 'off',
       complexity: 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      'no-restricted-syntax': 'off',
     },
   },
 
