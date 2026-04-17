@@ -1,138 +1,159 @@
 # 11. Backend + Shared: матрица переноса в DDD-структуру
 
-Этот документ фиксирует, как разложить действующий серверный код и контракты по модульной архитектуре без поломки маршрутов.
+Этот документ фиксирует, как разложить действующий серверный код и контракты по модульной архитектуре без поломки маршрутов. Все source и target пути — репозиторно-корневые, чтобы `scripts/verify-architecture-docs.mjs` мог машинно проверять их существование.
 
 ## Главный принцип
 
-- server/api/** остается HTTP-слоем.
-- Бизнес-логика уходит в server/modules/**.
-- server/db/schema.ts раскладывается по server/db/schema/**.
-- shared/** становится единственным местом для DTO, типов, констант и pure-utils.
+- `server/api/**` остается HTTP-слоем.
+- Бизнес-логика уходит в `server/modules/**`.
+- `server/db/schema.ts` раскладывается по `server/db/schema/**` (сделано в Wave 6, см. 14-refactor-roadmap.md).
+- `shared/**` становится единственным местом для DTO, типов, констант и pure-utils.
 
 ## API -> Modules
 
 ### Auth
-- server/api/auth/login.post.ts -> server/modules/auth/auth.service.ts
-- server/api/auth/logout.post.ts -> server/modules/auth/session.service.ts
+- server/api/auth/login.post.ts -> server/modules/auth/admin-auth.service.ts
+- server/api/auth/register.post.ts -> server/modules/auth/admin-auth.service.ts
+- server/api/auth/recover.post.ts -> server/modules/auth/admin-recovery.service.ts
 - server/api/auth/me.get.ts -> server/modules/auth/session.service.ts
-- server/api/auth/recover.post.ts -> server/modules/auth/recovery.service.ts
-- server/api/auth/register.post.ts -> server/modules/auth/auth.service.ts
-- client/contractor auth endpoints раскладываются аналогично в auth.service.ts, contractor-auth.service.ts, session.service.ts и csrf.service.ts
+- server/api/auth/logout.post.ts -> server/modules/auth/session.service.ts
+- server/api/auth/client-login.post.ts -> server/modules/auth/client-auth.service.ts
+- server/api/auth/client-register.post.ts -> server/modules/auth/client-auth.service.ts
+- server/api/auth/client-recover.post.ts -> server/modules/auth/client-auth.service.ts
+- server/api/auth/client-id-logout.post.ts -> server/modules/auth/session.service.ts
+- server/api/auth/client-open.get.ts -> server/modules/auth/client-auth.service.ts
+- server/api/auth/contractor-login.post.ts -> server/modules/auth/contractor-auth.service.ts
+- server/api/auth/contractor-register.post.ts -> server/modules/auth/contractor-auth.service.ts
+- server/api/auth/contractor-recover.post.ts -> server/modules/auth/contractor-auth.service.ts
+- server/api/auth/contractor-logout.post.ts -> server/modules/auth/session.service.ts
+- server/api/auth/csrf.get.ts -> server/modules/auth/csrf.service.ts
 
 ### Admin + settings
 - server/api/admin/search.get.ts -> server/modules/admin/admin-search.service.ts
 - server/api/admin/notifications.get.ts -> server/modules/admin/admin-notifications.service.ts
-- app-blueprints/design-modules/element-alignment/element-visibility endpoints -> server/modules/admin-settings/**
-- agent-registry endpoints -> server/modules/agent-registry/**
+- server/api/admin-settings/app-blueprints.ts -> server/modules/admin-settings/app-blueprints.service.ts
+- server/api/admin-settings/design-modules.ts -> server/modules/admin-settings/design-modules.service.ts
+- server/api/admin-settings/element-alignment.ts -> server/modules/admin-settings/element-alignment.service.ts
+- server/api/admin-settings/element-visibility.ts -> server/modules/admin-settings/element-visibility.service.ts
+- server/api/agent-registry/index.get.ts -> server/modules/agent-registry/agent-registry.service.ts
+- server/api/agent-registry/audit.get.ts -> server/modules/agent-registry/agent-registry-audit.service.ts
 
 ### Projects
-- CRUD проектов -> server/modules/projects/projects.service.ts
-- status -> project-status.service.ts
-- client-profile -> project-client-profile.service.ts
-- page-content -> page-content.service.ts
-- page-answers -> page-answers.service.ts
-- relations -> project-relations.service.ts
-- contractors/designers/sellers links -> отдельные services внутри projects
-- work-status -> project-work-status.service.ts
-- extra-services -> project-extra-services.service.ts
-- communications bootstrap -> server/modules/communications/communications-bootstrap.service.ts
+- server/api/projects/index.get.ts -> server/modules/projects/projects.service.ts
+- server/api/projects/index.post.ts -> server/modules/projects/projects.service.ts
+- server/api/projects/[slug].get.ts -> server/modules/projects/projects.service.ts
+- server/api/projects/[slug].put.ts -> server/modules/projects/projects.service.ts
+- server/api/projects/[slug].delete.ts -> server/modules/projects/projects.service.ts
+- server/api/projects/[slug]/status.put.ts -> server/modules/projects/project-status.service.ts
+- server/api/projects/[slug]/client-profile.put.ts -> server/modules/projects/project-client-profile.service.ts
+- server/api/projects/[slug]/page-content.get.ts -> server/modules/projects/page-content.service.ts
+- server/api/projects/[slug]/page-content.put.ts -> server/modules/projects/page-content.service.ts
+- server/api/projects/[slug]/page-answers.get.ts -> server/modules/projects/page-answers.service.ts
+- server/api/projects/[slug]/page-answers.put.ts -> server/modules/projects/page-answers.service.ts
+- server/api/projects/[slug]/relations.get.ts -> server/modules/projects/project-relations.service.ts
+- server/api/projects/[slug]/relations.put.ts -> server/modules/projects/project-relations.service.ts
+- server/api/projects/[slug]/work-status.get.ts -> server/modules/projects/project-work-status.service.ts
+- server/api/projects/[slug]/work-status.put.ts -> server/modules/projects/project-work-status.service.ts
+- server/api/projects/[slug]/extra-services.get.ts -> server/modules/projects/project-extra-services.service.ts
+- server/api/projects/[slug]/extra-services.put.ts -> server/modules/projects/project-extra-services.service.ts
+- server/api/projects/[slug]/communications-bootstrap.get.ts -> server/modules/communications/communications-bootstrap.service.ts
 
 ### Остальные домены
-- server/api/clients/** -> server/modules/clients/**
-- server/api/contractors/** -> server/modules/contractors/**
-- server/api/designers/** -> server/modules/designers/**
-- server/api/sellers/** -> server/modules/sellers/**
-- server/api/managers/** -> server/modules/managers/**
-- server/api/documents/** -> server/modules/documents/**
-- server/api/gallery/** -> server/modules/gallery/**
+- server/api/clients/ -> server/modules/clients/
+- server/api/contractors/ -> server/modules/contractors/
+- server/api/designers/ -> server/modules/designers/
+- server/api/sellers/ -> server/modules/sellers/
+- server/api/managers/ -> server/modules/managers/
+- server/api/documents/ -> server/modules/documents/
+- server/api/gallery/ -> server/modules/gallery/
 - server/api/upload.post.ts -> server/modules/uploads/upload.service.ts
-- server/api/suggest/** -> server/modules/suggest/**
-- server/api/chat/** -> server/modules/chat/**
+- server/api/suggest/ -> server/modules/suggest/
+- server/api/chat/ -> server/modules/chat/
 
-## server/utils -> целевая раскладка
+## server/utils -> target layout
 
-- auth.ts -> modules/auth/auth.service.ts + session.service.ts
-- auth-registration.ts -> modules/auth/auth.service.ts
-- body.ts и query.ts остаются инфраструктурными utils
-- storage.ts -> modules/uploads/upload-storage.service.ts
-- upload-validation.ts -> modules/uploads/upload-validation.service.ts
-- communications.ts -> modules/communications/communications-bootstrap.service.ts
-- project-communications-relay.ts -> modules/communications/project-communications-relay.service.ts
-- standalone-chat-communications.ts -> modules/chat/chat-communications.service.ts
-- standalone-chat-users.ts -> modules/chat/chat-users.service.ts
-- projects.ts -> modules/projects/projects.service.ts
-- project-relations.ts -> modules/projects/project-relations.service.ts
-- gemma.ts -> modules/ai/gemma.service.ts
-- gemma-prompts.ts -> modules/ai/gemma-prompts.ts
-- rag.ts -> modules/ai/rag.service.ts
-- recovery-phrase.ts -> modules/auth/recovery.service.ts
-- agent-chat.ts -> modules/chat/chat-agents.service.ts
-- agent-chat-audit.ts -> modules/agent-registry/agent-registry-audit.service.ts
-- admin-settings.ts -> modules/admin-settings/**
+- server/utils/auth.ts -> server/modules/auth/admin-auth.service.ts + server/modules/auth/session.service.ts
+- server/utils/auth-registration.ts -> server/modules/auth/admin-auth.service.ts
+- server/utils/body.ts -> server/utils/body.ts  (infrastructure helper, stays)
+- server/utils/query.ts -> server/utils/query.ts  (infrastructure helper, stays)
+- server/utils/storage.ts -> server/modules/uploads/upload-storage.service.ts
+- server/utils/upload-validation.ts -> server/modules/uploads/upload-validation.service.ts
+- server/utils/communications.ts -> server/modules/communications/communications-bootstrap.service.ts
+- server/utils/project-communications-relay.ts -> server/modules/communications/project-communications-relay.service.ts
+- server/utils/standalone-chat-communications.ts -> server/modules/chat/chat-communications.service.ts
+- server/utils/standalone-chat-users.ts -> server/modules/chat/chat-users.service.ts
+- server/utils/projects.ts -> server/modules/projects/projects.service.ts
+- server/utils/project-relations.ts -> server/modules/projects/project-relations.service.ts
+- server/utils/gemma.ts -> server/modules/ai/gemma.service.ts
+- server/utils/gemma-prompts.ts -> server/modules/ai/gemma-prompts.ts
+- server/utils/rag.ts -> server/modules/ai/rag.service.ts
+- server/utils/recovery-phrase.ts -> server/modules/auth/admin-recovery.service.ts
+- server/utils/agent-chat.ts -> server/modules/chat/chat-agents.service.ts
+- server/utils/agent-chat-audit.ts -> server/modules/agent-registry/agent-registry-audit.service.ts
+- server/utils/admin-settings.ts -> server/modules/admin-settings/admin-settings.service.ts
 
-## Разбиение server/db/schema.ts
+## server/db/schema split (done)
 
-- users -> server/db/schema/users.ts
-- adminSettings -> server/db/schema/admin-settings.ts
-- projects -> server/db/schema/projects.ts
-- pageConfigs -> server/db/schema/page-configs.ts
-- pageContent -> server/db/schema/page-content.ts
-- clients -> server/db/schema/clients.ts
-- contractors -> server/db/schema/contractors.ts
-- projectContractors -> server/db/schema/project-relations.ts
-- workStatusItems -> server/db/schema/work-status-items.ts
-- workStatusItemPhotos -> server/db/schema/work-status-item-photos.ts
-- workStatusItemComments -> server/db/schema/work-status-item-comments.ts
-- uploads -> server/db/schema/uploads.ts
-- galleryItems -> server/db/schema/gallery-items.ts
-- documents -> server/db/schema/documents.ts
-- projectExtraServices -> server/db/schema/project-extra-services.ts
-- contractorDocuments -> server/db/schema/contractor-documents.ts
-- designers and links -> server/db/schema/designers.ts
-- sellers -> server/db/schema/sellers.ts
-- sellerProjects -> server/db/schema/seller-projects.ts
-- managers -> server/db/schema/managers.ts
-- managerProjects -> server/db/schema/manager-projects.ts
-- all relations(...) -> server/db/schema/relations.ts
+`server/db/schema.ts` был разделён в Wave 6 (2026-04-17). Фактический результат:
+
+- server/db/schema/users.ts — users, adminSettings
+- server/db/schema/clients.ts — clients
+- server/db/schema/projects.ts — projects, pageConfigs, pageContent
+- server/db/schema/contractors.ts — contractors, projectContractors, contractorDocuments
+- server/db/schema/work-status.ts — workStatusItems, workStatusItemPhotos, workStatusItemComments
+- server/db/schema/uploads.ts — uploads, galleryItems
+- server/db/schema/documents.ts — documents, projectExtraServices
+- server/db/schema/designers.ts — designers, designerProjects, designerProjectClients, designerProjectContractors
+- server/db/schema/sellers.ts — sellers, sellerProjects
+- server/db/schema/managers.ts — managers, managerProjects
+- server/db/schema/project-governance.ts — projectParticipants, projectScopeAssignments, projectScopeSettings
+- server/db/schema/relations.ts — все `relations(...)`
+- server/db/schema/index.ts — barrel, re-export
+
+Старый `server/db/schema.ts` удалён. Import-поверхность `~/server/db/schema` сохранена через barrel.
 
 ## Целевая структура shared
 
 ### constants
-- navigation/admin-navigation.ts
-- navigation/app-catalog.ts
-- navigation/pages.ts
-- design-system/brief-sections.ts
-- design-system/design-modes.ts
-- design-system/presets.ts
-- profile/profile-fields.ts
-- system/roles.ts
-- system/status-colors.ts
-- system/websocket-events.ts
+- shared/constants/navigation/admin-navigation.ts
+- shared/constants/navigation/app-catalog.ts
+- shared/constants/navigation/pages.ts
+- shared/constants/design-system/brief-sections.ts
+- shared/constants/design-system/design-modes.ts
+- shared/constants/design-system/presets.ts
+- shared/constants/profile/profile-fields.ts
+- shared/constants/system/roles.ts
+- shared/constants/system/status-colors.ts
+- shared/constants/system/websocket-events.ts
 
 ### types
-- auth/auth.ts
-- navigation/navigation.ts
-- navigation/app-catalog.ts
-- project/project.ts
-- project/project-governance.ts
-- project/phase-steps.ts
-- project/catalogs.ts
-- contractor/contractor.ts
-- designer/designer.ts
-- gallery/gallery.ts
-- gallery/material.ts
-- communications/communications.ts
-- agent-chat/agent-chat.ts
-- design-system/{design-mode,design-modules,element-alignment,element-visibility,wipe2}.ts
+- shared/types/auth/auth.ts
+- shared/types/navigation/navigation.ts
+- shared/types/navigation/app-catalog.ts
+- shared/types/project/project.ts
+- shared/types/project/project-governance.ts
+- shared/types/project/phase-steps.ts
+- shared/types/project/catalogs.ts
+- shared/types/contractor/contractor.ts
+- shared/types/designer/designer.ts
+- shared/types/gallery/gallery.ts
+- shared/types/gallery/material.ts
+- shared/types/communications/communications.ts
+- shared/types/agent-chat/agent-chat.ts
+- shared/types/design-system/design-mode.ts
+- shared/types/design-system/design-modules.ts
+- shared/types/design-system/element-alignment.ts
+- shared/types/design-system/element-visibility.ts
+- shared/types/design-system/wipe2.ts
 
 ### utils
-- communications/communications-e2ee.ts
-- designer/designer-catalogs.ts
-- project/project-control.ts
-- project/project-control-timeline.ts
-- project/project-governance.ts
-- project/work-status.ts
-- ui/status-maps.ts
+- shared/utils/communications/communications-e2ee.ts
+- shared/utils/designer/designer-catalogs.ts
+- shared/utils/project/project-control.ts
+- shared/utils/project/project-control-timeline.ts
+- shared/utils/project/project-governance.ts
+- shared/utils/project/work-status.ts
+- shared/utils/ui/status-maps.ts
 
 ## Новые backend/shared-файлы первого этапа
 
@@ -174,9 +195,16 @@
 
 Каждая зона должна иметь ровно один owner-файл. Любая попытка продублировать функцию «как удобнее» в соседней зоне считается архитектурной регрессией.
 
-## Current Status vs Target (2026-04-16)
+## Current Status vs Target (2026-04-17)
 
-- Status source: `14-refactor-roadmap.md` + `server-audit-report.md`.
-- Что уже достигнуто: `projects/work-status` hot-path переведен на service-layer с thin-controller API и prepared queries; shared system-константы и ключевые DTO вынесены.
-- Что еще не доведено до полного match: часть доменов `server/api/**` все еще частично зависит от legacy `server/utils/**`; db-schema split в целевой вид не завершен.
-- Критерий завершения этого документа: `server/api/**` только HTTP/validation/auth, вся доменная логика в `server/modules/**`, shared-контракты используются как единственный source of truth.
+- Status source: `14-refactor-roadmap.md` + `server-audit-report.md` + новые lint-данные из `eslint.config.mjs` (no-restricted-imports в `server/api/**` даёт реальный backlog).
+- Что уже достигнуто:
+  - Все `server/api/auth/*.ts` endpoints (9 файлов) сведены к thin handlers, доменная логика в `server/modules/auth/{admin,client,contractor}-auth.service.ts` + `session.service.ts` + `admin-recovery.service.ts`.
+  - `server/api/admin/{search,notifications}.get.ts` — thin; логика в `server/modules/admin/`.
+  - `server/db/schema.ts` распилен по 11 per-domain файлов + `relations.ts` + `index.ts`.
+  - `projects/work-status` hot-path: thin-controller + prepared queries.
+  - Shared system-константы и ключевые DTO вынесены.
+- Что ещё не доведено до полного match:
+  - Часть доменов `server/api/**` всё ещё импортирует `drizzle-orm` и `~/server/db/schema` напрямую (см. baseline lint, ~190 ошибок).
+  - `server/utils/**` остаётся основным домом для проектной логики — модули в `server/modules/{auth,projects,chat}` кроме newly-added остаются bridge re-exports.
+- Критерий завершения: `pnpm lint:errors` = 0, `server/api/**` чисто HTTP/validation/auth, логика в `server/modules/**`, shared-контракты — единственный source of truth.

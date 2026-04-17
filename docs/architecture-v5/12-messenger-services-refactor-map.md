@@ -2,147 +2,152 @@
 
 Документ покрывает три отдельные зоны, которые нельзя смешивать с основным Nuxt-приложением:
 
-1. messenger/core — realtime backend и агентный runtime.
-2. messenger/web — отдельный consumer-style web client.
-3. services/communications-service — отдельный сервис коммуникаций.
+1. `messenger/core` — realtime backend и агентный runtime.
+2. `messenger/web` — отдельный consumer-style web client.
+3. `services/communications-service` — отдельный сервис коммуникаций.
+
+Все source и target пути — репозиторно-корневые, чтобы `scripts/verify-architecture-docs.mjs` мог машинно проверять их существование.
 
 ## messenger/core -> bounded contexts
 
 ### Базовая инфраструктура
-- messenger/core/src/index.ts остается bootstrap entrypoint
-- messenger/core/src/config.ts остается config entrypoint
+- messenger/core/src/index.ts -> messenger/core/src/index.ts  (bootstrap entrypoint, stays)
+- messenger/core/src/config.ts -> messenger/core/src/config.ts  (config entrypoint, stays)
 - messenger/core/src/server.ts -> messenger/core/src/realtime/server.ts
 
 ### Auth и crypto
-- auth.ts -> auth/auth.ts
-- auth-store.ts -> auth/auth-store.ts
-- crypto-store.ts -> crypto/crypto-store.ts
+- messenger/core/src/auth.ts -> messenger/core/src/auth/auth.ts
+- messenger/core/src/auth-store.ts -> messenger/core/src/auth/auth-store.ts
+- messenger/core/src/crypto-store.ts -> messenger/core/src/crypto/crypto-store.ts
 
 ### Contacts, conversations, media
-- contact-store.ts -> contacts/contact-store.ts
-- conversation-store.ts -> conversations/conversation-store.ts
-- media-store.ts -> media/media-store.ts
-- storage-paths.ts -> media/storage-paths.ts
+- messenger/core/src/contact-store.ts -> messenger/core/src/contacts/contact-store.ts
+- messenger/core/src/conversation-store.ts -> messenger/core/src/conversations/conversation-store.ts
+- messenger/core/src/media-store.ts -> messenger/core/src/media/media-store.ts
+- messenger/core/src/storage-paths.ts -> messenger/core/src/media/storage-paths.ts
 
 ### Agents и AI runtime
-- agent-knowledge-presets.ts -> agents/agent-knowledge-presets.ts
-- agent-knowledge-store.ts -> agents/agent-knowledge-store.ts
-- agent-llm.ts -> agents/agent-llm.ts
-- agent-run-store.ts -> agents/agent-run-store.ts
-- agent-settings-store.ts -> agents/agent-settings-store.ts
-- agent-store.ts -> agents/agent-store.ts
-- agent-workspace-store.ts -> agents/agent-workspace-store.ts
-- user-ai-settings-store.ts -> profile/user-ai-settings-store.ts
+- messenger/core/src/agent-knowledge-presets.ts -> messenger/core/src/agents/agent-knowledge-presets.ts
+- messenger/core/src/agent-knowledge-store.ts -> messenger/core/src/agents/agent-knowledge-store.ts
+- messenger/core/src/agent-llm.ts -> messenger/core/src/agents/agent-llm.ts
+- messenger/core/src/agent-run-store.ts -> messenger/core/src/agents/agent-run-store.ts
+- messenger/core/src/agent-settings-store.ts -> messenger/core/src/agents/agent-settings-store.ts
+- messenger/core/src/agent-store.ts -> messenger/core/src/agents/agent-store.ts
+- messenger/core/src/agent-workspace-store.ts -> messenger/core/src/agents/agent-workspace-store.ts
+- messenger/core/src/user-ai-settings-store.ts -> messenger/core/src/profile/user-ai-settings-store.ts
 
 ### Calls, transcription, project engine
-- call-analysis-service.ts -> calls/call-analysis-service.ts
-- livekit-stt-bot.ts -> calls/livekit-stt-bot.ts
-- transcription-service.ts -> transcription/transcription-service.ts
-- project-engine-store.ts -> project-engine/project-engine-store.ts
+- messenger/core/src/call-analysis-service.ts -> messenger/core/src/calls/call-analysis-service.ts
+- messenger/core/src/livekit-stt-bot.ts -> messenger/core/src/calls/livekit-stt-bot.ts
+- messenger/core/src/transcription-service.ts -> messenger/core/src/transcription/transcription-service.ts
+- messenger/core/src/project-engine-store.ts -> messenger/core/src/project-engine/project-engine-store.ts
 
 ## messenger/web target FSD
 
-- core/api/**
-- core/realtime/messenger-realtime.ts
-- core/calls/livekit.client.ts
-- shared/ui/**
-- entities/{agents,calls,contacts,conversations,media,messages,settings}/**
-- features/{audio-draft,call-overlay,chat-composer,contact-invite,conversation-switch,message-thread,project-engine}/**
-- widgets/{agent-workspace,chat,chats,contacts,settings,shell}/**
-- pages/{index,login,register}.vue
+- messenger/web/app/core/api/
+- messenger/web/app/core/realtime/messenger-realtime.ts
+- messenger/web/app/core/calls/livekit.client.ts
+- messenger/web/app/shared/ui/
+- messenger/web/app/entities/{agents,calls,contacts,conversations,media,messages,settings}/
+- messenger/web/app/features/{audio-draft,call-overlay,chat-composer,contact-invite,conversation-switch,message-thread,project-engine}/
+- messenger/web/app/widgets/{agent-workspace,chat,chats,contacts,settings,shell}/
+- messenger/web/app/pages/index.vue
+- messenger/web/app/pages/login.vue
+- messenger/web/app/pages/register.vue
 
 ## messenger/web key moves
 
 ### Shell и базовый каркас
-- MessengerAppShell.vue -> widgets/shell/MessengerAppShell.vue
-- MessengerIcon.vue -> shared/ui/MessengerIcon.vue
-- MessengerDockField.vue -> shared/ui/MessengerDockField.vue
-- MessengerAuthField.vue -> shared/ui/MessengerAuthField.vue
-- MessengerProgressCircular.vue -> shared/ui/MessengerProgressCircular.vue
-- MessengerProgressLinear.vue -> shared/ui/MessengerProgressLinear.vue
+- messenger/web/app/components/messenger/MessengerAppShell.vue -> messenger/web/app/widgets/shell/MessengerAppShell.vue
+- messenger/web/app/components/messenger/MessengerIcon.vue -> messenger/web/app/shared/ui/MessengerIcon.vue
+- messenger/web/app/components/messenger/MessengerDockField.vue -> messenger/web/app/shared/ui/MessengerDockField.vue
+- messenger/web/app/components/messenger/MessengerAuthField.vue -> messenger/web/app/shared/ui/MessengerAuthField.vue
+- messenger/web/app/components/messenger/MessengerProgressCircular.vue -> messenger/web/app/shared/ui/MessengerProgressCircular.vue
+- messenger/web/app/components/messenger/MessengerProgressLinear.vue -> messenger/web/app/shared/ui/MessengerProgressLinear.vue
 
 ### Chat / chats / contacts / settings
-- MessengerChatSection.vue -> widgets/chat/MessengerChatSection.vue
-- MessengerChatsSection.vue -> widgets/chats/MessengerChatsSection.vue
-- MessengerContactsSection.vue -> widgets/contacts/MessengerContactsSection.vue
-- MessengerSettingsSection.vue -> widgets/settings/MessengerSettingsSection.vue
-- MessengerChatHeader.vue -> features/conversation-switch/ui/MessengerChatHeader.vue
-- MessengerMessageThread.vue -> features/message-thread/ui/MessengerMessageThread.vue
-- MessengerChatComposerDock.vue -> features/chat-composer/ui/MessengerChatComposerDock.vue
-- MessengerChatComposerContexts.vue -> features/chat-composer/ui/MessengerChatComposerContexts.vue
-- MessengerChatMediaMenu.vue -> features/chat-composer/ui/MessengerChatMediaMenu.vue
-- MessengerSharedGallery.vue -> entities/media/ui/MessengerSharedGallery.vue
-- MessengerAudioBubblePlayer.vue -> entities/messages/ui/MessengerAudioBubblePlayer.vue
-- MessengerAudioComposerDraft.vue -> features/audio-draft/ui/MessengerAudioComposerDraft.vue
-- MessengerCallOverlay.vue -> features/call-overlay/ui/MessengerCallOverlay.vue
-- MessengerCallAnalysisPanel.vue -> entities/calls/ui/MessengerCallAnalysisPanel.vue
+- messenger/web/app/components/messenger/MessengerChatSection.vue -> messenger/web/app/widgets/chat/MessengerChatSection.vue
+- messenger/web/app/components/messenger/MessengerChatsSection.vue -> messenger/web/app/widgets/chats/MessengerChatsSection.vue
+- messenger/web/app/components/messenger/MessengerContactsSection.vue -> messenger/web/app/widgets/contacts/MessengerContactsSection.vue
+- messenger/web/app/components/messenger/MessengerSettingsSection.vue -> messenger/web/app/widgets/settings/MessengerSettingsSection.vue
+- messenger/web/app/components/messenger/MessengerChatHeader.vue -> messenger/web/app/features/conversation-switch/ui/MessengerChatHeader.vue
+- messenger/web/app/components/messenger/MessengerMessageThread.vue -> messenger/web/app/features/message-thread/ui/MessengerMessageThread.vue
+- messenger/web/app/components/messenger/MessengerChatComposerDock.vue -> messenger/web/app/features/chat-composer/ui/MessengerChatComposerDock.vue
+- messenger/web/app/components/messenger/MessengerChatComposerContexts.vue -> messenger/web/app/features/chat-composer/ui/MessengerChatComposerContexts.vue
+- messenger/web/app/components/messenger/MessengerChatMediaMenu.vue -> messenger/web/app/features/chat-composer/ui/MessengerChatMediaMenu.vue
+- messenger/web/app/components/messenger/MessengerSharedGallery.vue -> messenger/web/app/entities/media/ui/MessengerSharedGallery.vue
+- messenger/web/app/components/messenger/MessengerAudioBubblePlayer.vue -> messenger/web/app/entities/messages/ui/MessengerAudioBubblePlayer.vue
+- messenger/web/app/components/messenger/MessengerAudioComposerDraft.vue -> messenger/web/app/features/audio-draft/ui/MessengerAudioComposerDraft.vue
+- messenger/web/app/components/messenger/MessengerCallOverlay.vue -> messenger/web/app/features/call-overlay/ui/MessengerCallOverlay.vue
+- messenger/web/app/components/messenger/MessengerCallAnalysisPanel.vue -> messenger/web/app/entities/calls/ui/MessengerCallAnalysisPanel.vue
 
 ### Agents и project engine
-- MessengerAgentsSection.vue -> widgets/agent-workspace/MessengerAgentsSection.vue
-- MessengerAgentGraphEditor.vue -> entities/agents/ui/MessengerAgentGraphEditor.vue
-- MessengerAgentChatWorkspace.vue -> widgets/agent-workspace/MessengerAgentChatWorkspace.vue
-- MessengerProjectEngineGraph.vue -> features/project-engine/ui/MessengerProjectEngineGraph.vue
+- messenger/web/app/components/messenger/MessengerAgentsSection.vue -> messenger/web/app/widgets/agent-workspace/MessengerAgentsSection.vue
+- messenger/web/app/components/messenger/MessengerAgentGraphEditor.vue -> messenger/web/app/entities/agents/ui/MessengerAgentGraphEditor.vue
+- messenger/web/app/components/messenger/MessengerAgentChatWorkspace.vue -> messenger/web/app/widgets/agent-workspace/MessengerAgentChatWorkspace.vue
+- messenger/web/app/components/messenger/MessengerProjectEngineGraph.vue -> messenger/web/app/features/project-engine/ui/MessengerProjectEngineGraph.vue
 
 ### Composables
-- useMessengerAuth.ts -> entities/auth/model/useMessengerAuth.ts
-- useMessengerContacts.ts -> entities/contacts/model/useMessengerContacts.ts
-- useMessengerConversations.ts -> entities/conversations/model/useMessengerConversations.ts
-- useMessengerConversationState.ts -> entities/conversations/model/useMessengerConversationState.ts
-- useMessengerRealtime.ts -> core/realtime/useMessengerRealtime.ts
-- useMessengerCalls.ts -> entities/calls/model/useMessengerCalls.ts
-- useMessengerCrypto.ts -> entities/messages/model/useMessengerCrypto.ts
-- useMessengerSettings.ts -> entities/settings/model/useMessengerSettings.ts
-- useMessengerSections.ts -> widgets/shell/model/useMessengerSections.ts
-- useMessengerViewport.ts -> shared/composables/useMessengerViewport.ts
-- useMessengerInstall.ts -> core/runtime/useMessengerInstall.ts
-- useMessengerFeatures.ts -> core/runtime/useMessengerFeatures.ts
-- useMessengerHoldActions.ts -> features/chat-composer/model/useMessengerHoldActions.ts
-- useMessengerKlipy.ts -> entities/messages/model/useMessengerKlipy.ts
-- useMessengerProjectEngine.ts -> features/project-engine/model/useMessengerProjectEngine.ts
-- useMessengerAgents.ts -> entities/agents/model/useMessengerAgents.ts
-- useMessengerAgentKnowledge.ts -> entities/agents/model/useMessengerAgentKnowledge.ts
-- useMessengerAgentRuns.ts -> entities/agents/model/useMessengerAgentRuns.ts
-- useMessengerAgentRuntime.ts -> entities/agents/model/useMessengerAgentRuntime.ts
-- useMessengerAgentWorkspace.ts -> widgets/agent-workspace/model/useMessengerAgentWorkspace.ts
-- useMessengerAgentEdgePayloads.ts -> entities/agents/model/useMessengerAgentEdgePayloads.ts
+- messenger/web/app/composables/useMessengerAuth.ts -> messenger/web/app/entities/auth/model/useMessengerAuth.ts
+- messenger/web/app/composables/useMessengerContacts.ts -> messenger/web/app/entities/contacts/model/useMessengerContacts.ts
+- messenger/web/app/composables/useMessengerConversations.ts -> messenger/web/app/entities/conversations/model/useMessengerConversations.ts
+- messenger/web/app/composables/useMessengerConversationState.ts -> messenger/web/app/entities/conversations/model/useMessengerConversationState.ts
+- messenger/web/app/composables/useMessengerRealtime.ts -> messenger/web/app/core/realtime/useMessengerRealtime.ts
+- messenger/web/app/composables/useMessengerCalls.ts -> messenger/web/app/entities/calls/model/useMessengerCalls.ts
+- messenger/web/app/composables/useMessengerCrypto.ts -> messenger/web/app/entities/messages/model/useMessengerCrypto.ts
+- messenger/web/app/composables/useMessengerSettings.ts -> messenger/web/app/entities/settings/model/useMessengerSettings.ts
+- messenger/web/app/composables/useMessengerSections.ts -> messenger/web/app/widgets/shell/model/useMessengerSections.ts
+- messenger/web/app/composables/useMessengerViewport.ts -> messenger/web/app/shared/composables/useMessengerViewport.ts
+- messenger/web/app/composables/useMessengerInstall.ts -> messenger/web/app/core/runtime/useMessengerInstall.ts
+- messenger/web/app/composables/useMessengerFeatures.ts -> messenger/web/app/core/runtime/useMessengerFeatures.ts
+- messenger/web/app/composables/useMessengerHoldActions.ts -> messenger/web/app/features/chat-composer/model/useMessengerHoldActions.ts
+- messenger/web/app/composables/useMessengerKlipy.ts -> messenger/web/app/entities/messages/model/useMessengerKlipy.ts
+- messenger/web/app/composables/useMessengerProjectEngine.ts -> messenger/web/app/features/project-engine/model/useMessengerProjectEngine.ts
+- messenger/web/app/composables/useMessengerAgents.ts -> messenger/web/app/entities/agents/model/useMessengerAgents.ts
+- messenger/web/app/composables/useMessengerAgentKnowledge.ts -> messenger/web/app/entities/agents/model/useMessengerAgentKnowledge.ts
+- messenger/web/app/composables/useMessengerAgentRuns.ts -> messenger/web/app/entities/agents/model/useMessengerAgentRuns.ts
+- messenger/web/app/composables/useMessengerAgentRuntime.ts -> messenger/web/app/entities/agents/model/useMessengerAgentRuntime.ts
+- messenger/web/app/composables/useMessengerAgentWorkspace.ts -> messenger/web/app/widgets/agent-workspace/model/useMessengerAgentWorkspace.ts
+- messenger/web/app/composables/useMessengerAgentEdgePayloads.ts -> messenger/web/app/entities/agents/model/useMessengerAgentEdgePayloads.ts
 
 ## services/communications-service
 
-- src/index.ts и src/config.ts сохраняются
-- src/auth.ts -> src/auth/auth.ts
-- src/store.ts -> src/store/store.ts
-- src/pg-store.ts -> src/store/pg-store.ts
-- src/types.ts сохраняется
+- services/communications-service/src/index.ts -> services/communications-service/src/index.ts  (bootstrap, stays)
+- services/communications-service/src/config.ts -> services/communications-service/src/config.ts  (config, stays)
+- services/communications-service/src/auth.ts -> services/communications-service/src/auth/auth.ts
+- services/communications-service/src/store.ts -> services/communications-service/src/store/store.ts
+- services/communications-service/src/pg-store.ts -> services/communications-service/src/store/pg-store.ts
+- services/communications-service/src/types.ts -> services/communications-service/src/types.ts  (contracts, stays)
 
 ## Новые realtime-файлы первого этапа
 
 ### messenger/core
-- realtime/server.ts
-- auth/auth.ts
-- auth/auth-store.ts
-- agents/agent-run-store.ts
-- calls/call-analysis-service.ts
-- transcription/transcription-service.ts
+- messenger/core/src/realtime/server.ts
+- messenger/core/src/auth/auth.ts
+- messenger/core/src/auth/auth-store.ts
+- messenger/core/src/agents/agent-run-store.ts
+- messenger/core/src/calls/call-analysis-service.ts
+- messenger/core/src/transcription/transcription-service.ts
 
 ### messenger/web
-- core/realtime/messenger-realtime.ts
-- widgets/shell/MessengerAppShell.vue
-- widgets/chat/MessengerChatSection.vue
-- widgets/chats/MessengerChatsSection.vue
-- widgets/contacts/MessengerContactsSection.vue
-- widgets/settings/MessengerSettingsSection.vue
-- widgets/agent-workspace/MessengerAgentChatWorkspace.vue
+- messenger/web/app/core/realtime/messenger-realtime.ts
+- messenger/web/app/widgets/shell/MessengerAppShell.vue
+- messenger/web/app/widgets/chat/MessengerChatSection.vue
+- messenger/web/app/widgets/chats/MessengerChatsSection.vue
+- messenger/web/app/widgets/contacts/MessengerContactsSection.vue
+- messenger/web/app/widgets/settings/MessengerSettingsSection.vue
+- messenger/web/app/widgets/agent-workspace/MessengerAgentChatWorkspace.vue
 
 ### communications-service
-- src/auth/auth.ts
-- src/store/store.ts
-- src/store/pg-store.ts
+- services/communications-service/src/auth/auth.ts
+- services/communications-service/src/store/store.ts
+- services/communications-service/src/store/pg-store.ts
 
 Эти файлы замыкают отдельный realtime-контур и позволяют рефакторить его независимо от main app.
 
-## Current Status vs Target (2026-04-16)
+## Current Status vs Target (2026-04-17)
 
 - Status source: `14-refactor-roadmap.md` и профильные messenger-документы.
-- Что уже достигнуто: отдельные runtime-контуры `messenger/core`, `messenger/web`, `services/communications-service` сохранены; базовая декомпозиция по auth/store/core закреплена.
-- Что еще не доведено до полного match: полный FSD-срез `messenger/web/app/{entities,features}` и финальная alignment-раскладка bounded contexts в `messenger/core/src/**`.
+- Что уже достигнуто: отдельные runtime-контуры `messenger/core`, `messenger/web`, `services/communications-service` сохранены; базовая декомпозиция по auth/store/core закреплена; все пути в матрице нормализованы до repo-root для машинной проверки.
+- Что ещё не доведено до полного match: полный FSD-срез `messenger/web/app/{entities,features}` и финальная alignment-раскладка bounded contexts в `messenger/core/src/**`.
 - Критерий завершения этого документа: realtime-контур полностью независим от main Nuxt app и использует shared-контракты без дублирования.

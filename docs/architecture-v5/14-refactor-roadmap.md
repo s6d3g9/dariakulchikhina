@@ -414,6 +414,29 @@ Commit:
 - Следующий deploy нужно прогнать через `pnpm db:generate --dry-run` (или эквивалент), убедиться что drizzle-kit не сгенерит пустую diff-миграцию из-за glob-путей — схема осталась идентичной, но kit может по-другому упорядочить импорты.
 - `server/db/index.ts` (DB client wiring) не тронут.
 
+### [done] 2026-04-17 — Meta / matrices 11,12 normalized to repo-root paths
+Цель: сделать матрицы 11 и 12 полностью машинно-проверяемыми. До этого `scripts/verify-architecture-docs.mjs` мог проверить только ~10% строк из-за использования bare basenames и section-local paths.
+
+Файлы:
+- docs/architecture-v5/11-backend-shared-refactor-map.md: полная переписка. Все `server/api/**` endpoints перечислены с полными путями. `server/utils -> target` использует `server/utils/<name>.ts` как source. Секция "Разбиение schema" переписана под фактический результат Wave 6.
+- docs/architecture-v5/12-messenger-services-refactor-map.md: все source пути префиксированы `messenger/core/src/`, `messenger/web/app/components/messenger/`, `messenger/web/app/composables/`, `services/communications-service/src/`.
+
+Commit:
+- (этот коммит)
+
+Проверка (до / после):
+```
+          11-backend:   60 rows parsed (52 missing)  →  67 rows parsed (10 missing)
+          12-messenger: 68 rows parsed (67 missing)  →  68 rows parsed (0 missing)
+          11-backend:   new breakdown: 2 done, 20 pending, 35 ambiguous (bridge/partial), 10 dir-level entries
+          12-messenger: new breakdown: 0 done, 68 pending
+```
+- `pnpm docs:v5:verify` — ok, 21 file
+- 35 ambiguous rows в matrix 11 — это thin-bridge маркер: source ещё существует, target тоже существует (чаще всего как re-export). Точно соответствует нашему анализу bridges. Эти entries — приоритетный backlog для Wave 5 cleanup.
+
+Долги:
+- `docs/architecture-v5/10-frontend-refactor-map.md` уже использует короткие basenames в "Shared UI" секции — формально работает через индекс `app/components/**`, но для консистентности стоит тоже переписать на repo-root. Отдельный batch.
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:
