@@ -683,3 +683,6 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / managers → modules/managers
 Перенос 6 endpoints. Delta: зафиксирован обновлением .lint-baseline.json. Файлы: server/modules/managers/managers.service.ts, 6 thin handlers. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / projects core (CRUD + status + client-profile) → modules/projects
+5 endpoints thinned: index.post, [slug].put, [slug].delete (с cleanup файлов), status.put, client-profile.put. Delta: −12. Файлы: server/modules/projects/project-mutations.service.ts. Проверки: vue-tsc ok, lint-ratchet ok.
