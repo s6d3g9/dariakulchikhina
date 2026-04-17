@@ -686,3 +686,9 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / projects core (CRUD + status + client-profile) → modules/projects
 5 endpoints thinned: index.post, [slug].put, [slug].delete (с cleanup файлов), status.put, client-profile.put. Delta: −12. Файлы: server/modules/projects/project-mutations.service.ts. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / admin → modules (contractor preview)
+Перенос 1 endpoint. Delta: −2. Файлы: thin handler server/api/admin/contractors/[id]/preview.get.ts, использует getContractor из contractors.service.ts. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / ai → modules/ai
+Перенос 2 endpoints. Delta: −8 (6 drizzle + 2 emoji regex). Файлы: server/modules/ai/ai.service.ts (getLegalStatus, buildAiStreamContext), 2 thin handlers. Проверки: vue-tsc ok, lint-ratchet ok.
