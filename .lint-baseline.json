@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-17T09:43:02.383Z",
-  "totalErrors": 184,
+  "generatedAt": "2026-04-17T10:09:38.470Z",
+  "totalErrors": 175,
   "perFile": {
     "app/components/AdminDocumentEditor.vue": 2,
     "app/components/AdminSitePhotos.vue": 1,
@@ -53,11 +53,6 @@
     "server/api/designers/[id]/remove-link.post.ts": 2,
     "server/api/designers/index.get.ts": 2,
     "server/api/designers/index.post.ts": 1,
-    "server/api/gallery/[id].delete.ts": 2,
-    "server/api/gallery/[id].put.ts": 2,
-    "server/api/gallery/index.get.ts": 2,
-    "server/api/gallery/index.post.ts": 1,
-    "server/api/gallery/reorder.patch.ts": 2,
     "server/api/managers/[id].delete.ts": 2,
     "server/api/managers/[id].get.ts": 2,
     "server/api/managers/[id].put.ts": 2,

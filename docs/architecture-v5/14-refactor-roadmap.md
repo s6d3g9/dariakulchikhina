@@ -528,6 +528,31 @@ Commit:
 Долги:
 - Следующая цель по аудиту: либо CRUD clients/contractors/designers/sellers/managers (Delta −50, L), либо uploads+gallery (Delta −18, M). Documents — шаблон для этих batches.
 
+### [done] 2026-04-17 — Wave 5 / gallery CRUD → modules/gallery
+Цель: перевести все 5 endpoint'ов `server/api/gallery/*.ts` на thin handlers. Delta −9 (184 → 175).
+
+Файлы:
+- server/modules/gallery/gallery.service.ts (новый): 
+  - `CreateGallerySchema`, `UpdateGallerySchema`, `ReorderGallerySchema` + types
+  - `listGalleryItems({ category?, tag?, featured?, search? })` — ilike escape для защиты от wildcard-инъекций
+  - `createGalleryItem`, `updateGalleryItem`, `deleteGalleryItem` (с cleanup файлов image + images[])
+  - `reorderGalleryItems` — batch-update sortOrder в транзакции (до 1000 записей за раз)
+- server/api/gallery/{index.get,index.post,[id].put,[id].delete,reorder.patch}.ts: thin handlers.
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — ok
+- `pnpm lint:ratchet` — 175 (baseline 184 → 175, ровно −9)
+- Runtime идентичен: тот же ilike-escape, та же транзакция на reorder, тот же multi-file cleanup на delete (image + все images[]).
+
+Замечание по upload.post.ts: в baseline lint у него 0 ошибок (не касается БД; читает multipart и пишет файл через `server/utils/storage` + `server/utils/upload-validation`). Остаётся как есть — нет нарушений, не требует перемещения.
+
+Долги:
+- Uploads table (`server/db/schema/uploads.ts`) не имеет отдельных API-ручек — только файл upload через `/api/upload.post.ts`, gallery теперь изолирована. Отдельный modules/uploads/ пока не нужен.
+- Следующая крупная цель: clients/contractors/designers/sellers/managers CRUD. Каждый домен ≈ 5-10 endpoints с 2 lint-errors, суммарно ~50 errors.
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:
