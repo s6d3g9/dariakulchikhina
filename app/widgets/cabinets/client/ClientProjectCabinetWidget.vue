@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
-import ClientPageContent from '~/components/ClientPageContent.vue'
+import ClientPageContent from '~/features/page-content/ui/ClientPageContent.vue'
 import ClientInitiation from '~/components/ClientInitiation.vue'
 import ClientContactDetails from '~/components/ClientContactDetails.vue'
 import ClientTimeline from '~/components/ClientTimeline.vue'

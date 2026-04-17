@@ -26,7 +26,7 @@ import AdminSitePhotos from '~/components/AdminSitePhotos.vue'
 import AdminPunchList from '~/components/AdminPunchList.vue'
 import AdminCommissioningAct from '~/components/AdminCommissioningAct.vue'
 import AdminClientSignOff from '~/components/AdminClientSignOff.vue'
-import AdminPageContent from '~/components/AdminPageContent.vue'
+import AdminPageContent from '~/features/page-content/ui/AdminPageContent.vue'
 
 const props = defineProps<{
   slug: string

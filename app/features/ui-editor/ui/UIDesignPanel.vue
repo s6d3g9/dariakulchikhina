@@ -2288,9 +2288,9 @@
 </template>
 
 <script setup lang="ts">
-import UIDesignModulesMatrix from '~/components/UIDesignModulesMatrix.vue'
-import UIAppBlueprintBuilder from '~/components/UIAppBlueprintBuilder.vue'
-import UIDesignVisibilityRules from '~/components/UIDesignVisibilityRules.vue'
+import UIDesignModulesMatrix from '~/entities/design-system/ui/UIDesignModulesMatrix.vue'
+import UIAppBlueprintBuilder from '~/entities/app-blueprint/ui/UIAppBlueprintBuilder.vue'
+import UIDesignVisibilityRules from '~/entities/design-system/ui/UIDesignVisibilityRules.vue'
 import {
   useDesignSystem, FONT_OPTIONS, BTN_SIZE_MAP, EASING_OPTIONS, DESIGN_PRESETS,
   DESIGN_CONCEPTS,

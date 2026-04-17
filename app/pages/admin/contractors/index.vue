@@ -199,7 +199,7 @@
 
 <script setup lang="ts">
 import { useWipe2State } from '~/composables/useWipe2'
-import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
+import Wipe2Renderer from '~/entities/design-system/ui/Wipe2Renderer.vue'
 import AdminContractorCabinetWidget from '~/widgets/cabinets/contractor/AdminContractorCabinetWidget.vue'
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 

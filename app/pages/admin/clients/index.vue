@@ -176,7 +176,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
-import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
+import Wipe2Renderer from '~/entities/design-system/ui/Wipe2Renderer.vue'
 import { getClientPages } from '~~/shared/constants/navigation/pages'
 import ClientInitiation      from '~/components/ClientInitiation.vue'
 import ClientSelfProfile     from '~/components/ClientSelfProfile.vue'
@@ -188,7 +188,7 @@ import ClientContracts       from '~/components/ClientContracts.vue'
 import ClientWorkProgress    from '~/components/ClientWorkProgress.vue'
 import ClientTimeline        from '~/components/ClientTimeline.vue'
 import ClientDesignAlbum     from '~/components/ClientDesignAlbum.vue'
-import ClientPageContent     from '~/components/ClientPageContent.vue'
+import ClientPageContent     from '~/features/page-content/ui/ClientPageContent.vue'
 import ClientOverview        from '~/components/ClientOverview.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin', pageTransition: false })
