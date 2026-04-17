@@ -1,4 +1,4 @@
-import { GEMMA_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from '~/server/utils/gemma-prompts'
+import { GEMMA_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from '~/server/modules/ai/gemma-prompts'
 
 const GEMMA_URL = process.env.GEMMA_URL || 'http://localhost:11434'
 

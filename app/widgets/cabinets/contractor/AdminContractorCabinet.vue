@@ -906,9 +906,9 @@ import {
   DOC_CATEGORIES,
   ROLE_GROUPS,
   WORK_GROUPS,
-} from '~/composables/useContractorCabinet'
+} from '~/entities/contractors/model/useContractorCabinet'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
-import { registerWipe2Data } from '~/composables/useWipe2'
+import { registerWipe2Data } from '~/entities/design-system/model/useWipe2'
 
 const props = defineProps<{
   contractorId: number | null

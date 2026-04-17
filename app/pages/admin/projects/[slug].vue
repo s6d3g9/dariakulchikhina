@@ -582,7 +582,7 @@ import {
 } from '~~/shared/constants/admin-navigation'
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
 import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportPagerRailInset, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
-import { createWipe2Slot, buildWipe2Cards, useWipe2State } from '~/composables/useWipe2'
+import { createWipe2Slot, buildWipe2Cards, useWipe2State } from '~/entities/design-system/model/useWipe2'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { getBriefSections } from '~~/shared/constants/brief-sections'
 import { presetLabel } from '~~/shared/constants/presets'

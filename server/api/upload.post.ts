@@ -1,7 +1,7 @@
 import { writeFile } from 'fs/promises'
 import { randomUUID } from 'crypto'
 import path from 'path'
-import { validateUploadedFile } from '~/server/utils/upload-validation'
+import { validateUploadedFile } from '~/server/modules/uploads/upload-validation.service'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)

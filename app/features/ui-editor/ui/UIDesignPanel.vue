@@ -2296,9 +2296,9 @@ import {
   DESIGN_CONCEPTS,
   TYPE_SCALE_OPTIONS,
   type DesignTokens, type DesignPreset,
-} from '~/composables/useDesignSystem'
-import { useElementAlignment } from '~/composables/useElementAlignment'
-import type { DesignPanelTabId } from '~/composables/useDesignModules'
+} from '~/entities/design-system/model/useDesignSystem'
+import { useElementAlignment } from '~/entities/design-system/model/useElementAlignment'
+import type { DesignPanelTabId } from '~/entities/design-system/model/useDesignModules'
 
 type PanelTabId = DesignPanelTabId | 'modules'
 

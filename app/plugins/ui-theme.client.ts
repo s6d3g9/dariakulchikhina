@@ -13,7 +13,7 @@ import {
   UI_THEME_STORAGE_KEY,
 } from '~~/shared/constants/design-modes'
 import type { DesignMode } from '~~/shared/types/design-mode'
-import { BRUTAL_THEMES, GLASS_THEMES, M3_THEMES } from '~/composables/useUITheme'
+import { BRUTAL_THEMES, GLASS_THEMES, M3_THEMES } from '~/entities/design-system/model/useUITheme'
 
 // Applies saved UI theme + design tokens from localStorage before first paint to avoid flash
 export default defineNuxtPlugin(() => {

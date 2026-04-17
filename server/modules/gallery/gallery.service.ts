@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { eq, asc, and, ilike, arrayContains } from 'drizzle-orm'
 import { useDb } from '~/server/db/index'
 import { galleryItems } from '~/server/db/schema'
-import { getUploadDir } from '~/server/utils/storage'
+import { getUploadDir } from '~/server/modules/uploads/upload-storage.service'
 
 export const CreateGallerySchema = z.object({
   title: z.string().min(1).max(500),

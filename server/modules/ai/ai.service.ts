@@ -1,7 +1,7 @@
 import { sql, eq } from 'drizzle-orm'
 import { useDb } from '~/server/db/index'
 import { projects, clients, contractors, pageContent } from '~/server/db/schema'
-import { legalBaseReady } from '~/server/utils/rag'
+import { legalBaseReady } from '~/server/modules/ai/rag.service'
 
 export async function getLegalStatus() {
   const db = useDb()

@@ -246,7 +246,7 @@
 
 <script setup lang="ts">
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
-import { registerWipe2Data } from '~/composables/useWipe2'
+import { registerWipe2Data } from '~/entities/design-system/model/useWipe2'
 
 const props = defineProps<{ managerId: number; showSidebar?: boolean }>()
 const model = defineModel<string>()

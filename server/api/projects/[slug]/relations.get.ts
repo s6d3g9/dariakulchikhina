@@ -1,4 +1,4 @@
-import { getProjectRelationsSnapshot } from '~/server/utils/project-relations'
+import { getProjectRelationsSnapshot } from '~/server/modules/projects/project-relations.service'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!

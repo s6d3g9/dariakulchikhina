@@ -183,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { registerWipe2Data } from '~/composables/useWipe2'
+import { registerWipe2Data } from '~/entities/design-system/model/useWipe2'
 import {
   getLayoutTemplateById,
   LAYOUT_BLOCK_CATEGORY_LABELS,

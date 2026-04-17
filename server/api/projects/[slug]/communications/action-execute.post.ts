@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { requireAdmin } from '~/server/utils/auth'
 import { readValidatedNodeBody } from '~/server/utils/body'
-import { executeProjectCommunicationAction } from '~/server/utils/project-communications-actions'
+import { executeProjectCommunicationAction } from '~/server/modules/projects/project-comms-actions.service'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
 import { PROJECT_STATUSES } from '~/shared/types/catalogs'
 

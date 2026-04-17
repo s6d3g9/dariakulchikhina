@@ -1150,7 +1150,7 @@ import {
   normalizeDesignerSubscriptions,
 } from '~~/shared/utils/designer-catalogs'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
-import { registerWipe2Data } from '~/composables/useWipe2'
+import { registerWipe2Data } from '~/entities/design-system/model/useWipe2'
 
 type DesignerCabinetFocusTarget = {
   kind: 'service' | 'package' | 'subscription'

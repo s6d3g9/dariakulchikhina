@@ -240,7 +240,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { buildWipe2Cards, type Wipe2Field } from '~/composables/useWipe2'
+import { buildWipe2Cards, type Wipe2Field } from '~/entities/design-system/model/useWipe2'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 
 const props = defineProps<{

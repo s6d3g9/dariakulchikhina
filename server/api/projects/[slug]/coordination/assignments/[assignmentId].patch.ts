@@ -1,7 +1,7 @@
 import { requireAdmin } from '~/server/utils/auth'
 import { readValidatedNodeBody } from '~/server/utils/body'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
-import { updateProjectGovernanceAssignment } from '~/server/utils/project-governance'
+import { updateProjectGovernanceAssignment } from '~/server/modules/projects/project-governance.service'
 import { UpdateProjectScopeAssignmentSchema } from '~/shared/types/project-governance'
 
 export default defineEventHandler(async (event) => {

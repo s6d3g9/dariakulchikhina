@@ -9,12 +9,12 @@ import {
   projects,
   workStatusItems,
 } from '~/server/db/schema'
-import { getProjectRelationsSnapshot } from '~/server/utils/project-relations'
+import { getProjectRelationsSnapshot } from '~/server/modules/projects/project-relations.service'
 import {
   buildProjectGovernanceCatalogSubjects,
   buildProjectGovernanceSummary,
-} from '~/server/utils/project-governance'
-import { buildProjectCommunicationBootstrap } from '~/server/utils/communications'
+} from '~/server/modules/projects/project-governance.service'
+import { buildProjectCommunicationBootstrap } from '~/server/modules/communications/communications-bootstrap.service'
 import {
   buildHybridCoordinationBrief,
   buildHybridControlSummary,

@@ -11,7 +11,7 @@ import {
   projectContractors,
   pageContent,
 } from '~/server/db/schema'
-import { getUploadDir } from '~/server/utils/storage'
+import { getUploadDir } from '~/server/modules/uploads/upload-storage.service'
 
 const DocumentCategory = z.enum([
   'contract',

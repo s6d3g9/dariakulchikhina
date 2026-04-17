@@ -1,6 +1,6 @@
 import { requireAdmin } from '~/server/utils/auth'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
-import { deleteProjectGovernanceAssignment } from '~/server/utils/project-governance'
+import { deleteProjectGovernanceAssignment } from '~/server/modules/projects/project-governance.service'
 
 export default defineEventHandler(async (event) => {
   applyMessengerCors(event, { methods: ['DELETE', 'OPTIONS'] })
