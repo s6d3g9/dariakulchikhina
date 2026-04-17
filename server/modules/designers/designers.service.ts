@@ -1,20 +1,4 @@
 import { z } from 'zod'
-import { eq, and, inArray, asc, sql } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import {
-  designers,
-  designerProjects,
-  designerProjectClients,
-  designerProjectContractors,
-  projects,
-  clients,
-  contractors,
-  sellers,
-  sellerProjects,
-  managers,
-  managerProjects,
-  galleryItems,
-} from '~/server/db/schema'
 import { CORE_PAGES } from '~/shared/constants/pages'
 import {
   getAvailableDesignerPackageKeySet,
@@ -23,6 +7,7 @@ import {
   normalizeDesignerServices,
   normalizeDesignerSubscriptions,
 } from '~/shared/utils/designer-catalogs'
+import * as repo from './designers.repository'
 
 // ── Schemas ────────────────────────────────────────────────────────────
 
@@ -119,8 +104,7 @@ function getDuplicateCode(e: unknown): string | undefined {
  * rely on the canonical shape.
  */
 export async function listDesigners() {
-  const db = useDb()
-  const rows = await db.select().from(designers).orderBy(asc(designers.createdAt))
+  const rows = await repo.listAllDesigners()
   return rows.map((designer) => ({
     ...designer,
     services: normalizeDesignerServices(designer.services),
@@ -139,20 +123,10 @@ export async function listDesigners() {
  * package set and replaced with null when it points at a missing key.
  */
 export async function getDesignerWithProjects(id: number) {
-  const db = useDb()
-  const [designer] = await db.select().from(designers).where(eq(designers.id, id)).limit(1)
+  const designer = await repo.findDesignerById(id)
   if (!designer) return null
 
-  const dpRows = await db
-    .select({
-      dp: designerProjects,
-      projectSlug: projects.slug,
-      projectTitle: projects.title,
-      projectStatus: projects.status,
-    })
-    .from(designerProjects)
-    .leftJoin(projects, eq(projects.id, designerProjects.projectId))
-    .where(eq(designerProjects.designerId, id))
+  const dpRows = await repo.listDesignerProjectsWithInfo(id)
 
   const normalizedServices = normalizeDesignerServices(designer.services)
   const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizedServices)
@@ -165,29 +139,8 @@ export async function getDesignerWithProjects(id: number) {
 
   const dpList: Array<Record<string, unknown>> = []
   for (const row of dpRows) {
-    const dpClients = await db
-      .select({
-        id: clients.id,
-        name: clients.name,
-        phone: clients.phone,
-        email: clients.email,
-      })
-      .from(designerProjectClients)
-      .innerJoin(clients, eq(clients.id, designerProjectClients.clientId))
-      .where(eq(designerProjectClients.designerProjectId, row.dp.id))
-
-    const dpContractors = await db
-      .select({
-        id: contractors.id,
-        name: contractors.name,
-        role: designerProjectContractors.role,
-      })
-      .from(designerProjectContractors)
-      .innerJoin(
-        contractors,
-        eq(contractors.id, designerProjectContractors.contractorId),
-      )
-      .where(eq(designerProjectContractors.designerProjectId, row.dp.id))
+    const dpClients = await repo.listClientsForDesignerProject(row.dp.id)
+    const dpContractors = await repo.listContractorsForDesignerProject(row.dp.id)
 
     dpList.push({
       ...row.dp,
@@ -216,31 +169,26 @@ export async function getDesignerWithProjects(id: number) {
 // ── CRUD ───────────────────────────────────────────────────────────────
 
 export async function createDesigner(body: CreateDesignerInput) {
-  const db = useDb()
   const normalizedServices = normalizeDesignerServices(body.services)
   const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizedServices)
 
-  const [designer] = await db
-    .insert(designers)
-    .values({
-      name: body.name,
-      companyName: body.companyName || null,
-      phone: body.phone || null,
-      email: body.email || null,
-      telegram: body.telegram || null,
-      website: body.website || null,
-      city: body.city || null,
-      experience: body.experience || null,
-      about: body.about || null,
-      specializations: body.specializations,
-      services: normalizedServices,
-      packages: normalizeDesignerPackages(body.packages, { validServiceKeys }),
-      subscriptions: normalizeDesignerSubscriptions(body.subscriptions, {
-        validServiceKeys,
-      }),
-    })
-    .returning()
-  return designer
+  return repo.insertDesigner({
+    name: body.name,
+    companyName: body.companyName || null,
+    phone: body.phone || null,
+    email: body.email || null,
+    telegram: body.telegram || null,
+    website: body.website || null,
+    city: body.city || null,
+    experience: body.experience || null,
+    about: body.about || null,
+    specializations: body.specializations,
+    services: normalizedServices,
+    packages: normalizeDesignerPackages(body.packages, { validServiceKeys }),
+    subscriptions: normalizeDesignerSubscriptions(body.subscriptions, {
+      validServiceKeys,
+    }),
+  })
 }
 
 /**
@@ -250,12 +198,7 @@ export async function createDesigner(body: CreateDesignerInput) {
  * projects in the same transaction.
  */
 export async function updateDesigner(id: number, body: UpdateDesignerInput) {
-  const db = useDb()
-  const [currentDesigner] = await db
-    .select()
-    .from(designers)
-    .where(eq(designers.id, id))
-    .limit(1)
+  const currentDesigner = await repo.findDesignerById(id)
   if (!currentDesigner) return null
 
   const normalizedServices =
@@ -286,33 +229,11 @@ export async function updateDesigner(id: number, body: UpdateDesignerInput) {
   }
 
   const clearIds = Array.from(new Set(body.clearProjectPackageKeysForIds || []))
-
-  return db.transaction(async (tx) => {
-    const [designer] = await tx
-      .update(designers)
-      .set(updates)
-      .where(eq(designers.id, id))
-      .returning()
-
-    if (clearIds.length) {
-      await tx
-        .update(designerProjects)
-        .set({ packageKey: null })
-        .where(
-          and(
-            eq(designerProjects.designerId, id),
-            inArray(designerProjects.id, clearIds),
-          ),
-        )
-    }
-
-    return designer
-  })
+  return repo.updateDesignerAndClearProjectKeys(id, updates, clearIds)
 }
 
 export async function deleteDesigner(id: number) {
-  const db = useDb()
-  await db.delete(designers).where(eq(designers.id, id))
+  return repo.deleteDesignerRow(id)
 }
 
 // ── Designer ↔ Project management ─────────────────────────────────────
@@ -330,12 +251,7 @@ export async function createDesignerProject(
     throw createError({ statusCode: 400, statusMessage: 'Designer id mismatch' })
   }
 
-  const db = useDb()
-  const [designer] = await db
-    .select()
-    .from(designers)
-    .where(eq(designers.id, routeDesignerId))
-    .limit(1)
+  const designer = await repo.findDesignerById(routeDesignerId)
   if (!designer) {
     throw createError({ statusCode: 404, statusMessage: 'Designer not found' })
   }
@@ -354,28 +270,18 @@ export async function createDesignerProject(
 
   let project: { id: number; slug: string; title: string; pages: string[] } | undefined
   try {
-    ;[project] = (await db
-      .insert(projects)
-      .values({
-        slug: body.slug,
-        title: body.title,
-        pages: [...CORE_PAGES],
-        profile: {},
-      })
-      .returning()) as typeof project[]
+    project = await repo.insertProject({
+      slug: body.slug,
+      title: body.title,
+      pages: [...CORE_PAGES],
+      profile: {},
+    })
   } catch (e: unknown) {
     if (getDuplicateCode(e) === '23505') {
-      const [existing] = await db
-        .select()
-        .from(projects)
-        .where(eq(projects.slug, body.slug))
-        .limit(1)
+      const existing = await repo.findProjectBySlug(body.slug)
       if (existing) {
         if (!existing.pages || existing.pages.length === 0) {
-          await db
-            .update(projects)
-            .set({ pages: [...CORE_PAGES] })
-            .where(eq(projects.id, existing.id))
+          await repo.updateProjectPages(existing.id, [...CORE_PAGES])
           project = { ...existing, pages: [...CORE_PAGES] }
         } else {
           project = existing
@@ -399,19 +305,16 @@ export async function createDesignerProject(
     body.totalPrice || (body.pricePerSqm || 0) * (body.area || 0) || null
 
   try {
-    const [dp] = await db
-      .insert(designerProjects)
-      .values({
-        designerId: body.designerId,
-        projectId: project.id,
-        packageKey: normalizedPackageKey,
-        pricePerSqm: body.pricePerSqm || null,
-        area: body.area || null,
-        totalPrice,
-        status: 'draft',
-        notes: body.notes || null,
-      })
-      .returning()
+    const dp = await repo.insertDesignerProject({
+      designerId: body.designerId,
+      projectId: project.id,
+      packageKey: normalizedPackageKey,
+      pricePerSqm: body.pricePerSqm || null,
+      area: body.area || null,
+      totalPrice,
+      status: 'draft',
+      notes: body.notes || null,
+    })
     return { designerProject: dp, project }
   } catch (e: unknown) {
     if (getDuplicateCode(e) === '23505') {
@@ -433,13 +336,7 @@ export async function updateDesignerProject(
   designerId: number,
   body: UpdateDesignerProjectInput,
 ) {
-  const db = useDb()
-
-  const [designer] = await db
-    .select()
-    .from(designers)
-    .where(eq(designers.id, designerId))
-    .limit(1)
+  const designer = await repo.findDesignerById(designerId)
   if (!designer) {
     throw createError({ statusCode: 404, statusMessage: 'Designer not found' })
   }
@@ -451,16 +348,7 @@ export async function updateDesignerProject(
     validServiceKeys,
   })
 
-  const [dp] = await db
-    .select()
-    .from(designerProjects)
-    .where(
-      and(
-        eq(designerProjects.id, body.designerProjectId),
-        eq(designerProjects.designerId, designerId),
-      ),
-    )
-    .limit(1)
+  const dp = await repo.findDesignerProjectOwned(body.designerProjectId, designerId)
   if (!dp) {
     throw createError({
       statusCode: 404,
@@ -478,23 +366,17 @@ export async function updateDesignerProject(
         : null
       : dp.packageKey
 
-  await db
-    .update(designerProjects)
-    .set({
-      packageKey: normalizedPackageKey,
-      pricePerSqm: body.pricePerSqm !== undefined ? body.pricePerSqm : dp.pricePerSqm,
-      area: body.area !== undefined ? body.area : dp.area,
-      totalPrice: body.totalPrice !== undefined ? body.totalPrice : computedTotal,
-      status: body.status ?? dp.status,
-      notes: body.notes !== undefined ? body.notes || null : dp.notes,
-    })
-    .where(eq(designerProjects.id, dp.id))
+  await repo.updateDesignerProjectRow(dp.id, {
+    packageKey: normalizedPackageKey,
+    pricePerSqm: body.pricePerSqm !== undefined ? body.pricePerSqm : dp.pricePerSqm,
+    area: body.area !== undefined ? body.area : dp.area,
+    totalPrice: body.totalPrice !== undefined ? body.totalPrice : computedTotal,
+    status: body.status ?? dp.status,
+    notes: body.notes !== undefined ? body.notes || null : dp.notes,
+  })
 
   if (body.title !== undefined) {
-    await db
-      .update(projects)
-      .set({ title: body.title })
-      .where(eq(projects.id, dp.projectId))
+    await repo.updateProjectTitle(dp.projectId, body.title)
   }
 
   return { ok: true as const }
@@ -503,16 +385,8 @@ export async function updateDesignerProject(
 // ── Link management ───────────────────────────────────────────────────
 
 export async function addClientLink(body: AddClientLinkInput) {
-  const db = useDb()
   try {
-    const [row] = await db
-      .insert(designerProjectClients)
-      .values({
-        designerProjectId: body.designerProjectId,
-        clientId: body.clientId,
-      })
-      .returning()
-    return row
+    return await repo.insertDesignerProjectClient(body.designerProjectId, body.clientId)
   } catch (e: unknown) {
     if (getDuplicateCode(e) === '23505') {
       throw createError({
@@ -525,17 +399,12 @@ export async function addClientLink(body: AddClientLinkInput) {
 }
 
 export async function addContractorLink(body: AddContractorLinkInput) {
-  const db = useDb()
   try {
-    const [row] = await db
-      .insert(designerProjectContractors)
-      .values({
-        designerProjectId: body.designerProjectId,
-        contractorId: body.contractorId,
-        role: body.role || null,
-      })
-      .returning()
-    return row
+    return await repo.insertDesignerProjectContractor(
+      body.designerProjectId,
+      body.contractorId,
+      body.role || null,
+    )
   } catch (e: unknown) {
     if (getDuplicateCode(e) === '23505') {
       throw createError({
@@ -548,15 +417,10 @@ export async function addContractorLink(body: AddContractorLinkInput) {
 }
 
 export async function removeLink(body: RemoveLinkInput) {
-  const db = useDb()
   if (body.type === 'client') {
-    await db
-      .delete(designerProjectClients)
-      .where(eq(designerProjectClients.id, body.linkId))
+    await repo.deleteDesignerProjectClientLink(body.linkId)
   } else {
-    await db
-      .delete(designerProjectContractors)
-      .where(eq(designerProjectContractors.id, body.linkId))
+    await repo.deleteDesignerProjectContractorLink(body.linkId)
   }
 }
 
@@ -569,85 +433,14 @@ export async function removeLink(body: RemoveLinkInput) {
  * Deduplicates sellers/managers by id and attaches their project scope.
  */
 export async function getDesignerLinkedEntities(designerId: number) {
-  const db = useDb()
+  const projectIds = await repo.listDesignerProjectIds(designerId)
 
-  const dpRows = await db
-    .select({ projectId: designerProjects.projectId })
-    .from(designerProjects)
-    .where(eq(designerProjects.designerId, designerId))
-
-  const projectIds = dpRows.map((r) => r.projectId).filter(Boolean)
-
-  let linkedSellers: Array<{
-    id: number
-    name: string
-    companyName: string | null
-    phone: string | null
-    email: string | null
-    city: string | null
-    categories: string[]
-    projectId: number | null
-    projectNotes: string | null
-    sellerStatus: string
-  }> = []
-  if (projectIds.length) {
-    linkedSellers = await db
-      .select({
-        id: sellers.id,
-        name: sellers.name,
-        companyName: sellers.companyName,
-        phone: sellers.phone,
-        email: sellers.email,
-        city: sellers.city,
-        categories: sellers.categories,
-        projectId: sellerProjects.projectId,
-        projectNotes: sellerProjects.notes,
-        sellerStatus: sellerProjects.status,
-      })
-      .from(sellerProjects)
-      .innerJoin(sellers, eq(sellers.id, sellerProjects.sellerId))
-      .where(inArray(sellerProjects.projectId, projectIds))
-  }
-
-  let linkedManagers: Array<{
-    id: number
-    slug: string | null
-    name: string
-    role: string | null
-    phone: string | null
-    email: string | null
-    telegram: string | null
-    city: string | null
-    projectId: number
-    managerRole: string
-  }> = []
-  if (projectIds.length) {
-    linkedManagers = await db
-      .select({
-        id: managers.id,
-        slug: managers.slug,
-        name: managers.name,
-        role: managers.role,
-        phone: managers.phone,
-        email: managers.email,
-        telegram: managers.telegram,
-        city: managers.city,
-        projectId: managerProjects.projectId,
-        managerRole: managerProjects.role,
-      })
-      .from(managerProjects)
-      .innerJoin(managers, eq(managers.id, managerProjects.managerId))
-      .where(inArray(managerProjects.projectId, projectIds))
-  }
-
-  const gallery = await db
-    .select()
-    .from(galleryItems)
-    .orderBy(galleryItems.sortOrder)
+  const linkedSellers = await repo.listSellersForProjectIds(projectIds)
+  const linkedManagers = await repo.listManagersForProjectIds(projectIds)
+  const gallery = await repo.listAllGalleryOrderedBySortOrder()
 
   interface SellerView {
     id: number
-    slug?: string | null
     name: string
     companyName: string | null
     phone: string | null
@@ -716,6 +509,3 @@ export async function getDesignerLinkedEntities(designerId: number) {
     moodboards: gallery.filter((g) => g.category === 'moodboard'),
   }
 }
-
-// Silence unused-import warnings for symbols imported only for SQL types
-void sql

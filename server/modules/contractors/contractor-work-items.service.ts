@@ -1,19 +1,11 @@
-import { writeFile, unlink } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import { eq, and, inArray, sql } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import {
-  workStatusItems,
-  workStatusItemPhotos,
-  workStatusItemComments,
-  projects,
-  contractors,
-} from '~/server/db/schema'
 import { ensureUploadDir, getUploadDir, getUploadUrl } from '~/server/modules/uploads/upload-storage.service'
 import { validateUploadedFile } from '~/server/modules/uploads/upload-validation.service'
-import { resolveContractorAndStaffIds } from './contractors.service'
+import * as repo from './contractor-work-items.repository'
+import * as contractorsRepo from './contractors.repository'
 
 export const CreateWorkItemSchema = z.object({
   projectSlug: z.string(),
@@ -47,56 +39,16 @@ export type CommentInput = z.infer<typeof CommentSchema>
  * delegated to a master.
  */
 export async function listContractorWorkItems(contractorId: number) {
-  const db = useDb()
-  const staff = await db
-    .select({ id: contractors.id, name: contractors.name })
-    .from(contractors)
-    .where(eq(contractors.parentId, contractorId))
-
+  const staff = await repo.getContractorStaffInfo(contractorId)
   const staffMap = Object.fromEntries(staff.map((s) => [s.id, s.name]))
   const allIds = [contractorId, ...staff.map((s) => s.id)]
 
-  const items = await db
-    .select({
-      id: workStatusItems.id,
-      title: workStatusItems.title,
-      workType: workStatusItems.workType,
-      status: workStatusItems.status,
-      dateStart: workStatusItems.dateStart,
-      dateEnd: workStatusItems.dateEnd,
-      budget: workStatusItems.budget,
-      notes: workStatusItems.notes,
-      sortOrder: workStatusItems.sortOrder,
-      projectSlug: projects.slug,
-      projectTitle: projects.title,
-      contractorId: workStatusItems.contractorId,
-    })
-    .from(workStatusItems)
-    .innerJoin(projects, eq(workStatusItems.projectId, projects.id))
-    .where(inArray(workStatusItems.contractorId, allIds))
-    .orderBy(workStatusItems.sortOrder)
-
+  const items = await repo.listWorkItemsForContractors(allIds)
   if (!items.length) return []
 
   const itemIds = items.map((i) => i.id)
-
-  const photoCounts = await db
-    .select({
-      itemId: workStatusItemPhotos.itemId,
-      count: sql<number>`cast(count(*) as int)`,
-    })
-    .from(workStatusItemPhotos)
-    .where(inArray(workStatusItemPhotos.itemId, itemIds))
-    .groupBy(workStatusItemPhotos.itemId)
-
-  const commentCounts = await db
-    .select({
-      itemId: workStatusItemComments.itemId,
-      count: sql<number>`cast(count(*) as int)`,
-    })
-    .from(workStatusItemComments)
-    .where(inArray(workStatusItemComments.itemId, itemIds))
-    .groupBy(workStatusItemComments.itemId)
+  const photoCounts = await repo.getPhotoCounts(itemIds)
+  const commentCounts = await repo.getCommentCounts(itemIds)
 
   const photoCountMap = Object.fromEntries(photoCounts.map((r) => [r.itemId, r.count]))
   const commentCountMap = Object.fromEntries(
@@ -120,45 +72,32 @@ export async function listContractorWorkItems(contractorId: number) {
  * project slug is resolved to projectId in the same flow.
  */
 export async function createWorkItem(companyId: number, body: CreateWorkItemInput) {
-  const db = useDb()
   const targetId = body.contractorId
 
   if (targetId !== companyId) {
-    const [master] = await db
-      .select({ id: contractors.id })
-      .from(contractors)
-      .where(and(eq(contractors.id, targetId), eq(contractors.parentId, companyId)))
-      .limit(1)
+    const master = await repo.findContractorStaffMemberInCompany(targetId, companyId)
     if (!master) {
       throw createError({ statusCode: 403, statusMessage: 'Contractor not in staff' })
     }
   }
 
-  const [project] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.slug, body.projectSlug))
-    .limit(1)
+  const project = await repo.findProjectBySlug(body.projectSlug)
   if (!project) {
     throw createError({ statusCode: 404, statusMessage: 'Project not found' })
   }
 
-  const [item] = await db
-    .insert(workStatusItems)
-    .values({
-      projectId: project.id,
-      contractorId: targetId,
-      title: body.title,
-      workType: body.workType || null,
-      status: 'pending',
-      dateStart: body.dateStart || null,
-      dateEnd: body.dateEnd || null,
-      budget: body.budget || null,
-      notes: body.notes || null,
-      sortOrder: 0,
-    })
-    .returning()
-  return item
+  return repo.insertWorkItem({
+    projectId: project.id,
+    contractorId: targetId,
+    title: body.title,
+    workType: body.workType || null,
+    status: 'pending',
+    dateStart: body.dateStart || null,
+    dateEnd: body.dateEnd || null,
+    budget: body.budget || null,
+    notes: body.notes || null,
+    sortOrder: 0,
+  })
 }
 
 /**
@@ -171,20 +110,8 @@ export async function updateWorkItem(
   itemId: number,
   body: UpdateWorkItemInput,
 ) {
-  const db = useDb()
-  const allIds = await resolveContractorAndStaffIds(contractorId)
-
-  const [updated] = await db
-    .update(workStatusItems)
-    .set(body)
-    .where(
-      and(
-        eq(workStatusItems.id, itemId),
-        inArray(workStatusItems.contractorId, allIds),
-      ),
-    )
-    .returning()
-  return updated ?? null
+  const allIds = await contractorsRepo.resolveContractorAndStaffIds(contractorId)
+  return repo.updateWorkItemRow(itemId, allIds, body)
 }
 
 /**
@@ -193,30 +120,15 @@ export async function updateWorkItem(
  * comment/photo endpoints.
  */
 async function assertContractorOwnsItem(contractorId: number, itemId: number) {
-  const db = useDb()
-  const allIds = await resolveContractorAndStaffIds(contractorId)
-  const [item] = await db
-    .select({ id: workStatusItems.id })
-    .from(workStatusItems)
-    .where(
-      and(
-        eq(workStatusItems.id, itemId),
-        inArray(workStatusItems.contractorId, allIds),
-      ),
-    )
-    .limit(1)
+  const allIds = await contractorsRepo.resolveContractorAndStaffIds(contractorId)
+  const item = await repo.findWorkItemInScope(itemId, allIds)
   if (!item) throw createError({ statusCode: 403 })
   return item
 }
 
 export async function listWorkItemComments(contractorId: number, itemId: number) {
   await assertContractorOwnsItem(contractorId, itemId)
-  const db = useDb()
-  return db
-    .select()
-    .from(workStatusItemComments)
-    .where(eq(workStatusItemComments.itemId, itemId))
-    .orderBy(workStatusItemComments.createdAt)
+  return repo.listWorkItemComments(itemId)
 }
 
 export async function addWorkItemComment(
@@ -225,33 +137,19 @@ export async function addWorkItemComment(
   text: string,
 ) {
   await assertContractorOwnsItem(contractorId, itemId)
-  const db = useDb()
-  const [contractor] = await db
-    .select({ name: contractors.name })
-    .from(contractors)
-    .where(eq(contractors.id, contractorId))
-    .limit(1)
+  const name = await repo.findContractorName(contractorId)
 
-  const [comment] = await db
-    .insert(workStatusItemComments)
-    .values({
-      itemId,
-      authorType: 'contractor',
-      authorName: contractor?.name ?? 'Подрядчик',
-      text,
-    })
-    .returning()
-  return comment
+  return repo.insertWorkItemComment({
+    itemId,
+    authorType: 'contractor',
+    authorName: name ?? 'Подрядчик',
+    text,
+  })
 }
 
 export async function listWorkItemPhotos(contractorId: number, itemId: number) {
   await assertContractorOwnsItem(contractorId, itemId)
-  const db = useDb()
-  return db
-    .select()
-    .from(workStatusItemPhotos)
-    .where(eq(workStatusItemPhotos.itemId, itemId))
-    .orderBy(workStatusItemPhotos.createdAt)
+  return repo.listWorkItemPhotos(itemId)
 }
 
 export interface UploadWorkItemPhotoInput {
@@ -284,17 +182,12 @@ export async function uploadWorkItemPhoto(input: UploadWorkItemPhotoInput) {
   await writeFile(path.join(dir, filename), input.fileData)
   const url = getUploadUrl(filename)
 
-  const db = useDb()
-  const [photo] = await db
-    .insert(workStatusItemPhotos)
-    .values({
-      itemId: input.itemId,
-      contractorId: input.contractorId,
-      url,
-      caption: input.caption,
-    })
-    .returning()
-  return photo
+  return repo.insertWorkItemPhoto({
+    itemId: input.itemId,
+    contractorId: input.contractorId,
+    url,
+    caption: input.caption,
+  })
 }
 
 export async function deleteWorkItemPhoto(
@@ -303,21 +196,14 @@ export async function deleteWorkItemPhoto(
   photoId: number,
 ) {
   await assertContractorOwnsItem(contractorId, itemId)
-  const db = useDb()
-  const [photo] = await db
-    .delete(workStatusItemPhotos)
-    .where(
-      and(
-        eq(workStatusItemPhotos.id, photoId),
-        eq(workStatusItemPhotos.itemId, itemId),
-      ),
-    )
-    .returning()
+
+  const photo = await repo.deleteWorkItemPhotoRow(photoId, itemId)
   if (!photo) return null
 
   try {
     const filename = path.basename(photo.url)
     if (filename && !filename.includes('..')) {
+      const { unlink } = await import('node:fs/promises')
       await unlink(path.join(getUploadDir(), filename))
     }
   } catch {

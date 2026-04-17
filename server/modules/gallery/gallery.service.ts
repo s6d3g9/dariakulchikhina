@@ -1,10 +1,8 @@
 import { unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { z } from 'zod'
-import { eq, asc, and, ilike, arrayContains } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import { galleryItems } from '~/server/db/schema'
 import { getUploadDir } from '~/server/modules/uploads/upload-storage.service'
+import * as repo from './gallery.repository'
 
 export const CreateGallerySchema = z.object({
   title: z.string().min(1).max(500),
@@ -62,24 +60,7 @@ export interface ListGalleryOptions {
  * stable order that reacts to manual reorder operations.
  */
 export async function listGalleryItems(opts: ListGalleryOptions = {}) {
-  const db = useDb()
-
-  const conditions = []
-  if (opts.category) conditions.push(eq(galleryItems.category, opts.category))
-  if (opts.tag) conditions.push(arrayContains(galleryItems.tags, [opts.tag]))
-  if (opts.featured === 'true') conditions.push(eq(galleryItems.featured, true))
-  if (opts.search) {
-    const escaped = opts.search.replace(/[%_\\]/g, (ch) => `\\${ch}`)
-    conditions.push(ilike(galleryItems.title, `%${escaped}%`))
-  }
-
-  const where = conditions.length > 0 ? and(...conditions) : undefined
-
-  return db
-    .select()
-    .from(galleryItems)
-    .where(where)
-    .orderBy(asc(galleryItems.sortOrder), asc(galleryItems.createdAt))
+  return repo.listGalleryItems(opts)
 }
 
 /**
@@ -87,24 +68,19 @@ export async function listGalleryItems(opts: ListGalleryOptions = {}) {
  * Zod schema so the DB defaults are never relied on for drift safety.
  */
 export async function createGalleryItem(body: CreateGalleryInput) {
-  const db = useDb()
-  const [row] = await db
-    .insert(galleryItems)
-    .values({
-      title: body.title,
-      category: body.category,
-      image: body.image || null,
-      images: body.images,
-      tags: body.tags,
-      description: body.description || null,
-      featured: body.featured,
-      width: body.width ?? null,
-      height: body.height ?? null,
-      sortOrder: body.sortOrder,
-      properties: body.properties,
-    })
-    .returning()
-  return row
+  return repo.insertGalleryItem({
+    title: body.title,
+    category: body.category,
+    image: body.image || null,
+    images: body.images,
+    tags: body.tags,
+    description: body.description || null,
+    featured: body.featured,
+    width: body.width ?? null,
+    height: body.height ?? null,
+    sortOrder: body.sortOrder,
+    properties: body.properties,
+  })
 }
 
 /**
@@ -113,8 +89,6 @@ export async function createGalleryItem(body: CreateGalleryInput) {
  * map to 404 explicitly.
  */
 export async function updateGalleryItem(id: number, body: UpdateGalleryInput) {
-  const db = useDb()
-
   const setData: Record<string, unknown> = {}
   if (body.title !== undefined) setData.title = body.title
   if (body.category !== undefined) setData.category = body.category
@@ -128,12 +102,7 @@ export async function updateGalleryItem(id: number, body: UpdateGalleryInput) {
   if (body.height !== undefined) setData.height = body.height
   if (body.properties !== undefined) setData.properties = body.properties
 
-  const [row] = await db
-    .update(galleryItems)
-    .set(setData)
-    .where(eq(galleryItems.id, id))
-    .returning()
-  return row ?? null
+  return repo.updateGalleryItemRow(id, setData)
 }
 
 /**
@@ -141,15 +110,8 @@ export async function updateGalleryItem(id: number, body: UpdateGalleryInput) {
  * upload directory. Returns null when the id does not exist.
  */
 export async function deleteGalleryItem(id: number) {
-  const db = useDb()
-  const [item] = await db
-    .select()
-    .from(galleryItems)
-    .where(eq(galleryItems.id, id))
-    .limit(1)
+  const item = await repo.deleteGalleryItemRow(id)
   if (!item) return null
-
-  await db.delete(galleryItems).where(eq(galleryItems.id, id))
 
   const uploadDir = getUploadDir()
   const filesToDelete: string[] = []
@@ -177,14 +139,6 @@ export async function deleteGalleryItem(id: number) {
  * drag-and-drop reorder UI, which sends up to 1000 pairs in one call.
  */
 export async function reorderGalleryItems(body: ReorderGalleryInput) {
-  const db = useDb()
-  await db.transaction(async (tx) => {
-    for (const item of body.items) {
-      await tx
-        .update(galleryItems)
-        .set({ sortOrder: item.sortOrder })
-        .where(eq(galleryItems.id, item.id))
-    }
-  })
+  await repo.reorderGalleryItemsRows(body.items)
   return { ok: true as const, updated: body.items.length }
 }

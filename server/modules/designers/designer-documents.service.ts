@@ -1,10 +1,8 @@
 import { writeFile, mkdir, unlink } from 'node:fs/promises'
 import { join, extname } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { eq, and, like, isNull } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import { documents } from '~/server/db/schema'
 import { validateUploadedFile } from '~/server/modules/uploads/upload-validation.service'
+import * as repo from './designer-documents.repository'
 
 const DESIGNER_DOC_DIR = join(
   process.cwd(),
@@ -21,14 +19,8 @@ const designerCategoryPrefix = (designerId: number) => `designer:${designerId}:`
  * The prefix is stripped before returning so the UI sees a plain category.
  */
 export async function listDesignerDocuments(designerId: number) {
-  const db = useDb()
   const prefix = designerCategoryPrefix(designerId)
-  const rows = await db
-    .select()
-    .from(documents)
-    .where(and(like(documents.category, `${prefix}%`), isNull(documents.projectId)))
-    .orderBy(documents.createdAt)
-
+  const rows = await repo.listDesignerDocumentsByPrefix(prefix)
   return rows.map((row) => ({
     ...row,
     category: row.category.replace(prefix, ''),
@@ -66,18 +58,14 @@ export async function uploadDesignerDocument(input: UploadDesignerDocumentInput)
   await writeFile(join(DESIGNER_DOC_DIR, filename), input.fileData)
 
   const url = `/uploads/designer-docs/${filename}`
-  const db = useDb()
-  const [doc] = await db
-    .insert(documents)
-    .values({
-      projectId: null,
-      category: `${designerCategoryPrefix(input.designerId)}${input.kind}`,
-      title: input.title,
-      filename,
-      url,
-      notes: input.notes,
-    })
-    .returning()
+  const doc = await repo.insertDesignerDocument({
+    projectId: null,
+    category: `${designerCategoryPrefix(input.designerId)}${input.kind}`,
+    title: input.title,
+    filename,
+    url,
+    notes: input.notes,
+  })
 
   return { ...doc, category: input.kind }
 }
@@ -87,18 +75,8 @@ export async function uploadDesignerDocument(input: UploadDesignerDocumentInput)
  * prefix before removing the row and unlinking the file.
  */
 export async function deleteDesignerDocument(designerId: number, docId: number) {
-  const db = useDb()
-  const [doc] = await db
-    .select()
-    .from(documents)
-    .where(
-      and(
-        eq(documents.id, docId),
-        like(documents.category, `${designerCategoryPrefix(designerId)}%`),
-        isNull(documents.projectId),
-      ),
-    )
-    .limit(1)
+  const prefix = designerCategoryPrefix(designerId)
+  const doc = await repo.findDesignerDocumentByIdAndPrefix(docId, prefix)
   if (!doc) return null
 
   if (doc.filename) {
@@ -109,6 +87,6 @@ export async function deleteDesignerDocument(designerId: number, docId: number) 
     }
   }
 
-  await db.delete(documents).where(eq(documents.id, docId))
+  await repo.deleteDesignerDocumentRow(docId)
   return doc
 }

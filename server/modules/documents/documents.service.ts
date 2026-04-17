@@ -1,17 +1,8 @@
 import { unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { z } from 'zod'
-import { eq, desc, inArray } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import {
-  documents,
-  projects,
-  clients,
-  contractors,
-  projectContractors,
-  pageContent,
-} from '~/server/db/schema'
 import { getUploadDir } from '~/server/modules/uploads/upload-storage.service'
+import * as repo from './documents.repository'
 
 const DocumentCategory = z.enum([
   'contract',
@@ -68,42 +59,19 @@ export interface ListDocumentsOptions {
  * keep the where-clause simple across both branches.
  */
 export async function listDocuments(opts: ListDocumentsOptions = {}) {
-  const db = useDb()
   const category = opts.category ?? ''
   const projectSlug = opts.projectSlug ?? ''
 
   if (projectSlug) {
-    const [project] = await db
-      .select({ id: projects.id, title: projects.title })
-      .from(projects)
-      .where(eq(projects.slug, projectSlug))
-      .limit(1)
+    const project = await repo.findProjectBySlug(projectSlug)
     if (!project) return []
 
-    let rows = await db
-      .select()
-      .from(documents)
-      .where(eq(documents.projectId, project.id))
-      .orderBy(desc(documents.createdAt))
+    let rows = await repo.listDocumentsByProjectId(project.id)
     if (category) rows = rows.filter((r) => r.category === category)
     return rows
   }
 
-  const joined = await db
-    .select({
-      doc: documents,
-      projectTitle: projects.title,
-      projectSlug: projects.slug,
-    })
-    .from(documents)
-    .leftJoin(projects, eq(documents.projectId, projects.id))
-    .orderBy(desc(documents.createdAt))
-
-  let rows = joined.map((r) => ({
-    ...r.doc,
-    projectTitle: r.projectTitle ?? null,
-    projectSlug: r.projectSlug ?? null,
-  }))
+  let rows = await repo.listAllDocumentsWithProject()
   if (category) rows = rows.filter((r) => r.category === category)
   return rows
 }
@@ -115,33 +83,22 @@ export async function listDocuments(opts: ListDocumentsOptions = {}) {
  * attaching them to a project).
  */
 export async function createDocument(body: CreateDocumentInput) {
-  const db = useDb()
-
   let projectId: number | null = null
   if (body.projectSlug) {
-    const [proj] = await db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(eq(projects.slug, body.projectSlug))
-      .limit(1)
+    const proj = await repo.findProjectBySlug(body.projectSlug)
     projectId = proj?.id ?? null
   }
 
-  const [doc] = await db
-    .insert(documents)
-    .values({
-      title: body.title,
-      category: body.category,
-      filename: body.filename || null,
-      url: body.url || null,
-      projectId,
-      notes: body.notes || null,
-      content: body.content || null,
-      templateKey: body.templateKey || null,
-    })
-    .returning()
-
-  return doc
+  return repo.insertDocument({
+    title: body.title,
+    category: body.category,
+    filename: body.filename || null,
+    url: body.url || null,
+    projectId,
+    notes: body.notes || null,
+    content: body.content || null,
+    templateKey: body.templateKey || null,
+  })
 }
 
 /**
@@ -149,9 +106,7 @@ export async function createDocument(body: CreateDocumentInput) {
  * the handler can decide the 404 mapping.
  */
 export async function getDocument(id: number) {
-  const db = useDb()
-  const [doc] = await db.select().from(documents).where(eq(documents.id, id)).limit(1)
-  return doc ?? null
+  return repo.findDocumentById(id)
 }
 
 /**
@@ -160,8 +115,6 @@ export async function getDocument(id: number) {
  * Throws 400 when no updatable fields are present.
  */
 export async function updateDocument(id: number, body: UpdateDocumentInput) {
-  const db = useDb()
-
   const updates: Record<string, unknown> = {}
   if (body.title !== undefined) updates.title = body.title
   if (body.category !== undefined) updates.category = body.category
@@ -173,11 +126,7 @@ export async function updateDocument(id: number, body: UpdateDocumentInput) {
 
   if (body.projectSlug !== undefined) {
     if (body.projectSlug) {
-      const [proj] = await db
-        .select({ id: projects.id })
-        .from(projects)
-        .where(eq(projects.slug, body.projectSlug))
-        .limit(1)
+      const proj = await repo.findProjectBySlug(body.projectSlug)
       updates.projectId = proj?.id ?? null
     } else {
       updates.projectId = null
@@ -188,8 +137,7 @@ export async function updateDocument(id: number, body: UpdateDocumentInput) {
     throw createError({ statusCode: 400, statusMessage: 'Nothing to update' })
   }
 
-  const [doc] = await db.update(documents).set(updates).where(eq(documents.id, id)).returning()
-  return doc ?? null
+  return repo.updateDocumentRow(id, updates)
 }
 
 /**
@@ -198,8 +146,7 @@ export async function updateDocument(id: number, body: UpdateDocumentInput) {
  * can return 404 without hiding the error path.
  */
 export async function deleteDocument(id: number) {
-  const db = useDb()
-  const [deleted] = await db.delete(documents).where(eq(documents.id, id)).returning()
+  const deleted = await repo.deleteDocumentRow(id)
   if (!deleted) return null
 
   if (deleted.filename) {
@@ -231,7 +178,6 @@ export interface DocumentContext {
  * so the UI can offer manual selection.
  */
 export async function getDocumentContext(projectSlug: string): Promise<DocumentContext> {
-  const db = useDb()
   const result: DocumentContext = {
     project: null,
     clients: [],
@@ -240,16 +186,12 @@ export async function getDocumentContext(projectSlug: string): Promise<DocumentC
   }
 
   if (!projectSlug) {
-    result.clients = await db.select().from(clients).orderBy(clients.name)
-    result.contractors = await db.select().from(contractors).orderBy(contractors.name)
+    result.clients = await repo.listAllClients()
+    result.contractors = await repo.listAllContractors()
     return result
   }
 
-  const [proj] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.slug, projectSlug))
-    .limit(1)
+  const proj = await repo.findProjectBySlug(projectSlug)
   if (!proj) return result
 
   const profile = (proj.profile || {}) as Record<string, unknown>
@@ -282,10 +224,7 @@ export async function getDocumentContext(projectSlug: string): Promise<DocumentC
     _profile: profile,
   }
 
-  const pageRows = await db
-    .select()
-    .from(pageContent)
-    .where(eq(pageContent.projectId, proj.id))
+  const pageRows = await repo.listPageContentByProjectId(proj.id)
 
   for (const pg of pageRows) {
     const content = (pg.content || {}) as Record<string, unknown>
@@ -309,24 +248,16 @@ export async function getDocumentContext(projectSlug: string): Promise<DocumentC
   }
 
   if (clientIds.length) {
-    result.clients = await db.select().from(clients).where(inArray(clients.id, clientIds))
+    result.clients = await repo.listClientsByIds(clientIds)
   } else {
-    result.clients = await db.select().from(clients).orderBy(clients.name)
+    result.clients = await repo.listAllClients()
   }
 
-  const pcRows = await db
-    .select({ contractorId: projectContractors.contractorId })
-    .from(projectContractors)
-    .where(eq(projectContractors.projectId, proj.id))
-
-  const contractorIds = pcRows.map((r) => r.contractorId)
+  const contractorIds = await repo.listProjectContractorIds(proj.id)
   if (contractorIds.length) {
-    result.contractors = await db
-      .select()
-      .from(contractors)
-      .where(inArray(contractors.id, contractorIds))
+    result.contractors = await repo.listContractorsByIds(contractorIds)
   } else {
-    result.contractors = await db.select().from(contractors).orderBy(contractors.name)
+    result.contractors = await repo.listAllContractors()
   }
 
   return result

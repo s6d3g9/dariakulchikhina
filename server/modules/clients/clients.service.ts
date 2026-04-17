@@ -2,10 +2,8 @@ import { writeFile, mkdir, unlink } from 'node:fs/promises'
 import { join, extname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import { eq, and, sql, asc, like, isNull } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import { clients, projects, documents } from '~/server/db/schema'
 import { validateUploadedFile } from '~/server/modules/uploads/upload-validation.service'
+import * as repo from './clients.repository'
 
 // ── Schemas ────────────────────────────────────────────────────────────
 
@@ -51,33 +49,8 @@ function getLinkedClientIds(profile: Record<string, unknown> | null | undefined)
  * `projectSlug` is passed, only clients linked to that project are kept.
  */
 export async function listClients(opts: ListClientsOptions = {}) {
-  const db = useDb()
-
-  const allClients = await db
-    .select({
-      id: clients.id,
-      name: clients.name,
-      phone: clients.phone,
-      email: clients.email,
-      messenger: clients.messenger,
-      messengerNick: clients.messengerNick,
-      address: clients.address,
-      notes: clients.notes,
-      brief: clients.brief,
-      createdAt: clients.createdAt,
-    })
-    .from(clients)
-    .orderBy(asc(clients.createdAt))
-
-  const allProjects = await db
-    .select({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      status: projects.status,
-      profile: projects.profile,
-    })
-    .from(projects)
+  const allClients = await repo.listAllClientsPartial()
+  const allProjects = await repo.listAllProjectsForLinking()
 
   const projectsForLinking = opts.projectSlug
     ? allProjects.filter((p) => p.slug === opts.projectSlug)
@@ -99,15 +72,11 @@ export async function listClients(opts: ListClientsOptions = {}) {
 // ── CRUD ───────────────────────────────────────────────────────────────
 
 export async function createClient(body: CreateClientInput) {
-  const db = useDb()
-  const [c] = await db.insert(clients).values(body).returning()
-  return c
+  return repo.insertClient(body)
 }
 
 export async function updateClient(id: number, body: UpdateClientInput) {
-  const db = useDb()
-  const [c] = await db.update(clients).set(body).where(eq(clients.id, id)).returning()
-  return c ?? null
+  return repo.updateClientRow(id, body)
 }
 
 /**
@@ -117,27 +86,14 @@ export async function updateClient(id: number, body: UpdateClientInput) {
  * lists don't ghost-reference the deleted row.
  */
 export async function deleteClient(id: number) {
-  const db = useDb()
-
-  const linkedById = await db
-    .select({ id: projects.id, profile: projects.profile })
-    .from(projects)
-    .where(sql`${projects.profile}->>'client_id' = ${String(id)}`)
-
+  const linkedById = await repo.listProjectsReferencingClientId(id)
   for (const proj of linkedById) {
     const profile = (proj.profile || {}) as Record<string, unknown>
     delete profile.client_id
-    await db
-      .update(projects)
-      .set({ profile: profile as unknown as Record<string, string> })
-      .where(eq(projects.id, proj.id))
+    await repo.updateProjectProfile(proj.id, profile)
   }
 
-  const linkedByArray = await db
-    .select({ id: projects.id, profile: projects.profile })
-    .from(projects)
-    .where(sql`${projects.profile}->'client_ids' @> ${JSON.stringify([id])}::jsonb`)
-
+  const linkedByArray = await repo.listProjectsContainingClientIdInArray(id)
   for (const proj of linkedByArray) {
     const profile = (proj.profile || {}) as Record<string, unknown>
     if (Array.isArray(profile.client_ids)) {
@@ -145,13 +101,10 @@ export async function deleteClient(id: number) {
         (cid) => Number(cid) !== id,
       )
     }
-    await db
-      .update(projects)
-      .set({ profile: profile as unknown as Record<string, string> })
-      .where(eq(projects.id, proj.id))
+    await repo.updateProjectProfile(proj.id, profile)
   }
 
-  await db.delete(clients).where(eq(clients.id, id))
+  await repo.deleteClientRow(id)
 }
 
 // ── Client-scoped documents ───────────────────────────────────────────
@@ -166,14 +119,8 @@ const clientCategoryPrefix = (clientId: number) => `client:${clientId}:`
  * from the prefix before returning so the UI sees a plain category.
  */
 export async function listClientDocuments(clientId: number) {
-  const db = useDb()
   const prefix = clientCategoryPrefix(clientId)
-  const rows = await db
-    .select()
-    .from(documents)
-    .where(and(like(documents.category, `${prefix}%`), isNull(documents.projectId)))
-    .orderBy(documents.createdAt)
-
+  const rows = await repo.listClientDocumentsByPrefix(prefix)
   return rows.map((row) => ({
     ...row,
     category: row.category.replace(prefix, ''),
@@ -208,18 +155,14 @@ export async function uploadClientDocument(input: UploadClientDocumentInput) {
   await writeFile(join(CLIENT_DOC_DIR, filename), input.fileData)
 
   const url = `/uploads/client-docs/${filename}`
-  const db = useDb()
-  const [doc] = await db
-    .insert(documents)
-    .values({
-      projectId: null,
-      category: `${clientCategoryPrefix(input.clientId)}${input.kind}`,
-      title: input.title,
-      filename,
-      url,
-      notes: input.notes,
-    })
-    .returning()
+  const doc = await repo.insertClientDocument({
+    projectId: null,
+    category: `${clientCategoryPrefix(input.clientId)}${input.kind}`,
+    title: input.title,
+    filename,
+    url,
+    notes: input.notes,
+  })
 
   return { ...doc, category: input.kind }
 }
@@ -230,19 +173,8 @@ export async function uploadClientDocument(input: UploadClientDocumentInput) {
  * the file.
  */
 export async function deleteClientDocument(clientId: number, docId: number) {
-  const db = useDb()
-  const [doc] = await db
-    .select()
-    .from(documents)
-    .where(
-      and(
-        eq(documents.id, docId),
-        like(documents.category, `${clientCategoryPrefix(clientId)}%`),
-        isNull(documents.projectId),
-      ),
-    )
-    .limit(1)
-
+  const prefix = clientCategoryPrefix(clientId)
+  const doc = await repo.findClientDocumentByIdAndPrefix(docId, prefix)
   if (!doc) return null
 
   if (doc.filename) {
@@ -253,7 +185,7 @@ export async function deleteClientDocument(clientId: number, docId: number) {
     }
   }
 
-  await db.delete(documents).where(eq(documents.id, docId))
+  await repo.deleteClientDocumentRow(docId)
   return doc
 }
 
@@ -266,12 +198,10 @@ export async function deleteClientDocument(clientId: number, docId: number) {
  * call is a no-op. Falls through to 404 if either side does not exist.
  */
 export async function linkClientToProject(clientId: number, projectSlug: string) {
-  const db = useDb()
-
-  const [client] = await db.select().from(clients).where(eq(clients.id, clientId))
+  const client = await repo.findClientById(clientId)
   if (!client) throw createError({ statusCode: 404, statusMessage: 'Client not found' })
 
-  const [project] = await db.select().from(projects).where(eq(projects.slug, projectSlug))
+  const project = await repo.findProjectBySlug(projectSlug)
   if (!project) throw createError({ statusCode: 404, statusMessage: 'Project not found' })
 
   const currentProfile = (project.profile as Record<string, unknown>) || {}
@@ -294,15 +224,7 @@ export async function linkClientToProject(clientId: number, projectSlug: string)
     ...(client.messengerNick && { client_messenger_nick: client.messengerNick }),
   }
 
-  const [updated] = await db
-    .update(projects)
-    .set({
-      profile: updatedProfile as unknown as Record<string, string>,
-      updatedAt: new Date(),
-    })
-    .where(eq(projects.slug, projectSlug))
-    .returning()
-
+  const updated = await repo.updateProjectProfileAndTimestamp(projectSlug, updatedProfile)
   return { client, project: updated }
 }
 
@@ -312,12 +234,10 @@ export async function linkClientToProject(clientId: number, projectSlug: string)
  * or clears all denormalized client fields when nobody remains.
  */
 export async function unlinkClientFromProject(clientId: number, projectSlug: string) {
-  const db = useDb()
-
-  const [client] = await db.select().from(clients).where(eq(clients.id, clientId))
+  const client = await repo.findClientById(clientId)
   if (!client) throw createError({ statusCode: 404, statusMessage: 'Client not found' })
 
-  const [project] = await db.select().from(projects).where(eq(projects.slug, projectSlug))
+  const project = await repo.findProjectBySlug(projectSlug)
   if (!project) throw createError({ statusCode: 404, statusMessage: 'Project not found' })
 
   const currentProfile = (project.profile as Record<string, unknown>) || {}
@@ -344,14 +264,6 @@ export async function unlinkClientFromProject(clientId: number, projectSlug: str
     }
   }
 
-  const [updated] = await db
-    .update(projects)
-    .set({
-      profile: updatedProfile as unknown as Record<string, string>,
-      updatedAt: new Date(),
-    })
-    .where(eq(projects.slug, projectSlug))
-    .returning()
-
+  const updated = await repo.updateProjectProfileAndTimestamp(projectSlug, updatedProfile)
   return { client, project: updated }
 }

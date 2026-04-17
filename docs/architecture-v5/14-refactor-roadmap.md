@@ -742,3 +742,17 @@ nuxt.config.ts расширен: добавлены пути ~/shared/ui, ~/widg
 
 ### [done] 2026-04-17 — Wave 7 / structured logging + request context
 Pino-logger + AsyncLocalStorage для correlation-id. Файлы: server/utils/request-context.ts (enterRequestContext/runInRequestContext/getRequestContext/updateRequestContext через AsyncLocalStorage), server/utils/logger.ts (pino + pretty в dev + redact secrets + auto-inject requestId/userId/role из контекста), server/plugins/request-context.ts (Nitro plugin с hooks.hook('request') + enterWith, echo x-request-id header). pnpm add: pino 10.3, pino-pretty 13.1. Проверки: vue-tsc ok.
+
+### [done] 2026-04-18 — Wave 7 / repository layer split (all 7 domains)
+Создано 10 файлов `*.repository.ts`, обновлено 10 `*.service.ts`. Все DB-запросы (Drizzle) вынесены в репозитории; сервисы импортируют только `import * as repo from './<domain>.repository'`.
+
+Домены:
+- **documents** — `documents.repository.ts` (13 функций: findDocumentById, findProjectBySlug, listDocuments*, insertDocument, updateDocumentRow, deleteDocumentRow, listPageContent*, listClients*, listContractors*)
+- **gallery** — `gallery.repository.ts` (6 функций: find, list, insert, update, delete, reorder)
+- **sellers** — `sellers.repository.ts` (6 функций: find, listAll, listByProjectSlug, insert, update, delete + listSellerProjects)
+- **managers** — `managers.repository.ts` (6 функций: find, listAll, listByProjectSlug, insert, update, delete + listManagerProjects)
+- **clients** — `clients.repository.ts` (13 функций: find, list*, insert, update, delete + documents CRUD + project linking)
+- **designers** — `designers.repository.ts` (20 функций: CRUD + designerProjects + links + aggregation); `designer-documents.repository.ts` (4 функции)
+- **contractors** — `contractors.repository.ts` (9 функций: CRUD + staff + resolveAndStaffIds); `contractor-documents.repository.ts` (4 функции); `contractor-work-items.repository.ts` (13 функций: workItems + comments + photos)
+
+Проверки: vue-tsc exit 0, lint:errors 0 новых нарушений.

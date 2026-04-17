@@ -1,10 +1,8 @@
 import { writeFile, mkdir, unlink } from 'node:fs/promises'
 import { join, extname } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { eq, and } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import { contractorDocuments } from '~/server/db/schema'
 import { validateUploadedFile } from '~/server/modules/uploads/upload-validation.service'
+import * as repo from './contractor-documents.repository'
 
 const CONTRACTOR_DOC_DIR = join(
   process.cwd(),
@@ -14,12 +12,7 @@ const CONTRACTOR_DOC_DIR = join(
 )
 
 export async function listContractorDocuments(contractorId: number) {
-  const db = useDb()
-  return db
-    .select()
-    .from(contractorDocuments)
-    .where(eq(contractorDocuments.contractorId, contractorId))
-    .orderBy(contractorDocuments.createdAt)
+  return repo.listContractorDocuments(contractorId)
 }
 
 export interface UploadContractorDocumentInput {
@@ -54,20 +47,15 @@ export async function uploadContractorDocument(input: UploadContractorDocumentIn
   await writeFile(join(CONTRACTOR_DOC_DIR, filename), input.fileData)
 
   const url = `/uploads/contractor-docs/${filename}`
-  const db = useDb()
-  const [doc] = await db
-    .insert(contractorDocuments)
-    .values({
-      contractorId: input.contractorId,
-      category: input.category,
-      title: input.title,
-      filename,
-      url,
-      notes: input.notes,
-      expiresAt: input.expiresAt,
-    })
-    .returning()
-  return doc
+  return repo.insertContractorDocument({
+    contractorId: input.contractorId,
+    category: input.category,
+    title: input.title,
+    filename,
+    url,
+    notes: input.notes,
+    expiresAt: input.expiresAt,
+  })
 }
 
 /**
@@ -75,17 +63,7 @@ export async function uploadContractorDocument(input: UploadContractorDocumentIn
  * contractor before removing the row and unlinking the file.
  */
 export async function deleteContractorDocument(contractorId: number, docId: number) {
-  const db = useDb()
-  const [doc] = await db
-    .select()
-    .from(contractorDocuments)
-    .where(
-      and(
-        eq(contractorDocuments.id, docId),
-        eq(contractorDocuments.contractorId, contractorId),
-      ),
-    )
-    .limit(1)
+  const doc = await repo.findContractorDocumentOwned(contractorId, docId)
   if (!doc) return null
 
   if (doc.filename) {
@@ -96,6 +74,6 @@ export async function deleteContractorDocument(contractorId: number, docId: numb
     }
   }
 
-  await db.delete(contractorDocuments).where(eq(contractorDocuments.id, docId))
+  await repo.deleteContractorDocumentRow(docId)
   return doc
 }

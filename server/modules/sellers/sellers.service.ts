@@ -1,7 +1,5 @@
 import { z } from 'zod'
-import { asc, eq } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import { sellers, sellerProjects, projects } from '~/server/db/schema'
+import * as repo from './sellers.repository'
 
 export const CreateSellerSchema = z.object({
   name: z.string().min(1),
@@ -58,51 +56,30 @@ export interface ListSellersOptions {
  * ordered by createdAt.
  */
 export async function listSellers(opts: ListSellersOptions = {}) {
-  const db = useDb()
-
   if (opts.projectSlug) {
-    const [project] = await db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(eq(projects.slug, opts.projectSlug))
-      .limit(1)
-    if (!project) return []
-    const rows = await db
-      .select({ seller: sellers })
-      .from(sellerProjects)
-      .innerJoin(sellers, eq(sellerProjects.sellerId, sellers.id))
-      .where(eq(sellerProjects.projectId, project.id))
-      .orderBy(asc(sellers.name))
-    return rows.map((r) => r.seller)
+    const sellers = await repo.listSellersByProjectSlug(opts.projectSlug)
+    return sellers ?? []
   }
-
-  return db.select().from(sellers).orderBy(asc(sellers.createdAt))
+  return repo.listAllSellers()
 }
 
 export async function getSeller(id: number) {
-  const db = useDb()
-  const [seller] = await db.select().from(sellers).where(eq(sellers.id, id)).limit(1)
-  return seller ?? null
+  return repo.findSellerById(id)
 }
 
 export async function createSeller(body: CreateSellerInput) {
-  const db = useDb()
-  const [seller] = await db
-    .insert(sellers)
-    .values({
-      name: body.name,
-      companyName: body.companyName || null,
-      contactPerson: body.contactPerson || null,
-      phone: body.phone || null,
-      email: body.email || null,
-      telegram: body.telegram || null,
-      website: body.website || null,
-      city: body.city || null,
-      categories: body.categories,
-      notes: body.notes || null,
-    })
-    .returning()
-  return seller
+  return repo.insertSeller({
+    name: body.name,
+    companyName: body.companyName || null,
+    contactPerson: body.contactPerson || null,
+    phone: body.phone || null,
+    email: body.email || null,
+    telegram: body.telegram || null,
+    website: body.website || null,
+    city: body.city || null,
+    categories: body.categories,
+    notes: body.notes || null,
+  })
 }
 
 /**
@@ -110,8 +87,6 @@ export async function createSeller(body: CreateSellerInput) {
  * column stays consistent (column is nullable text).
  */
 export async function updateSeller(id: number, body: UpdateSellerInput) {
-  const db = useDb()
-
   const updates: Record<string, unknown> = { updatedAt: new Date() }
   if (body.name !== undefined) updates.name = body.name
   if (body.companyName !== undefined) updates.companyName = body.companyName || null
@@ -143,32 +118,16 @@ export async function updateSeller(id: number, body: UpdateSellerInput) {
   if (body.discount !== undefined) updates.discount = body.discount || null
   if (body.rating !== undefined) updates.rating = body.rating ?? null
 
-  const [updated] = await db
-    .update(sellers)
-    .set(updates)
-    .where(eq(sellers.id, id))
-    .returning()
-  return updated ?? null
+  return repo.updateSellerRow(id, updates)
 }
 
 export async function deleteSeller(id: number) {
-  const db = useDb()
-  await db.delete(sellers).where(eq(sellers.id, id))
+  return repo.deleteSellerRow(id)
 }
 
 /**
  * Projects the seller is linked to via `seller_projects`.
  */
 export async function listSellerProjects(sellerId: number) {
-  const db = useDb()
-  return db
-    .select({
-      id: projects.id,
-      slug: projects.slug,
-      title: projects.title,
-      status: projects.status,
-    })
-    .from(sellerProjects)
-    .innerJoin(projects, eq(sellerProjects.projectId, projects.id))
-    .where(eq(sellerProjects.sellerId, sellerId))
+  return repo.listSellerProjects(sellerId)
 }
