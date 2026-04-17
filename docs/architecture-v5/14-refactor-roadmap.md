@@ -762,3 +762,6 @@ Pino-logger + AsyncLocalStorage для correlation-id. Файлы: server/utils/
 
 ### [done] 2026-04-17 — Wave 7 / admin + admin-settings repository split
 Created paired repositories: server/modules/admin-settings/admin-settings.repository.ts (ensureAdminSettingsTable/findSettingByKey/findSettingIdByKey/updateSettingValue/insertSetting), server/modules/admin/admin-search.repository.ts (searchAdminEntities parallel queries), server/modules/admin/admin-notifications.repository.ts (countRequestedExtraServices/countOverdueWorkItems/listProjectsForControlCheck). Services reduced to pure business logic. Delta: 98 → 89 (−9). Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 7 / ai + rag repository split
+server/modules/ai/ai.repository.ts (listLegalSourceCounts, findProjectBySlug, listPageContentByProject, findClientById, findContractorById) + server/modules/ai/rag.repository.ts (searchLegalChunksByEmbedding, countLegalChunks). Services теперь чистые: ai.service делает shape/whitelist контекста для LLM, rag.service делает embeddings HTTP + markdown-форматирование. rag.service переведён с `process.env.GEMMA_URL` на `config.GEMMA_URL`. Delta: 89 → 83 (−6). Проверки: vue-tsc ok.

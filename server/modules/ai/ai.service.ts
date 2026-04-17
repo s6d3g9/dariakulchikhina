@@ -1,39 +1,44 @@
-import { sql, eq } from 'drizzle-orm'
-import { useDb } from '~/server/db/index'
-import { projects, clients, contractors, pageContent } from '~/server/db/schema'
-import { legalBaseReady } from '~/server/modules/ai/rag.service'
+import { legalBaseReady } from './rag.service'
+import * as repo from './ai.repository'
+
+const PROJECT_PAGE_SLUGS_IN_CONTEXT = [
+  'first-contact',
+  'smart-brief',
+  'client-tz',
+  'moodboard',
+  'specifications',
+] as const
 
 export async function getLegalStatus() {
-  const db = useDb()
-
-  const sources = await db.execute(sql`
-    SELECT
-      source,
-      source_name,
-      COUNT(*)::int           AS total,
-      COUNT(embedding)::int   AS indexed
-    FROM legal_chunks
-    GROUP BY source, source_name
-    ORDER BY source
-  `)
-
-  const { ready, count } = await legalBaseReady()
-
+  const [sources, readiness] = await Promise.all([
+    repo.listLegalSourceCounts(),
+    legalBaseReady(),
+  ])
   return {
-    ready,
-    totalChunks: count,
-    sources: (sources as unknown as any[]),
+    ready: readiness.ready,
+    totalChunks: readiness.count,
+    sources,
   }
 }
 
-export async function buildAiStreamContext(projectSlug: string, clientId: number, contractorId: number) {
-  const db = useDb()
-  const ctx: Record<string, any> = {}
+/**
+ * Assemble the context object handed to the LLM stream. Pulls project
+ * metadata + whitelist-filtered page content, plus optional client and
+ * contractor rows. All reads go through the repository — this service
+ * focuses on the shape of the context and which project profile fields
+ * make it into the prompt.
+ */
+export async function buildAiStreamContext(
+  projectSlug: string,
+  clientId: number,
+  contractorId: number,
+) {
+  const ctx: Record<string, unknown> = {}
 
   if (projectSlug) {
-    const [proj] = await db.select().from(projects).where(eq(projects.slug, projectSlug)).limit(1)
+    const proj = await repo.findProjectBySlug(projectSlug)
     if (proj) {
-      const profile = (proj.profile || {}) as Record<string, any>
+      const profile = (proj.profile || {}) as Record<string, unknown>
       ctx.project = {
         title: proj.title,
         objectAddress: profile.objectAddress || '',
@@ -53,27 +58,32 @@ export async function buildAiStreamContext(projectSlug: string, clientId: number
         passport_inn: profile.passport_inn || '',
       }
 
-      const pages = await db.select().from(pageContent).where(eq(pageContent.projectId, proj.id))
-      ctx.pages = {}
+      const pages = await repo.listPageContentByProject(proj.id)
+      const pageMap: Record<string, Record<string, string>> = {}
       for (const pg of pages) {
-        if (['first-contact', 'smart-brief', 'client-tz', 'moodboard', 'specifications'].includes(pg.pageSlug || '')) {
-          const clean: Record<string, string> = {}
-          for (const [k, v] of Object.entries((pg.content || {}) as Record<string, any>)) {
-            if (v && (typeof v === 'string' || typeof v === 'number')) clean[k] = String(v)
+        const slug = pg.pageSlug || ''
+        if (!PROJECT_PAGE_SLUGS_IN_CONTEXT.includes(slug as never)) continue
+        const clean: Record<string, string> = {}
+        for (const [k, v] of Object.entries(
+          (pg.content || {}) as Record<string, unknown>,
+        )) {
+          if (v != null && (typeof v === 'string' || typeof v === 'number')) {
+            clean[k] = String(v)
           }
-          if (Object.keys(clean).length) ctx.pages[pg.pageSlug!] = clean
         }
+        if (Object.keys(clean).length) pageMap[slug] = clean
       }
+      ctx.pages = pageMap
     }
   }
 
   if (clientId) {
-    const [c] = await db.select().from(clients).where(eq(clients.id, clientId)).limit(1)
+    const c = await repo.findClientById(clientId)
     if (c) ctx.client = c
   }
 
   if (contractorId) {
-    const [c] = await db.select().from(contractors).where(eq(contractors.id, contractorId)).limit(1)
+    const c = await repo.findContractorById(contractorId)
     if (c) ctx.contractor = c
   }
 

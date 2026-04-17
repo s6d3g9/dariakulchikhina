@@ -1,14 +1,12 @@
 {
-  "generatedAt": "2026-04-17T22:17:46.886Z",
-  "totalErrors": 89,
+  "generatedAt": "2026-04-17T22:26:20.954Z",
+  "totalErrors": 83,
   "perFile": {
     "messenger/core/src/agent-knowledge-store.ts": 3,
     "messenger/core/src/server.ts": 3,
     "messenger/core/src/storage-paths.ts": 1,
     "server/db/index.ts": 1,
-    "server/modules/ai/ai.service.ts": 3,
     "server/modules/ai/gemma.service.ts": 1,
-    "server/modules/ai/rag.service.ts": 3,
     "server/modules/auth/admin-auth.service.ts": 6,
     "server/modules/auth/admin-recovery.service.ts": 3,
     "server/modules/auth/auth-registration.service.ts": 3,
