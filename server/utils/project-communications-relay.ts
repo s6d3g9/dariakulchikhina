@@ -116,7 +116,7 @@ export async function relayProjectCommunicationEventStream(event: H3Event, proje
       if (chunk.done) {
         break
       }
-      ;(nodeResponse!.write as Function)(Buffer.from(chunk.value))
+      ;(nodeResponse!.write as (chunk: Buffer) => void)(Buffer.from(chunk.value))
     }
   } finally {
     reader.releaseLock()

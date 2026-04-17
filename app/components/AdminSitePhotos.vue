@@ -27,7 +27,7 @@
       </div>
 
       <div v-if="filteredPhotos.length" class="asp2-grid">
-        <div v-for="(ph, i) in filteredPhotos" :key="ph.url" class="asp2-card">
+        <div v-for="ph in filteredPhotos" :key="ph.url" class="asp2-card">
           <div class="asp2-img-wrap">
             <img :src="ph.url" :alt="ph.caption" class="asp2-img" loading="lazy">
             <div class="asp2-overlay">

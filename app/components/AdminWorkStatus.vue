@@ -20,7 +20,7 @@
     <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <div v-else class="ws-list">
       <div v-if="filteredItems.length === 0" class="ws-empty">Нет задач с выбранным фильтром</div>
-      <div v-for="(item, idx) in filteredItems" :key="item.__origIdx" class="ws-card" :class="{ 'ws-card--done': item.status === 'done', 'ws-card--active': detailItem?.idx === item.__origIdx, 'ws-card--overdue': isOverdue(item) }">
+      <div v-for="item in filteredItems" :key="item.__origIdx" class="ws-card" :class="{ 'ws-card--done': item.status === 'done', 'ws-card--active': detailItem?.idx === item.__origIdx, 'ws-card--overdue': isOverdue(item) }">
         <!-- row 1: title + status + detail btn -->
         <div class="ws-row">
           <div class="ws-field ws-field--wide">

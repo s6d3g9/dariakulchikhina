@@ -1,14 +1,19 @@
 <template>
   <div class="de-root">
-
     <!-- ══ Header ══ -->
     <div class="de-head">
-      <button class="de-back" @click="handleBack">
+      <button
+        class="de-back"
+        @click="handleBack"
+      >
         ← {{ step === 0 ? 'к списку' : 'назад' }}
       </button>
       <div class="de-steps">
-        <button v-for="(s, i) in STEPS" :key="i"
-          class="de-step" :class="{ 'de-step--active': step === i, 'de-step--done': step > i }"
+        <button
+          v-for="(s, i) in STEPS"
+          :key="i"
+          class="de-step"
+          :class="{ 'de-step--active': step === i, 'de-step--done': step > i }"
           @click="goToStep(i)"
         >
           <span class="de-step-num">{{ i + 1 }}</span>
@@ -18,18 +23,30 @@
     </div>
 
     <!-- ══ Step 1: Choose template ══ -->
-    <div v-if="step === 0" class="de-panel">
-      <div class="de-section-title">Выберите шаблон документа</div>
+    <div
+      v-if="step === 0"
+      class="de-panel"
+    >
+      <div class="de-section-title">
+        Выберите шаблон документа
+      </div>
       <div class="de-tpl-grid">
-        <GlassSurface v-for="tpl in templates" :key="tpl.key" as="button"
+        <GlassSurface
+          v-for="tpl in templates"
+          :key="tpl.key"
+          as="button"
           class="de-tpl-card"
           :class="{ 'de-tpl-card--active': selectedTpl?.key === tpl.key }"
           @click="selectTemplate(tpl); goToStep(1)"
         >
           <span class="de-tpl-icon">{{ tpl.icon }}</span>
           <div class="de-tpl-info">
-            <div class="de-tpl-name">{{ tpl.name }}</div>
-            <div class="de-tpl-desc">{{ tpl.description }}</div>
+            <div class="de-tpl-name">
+              {{ tpl.name }}
+            </div>
+            <div class="de-tpl-desc">
+              {{ tpl.description }}
+            </div>
           </div>
           <span class="de-tpl-arrow">→</span>
         </GlassSurface>
@@ -37,7 +54,10 @@
     </div>
 
     <!-- ══ Step 2: Pick data sources + fields ══ -->
-    <div v-if="step === 1" class="de-panel">
+    <div
+      v-if="step === 1"
+      class="de-panel"
+    >
       <div class="de-section-title">
         {{ selectedTpl?.icon }} {{ selectedTpl?.name }}
         <span class="de-section-subtitle">— заполнение данных</span>
@@ -47,30 +67,69 @@
       <div class="de-sources">
         <div class="de-source">
           <label class="de-source-label">📁 Проект</label>
-          <select v-model="pickedProjectSlug" class="u-status-sel" @change="loadContext">
-            <option value="">— без проекта —</option>
-            <option v-for="p in projects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
+          <select
+            v-model="pickedProjectSlug"
+            class="u-status-sel"
+            @change="loadContext"
+          >
+            <option value="">
+              — без проекта —
+            </option>
+            <option
+              v-for="p in projects"
+              :key="p.slug"
+              :value="p.slug"
+            >
+              {{ p.title }}
+            </option>
           </select>
         </div>
         <div class="de-source">
           <label class="de-source-label">
             🎨 Исполнитель
-            <span v-if="designersList.length" class="de-badge">{{ designersList.length }}</span>
+            <span
+              v-if="designersList.length"
+              class="de-badge"
+            >{{ designersList.length }}</span>
           </label>
-          <select v-model="pickedDesignerId" class="u-status-sel" @change="applyDesignerData">
-            <option :value="0">— не выбран —</option>
-            <option v-for="d in designersList" :key="d.id" :value="d.id">
+          <select
+            v-model="pickedDesignerId"
+            class="u-status-sel"
+            @change="applyDesignerData"
+          >
+            <option :value="0">
+              — не выбран —
+            </option>
+            <option
+              v-for="d in designersList"
+              :key="d.id"
+              :value="d.id"
+            >
               {{ d.name }}{{ d.companyName ? ` (${d.companyName})` : '' }}
             </option>
           </select>
         </div>
         <div class="de-source">
           <label class="de-source-label">👤 Клиент
-            <span v-if="ctx?.clients?.length" class="de-badge">{{ ctx.clients.length }}</span>
+            <span
+              v-if="ctx?.clients?.length"
+              class="de-badge"
+            >{{ ctx.clients.length }}</span>
           </label>
-          <select v-model="pickedClientId" class="u-status-sel" :disabled="loadingCtx" @change="applyClientData">
-            <option :value="0">{{ loadingCtx ? 'загрузка...' : '— не выбран —' }}</option>
-            <option v-for="c in ctx?.clients || []" :key="c.id" :value="c.id">
+          <select
+            v-model="pickedClientId"
+            class="u-status-sel"
+            :disabled="loadingCtx"
+            @change="applyClientData"
+          >
+            <option :value="0">
+              {{ loadingCtx ? 'загрузка...' : '— не выбран —' }}
+            </option>
+            <option
+              v-for="c in ctx?.clients || []"
+              :key="c.id"
+              :value="c.id"
+            >
               {{ c.name }}{{ c.phone ? ` · ${c.phone}` : '' }}
             </option>
           </select>
@@ -78,36 +137,70 @@
         <div class="de-source">
           <label class="de-source-label">
             🏗 Подрядчик
-            <span v-if="ctx?.contractors?.length" class="de-badge">{{ ctx.contractors.length }}</span>
+            <span
+              v-if="ctx?.contractors?.length"
+              class="de-badge"
+            >{{ ctx.contractors.length }}</span>
           </label>
-          <select v-model="pickedContractorId" class="u-status-sel" :disabled="loadingCtx" @change="applyContractorData">
-            <option :value="0">{{ loadingCtx ? 'загрузка...' : '— не выбран —' }}</option>
-            <option v-for="c in ctx?.contractors || []" :key="c.id" :value="c.id">
+          <select
+            v-model="pickedContractorId"
+            class="u-status-sel"
+            :disabled="loadingCtx"
+            @change="applyContractorData"
+          >
+            <option :value="0">
+              {{ loadingCtx ? 'загрузка...' : '— не выбран —' }}
+            </option>
+            <option
+              v-for="c in ctx?.contractors || []"
+              :key="c.id"
+              :value="c.id"
+            >
               {{ c.name }}{{ c.companyName ? ` (${c.companyName})` : '' }}
             </option>
           </select>
         </div>
       </div>
-      <div v-if="loadingCtx" class="de-loading-bar">
-        <div class="de-loading-fill"></div>
+      <div
+        v-if="loadingCtx"
+        class="de-loading-bar"
+      >
+        <div class="de-loading-fill" />
       </div>
 
       <!-- Entity previews -->
-      <div v-if="pickedDesigner || pickedClient || pickedContractor" class="de-preview-row">
-        <div v-if="pickedDesigner" class="de-preview-chip de-preview-chip--executor">
+      <div
+        v-if="pickedDesigner || pickedClient || pickedContractor"
+        class="de-preview-row"
+      >
+        <div
+          v-if="pickedDesigner"
+          class="de-preview-chip de-preview-chip--executor"
+        >
           🎨 {{ pickedDesigner.name }}
           <span v-if="pickedDesigner.phone"> · {{ pickedDesigner.phone }}</span>
           <span v-if="pickedDesigner.email"> · {{ pickedDesigner.email }}</span>
-          <button class="de-save-executor-btn" :class="{ 'de-save-executor-btn--saved': executorSaved }" @click="saveExecutorToStorage" :title="'Сохранить реквизиты исполнителя для автозаполнения'">
+          <button
+            class="de-save-executor-btn"
+            :class="{ 'de-save-executor-btn--saved': executorSaved }"
+            :title="'Сохранить реквизиты исполнителя для автозаполнения'"
+            @click="saveExecutorToStorage"
+          >
             {{ executorSaved ? '✓ сохранено' : '💾 запомнить реквизиты' }}
           </button>
         </div>
-        <div v-if="pickedClient" class="de-preview-chip">
+        <div
+          v-if="pickedClient"
+          class="de-preview-chip"
+        >
           👤 {{ pickedClient.name }}
           <span v-if="pickedClient.phone"> · {{ pickedClient.phone }}</span>
           <span v-if="pickedClient.email"> · {{ pickedClient.email }}</span>
         </div>
-        <div v-if="pickedContractor" class="de-preview-chip">
+        <div
+          v-if="pickedContractor"
+          class="de-preview-chip"
+        >
           🏗 {{ pickedContractor.companyName || pickedContractor.name }}
           <span v-if="pickedContractor.inn"> · ИНН {{ pickedContractor.inn }}</span>
           <span v-if="pickedContractor.phone"> · {{ pickedContractor.phone }}</span>
@@ -119,26 +212,51 @@
         <span>поля документа</span>
       </div>
       <div class="de-fields-grid">
-        <div v-for="field in selectedTpl?.fields || []" :key="field.key" class="de-field">
+        <div
+          v-for="field in selectedTpl?.fields || []"
+          :key="field.key"
+          class="de-field"
+        >
           <label class="de-field-label">
             {{ field.label }}
-            <span v-if="fieldAutoFilled[field.key]" class="de-field-auto" title="заполнено из данных">⚡</span>
+            <span
+              v-if="fieldAutoFilled[field.key]"
+              class="de-field-auto"
+              title="заполнено из данных"
+            >⚡</span>
           </label>
-          <textarea v-if="field.multiline" v-model="fieldValues[field.key]" rows="3" class="glass-input u-ta" :placeholder="field.placeholder || ''"></textarea>
-          <GlassInput v-else v-model="fieldValues[field.key]"  :placeholder="field.placeholder || ''" />
+          <textarea
+            v-if="field.multiline"
+            v-model="fieldValues[field.key]"
+            rows="3"
+            class="glass-input u-ta"
+            :placeholder="field.placeholder || ''"
+          />
+          <GlassInput
+            v-else
+            v-model="fieldValues[field.key]"
+            :placeholder="field.placeholder || ''"
+          />
         </div>
       </div>
 
       <!-- Переменные проекта -->
       <div class="de-vars-section">
-        <button class="de-vars-toggle" @click="varsOpen = !varsOpen">
+        <button
+          class="de-vars-toggle"
+          @click="varsOpen = !varsOpen"
+        >
           <span class="de-vars-icon">{{ '{' }}{{ '{' }}</span> переменные проекта
           <span class="de-vars-hint">(клик → вставить в шаблон)</span>
           <span class="de-vars-arrow">{{ varsOpen ? '▴' : '▾' }}</span>
         </button>
-        <div v-if="varsOpen" class="de-vars-grid">
+        <div
+          v-if="varsOpen"
+          class="de-vars-grid"
+        >
           <div
-            v-for="v in allVars" :key="v.key"
+            v-for="v in allVars"
+            :key="v.key"
             class="de-var-row"
             :class="{ 'de-var-row--empty': !v.value }"
             :title="'Клик → вставить \u0432 редактор'"
@@ -151,84 +269,200 @@
       </div>
 
       <div class="de-actions">
-        <GlassButton variant="secondary" density="compact"  @click="step = 0">← шаблоны</GlassButton>
-        <button class="a-btn-ai" @click="goGenerateAndEdit" title="Перейти в редактор и сразу запустить AI-генерацию">🤖 сгенерировать →</button>
-        <GlassButton variant="primary"  @click="goToStep(2)">редактор →</GlassButton>
+        <GlassButton
+          variant="secondary"
+          density="compact"
+          @click="step = 0"
+        >
+          ← шаблоны
+        </GlassButton>
+        <button
+          class="a-btn-ai"
+          title="Перейти в редактор и сразу запустить AI-генерацию"
+          @click="goGenerateAndEdit"
+        >
+          🤖 сгенерировать →
+        </button>
+        <GlassButton
+          variant="primary"
+          @click="goToStep(2)"
+        >
+          редактор →
+        </GlassButton>
       </div>
     </div>
 
     <!-- ══ Step 3: Document editor ══ -->
-    <div v-if="step === 2" class="de-panel de-panel--editor">
+    <div
+      v-if="step === 2"
+      class="de-panel de-panel--editor"
+    >
       <div class="de-section-title">
         {{ selectedTpl?.icon }} {{ selectedTpl?.name }}
         <span class="de-section-subtitle">— редактор</span>
       </div>
       <div class="de-editor-toolbar">
         <div class="de-editor-btns">
-          <button class="de-tbtn" @click="regenerateText">⟲ обновить</button>
-          <button class="de-tbtn" @click="printDocument">🖨 PDF</button>
-          <button class="de-tbtn" @click="downloadTxt">⬇ .txt</button>
-          <button class="de-tbtn" @click="copyToClipboard">📋 копировать</button>
-          <button class="de-tbtn" :class="{ 'de-tbtn--ai-active': varsOpen }" title="Переменные шаблона {{...}}" @click="varsOpen = !varsOpen">&#123;&#123;&thinsp;&#125;&#125;</button>
+          <button
+            class="de-tbtn"
+            @click="regenerateText"
+          >
+            ⟲ обновить
+          </button>
+          <button
+            class="de-tbtn"
+            @click="printDocument"
+          >
+            🖨 PDF
+          </button>
+          <button
+            class="de-tbtn"
+            @click="downloadTxt"
+          >
+            ⬇ .txt
+          </button>
+          <button
+            class="de-tbtn"
+            @click="copyToClipboard"
+          >
+            📋 копировать
+          </button>
+          <button
+            class="de-tbtn"
+            :class="{ 'de-tbtn--ai-active': varsOpen }"
+            title="Переменные шаблона {{...}}"
+            @click="varsOpen = !varsOpen"
+          >
+            &#123;&#123;&thinsp;&#125;&#125;
+          </button>
           <span class="de-ai-sep">|</span>
-          <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'generate' }" @click="onAiGenerate">
+          <button
+            class="de-tbtn de-tbtn--ai"
+            :disabled="aiLoading"
+            :class="{ 'de-tbtn--ai-active': aiAction === 'generate' }"
+            @click="onAiGenerate"
+          >
             🤖 сгенерировать
           </button>
-          <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'improve' }" @click="onAiImprove">
+          <button
+            class="de-tbtn de-tbtn--ai"
+            :disabled="aiLoading"
+            :class="{ 'de-tbtn--ai-active': aiAction === 'improve' }"
+            @click="onAiImprove"
+          >
             ✨ улучшить
           </button>
-          <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'review' }" @click="onAiReview">
+          <button
+            class="de-tbtn de-tbtn--ai"
+            :disabled="aiLoading"
+            :class="{ 'de-tbtn--ai-active': aiAction === 'review' }"
+            @click="onAiReview"
+          >
             📋 проверить
           </button>
-          <button v-if="aiLoading" class="de-tbtn de-tbtn--abort" @click="abortAi">
+          <button
+            v-if="aiLoading"
+            class="de-tbtn de-tbtn--abort"
+            @click="abortAi"
+          >
             ✕ стоп
           </button>
-          <button v-if="!aiLoading && aiTruncated" class="de-tbtn de-tbtn--continue" @click="onContinueGeneration" title="Модель остановилась по лимиту — догенерировать">
+          <button
+            v-if="!aiLoading && aiTruncated"
+            class="de-tbtn de-tbtn--continue"
+            title="Модель остановилась по лимиту — догенерировать"
+            @click="onContinueGeneration"
+          >
             ▶ продолжить
           </button>
-          <button class="de-tbtn" :class="{ 'de-tbtn--ai-active': chatVisible }" @click="chatVisible = !chatVisible" title="Показать/скрыть чат с ИИ">
+          <button
+            class="de-tbtn"
+            :class="{ 'de-tbtn--ai-active': chatVisible }"
+            title="Показать/скрыть чат с ИИ"
+            @click="chatVisible = !chatVisible"
+          >
             💬 чат
           </button>
-          <button class="de-tbtn de-tbtn--docx" :disabled="!editorContent || docxLoading" @click="downloadDocx" title="Скачать как Word (.docx)">
+          <button
+            class="de-tbtn de-tbtn--docx"
+            :disabled="!editorContent || docxLoading"
+            title="Скачать как Word (.docx)"
+            @click="downloadDocx"
+          >
             {{ docxLoading ? '⏳...' : '📄 .docx' }}
           </button>
-          <span v-if="autoSaveStatus" class="de-autosave-status" :class="'de-autosave-status--' + autoSaveStatus">
+          <span
+            v-if="autoSaveStatus"
+            class="de-autosave-status"
+            :class="'de-autosave-status--' + autoSaveStatus"
+          >
             <span v-if="autoSaveStatus === 'saving'">⏳ сохранение...</span>
             <span v-else-if="autoSaveStatus === 'saved'">✓ сохранено</span>
             <span v-else-if="autoSaveStatus === 'error'">⚠️ ошибка автосохранения</span>
           </span>
           <span class="de-ai-sep">|</span>
-          <select v-model="selectedAiModel" class="de-model-sel" title="Выбрать AI-модель">
+          <select
+            v-model="selectedAiModel"
+            class="de-model-sel"
+            title="Выбрать AI-модель"
+          >
             <optgroup label="Локальные (бесплатно)">
-              <option value="">🏠 Авто (локальная)</option>
-              <option value="gemma3:27b">🏠 Gemma 3 27B (документы)</option>
-              <option value="qwen3:4b">🏠 Qwen3 4B (чат, быстро)</option>
+              <option value="">
+                🏠 Авто (локальная)
+              </option>
+              <option value="gemma3:27b">
+                🏠 Gemma 3 27B (документы)
+              </option>
+              <option value="qwen3:4b">
+                🏠 Qwen3 4B (чат, быстро)
+              </option>
             </optgroup>
             <optgroup label="Anthropic Claude">
-              <option value="claude-haiku-4-5-20251001">☁️ Claude Haiku 4.5 (дешевле)</option>
-              <option value="claude-sonnet-4-5-20250929">☁️ Claude Sonnet 4.5 (рек.)</option>
-              <option value="claude-sonnet-4-6">☁️ Claude Sonnet 4.6 (новинка)</option>
+              <option value="claude-haiku-4-5-20251001">
+                ☁️ Claude Haiku 4.5 (дешевле)
+              </option>
+              <option value="claude-sonnet-4-5-20250929">
+                ☁️ Claude Sonnet 4.5 (рек.)
+              </option>
+              <option value="claude-sonnet-4-6">
+                ☁️ Claude Sonnet 4.6 (новинка)
+              </option>
             </optgroup>
           </select>
         </div>
-        <div v-if="aiProgress" class="de-ai-progress">
+        <div
+          v-if="aiProgress"
+          class="de-ai-progress"
+        >
           <div class="de-ai-progress-row">
-            <span v-if="aiLoading" class="de-ai-dot"></span>
-            <span v-else class="de-ai-done-icon">✓</span>
+            <span
+              v-if="aiLoading"
+              class="de-ai-dot"
+            />
+            <span
+              v-else
+              class="de-ai-done-icon"
+            >✓</span>
             <span class="de-ai-text">{{ aiProgress }}</span>
             <template v-if="aiLoading">
               <span class="de-ai-sep">·</span>
-              <span class="de-ai-elapsed">⏱ {{ aiElapsed }}с</span>
+              <span class="de-ai-elapsed">⏱ {{ aiElapsed }}с</span>
               <template v-if="aiTokenCount > 0">
                 <span class="de-ai-sep">·</span>
-                <span class="de-ai-chars">{{ aiTokenCount.toLocaleString('ru') }} симв</span>
+                <span class="de-ai-chars">{{ aiTokenCount.toLocaleString('ru') }} симв</span>
               </template>
             </template>
           </div>
           <!-- Фазовый блок: пока нет токенов -->
-          <div v-if="aiLoading && aiTokenCount === 0" class="de-ai-phase">
+          <div
+            v-if="aiLoading && aiTokenCount === 0"
+            class="de-ai-phase"
+          >
             <div class="de-ai-phase-track">
-              <div class="de-ai-phase-fill" :style="{ width: aiPrefillPct + '%' }"></div>
+              <div
+                class="de-ai-phase-fill"
+                :style="{ width: aiPrefillPct + '%' }"
+              />
               <div class="de-ai-phase-labels">
                 <span :class="{ active: aiElapsed >= 0 }">&#x25cf; инит</span>
                 <span :class="{ active: aiElapsed >= 5 }">&#x25cf; контекст</span>
@@ -236,27 +470,49 @@
                 <span :class="{ active: aiElapsed >= 30 }">&#x25cf; генерация</span>
               </div>
             </div>
-            <div v-if="aiPhaseHint" class="de-ai-phase-hint">{{ aiPhaseHint }}</div>
+            <div
+              v-if="aiPhaseHint"
+              class="de-ai-phase-hint"
+            >
+              {{ aiPhaseHint }}
+            </div>
           </div>
         </div>
-        <div v-else-if="copyMsg" class="de-copy-msg">{{ copyMsg }}</div>
+        <div
+          v-else-if="copyMsg"
+          class="de-copy-msg"
+        >
+          {{ copyMsg }}
+        </div>
       </div>
       <!-- AI: прогресс-бар -->
-      <div v-if="aiLoading" class="de-ai-bar">
-        <div class="de-ai-bar-fill"></div>
+      <div
+        v-if="aiLoading"
+        class="de-ai-bar"
+      >
+        <div class="de-ai-bar-fill" />
       </div>
 
       <!-- ══ Панель переменных ══ -->
       <Transition name="de-vars-slide">
-        <GlassSurface v-if="varsOpen" class="de-vars-panel ">
+        <GlassSurface
+          v-if="varsOpen"
+          class="de-vars-panel "
+        >
           <div class="de-vars-panel-head">
             <span class="de-vars-panel-title">&#123;&#123;&thinsp;&#125;&#125; Переменные шаблона</span>
             <span class="de-vars-panel-hint">Кликните — вставить в позицию курсора · или скопировать</span>
-            <button class="de-tbtn" @click="varsOpen = false">✕</button>
+            <button
+              class="de-tbtn"
+              @click="varsOpen = false"
+            >
+              ✕
+            </button>
           </div>
           <div class="de-vars-panel-grid">
             <div
-              v-for="v in allVars" :key="v.key"
+              v-for="v in allVars"
+              :key="v.key"
               class="de-var-item"
               :class="{ 'de-var-item--empty': !v.value }"
               @click="insertVar(v.key)"
@@ -269,40 +525,78 @@
       </Transition>
 
       <!-- ══ Двухколоночный layout: редактор + чат ══ -->
-      <div class="de-editor-body" :class="{ 'de-editor-body--with-chat': chatVisible }">
+      <div
+        class="de-editor-body"
+        :class="{ 'de-editor-body--with-chat': chatVisible }"
+      >
         <div class="de-editor-col">
-
           <!-- ─ Режим split: слева оригинал, справа стрим ─ -->
-          <div v-if="diffMode === 'streaming'" class="de-diff-split">
+          <div
+            v-if="diffMode === 'streaming'"
+            class="de-diff-split"
+          >
             <div class="de-diff-pane de-diff-pane--orig">
-              <div class="de-diff-pane-label">Оригинал</div>
+              <div class="de-diff-pane-label">
+                Оригинал
+              </div>
               <GlassSurface class="de-editor-wrap ">
-                <div class="de-editor de-editor--readonly">{{ diffOriginal }}</div>
+                <div class="de-editor de-editor--readonly">
+                  {{ diffOriginal }}
+                </div>
               </GlassSurface>
             </div>
             <div class="de-diff-pane de-diff-pane--new">
-              <div class="de-diff-pane-label">Генерируется<span class="de-diff-cursor">█</span></div>
+              <div class="de-diff-pane-label">
+                Генерируется<span class="de-diff-cursor">█</span>
+              </div>
               <GlassSurface class="de-editor-wrap ">
-                <div ref="diffNewEl" class="de-editor de-editor--readonly">{{ diffNew }}</div>
+                <div
+                  ref="diffNewEl"
+                  class="de-editor de-editor--readonly"
+                >
+                  {{ diffNew }}
+                </div>
               </GlassSurface>
             </div>
           </div>
 
           <!-- ─ Режим diff-review: inline diff ─ -->
-          <div v-else-if="diffMode === 'review'" class="de-diff-review">
+          <div
+            v-else-if="diffMode === 'review'"
+            class="de-diff-review"
+          >
             <GlassSurface class="de-diff-controls ">
               <span class="de-diff-stat">
                 <span class="de-diff-stat-add">+{{ diffStats.added }} слов</span>
                 <span class="de-diff-stat-del">−{{ diffStats.removed }} слов</span>
               </span>
-              <button class="de-btn-accept" @click="acceptDiff">✓ Принять изменения</button>
-              <button class="de-btn-reject" @click="rejectDiff">× Отменить</button>
+              <button
+                class="de-btn-accept"
+                @click="acceptDiff"
+              >
+                ✓ Принять изменения
+              </button>
+              <button
+                class="de-btn-reject"
+                @click="rejectDiff"
+              >
+                × Отменить
+              </button>
             </GlassSurface>
             <GlassSurface class="de-editor-wrap ">
               <div class="de-editor de-editor--readonly de-editor--diff">
-                <template v-for="(seg, i) in diffResult" :key="i">
-                  <del v-if="seg.type === 'del'" class="de-diff-del">{{ seg.text }}</del>
-                  <ins v-else-if="seg.type === 'ins'" class="de-diff-ins">{{ seg.text }}</ins>
+                <template
+                  v-for="(seg, i) in diffResult"
+                  :key="i"
+                >
+                  <del
+                    v-if="seg.type === 'del'"
+                    class="de-diff-del"
+                  >{{ seg.text }}</del>
+                  <ins
+                    v-else-if="seg.type === 'ins'"
+                    class="de-diff-ins"
+                  >{{ seg.text }}</ins>
                   <span v-else>{{ seg.text }}</span>
                 </template>
               </div>
@@ -310,64 +604,135 @@
           </div>
 
           <!-- ─ Обычный режим ─ -->
-          <GlassSurface v-else class="de-editor-wrap ">
+          <GlassSurface
+            v-else
+            class="de-editor-wrap "
+          >
             <div
               ref="editorEl"
               class="de-editor"
               contenteditable="true"
               spellcheck="true"
               @input="onEditorInput"
-            ></div>
+            />
           </GlassSurface>
-
         </div><!-- /de-editor-col -->
 
         <!-- ══ Чат-панель Gemma ══ -->
         <Transition name="de-chat-slide">
-          <div v-if="chatVisible" class="de-chat-panel glass-surface">
+          <div
+            v-if="chatVisible"
+            class="de-chat-panel glass-surface"
+          >
             <div class="de-chat-header">
               <div class="de-chat-header-left">
                 <span class="de-chat-avatar">🤖</span>
                 <div>
-                  <div class="de-chat-title">Gemma 3 · 27B</div>
-                  <div class="de-chat-subtitle">{{ selectedAiModel.startsWith('claude-') ? '☁️ Anthropic' : '🏠 локальная' }} · {{ selectedAiModelLabel.replace(/^[🏠☁️]+\s*/,'') }} · {{ aiLoading ? 'печатает...' : 'онлайн' }}</div>
+                  <div class="de-chat-title">
+                    Gemma 3 · 27B
+                  </div>
+                  <div class="de-chat-subtitle">
+                    {{ selectedAiModel.startsWith('claude-') ? '☁️ Anthropic' : '🏠 локальная' }} · {{ selectedAiModelLabel.replace(/^[🏠☁️]+\s*/,'') }} · {{ aiLoading ? 'печатает...' : 'онлайн' }}
+                  </div>
                 </div>
               </div>
-              <button class="de-tbtn" @click="clearChat" title="Очистить историю">🗑</button>
+              <button
+                class="de-tbtn"
+                title="Очистить историю"
+                @click="clearChat"
+              >
+                🗑
+              </button>
             </div>
-            <div ref="chatEl" class="de-chat-messages">
-              <div v-if="!chatMessages.length" class="de-chat-empty">
-                <div class="de-chat-empty-icon">🤖</div>
-                <div class="de-chat-empty-text">Нажми <strong>🤖 сгенерировать</strong>, <strong>✨ улучшить</strong> или <strong>📋 проверить</strong> — или напиши своё пожелание в поле ниже.</div>
+            <div
+              ref="chatEl"
+              class="de-chat-messages"
+            >
+              <div
+                v-if="!chatMessages.length"
+                class="de-chat-empty"
+              >
+                <div class="de-chat-empty-icon">
+                  🤖
+                </div>
+                <div class="de-chat-empty-text">
+                  Нажми <strong>🤖 сгенерировать</strong>, <strong>✨ улучшить</strong> или <strong>📋 проверить</strong> — или напиши своё пожелание в поле ниже.
+                </div>
               </div>
-              <div v-for="msg in chatMessages" :key="msg.id" class="de-chat-msg" :class="'de-chat-msg--' + msg.role">
-                <div v-if="msg.role === 'user'" class="de-chat-bubble de-chat-bubble--user">
+              <div
+                v-for="msg in chatMessages"
+                :key="msg.id"
+                class="de-chat-msg"
+                :class="'de-chat-msg--' + msg.role"
+              >
+                <div
+                  v-if="msg.role === 'user'"
+                  class="de-chat-bubble de-chat-bubble--user"
+                >
                   <span class="de-chat-action-badge">{{ msg.actionLabel }}</span>
                   <span class="de-chat-time">{{ msg.time }}</span>
                 </div>
-                <div v-else class="de-chat-bubble de-chat-bubble--gemma">
+                <div
+                  v-else
+                  class="de-chat-bubble de-chat-bubble--gemma"
+                >
                   <div class="de-chat-bubble-content">
-                    <span v-if="msg.streaming && !msg.text && msg.charCount === 0" class="de-chat-typing">
-                      <span></span><span></span><span></span>
+                    <span
+                      v-if="msg.streaming && !msg.text && msg.charCount === 0"
+                      class="de-chat-typing"
+                    >
+                      <span /><span /><span />
                     </span>
-                    <span v-else-if="msg.streaming && !msg.text && msg.charCount > 0" class="de-chat-editing">
+                    <span
+                      v-else-if="msg.streaming && !msg.text && msg.charCount > 0"
+                      class="de-chat-editing"
+                    >
                       ✏️ редактирую... ({{ msg.charCount }} симв.)
                     </span>
-                    <span v-else class="de-chat-text">{{ msg.text }}</span><span v-if="msg.streaming && msg.text" class="de-chat-cursor">▌</span>
+                    <span
+                      v-else
+                      class="de-chat-text"
+                    >{{ msg.text }}</span><span
+                      v-if="msg.streaming && msg.text"
+                      class="de-chat-cursor"
+                    >▌</span>
                   </div>
                   <div class="de-chat-bubble-meta">
-                    <span v-if="msg.done" class="de-chat-done">✓ {{ msg.charCount }} симв.</span>
-                    <span v-else-if="msg.streaming" class="de-chat-writing">{{ msg.charCount > 0 ? msg.charCount + ' симв.' : '' }}</span>
-                    <span v-if="msg.elapsed != null" class="de-chat-elapsed">⏱ {{ msg.elapsed }}с</span>
+                    <span
+                      v-if="msg.done"
+                      class="de-chat-done"
+                    >✓ {{ msg.charCount }} симв.</span>
+                    <span
+                      v-else-if="msg.streaming"
+                      class="de-chat-writing"
+                    >{{ msg.charCount > 0 ? msg.charCount + ' симв.' : '' }}</span>
+                    <span
+                      v-if="msg.elapsed != null"
+                      class="de-chat-elapsed"
+                    >⏱ {{ msg.elapsed }}с</span>
                     <span class="de-chat-time">{{ msg.time }}</span>
                   </div>
-                  <button v-if="false" class="de-chat-apply-btn" @click="applyFromChat(msg._applyText!)">✓ Применить в редактор</button>
+                  <button
+                    v-if="false"
+                    class="de-chat-apply-btn"
+                    @click="applyFromChat(msg._applyText!)"
+                  >
+                    ✓ Применить в редактор
+                  </button>
                 </div>
               </div>
             </div>
             <!-- ── Быстрые команды ── -->
             <div class="de-chat-chips">
-              <button v-for="chip in chatChips" :key="chip.label" class="de-chip" :disabled="aiLoading" @click="applyChip(chip.tpl)">{{ chip.label }}</button>
+              <button
+                v-for="chip in chatChips"
+                :key="chip.label"
+                class="de-chip"
+                :disabled="aiLoading"
+                @click="applyChip(chip.tpl)"
+              >
+                {{ chip.label }}
+              </button>
             </div>
             <!-- ── Поле ввода ── -->
             <div class="de-chat-input-bar">
@@ -381,7 +746,14 @@
                 @keydown.enter.exact.prevent="onSendChatMessage"
                 @input="(e: Event) => { const t = e.target as HTMLTextAreaElement; t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,120)+'px' }"
               />
-              <button class="de-chat-send" :disabled="aiLoading || !chatInput.trim()" title="Отправить (Enter)" @click="onSendChatMessage">➤</button>
+              <button
+                class="de-chat-send"
+                :disabled="aiLoading || !chatInput.trim()"
+                title="Отправить (Enter)"
+                @click="onSendChatMessage"
+              >
+                ➤
+              </button>
             </div>
           </div>
         </Transition>
@@ -389,12 +761,25 @@
 
       <!-- AI: панель замечаний (review) -->
       <Transition name="de-slide">
-        <GlassSurface v-if="aiReviewNotes.length" class="de-ai-review ">
+        <GlassSurface
+          v-if="aiReviewNotes.length"
+          class="de-ai-review "
+        >
           <div class="de-ai-review-head">
             <span class="de-ai-review-title">📋 Gemma 27B — анализ документа</span>
-            <button class="de-tbtn" @click="clearReview">✕</button>
+            <button
+              class="de-tbtn"
+              @click="clearReview"
+            >
+              ✕
+            </button>
           </div>
-          <div v-for="(note, i) in aiReviewNotes" :key="i" class="de-ai-note" :class="'de-ai-note--' + note.type">
+          <div
+            v-for="(note, i) in aiReviewNotes"
+            :key="i"
+            class="de-ai-note"
+            :class="'de-ai-note--' + note.type"
+          >
             <span class="de-ai-note-icon">{{ note.type === 'error' ? '⚠️' : '💡' }}</span>
             <span class="de-ai-note-text">{{ note.text }}</span>
           </div>
@@ -403,44 +788,94 @@
 
       <!-- AI: правовые источники (RAG citations) -->
       <Transition name="de-slide">
-        <GlassSurface v-if="aiCitations.length" class="de-citations ">
+        <GlassSurface
+          v-if="aiCitations.length"
+          class="de-citations "
+        >
           <div class="de-citations-head">
             <span class="de-citations-title">⚖️ Правовая база — использованные нормы</span>
             <span class="de-citations-count">{{ aiCitations.length }}</span>
-            <button class="de-tbtn" @click="clearCitations">✕</button>
+            <button
+              class="de-tbtn"
+              @click="clearCitations"
+            >
+              ✕
+            </button>
           </div>
-          <div v-for="(c, i) in aiCitations" :key="i" class="de-citation-row">
+          <div
+            v-for="(c, i) in aiCitations"
+            :key="i"
+            class="de-citation-row"
+          >
             <div class="de-citation-ref">
               <span class="de-citation-source">{{ c.source_name }}</span>
-              <span v-if="c.article_num" class="de-citation-article">ст.&nbsp;{{ c.article_num }}</span>
-              <span v-if="c.article_title" class="de-citation-title">{{ c.article_title }}</span>
+              <span
+                v-if="c.article_num"
+                class="de-citation-article"
+              >ст.&nbsp;{{ c.article_num }}</span>
+              <span
+                v-if="c.article_title"
+                class="de-citation-title"
+              >{{ c.article_title }}</span>
               <span class="de-citation-sim">{{ Math.round(c.similarity * 100) }}% совпадение</span>
             </div>
-            <p class="de-citation-text">{{ c.text }}</p>
+            <p class="de-citation-text">
+              {{ c.text }}
+            </p>
           </div>
         </GlassSurface>
       </Transition>
 
       <!-- AI: ошибка -->
       <Transition name="de-toast">
-        <div v-if="aiError" class="de-toast de-toast--err">✗ {{ aiError }}</div>
+        <div
+          v-if="aiError"
+          class="de-toast de-toast--err"
+        >
+          ✗ {{ aiError }}
+        </div>
       </Transition>
 
       <div class="de-actions">
-        <GlassButton variant="secondary" density="compact"  @click="step = 1">← поля</GlassButton>
-        <GlassButton variant="secondary" density="compact"  @click="printDocument">🖨 PDF</GlassButton>
-        <GlassButton variant="secondary" density="compact"  @click="downloadTxt">⬇ .txt</GlassButton>
-        <GlassButton variant="primary"  :disabled="saving" @click="saveDocument">
+        <GlassButton
+          variant="secondary"
+          density="compact"
+          @click="step = 1"
+        >
+          ← поля
+        </GlassButton>
+        <GlassButton
+          variant="secondary"
+          density="compact"
+          @click="printDocument"
+        >
+          🖨 PDF
+        </GlassButton>
+        <GlassButton
+          variant="secondary"
+          density="compact"
+          @click="downloadTxt"
+        >
+          ⬇ .txt
+        </GlassButton>
+        <GlassButton
+          variant="primary"
+          :disabled="saving"
+          @click="saveDocument"
+        >
           {{ saving ? 'сохраняется...' : '✓ сохранить документ' }}
         </GlassButton>
       </div>
       <Transition name="de-toast">
-        <div v-if="saveMsg" class="de-toast" :class="saveMsgType === 'ok' ? 'de-toast--ok' : 'de-toast--err'">
+        <div
+          v-if="saveMsg"
+          class="de-toast"
+          :class="saveMsgType === 'ok' ? 'de-toast--ok' : 'de-toast--err'"
+        >
           {{ saveMsg }}
         </div>
       </Transition>
     </div>
-
   </div>
 </template>
 

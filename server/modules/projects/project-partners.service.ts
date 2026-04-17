@@ -123,7 +123,6 @@ export async function listProjectContractors(slug: string) {
       correspondentAccount: _ca,
       ...safe
     } = c
-    void _slug, _ps, _pn, _pi, _pd, _sn, _inn, _bn, _bk, _sa, _ca
     return safe
   })
 }

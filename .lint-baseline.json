@@ -1,15 +1,10 @@
 {
-  "generatedAt": "2026-04-17T12:42:06.621Z",
-  "totalErrors": 12,
+  "generatedAt": "2026-04-17T12:51:02.667Z",
+  "totalErrors": 6,
   "perFile": {
-    "app/components/AdminDocumentEditor.vue": 2,
-    "app/components/AdminSitePhotos.vue": 1,
-    "app/components/AdminWorkStatus.vue": 1,
     "messenger/core/src/agent-knowledge-store.ts": 1,
     "messenger/web/app/components/messenger/MessengerAuthField.vue": 1,
     "messenger/web/app/composables/useMessengerSettings.ts": 3,
-    "server/modules/projects/project-partners.service.ts": 1,
-    "server/utils/project-communications-relay.ts": 1,
     "services/communications-service/src/pg-store.ts": 1
   }
 }
