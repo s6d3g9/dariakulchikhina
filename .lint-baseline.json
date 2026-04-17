@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-17T12:37:54.401Z",
-  "totalErrors": 20,
+  "generatedAt": "2026-04-17T12:42:06.621Z",
+  "totalErrors": 12,
   "perFile": {
     "app/components/AdminDocumentEditor.vue": 2,
     "app/components/AdminSitePhotos.vue": 1,
@@ -8,10 +8,6 @@
     "messenger/core/src/agent-knowledge-store.ts": 1,
     "messenger/web/app/components/messenger/MessengerAuthField.vue": 1,
     "messenger/web/app/composables/useMessengerSettings.ts": 3,
-    "server/api/projects/[slug]/communications/action-catalog.get.ts": 2,
-    "server/api/projects/[slug]/communications/call-insights/[insightId]/apply.post.ts": 2,
-    "server/api/projects/[slug]/communications/call-insights/index.post.ts": 2,
-    "server/api/projects/[slug]/communications/dispatch.post.ts": 2,
     "server/modules/projects/project-partners.service.ts": 1,
     "server/utils/project-communications-relay.ts": 1,
     "services/communications-service/src/pg-store.ts": 1

@@ -704,3 +704,6 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / projects work-status items (comments + photos) → modules/projects
 3 endpoints thinned. Файл: server/modules/projects/project-work-status-items.service.ts (admin-authored comments + photos listing, с shared assertItemInProject guard). Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / projects communications → modules/projects
+4 endpoints thinned: action-catalog.get, dispatch.post, call-insights/index.post, call-insights/[insightId]/apply.post. Файл: server/modules/projects/project-communications-api.service.ts (buildProjectActionCatalog + dispatchProjectMessage + ingestCallInsight + applyCallInsight, catch CALL_INSIGHT_NOT_FOUND → 404). Проверки: vue-tsc ok, lint-ratchet ok.
