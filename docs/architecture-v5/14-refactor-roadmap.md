@@ -282,6 +282,52 @@ Commit:
 Долги:
 - поддерживать их синхронно после каждого следующего batch
 
+### [done] 2026-04-17 — Governance / lint invariants + coding standards
+Цель: превратить архитектурные правила v5 в исполняемые контракты и закрепить per-file ratchet, чтобы дальнейший рефакторинг не накапливал новый долг.
+
+Файлы:
+- eslint.config.mjs (новый): FSD/DDD/runtime-isolation/shared-purity как no-restricted-imports error-rules; size/complexity budgets как warn.
+- scripts/lint-ratchet.mjs (новый) + .lint-baseline.json: per-file baseline (220 → 218 после demo batch ниже).
+- scripts/verify-architecture-docs.mjs (усилён): INDEX completeness + matrix reality check.
+- docs/architecture-v5/17-coding-standards.md (новый): наименования, размер файлов, LLM-friendly структура, DTO versioning.
+- .githooks/pre-commit: docs:v5:verify + lint:ratchet.
+- CLAUDE.md: раздел ESLint invariants, commit checklist с lint:errors.
+
+Commit:
+- edc80fc chore(lint): add ESLint 9 with v5 architectural invariants
+- 8b3eeaf chore(lint): add per-file lint ratchet to pre-commit
+- b63b919 chore(verify-docs): add INDEX completeness + matrix reality checks
+- c62829b docs(architecture-v5): add 17-coding-standards (size, names, LLM rules)
+
+Проверка:
+- `pnpm lint:errors` — 218 errors (все архитектурные, основной класс — drizzle-orm в server/api/**)
+- `pnpm docs:v5:verify` — 21 file, matrix reality: 10/48 frontend 15 done / 32 pending, 11/60 backend 0 done / 8 with targets, 12/68 messenger 1 pending (остальные — section-local paths вне машинной проверки)
+- `pnpm exec vue-tsc --noEmit` — ok
+
+Долги:
+- матрицы 11 и 12 переписать на repo-root-relative paths, чтобы рaeling-check охватил все 128 строк.
+- поле DTO versioning (17.6) и правило no-default-export (17.7.1) помечены [planned], требуют CI-проверки.
+- bridge-only modules (`server/modules/{auth,projects,chat}/*.service.ts`) выявлены как re-export без логики — не входит в этот batch, запланировано Wave 5 real-content.
+
+### [done] 2026-04-17 — Wave 5 / server/api/auth/me.get.ts → session.service.ts (demo batch)
+Цель: первый настоящий API → module перенос (не bridge), чтобы продемонстрировать шаблон и снять 2 lint error'а с baseline.
+
+Файлы:
+- server/modules/auth/session.service.ts (новый): `resolveSession(event)` + private `resolveAdminUser`, обращения к Drizzle ведутся только здесь.
+- server/api/auth/me.get.ts: сведён к 5 строкам — thin handler вызывает `resolveSession`.
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — ok
+- `pnpm lint:ratchet` — 218 (baseline обновлён). Раньше me.get.ts имел 2 no-restricted-imports error'а (drizzle-orm + ~/server/db/schema), теперь 0.
+- Runtime: поведение идентично — тот же набор ролей, та же fallback-логика DESIGNER_INITIAL_EMAIL, та же инвалидация stale contractor session.
+
+Долги:
+- Остальные auth-эндпоинты (login.post, register.post, recover.post, logout.post, client/contractor варианты) должны быть перенесены аналогично, 18+ error'ов уйдут за один wave.
+- Помечен как шаблон для refactor-wave-executor агента.
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:
