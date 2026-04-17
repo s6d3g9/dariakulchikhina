@@ -98,6 +98,7 @@ function shellQuote(value: string) {
 }
 
 function normalizeText(value: string) {
+  // eslint-disable-next-line no-control-regex
   return value.replace(/\r\n/g, '\n').replace(/\u0000/g, '').trim()
 }
 

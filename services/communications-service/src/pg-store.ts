@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
+// eslint-disable-next-line no-restricted-imports -- communications-service owns a dedicated postgres DSN (COMM_DB_URL), not the main app DB. Architectural debt: tracked for Wave 7 — migrate to REST relay via server/api.
 import postgres, { type Sql } from 'postgres'
 
 import type {

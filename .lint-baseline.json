@@ -1,10 +1,5 @@
 {
-  "generatedAt": "2026-04-17T12:51:02.667Z",
-  "totalErrors": 6,
-  "perFile": {
-    "messenger/core/src/agent-knowledge-store.ts": 1,
-    "messenger/web/app/components/messenger/MessengerAuthField.vue": 1,
-    "messenger/web/app/composables/useMessengerSettings.ts": 3,
-    "services/communications-service/src/pg-store.ts": 1
-  }
+  "generatedAt": "2026-04-17T13:06:35.005Z",
+  "totalErrors": 0,
+  "perFile": {}
 }

@@ -196,13 +196,13 @@ function mergeMessengerAiModelOptions(source?: Partial<MessengerAiModelOptions> 
   const defaults = createDefaultMessengerAiModelOptions()
 
   return {
-    interpretation: Array.from(new Set((Array.isArray(source?.interpretation) ? source?.interpretation : defaults.interpretation)
+    interpretation: Array.from(new Set((Array.isArray(source?.interpretation) ? source!.interpretation! : defaults.interpretation)
       .map(item => normalizeAiModelValue(item))
       .filter(Boolean))),
-    summary: Array.from(new Set((Array.isArray(source?.summary) ? source?.summary : defaults.summary)
+    summary: Array.from(new Set((Array.isArray(source?.summary) ? source!.summary! : defaults.summary)
       .map(item => normalizeAiModelValue(item))
       .filter(Boolean))),
-    transcription: Array.from(new Set((Array.isArray(source?.transcription) ? source?.transcription : defaults.transcription)
+    transcription: Array.from(new Set((Array.isArray(source?.transcription) ? source!.transcription! : defaults.transcription)
       .map(item => normalizeAiModelValue(item))
       .filter(Boolean))),
   }
