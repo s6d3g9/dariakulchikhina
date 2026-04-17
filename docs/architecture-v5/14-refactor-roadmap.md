@@ -358,6 +358,26 @@ Commit:
 - Существующие bridge-файлы `auth.service.ts` (re-export из utils/auth + auth-registration) и `recovery.service.ts` (re-export из utils/recovery-phrase) намеренно не тронуты, т.к. на них ссылается другой код. Их удаление — отдельный batch cleanup-wave.
 - csrf.get.ts и client-id-logout/contractor-logout — мелкие endpoint'ы без DB, invariant-ошибок не имеют, остаются как есть.
 
+### [done] 2026-04-17 — Wave 5 / server/api/admin/{search,notifications} в modules/admin
+Цель: распилить два admin-endpoint'а, у которых была толстая DB-логика внутри handler'а.
+
+Файлы:
+- server/modules/admin/admin-search.service.ts (новый): searchAdminEntities — параллельные запросы по projects/clients/contractors с trim + min-2-chars guard, возвращает SearchResults с href'ами.
+- server/modules/admin/admin-notifications.service.ts (новый): getAdminNotifications — aggregator трёх бакетов (extra-requested, overdue work items, critical hybrid-control) с готовыми labels.
+- server/api/admin/search.get.ts (thin): парсит q, проверяет requireAdmin, делегирует.
+- server/api/admin/notifications.get.ts (thin): requireAdmin + делегирует.
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — ok
+- `pnpm lint:ratchet` — 196 (baseline 200 → 196, -4). 2 endpoint'а × 2 import'а (drizzle-orm + db/schema) = 4.
+- Runtime-поведение идентично: тот же MIN_QUERY_LENGTH=2, LIMIT=6, те же href-паттерны, тот же порядок бакетов в notifications.
+
+Долги:
+- Рядом лежат ещё server/api/admin/contractors/[id]/preview.get.ts и другие admin-ручки с fat-handlers — отдельная волна по admin-CRUD.
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:

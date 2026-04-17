@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-17T07:59:41.489Z",
-  "totalErrors": 200,
+  "generatedAt": "2026-04-17T08:22:00.295Z",
+  "totalErrors": 196,
   "perFile": {
     "app/components/AdminDocumentEditor.vue": 2,
     "app/components/AdminSitePhotos.vue": 1,
@@ -9,8 +9,6 @@
     "messenger/web/app/components/messenger/MessengerAuthField.vue": 1,
     "messenger/web/app/composables/useMessengerSettings.ts": 3,
     "server/api/admin/contractors/[id]/preview.get.ts": 2,
-    "server/api/admin/notifications.get.ts": 2,
-    "server/api/admin/search.get.ts": 2,
     "server/api/ai/document-stream.post.ts": 5,
     "server/api/ai/legal-status.get.ts": 1,
     "server/api/clients/[id].delete.ts": 2,
