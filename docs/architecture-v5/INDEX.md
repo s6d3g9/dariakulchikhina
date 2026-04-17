@@ -21,7 +21,8 @@
 14. [Roadmap исполнения рефакторинга](./14-refactor-roadmap.md)
 15. [Аудит соответствия target-архитектуре](./15-target-alignment-audit.md)
 16. [Playbook расширения (новые микросервисы и приложения)](./16-extensibility-playbook.md)
-17. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
+17. [Coding Standards: файлы, имена, LLM-friendly структура](./17-coding-standards.md)
+18. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
 
 ## Операционные отчеты
 1. [Refactor tail report](./refactor-tail-report.md)
