@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import AdminDocumentEditor from '~/components/AdminDocumentEditor.vue'
+import AdminDocumentEditor from '~/widgets/documents/AdminDocumentEditor.vue'
 
 defineProps<{
   templates: unknown[]

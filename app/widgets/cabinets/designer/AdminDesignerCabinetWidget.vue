@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import AdminDesignerCabinet from '~/components/AdminDesignerCabinet.vue'
+import AdminDesignerCabinet from '~/widgets/cabinets/designer/AdminDesignerCabinet.vue'
 
 defineProps<{
   designerId: number
