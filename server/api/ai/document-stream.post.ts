@@ -298,9 +298,9 @@ function parseStreamReviewNotes(text: string): Array<{ type: 'error' | 'info'; t
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
   for (const line of lines) {
     if (line.startsWith('⚠️') || line.startsWith('❌')) {
-      notes.push({ type: 'error', text: line.replace(/^[⚠️❌]\s*/, '') })
+      notes.push({ type: 'error', text: line.replace(/^(?:⚠️|❌)\s*/, '') })
     } else if (line.startsWith('💡') || line.startsWith('✅') || line.startsWith('ℹ️')) {
-      notes.push({ type: 'info', text: line.replace(/^[💡✅ℹ️]\s*/, '') })
+      notes.push({ type: 'info', text: line.replace(/^(?:💡|✅|ℹ️)\s*/, '') })
     } else if (line.length > 10 && !line.startsWith('---') && !line.startsWith('ДОКУМЕНТ')) {
       notes.push({ type: 'info', text: line })
     }
