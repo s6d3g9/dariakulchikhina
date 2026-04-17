@@ -378,6 +378,42 @@ Commit:
 Долги:
 - Рядом лежат ещё server/api/admin/contractors/[id]/preview.get.ts и другие admin-ручки с fat-handlers — отдельная волна по admin-CRUD.
 
+### [done] 2026-04-17 — Wave 6 / split server/db/schema.ts → per-domain files
+Цель: разложить 511-строковый монолит `server/db/schema.ts` по доменным файлам под `server/db/schema/`, сохранив полностью совместимую import-поверхность через barrel.
+
+Файлы (новые, все под server/db/schema/):
+- users.ts — users, adminSettings
+- clients.ts — clients
+- projects.ts — projects, pageConfigs, pageContent
+- contractors.ts — contractors, projectContractors, contractorDocuments
+- work-status.ts — workStatusItems, workStatusItemPhotos, workStatusItemComments
+- uploads.ts — uploads, galleryItems
+- documents.ts — documents, projectExtraServices
+- designers.ts — designers, designerProjects, designerProjectClients, designerProjectContractors
+- sellers.ts — sellers, sellerProjects
+- managers.ts — managers, managerProjects
+- project-governance.ts — projectParticipants, projectScopeAssignments, projectScopeSettings
+- relations.ts — ВСЕ `relations(...)` (вынесены в отдельный файл, чтобы избежать циклов между per-domain таблицами)
+- index.ts — barrel, `export * from './*'`
+
+Удалено:
+- server/db/schema.ts
+
+Изменено:
+- drizzle.config.ts: `schema: './server/db/schema/*.ts'` — glob вместо одного файла. Drizzle-kit автоматически подхватит все per-domain таблицы.
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — ok (все существующие import'ы `from '~/server/db/schema'` продолжают работать через barrel)
+- `pnpm lint:ratchet` — 196 (baseline неизменён, split не менял логику)
+- `pnpm docs:v5:verify` — ok
+
+Долги:
+- Следующий deploy нужно прогнать через `pnpm db:generate --dry-run` (или эквивалент), убедиться что drizzle-kit не сгенерит пустую diff-миграцию из-за glob-путей — схема осталась идентичной, но kit может по-другому упорядочить импорты.
+- `server/db/index.ts` (DB client wiring) не тронут.
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:
