@@ -1,4 +1,4 @@
-import { relayProjectCommunicationEventStream } from '~/server/utils/project-communications-relay'
+import { relayProjectCommunicationEventStream } from '~/server/modules/communications/project-communications-relay.service'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')

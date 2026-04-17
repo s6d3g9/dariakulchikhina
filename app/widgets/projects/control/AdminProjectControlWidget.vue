@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import AdminProjectControl from '~/components/AdminProjectControl.vue'
+import AdminProjectControl from '~/widgets/projects/control/AdminProjectControl.vue'
 
 defineProps<{ slug: string }>()
 </script>

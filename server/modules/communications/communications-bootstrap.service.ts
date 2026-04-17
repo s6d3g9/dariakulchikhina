@@ -5,7 +5,7 @@ import type { H3Event } from 'h3'
 import { useDb } from '~/server/db'
 import { contractors, projectContractors, projects, users } from '~/server/db/schema'
 import { getAdminSession, getClientSession, getContractorSession } from '~/server/utils/auth'
-import { getProjectRelationsSnapshot } from '~/server/utils/project-relations'
+import { getProjectRelationsSnapshot } from '~/server/modules/projects/project-relations.service'
 import type { ProjectCommunicationBootstrap } from '~/shared/types/communications/communications'
 import { buildHybridCoordinationBrief, ensureHybridControl } from '~/shared/utils/project/project-control'
 

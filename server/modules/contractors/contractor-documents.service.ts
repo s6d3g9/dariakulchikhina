@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { eq, and } from 'drizzle-orm'
 import { useDb } from '~/server/db/index'
 import { contractorDocuments } from '~/server/db/schema'
-import { validateUploadedFile } from '~/server/utils/upload-validation'
+import { validateUploadedFile } from '~/server/modules/uploads/upload-validation.service'
 
 const CONTRACTOR_DOC_DIR = join(
   process.cwd(),

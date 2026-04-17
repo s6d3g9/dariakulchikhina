@@ -1,7 +1,7 @@
 import type { CommunicationMessagesResponse } from '~/shared/types/communications'
 import { CommunicationListMessagesQuerySchema } from '~/shared/types/communications'
 import { safeGetQuery } from '~/server/utils/query'
-import { relayProjectCommunicationJson } from '~/server/utils/project-communications-relay'
+import { relayProjectCommunicationJson } from '~/server/modules/communications/project-communications-relay.service'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')

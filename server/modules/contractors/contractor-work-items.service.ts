@@ -11,8 +11,8 @@ import {
   projects,
   contractors,
 } from '~/server/db/schema'
-import { ensureUploadDir, getUploadDir, getUploadUrl } from '~/server/utils/storage'
-import { validateUploadedFile } from '~/server/utils/upload-validation'
+import { ensureUploadDir, getUploadDir, getUploadUrl } from '~/server/modules/uploads/upload-storage.service'
+import { validateUploadedFile } from '~/server/modules/uploads/upload-validation.service'
 import { resolveContractorAndStaffIds } from './contractors.service'
 
 export const CreateWorkItemSchema = z.object({

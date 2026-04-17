@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import AdminContractorCabinet from '~/components/AdminContractorCabinet.vue'
+import AdminContractorCabinet from '~/widgets/cabinets/contractor/AdminContractorCabinet.vue'
 
 defineProps<{
   contractorId: number

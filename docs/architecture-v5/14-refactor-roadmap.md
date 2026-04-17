@@ -713,3 +713,26 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / chat-users → modules/chat
 Перенос standalone-chat-users.ts в server/modules/chat/chat-users.service.ts. Utility стала re-export bridge. 8 chat handlers обновлены. Delta: 0 lint. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / bridge inversions batch 1 (uploads, ai, projects, communications, chat)
+Инвертированы 9 reverse bridges: upload-storage, upload-validation, gemma, rag, project-work-status, project-relations, projects, communications-bootstrap, chat-communications. Каждый utils/* стал re-export bridge, реальный код перемещён в modules/*. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / bridge inversions batch 2 (auth/recovery, ai/gemma-prompts, communications/relay)
+Инвертированы 3 reverse bridges: auth/recovery.service.ts (wordlist), ai/gemma-prompts.ts (system prompts), communications/project-communications-relay.service.ts (SSE proxy). Коммит: 7e7e2c7. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / bridge inversions batch 3 (projects: extra-service-docs, comms-actions, governance)
+Инвертированы 3 крупных reverse bridge: extra-service-documents (235 л → project-extra-service-documents.service.ts), project-communications-actions (685 л → split на project-comms-action-helpers + project-comms-actions), project-governance (2082 л → split на 3: project-governance-state, project-governance-summary, project-governance.service). Коммит: a4aba4d. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 3 / frontend FSD component moves (batches 1-3)
+Перенесено 22 компонента из app/components/ в правильные FSD-слои:
+- Batch 1: Glass/App/Cab leaf UI → app/shared/ui/ (surfaces, buttons, forms, overlays, navigation, feedback)
+- Batch 2: shells, entity-create, page-content, ui-editor, app-blueprint, design-system entities → app/widgets/shells, app/entities/*, app/features/*
+- Batch 3: gallery (AdminGallery, GalleryFilter/Lightbox/Masonry), materials (AdminMaterials, MaterialProperty*), communications (ProjectCommunicationsPanel) → app/widgets/ + app/entities/*
+nuxt.config.ts расширен: добавлены пути ~/shared/ui, ~/widgets, ~/entities, ~/features в components[].
+Коммиты: ec85dad, e351f7f, 9a63d44. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Docs / matrix accuracy fixes
+Исправлены неточности в матрицах переноса:
+- 11-backend: source-пути admin-settings (admin-settings → admin/), extra-services (flat → nested directory), suggest и upload отмечены как stays (no DB). Целевые service-файлы уточнены: project-status/client-profile → project-mutations.service.ts, page-content/page-answers → project-pages.service.ts. Удалены несуществующие agent-registry/agent-chat entries.
+- 10-frontend: удалена запись StandaloneChatPanel.vue (файл никогда не существовал в репозитории).
+Результат: 10-frontend: 47/47 done, 0 pending, 0 missing. 11-backend: 0 pending, 0 missing. Проверка: pnpm docs:v5:verify — ok.

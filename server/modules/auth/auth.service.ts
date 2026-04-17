@@ -1,2 +1,2 @@
 export * from '../../utils/auth'
-export * from '../../utils/auth-registration'
+export * from '~/server/modules/auth/auth-registration.service'

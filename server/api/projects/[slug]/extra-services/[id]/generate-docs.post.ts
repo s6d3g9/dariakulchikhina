@@ -1,4 +1,4 @@
-import { generateExtraServiceDocuments } from '~/server/utils/extra-service-documents'
+import { generateExtraServiceDocuments } from '~/server/modules/projects/project-extra-service-documents.service'
 
 /**
  * POST /api/projects/[slug]/extra-services/[id]/generate-docs

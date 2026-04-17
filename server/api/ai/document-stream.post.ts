@@ -6,8 +6,8 @@
 
 import type { ServerResponse } from 'node:http'
 import { buildAiStreamContext } from '~/server/modules/ai/ai.service'
-import { retrieveLegalContextWithChunks, type LegalChunkWithScore } from '~/server/utils/rag'
-import { GEMMA_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from '~/server/utils/gemma-prompts'
+import { retrieveLegalContextWithChunks, type LegalChunkWithScore } from '~/server/modules/ai/rag.service'
+import { GEMMA_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from '~/server/modules/ai/gemma-prompts'
 import { z } from 'zod'
 
 // Локальные модели по умолчанию

@@ -1,4 +1,4 @@
-import { getProjectById } from '~/server/utils/projects'
+import { getProjectById } from '~/server/modules/projects/projects.service'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)

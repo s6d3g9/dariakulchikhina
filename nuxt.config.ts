@@ -4,6 +4,14 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/ui', '@pinia/nuxt'],
 
+  components: [
+    { path: '~/components', pathPrefix: false },
+    { path: '~/shared/ui', pathPrefix: false },
+    { path: '~/widgets', pathPrefix: false },
+    { path: '~/entities', pathPrefix: false, extensions: ['.vue'] },
+    { path: '~/features', pathPrefix: false, extensions: ['.vue'] },
+  ],
+
   ui: {
     fonts: false,
   },

@@ -8,8 +8,8 @@ import {
   verifyPassword,
   setContractorSession,
 } from '~/server/utils/auth'
-import { generateRecoveryPhrase } from '~/server/utils/recovery-phrase'
-import { createUniqueContractorSlug } from '~/server/utils/auth-registration'
+import { generateRecoveryPhrase } from '~/server/modules/auth/recovery.service'
+import { createUniqueContractorSlug } from '~/server/modules/auth/auth-registration.service'
 import type {
   ContractorRegisterInput,
   ContractorRecoverInput,

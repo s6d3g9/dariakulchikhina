@@ -1,4 +1,4 @@
-import { buildProjectCommunicationBootstrap } from '~/server/utils/communications'
+import { buildProjectCommunicationBootstrap } from '~/server/modules/communications/communications-bootstrap.service'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')

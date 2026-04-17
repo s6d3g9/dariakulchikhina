@@ -63,7 +63,6 @@
 - MaterialPropertyEditor.vue -> app/entities/materials/ui/MaterialPropertyEditor.vue
 - MaterialPropertyPanel.vue -> app/entities/materials/ui/MaterialPropertyPanel.vue
 - ProjectCommunicationsPanel.vue -> app/entities/communications/ui/ProjectCommunicationsPanel.vue
-- StandaloneChatPanel.vue -> app/entities/communications/ui/StandaloneChatPanel.vue
 - useProjectCommunicationsBootstrap.ts -> app/entities/communications/model/useProjectCommunicationsBootstrap.ts
 - useStandaloneCommunicationsBootstrap.ts -> app/entities/communications/model/useStandaloneCommunicationsBootstrap.ts
 - useAgentRegistry.ts -> app/entities/agents/model/useAgentRegistry.ts

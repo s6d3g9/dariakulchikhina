@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import AdminGallery from '~/components/AdminGallery.vue'
+import AdminGallery from '~/widgets/gallery/AdminGallery.vue'
 
 defineProps<{
   category: string

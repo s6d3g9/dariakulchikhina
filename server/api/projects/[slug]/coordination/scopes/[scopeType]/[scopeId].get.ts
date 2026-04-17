@@ -1,6 +1,6 @@
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
 import { requireAdminOrClient } from '~/server/utils/auth'
-import { buildProjectScopeDetail, getProjectGovernanceProject } from '~/server/utils/project-governance'
+import { buildProjectScopeDetail, getProjectGovernanceProject } from '~/server/modules/projects/project-governance.service'
 import { ProjectScopeTypeSchema } from '~/shared/types/project-governance'
 
 export default defineEventHandler(async (event) => {

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { eq, and, like, isNull } from 'drizzle-orm'
 import { useDb } from '~/server/db/index'
 import { documents } from '~/server/db/schema'
-import { validateUploadedFile } from '~/server/utils/upload-validation'
+import { validateUploadedFile } from '~/server/modules/uploads/upload-validation.service'
 
 const DESIGNER_DOC_DIR = join(
   process.cwd(),

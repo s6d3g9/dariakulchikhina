@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { eq, and, sql, asc, like, isNull } from 'drizzle-orm'
 import { useDb } from '~/server/db/index'
 import { clients, projects, documents } from '~/server/db/schema'
-import { validateUploadedFile } from '~/server/utils/upload-validation'
+import { validateUploadedFile } from '~/server/modules/uploads/upload-validation.service'
 
 // ── Schemas ────────────────────────────────────────────────────────────
 

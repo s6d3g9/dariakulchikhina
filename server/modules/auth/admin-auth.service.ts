@@ -7,7 +7,7 @@ import {
   verifyPassword,
   setAdminSession,
 } from '~/server/utils/auth'
-import { generateRecoveryPhrase } from '~/server/utils/recovery-phrase'
+import { generateRecoveryPhrase } from '~/server/modules/auth/recovery.service'
 import type {
   LoginInput,
   RegisterInput,
