@@ -9,7 +9,7 @@ import {
   setContractorSession,
 } from '~/server/utils/auth'
 import { generateRecoveryPhrase } from '~/server/utils/recovery-phrase'
-import { createUniqueContractorSlug } from '~/server/utils/auth-registration'
+import { createUniqueContractorSlug } from '~/server/modules/auth/auth-registration.service'
 import type {
   ContractorRegisterInput,
   ContractorRecoverInput,

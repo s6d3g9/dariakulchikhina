@@ -9,7 +9,7 @@ import {
   setClientSession,
 } from '~/server/utils/auth'
 import { generateRecoveryPhrase } from '~/server/utils/recovery-phrase'
-import { createUniqueProjectSlug } from '~/server/utils/auth-registration'
+import { createUniqueProjectSlug } from '~/server/modules/auth/auth-registration.service'
 import type {
   ClientRegisterInput,
   ClientRecoverInput,
