@@ -713,3 +713,12 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / chat-users → modules/chat
 Перенос standalone-chat-users.ts в server/modules/chat/chat-users.service.ts. Utility стала re-export bridge. 8 chat handlers обновлены. Delta: 0 lint. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / bridge inversions batch 1 (uploads, ai, projects, communications, chat)
+Инвертированы 9 reverse bridges: upload-storage, upload-validation, gemma, rag, project-work-status, project-relations, projects, communications-bootstrap, chat-communications. Каждый utils/* стал re-export bridge, реальный код перемещён в modules/*. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / bridge inversions batch 2 (auth/recovery, ai/gemma-prompts, communications/relay)
+Инвертированы 3 reverse bridges: auth/recovery.service.ts (wordlist), ai/gemma-prompts.ts (system prompts), communications/project-communications-relay.service.ts (SSE proxy). Коммит: 7e7e2c7. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [done] 2026-04-17 — Wave 5 / bridge inversions batch 3 (projects: extra-service-docs, comms-actions, governance)
+Инвертированы 3 крупных reverse bridge: extra-service-documents (235 л → project-extra-service-documents.service.ts), project-communications-actions (685 л → split на project-comms-action-helpers + project-comms-actions), project-governance (2082 л → split на 3: project-governance-state, project-governance-summary, project-governance.service). Коммит: a4aba4d. Проверки: vue-tsc ok, lint-ratchet ok.
