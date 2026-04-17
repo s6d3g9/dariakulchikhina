@@ -33,7 +33,10 @@
     "migrate:json": "node --experimental-vm-modules scripts/migrate-json-to-pg.mjs",
     "migrate:designer-catalog-keys": "node scripts/migrate-designer-catalog-keys.mjs",
     "docs:v5:verify": "node scripts/verify-architecture-docs.mjs",
-    "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1"
+    "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1",
+    "lint": "eslint . --max-warnings=99999",
+    "lint:errors": "eslint . --quiet",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@nuxt/ui": "^3.1.0",
@@ -52,11 +55,17 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@nuxt/devtools": "latest",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.13.10",
     "drizzle-kit": "^0.30.4",
+    "eslint": "^9.39.4",
+    "eslint-plugin-vue": "^9.33.0",
+    "globals": "^15.15.0",
     "typescript": "^5.8.2",
+    "typescript-eslint": "^8.58.2",
+    "vue-eslint-parser": "^9.4.3",
     "vue-tsc": "^2.2.12"
   },
   "pnpm": {

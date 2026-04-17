@@ -45,6 +45,9 @@ pnpm messenger:core:dev           # Messenger realtime core
 pnpm comm:dev                     # communications-service (hot)
 pnpm comm:typecheck               # Typecheck communications-service
 pnpm exec vue-tsc --noEmit        # Typecheck main app (no build)
+pnpm lint                         # ESLint (all warnings + errors)
+pnpm lint:errors                  # ESLint errors only — architectural invariants
+pnpm lint:fix                     # ESLint auto-fix
 pnpm db:generate                  # Drizzle: generate SQL from schema
 pnpm db:migrate                   # Drizzle: apply migrations
 pnpm db:studio                    # Drizzle studio
@@ -53,6 +56,32 @@ pnpm deploy:safe:prod:dry-run     # Deploy dry-run (safe)
 pnpm deploy:safe:prod:preflight   # Preflight only
 pnpm snapshot:list                # List pre-deploy snapshots
 ```
+
+## ESLint: architectural invariants
+
+`eslint.config.mjs` encodes the v5 invariants as enforceable rules.
+Any change that violates one is a merge blocker; `pnpm lint:errors`
+must return zero on PR-ready branches.
+
+**Hard rules (error):**
+- `shared/**` — cannot import from `app/`, `server/`, `messenger/`, `services/`, or any DB/runtime driver (`postgres`, `drizzle-orm`, `ioredis`, `h3`, `nuxt`). It is the pure contract layer.
+- `server/api/**` — cannot import `drizzle-orm` or `server/db/schema*` directly. Fat API handlers go behind `server/modules/<domain>/`.
+- `messenger/**` and `services/communications-service/**` — cannot import from `app/`, `server/`, the other runtime, or a DB driver. The only allowed cross-boundary import is `shared/**`.
+- FSD direction: `app/entities/**` cannot import from `widgets/features/pages`; `app/widgets/**` cannot import from `pages`; `app/features/**` cannot import from `widgets/pages`.
+
+**Soft rules (warn):**
+- File size: 500 lines.
+- Function size: 120 lines.
+- Cyclomatic complexity: 15.
+- Max nesting depth: 4.
+- Max function params: 5.
+- `@typescript-eslint/no-explicit-any`.
+- `@typescript-eslint/no-unused-vars` (ignore `_`-prefixed).
+- `vue/no-v-html`, `vue/no-mutating-props`.
+
+Overrides: Nuxt middleware/plugins/pages/layouts, `*.config.ts`, and `scripts/**` are relaxed (framework contracts or one-shot helpers).
+
+Current baseline (captured at lint setup): **220 errors** — 207 of them are fat API handlers in `server/api/**` importing Drizzle. They form the next refactor wave's backlog.
 
 ## Deploy rules
 
@@ -69,7 +98,8 @@ pnpm snapshot:list                # List pre-deploy snapshots
 - **Before you commit code that touches `app/` or `server/`:**
   1. `pnpm exec vue-tsc --noEmit` (frontend/shared typecheck)
   2. `pnpm comm:typecheck` if `services/communications-service/**` changed
-  3. Update `docs/architecture-v5/14-refactor-roadmap.md` if the change is a wave/batch step
+  3. `pnpm lint:errors` — must report no new architectural violations
+  4. Update `docs/architecture-v5/14-refactor-roadmap.md` if the change is a wave/batch step
 - **Do not create new top-level directories** without reading `02-monorepo-structure.md` and `16-extensibility-playbook.md`.
 - **Do not touch `cityfarm/`** unless asked — it's out of v5 scope.
 - **Do not edit generated files:** `.nuxt/`, `.output/`, `drizzle/` migrations once shipped, `node_modules/`, `builds/`.
