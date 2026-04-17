@@ -1,0 +1,101 @@
+import { writeFile, mkdir, unlink } from 'node:fs/promises'
+import { join, extname } from 'node:path'
+import { randomUUID } from 'node:crypto'
+import { eq, and } from 'drizzle-orm'
+import { useDb } from '~/server/db/index'
+import { contractorDocuments } from '~/server/db/schema'
+import { validateUploadedFile } from '~/server/utils/upload-validation'
+
+const CONTRACTOR_DOC_DIR = join(
+  process.cwd(),
+  'public',
+  'uploads',
+  'contractor-docs',
+)
+
+export async function listContractorDocuments(contractorId: number) {
+  const db = useDb()
+  return db
+    .select()
+    .from(contractorDocuments)
+    .where(eq(contractorDocuments.contractorId, contractorId))
+    .orderBy(contractorDocuments.createdAt)
+}
+
+export interface UploadContractorDocumentInput {
+  contractorId: number
+  fileData: Buffer | Uint8Array
+  filename: string | undefined
+  mimeType: string | undefined
+  title: string
+  category: string
+  notes: string | null
+  expiresAt: string | null
+}
+
+/**
+ * Validate and write a contractor document to the uploads directory,
+ * then persist the row. Multipart parsing is done by the handler so the
+ * service stays runtime-agnostic.
+ */
+export async function uploadContractorDocument(input: UploadContractorDocumentInput) {
+  const validation = validateUploadedFile(
+    input.fileData,
+    input.filename,
+    input.mimeType,
+  )
+  if (!validation.valid) {
+    throw createError({ statusCode: 400, message: validation.error })
+  }
+
+  const ext = extname(input.filename || '.pdf')
+  const filename = `contractor_${input.contractorId}_${randomUUID()}${ext}`
+  await mkdir(CONTRACTOR_DOC_DIR, { recursive: true })
+  await writeFile(join(CONTRACTOR_DOC_DIR, filename), input.fileData)
+
+  const url = `/uploads/contractor-docs/${filename}`
+  const db = useDb()
+  const [doc] = await db
+    .insert(contractorDocuments)
+    .values({
+      contractorId: input.contractorId,
+      category: input.category,
+      title: input.title,
+      filename,
+      url,
+      notes: input.notes,
+      expiresAt: input.expiresAt,
+    })
+    .returning()
+  return doc
+}
+
+/**
+ * Delete a contractor document. Verifies the doc belongs to the
+ * contractor before removing the row and unlinking the file.
+ */
+export async function deleteContractorDocument(contractorId: number, docId: number) {
+  const db = useDb()
+  const [doc] = await db
+    .select()
+    .from(contractorDocuments)
+    .where(
+      and(
+        eq(contractorDocuments.id, docId),
+        eq(contractorDocuments.contractorId, contractorId),
+      ),
+    )
+    .limit(1)
+  if (!doc) return null
+
+  if (doc.filename) {
+    try {
+      await unlink(join(CONTRACTOR_DOC_DIR, doc.filename))
+    } catch {
+      // ignore — file may already be gone
+    }
+  }
+
+  await db.delete(contractorDocuments).where(eq(contractorDocuments.id, docId))
+  return doc
+}

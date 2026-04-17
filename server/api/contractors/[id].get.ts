@@ -1,16 +1,13 @@
-import { useDb } from '~/server/db/index'
-import { contractors } from '~/server/db/schema'
-import { eq } from 'drizzle-orm'
+import { getContractor } from '~/server/modules/contractors/contractors.service'
 
+/**
+ * GET /api/contractors/[id] — fetch a contractor row (slug stripped).
+ * Accessible to the admin or the contractor themselves.
+ */
 export default defineEventHandler(async (event) => {
-  const idParam = getRouterParam(event, 'id')!
-  const id = Number(idParam)
-  // Allow admin or the contractor themselves
+  const id = Number(getRouterParam(event, 'id')!)
   requireAdminOrContractor(event, id)
-  const db = useDb()
-  const [contractor] = await db.select().from(contractors).where(eq(contractors.id, id)).limit(1)
+  const contractor = await getContractor(id)
   if (!contractor) throw createError({ statusCode: 404 })
-  // Strip sensitive fields — slug is used for contractor auth
-  const { slug: _slug, ...safe } = contractor
-  return safe
+  return contractor
 })

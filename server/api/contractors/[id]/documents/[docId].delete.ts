@@ -1,30 +1,15 @@
-import { useDb } from '~/server/db/index'
-import { contractorDocuments } from '~/server/db/schema'
-import { eq, and } from 'drizzle-orm'
-import { unlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { deleteContractorDocument } from '~/server/modules/contractors/contractor-documents.service'
 
+/**
+ * DELETE /api/contractors/[id]/documents/[docId] — remove a document
+ * belonging to the contractor and unlink the file.
+ */
 export default defineEventHandler(async (event) => {
   const contractorId = Number(getRouterParam(event, 'id'))
   const docId = Number(getRouterParam(event, 'docId'))
   requireAdminOrContractor(event, contractorId)
 
-  const db = useDb()
-  const [doc] = await db
-    .select()
-    .from(contractorDocuments)
-    .where(and(eq(contractorDocuments.id, docId), eq(contractorDocuments.contractorId, contractorId)))
-    .limit(1)
-
-  if (!doc) throw createError({ statusCode: 404 })
-
-  // Try to delete file from disk
-  if (doc.filename) {
-    try {
-      await unlink(join(process.cwd(), 'public', 'uploads', 'contractor-docs', doc.filename))
-    } catch { /* ignore */ }
-  }
-
-  await db.delete(contractorDocuments).where(eq(contractorDocuments.id, docId))
+  const deleted = await deleteContractorDocument(contractorId, docId)
+  if (!deleted) throw createError({ statusCode: 404 })
   return { ok: true }
 })

@@ -580,6 +580,38 @@ Commit:
 Долги:
 - Следующая цель: contractors (ещё крупнее, с document scoping); designers, sellers, managers (средний объём).
 
+### [done] 2026-04-17 — Wave 5 / contractors full domain → modules/contractors (3 сервиса)
+Цель: перенести самый крупный остаток Wave 5: 19 endpoint'ов contractors (CRUD + self-update + staff + projects + документы + work-items с комментариями и фотографиями). Delta −36 (159 → 123). Крупнейший batch за день.
+
+Файлы:
+- server/modules/contractors/contractors.service.ts (новый):
+  - `ContractorSelfUpdateSchema` (все поля, которые подрядчик может править сам)
+  - `listContractors` — joins с project_contractors и projects через array_agg (одним запросом), strip auth-slug из ответа
+  - `createContractor`, `getContractor`, `updateContractorAsAdmin`, `updateContractorSelf`, `deleteContractor` (с cascade на `parent_id`-children)
+  - `listContractorStaff(parentId)` — подчинённые по parent_id
+  - `listContractorProjects(contractorId)` — через project_contractors
+  - `resolveContractorAndStaffIds(contractorId)` — shared helper для work-items scope
+- server/modules/contractors/contractor-documents.service.ts (новый): list/upload/delete для contractorDocuments, файлы в `public/uploads/contractor-docs/`.
+- server/modules/contractors/contractor-work-items.service.ts (новый):
+  - `CreateWorkItemSchema`, `UpdateWorkItemSchema`, `CommentSchema`
+  - `listContractorWorkItems` — все items компании+staff с аннотацией assignedToName + photo/comment counts (агрегация одним запросом)
+  - `createWorkItem` — проверка targetId = self или входит в staff, resolve projectSlug
+  - `updateWorkItem` — scope-filtered update через allowedIds
+  - `assertContractorOwnsItem` (private) — shared 403-guard
+  - comments/photos: list/add/delete + photo upload через ensureUploadDir/getUploadUrl
+- 19 thin handlers в server/api/contractors/.
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — ok (1 type-fix: `item.contractorId` typed как `number | null`, добавлен `!== null` guard перед индексом staffMap)
+- `pnpm lint:ratchet` — 123 (baseline 159 → 123, ровно −36)
+- Runtime идентичен: slug-strip в admin list, 403 при попытке создать item вне staff, scope-проверки во всех sub-endpoints, path-traversal guard в delete photo.
+
+Долги:
+- Next: designers (сложные packages/services JSONB поля), sellers, managers.
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:

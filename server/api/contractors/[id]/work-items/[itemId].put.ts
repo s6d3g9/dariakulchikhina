@@ -1,39 +1,19 @@
-import { useDb } from '~/server/db/index'
-import { workStatusItems, contractors } from '~/server/db/schema'
-import { eq, and, inArray } from 'drizzle-orm'
-import { z } from 'zod'
+import {
+  updateWorkItem,
+  UpdateWorkItemSchema,
+} from '~/server/modules/contractors/contractor-work-items.service'
 
-const UpdateSchema = z.object({
-  status: z.string().optional(),
-  notes: z.string().nullable().optional(),
-  dateStart: z.string().nullable().optional(),
-  dateEnd: z.string().nullable().optional(),
-})
-
+/**
+ * PUT /api/contractors/[id]/work-items/[itemId] — partial update of an
+ * item belonging to the contractor or its staff.
+ */
 export default defineEventHandler(async (event) => {
   const contractorId = Number(getRouterParam(event, 'id'))
   const itemId = Number(getRouterParam(event, 'itemId'))
-  // Auth: admin or the contractor themselves
   requireAdminOrContractor(event, contractorId)
 
-  const body = await readValidatedNodeBody(event, UpdateSchema)
-  const db = useDb()
-
-  // Разрешаем редактировать задачи своих мастеров (если это компания)
-  const staff = await db
-    .select({ id: contractors.id })
-    .from(contractors)
-    .where(eq(contractors.parentId, contractorId))
-  const allIds = [contractorId, ...staff.map((s: any) => s.id)]
-
-  const [updated] = await db
-    .update(workStatusItems)
-    .set(body)
-    .where(and(
-      eq(workStatusItems.id, itemId),
-      inArray(workStatusItems.contractorId, allIds),
-    ))
-    .returning()
+  const body = await readValidatedNodeBody(event, UpdateWorkItemSchema)
+  const updated = await updateWorkItem(contractorId, itemId, body)
   if (!updated) throw createError({ statusCode: 404 })
   return updated
 })

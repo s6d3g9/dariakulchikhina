@@ -1,16 +1,16 @@
-import { useDb } from '~/server/db/index'
-import { contractors } from '~/server/db/schema'
-import { eq } from 'drizzle-orm'
 import { UpdateContractorSchema } from '~/shared/types/contractor'
+import { updateContractorAsAdmin } from '~/server/modules/contractors/contractors.service'
 
+/**
+ * PUT /api/contractors/[id] — admin-scoped full update. Slug is
+ * stripped from the response because it is part of the contractor's
+ * auth surface.
+ */
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const id = Number(getRouterParam(event, 'id')!)
   const body = await readValidatedNodeBody(event, UpdateContractorSchema)
-  const db = useDb()
-  const [updated] = await db.update(contractors).set(body).where(eq(contractors.id, id)).returning()
+  const updated = await updateContractorAsAdmin(id, body)
   if (!updated) throw createError({ statusCode: 404 })
-  // Strip auth-sensitive slug from response
-  const { slug: _slug, ...safe } = updated as Record<string, any>
-  return safe
+  return updated
 })
