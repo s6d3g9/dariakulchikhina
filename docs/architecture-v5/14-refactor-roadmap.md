@@ -739,3 +739,6 @@ nuxt.config.ts расширен: добавлены пути ~/shared/ui, ~/widg
 
 ### [done] 2026-04-17 — Wave 7 / infrastructure: config + domain errors + handler plugin
 Создано: server/config.ts (Zod-валидация 16 env vars на старте, fail-fast; derived helpers getMessengerOriginAllowList, getSessionSecret), server/utils/errors.ts (DomainError + NotFound/Conflict/Validation/Forbidden/Unauthorized/RateLimit/UpstreamError + resolveDomainErrorStatus), server/plugins/error-handler.ts (Nitro plugin маппит DomainError → HTTP JSON). Coexist с legacy createError. Проверки: vue-tsc ok.
+
+### [done] 2026-04-17 — Wave 7 / structured logging + request context
+Pino-logger + AsyncLocalStorage для correlation-id. Файлы: server/utils/request-context.ts (enterRequestContext/runInRequestContext/getRequestContext/updateRequestContext через AsyncLocalStorage), server/utils/logger.ts (pino + pretty в dev + redact secrets + auto-inject requestId/userId/role из контекста), server/plugins/request-context.ts (Nitro plugin с hooks.hook('request') + enterWith, echo x-request-id header). pnpm add: pino 10.3, pino-pretty 13.1. Проверки: vue-tsc ok.
