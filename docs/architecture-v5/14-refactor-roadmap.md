@@ -789,3 +789,12 @@ server/modules/ai/ai.repository.ts (listLegalSourceCounts, findProjectBySlug, li
 - `project-governance-state.service.ts` оставлен без изменений относительно drizzle — не импортировал его до сплита.
 
 Проверки: vue-tsc exit 0, lint:errors 0 новых нарушений.
+
+### [done] 2026-04-18 — Wave 7 / auth repository layer split + communications + projects cherry-pick
+Создан `server/modules/auth/auth.repository.ts` (22 функции): admin/users — findUserByLoginOrEmail, findUserById, findUserByEmail, findFirstUser, findUserForRecovery, findUserByLoginOrEmailExists, insertUser, updateUserPassword; client/projects — findProjectByClientSlug, findProjectWithPasswordByClientLogin, findProjectByClientLogin, findProjectWithRecoveryByClientLogin, projectSlugExists, insertClientProject, updateProjectClientPassword; contractor — findContractorById, findContractorWithPasswordByLogin, findContractorByLogin, findContractorWithRecoveryByLogin, contractorSlugExists, insertContractor, updateContractorPassword; session — findContractorIdForSession.
+
+Обновлено 6 файлов: admin-auth.service.ts, admin-recovery.service.ts, auth-registration.service.ts (упрощён — slug-loops делегируют в repo), client-auth.service.ts, contractor-auth.service.ts, session.service.ts.
+
+Также в этом батче: communications-bootstrap.repository.ts (4 функции) — cherry-pick из worktree; projects split (10 репозиториев, 14 сервисов) — cherry-pick из worktree-agent-a3207ce5.
+
+Итог Wave 7: все `server/modules/**/*.service.ts` чисты от drizzle-orm. ESLint-invariant блокирует регрессии. Проверки: vue-tsc exit 0, lint:errors 0.
