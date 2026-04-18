@@ -77,53 +77,11 @@
             </div>
 
             <!-- ── Mode Bar: Liquid Glass ↔ Minale+Mann ── -->
-            <div class="dp-mode-bar">
-              <span class="dp-mode-label">режим</span>
-              <button
-                type="button"
-                class="dp-mode-btn"
-                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-glass' }"
-                @click="switchMode('concept-glass')"
-                title="Жидкое стекло: blur, глубина, мягкий хром, pill-формы"
-              >
-                <span class="dp-mode-icon">❖</span>
-                <span class="dp-mode-name">Жидкое стекло</span>
-                <span class="dp-mode-hint">apple · blur · depth</span>
-              </button>
-              <button
-                type="button"
-                class="dp-mode-btn"
-                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-minale' }"
-                @click="switchMode('concept-minale')"
-                title="Брутализм / Minale + Mann — чёрный фон, белый текст, uppercase, hairlines"
-              >
-                <span class="dp-mode-icon">◼</span>
-                <span class="dp-mode-name">Брутализм / Minale</span>
-                <span class="dp-mode-hint">black · tracked · primary</span>
-              </button>
-              <button
-                type="button"
-                class="dp-mode-btn"
-                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-m3' }"
-                @click="switchMode('concept-m3')"
-                title="Material 3 — тональные поверхности, скруглённые формы, тени"
-              >
-                <span class="dp-mode-icon">⨁</span>
-                <span class="dp-mode-name">Material 3</span>
-                <span class="dp-mode-hint">google · tonal · pill</span>
-              </button>
-              <button
-                type="button"
-                class="dp-mode-btn dp-mode-btn--reset"
-                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-minale' }"
-                @click="clearMode()"
-                title="Вернуть режим по умолчанию — Брутализм / Minale"
-              >
-                <span class="dp-mode-icon">○</span>
-                <span class="dp-mode-name">По умолчанию</span>
-                <span class="dp-mode-hint">brutalist · default</span>
-              </button>
-            </div>
+            <UIDesignModeBar
+              :active-mode-slug="activeModeSlug"
+              @pick-mode="(slug: string) => switchMode(slug)"
+              @clear-mode="clearMode"
+            />
 
             <!-- ── Export/Import drawer ── -->
             <UIDesignExportDrawer
@@ -156,35 +114,23 @@
 
               <!-- ═══ Рецепты дизайна ═══ -->
               <div v-show="isTabVisible('presets')" class="dp-page">
-                <div class="dp-presets-grid">
-                  <button
-                    v-for="p in DESIGN_PRESETS" :key="p.id" type="button"
-                    class="dp-preset-card" :class="{ 'dp-preset-card--active': activePresetId === p.id }"
-                    @click="pickPreset(p)"
-                  >
-                    <span class="dp-preset-icon">{{ p.icon }}</span>
-                    <span class="dp-preset-name">{{ p.name }}</span>
-                    <span class="dp-preset-desc">{{ p.description }}</span>
-                  </button>
-                </div>
+                <UIDesignPresetCardsGrid
+                  variant="preset"
+                  :items="DESIGN_PRESETS"
+                  :active-id="activePresetId"
+                  @pick="(item: any) => pickPreset(item)"
+                />
               </div>
 
               <!-- ═══ Концепция дизайна ═══ -->
               <div v-show="isTabVisible('concept')" class="dp-page">
                 <p class="dp-concept-intro">Целостная концепция — меняет всё: цвета, типографику, анимацию, плотность, архитектуру UI.</p>
-                <div class="dp-concepts-grid">
-                  <button
-                    v-for="c in DESIGN_CONCEPTS" :key="c.id" type="button"
-                    class="dp-concept-card" :class="{ 'dp-concept-card--active': activePresetId === c.id }"
-                    @click="pickPreset(c)"
-                  >
-                    <span class="dp-concept-icon">{{ c.icon }}</span>
-                    <div class="dp-concept-body">
-                      <span class="dp-concept-name">{{ c.name }}</span>
-                      <span class="dp-concept-desc">{{ c.description }}</span>
-                    </div>
-                  </button>
-                </div>
+                <UIDesignPresetCardsGrid
+                  variant="concept"
+                  :items="DESIGN_CONCEPTS"
+                  :active-id="activePresetId"
+                  @pick="(item: any) => pickPreset(item)"
+                />
               </div>
 
               <!-- ═══ Палитра ═══ -->
