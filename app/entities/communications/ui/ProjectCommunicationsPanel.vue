@@ -182,70 +182,25 @@
         </div>
       </section>
 
-      <section v-else-if="quickSection === 'chats'" class="comm-block comm-block--directory">
-        <div class="comm-section-head">
-          <div class="comm-block-title">Открытые чаты</div>
-          <div class="comm-section-metrics"><span class="comm-section-pill">{{ filteredOpenChats.length }}</span></div>
-        </div>
-        <label class="u-field__label" for="comm-chat-search">Поиск по чатам</label>
-        <GlassInput id="comm-chat-search" v-model="chatSearch" type="text" class="glass-input --inline comm-search" placeholder="Имя, роль или @никнейм" />
-        <div v-if="filteredOpenChats.length" class="comm-list-grid">
-          <button
-            v-for="chat in filteredOpenChats"
-            :key="chat.roomId"
-            type="button"
-            class="comm-person"
-            :class="{ 'comm-person--active': currentChatPeerKey === chat.participant.actorKey }"
-            @click="openChatSummary(chat)"
-          >
-            <span class="comm-person-topline">
-              <span class="comm-person-name">{{ chat.participant.displayName }}</span>
-              <span class="comm-chat-updated">{{ formatMessageTime(chat.updatedAt) }}</span>
-            </span>
-            <span class="comm-person-bottomline">
-              <span v-if="chat.participant.nickname" class="comm-person-nick">@{{ chat.participant.nickname }}</span>
-              <span class="comm-person-badges">
-                <span class="comm-person-badge">{{ chat.participant.role }}</span>
-              </span>
-            </span>
-          </button>
-        </div>
-        <div v-else class="comm-empty-inline">{{ hasAvailableContacts ? '[ НЕТ ОТКРЫТЫХ ЧАТОВ ]' : '[ НЕТ ОТКРЫТЫХ ЧАТОВ: СНАЧАЛА НУЖНЫ КОНТАКТЫ ]' }}</div>
-      </section>
+      <CommChatsDirectory
+        v-else-if="quickSection === 'chats'"
+        :chats="filteredOpenChats"
+        :search="chatSearch"
+        :active-peer-key="currentChatPeerKey"
+        :has-available-contacts="hasAvailableContacts"
+        :format-time="formatMessageTime"
+        @update:search="(q: string) => chatSearch = q"
+        @open-chat="(chat: any) => openChatSummary(chat)"
+      />
 
-      <section v-else-if="quickSection === 'contacts'" class="comm-block comm-block--directory">
-        <div class="comm-section-head">
-          <div class="comm-block-title">Контакты</div>
-          <div class="comm-section-metrics"><span class="comm-section-pill">{{ filteredContacts.length }}</span></div>
-        </div>
-        <label class="u-field__label" for="comm-contact-search">Поиск по контактам</label>
-        <GlassInput id="comm-contact-search" v-model="contactSearch" type="text" class="glass-input --inline comm-search" placeholder="Имя, роль или @никнейм" />
-
-        <div v-if="filteredContacts.length" class="comm-list-grid">
-          <button
-            v-for="participant in filteredContacts"
-            :key="participant.actorKey"
-            type="button"
-            class="comm-person"
-            :class="{ 'comm-person--active': currentChatPeerKey === participant.actorKey }"
-            @click="startChatWithParticipant(participant)"
-          >
-            <span class="comm-person-topline">
-              <span class="comm-person-name">{{ participant.displayName }}</span>
-            </span>
-            <span class="comm-person-bottomline">
-              <span v-if="participant.nickname" class="comm-person-nick">@{{ participant.nickname }}</span>
-              <span class="comm-person-badges">
-                <span class="comm-person-badge">{{ participant.role }}</span>
-              </span>
-            </span>
-          </button>
-        </div>
-        <div v-else class="comm-empty-inline">
-          <p>[ НЕТ ДОСТУПНЫХ КОНТАКТОВ ]</p>
-          <p class="comm-empty-note">Контакты появятся после привязки к проекту дизайнера, подрядчика или другого участника.</p>
-        </div>
-      </section>
+      <CommContactsDirectory
+        v-else-if="quickSection === 'contacts'"
+        :contacts="filteredContacts"
+        :search="contactSearch"
+        :active-peer-key="currentChatPeerKey"
+        @update:search="(q: string) => contactSearch = q"
+        @start-chat="(p: any) => startChatWithParticipant(p)"
+      />
 
       <section v-else class="comm-block comm-block--directory">
         <div class="comm-section-head">
