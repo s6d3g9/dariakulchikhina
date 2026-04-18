@@ -1430,10 +1430,31 @@ Wave 4 для UIDesignPanel закрыт.
 - Added `import ContractorDocumentsSection from './ContractorDocumentsSection.vue'` to parent.
 - Commit: `c605fe6`
 
+### [done] 2026-04-18 — Wave 4 / AdminDesignerCabinet section components (recover orphaned batch)
+
+- Committed five section components created in a prior session but never staged:
+  - `app/widgets/cabinets/designer/sections/CabinetServicesSection.vue` (984 lines)
+  - `app/widgets/cabinets/designer/sections/CabinetPackagesSection.vue` (681 lines)
+  - `app/widgets/cabinets/designer/sections/CabinetSubscriptionsSection.vue` (693 lines)
+  - `app/widgets/cabinets/designer/sections/CabinetProjectsSection.vue` (386 lines)
+  - `app/widgets/cabinets/designer/sections/CabinetProfileSection.vue` (228 lines)
+- `AdminDesignerCabinet.vue` already imported and used these in git — this commit closes the gap.
+- Commit: `6fe5e66`
+
+### [done] 2026-04-18 — Wave 4 / AdminDocumentEditor composable extraction (recover orphaned batch)
+
+- `app/composables/useDocumentEditorSources.ts` (270 lines): Step 1 state — project/entity pickers,
+  `ctx`, `loadingCtx`, `applyMap`, `EXECUTOR_DEFAULTS`, `DocumentTemplate` export.
+- `app/composables/useDocumentEditorFields.ts` (279 lines): Step 2 state — `fieldValues`,
+  `fieldAutoFilled`, `varsOpen`, `allVars`, `remainingAmount`, numberToWords, auto-date watcher.
+- `app/widgets/documents/AdminDocumentEditor.vue`: −448 lines in script block; coordinator now
+  imports both composables and owns only `step`, `saving`, `diff*` refs.
+- Commit: `be7b690`
+
 ### Остающиеся цели (требуют big-session composable work)
 
-- **`AdminDocumentEditor` Step 1 (picker) + Step 2 (field editor)**: 236+582 строк с ~20 deps (picker refs, ctx, loadingCtx, apply-handlers, field state, vars, generators). Нужен composable `useDocumentEditorSources()` + `useDocumentEditorFields()`.
-- **`AdminDesignerCabinet` services/packages/subscriptions**: stateful autosave per-card, требует `useDesignerCardEditor()` factory.
+- **`AdminDocumentEditor` Step 1/2 templates**: 236+582 строк HTML ещё inline в одном файле; следующий шаг — вынести `<template v-if="step === 0">` и `<template v-if="step === 1">` в отдельные компоненты `DocumentEditorStepPicker.vue` и `DocumentEditorStepFields.vue`.
+- **`AdminDesignerCabinet` services/packages/subscriptions**: секции уже вынесены; `CabinetServicesSection.vue` (984 строки) — кандидат на дальнейшую нарезку.
 - **`AdminDocumentsSection` registry**: search/sort/filter state composable + card grid.
 - **`app/layouts/admin.vue`**: header utility bar (search/notifications/edit mode) → `AdminHeaderUtilities.vue`, hamburger panel — separate work.
 - **`Wipe2Renderer.vue`** (517 строк): conditional content render'ы; вынести bullet block renderers.
