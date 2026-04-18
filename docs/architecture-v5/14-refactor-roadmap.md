@@ -1401,6 +1401,15 @@ Wave 4 для UIDesignPanel закрыт.
 - lint:errors: exit 0, no new violations.
 - Commit: `f81ecb9`
 
+### [done] 2026-04-18 — Wave 4 / extract wipe2 data builder from admin project page
+
+- Created `app/utils/buildProjectWipe2Data.ts` (778 lines) — pure function `buildProjectWipe2Data()` with all 20 page-type branches, internal helpers `_w2FormatMoney`, `_w2StatusTone`, `_w2BoolDescription`, label/color maps. Takes `(project, currentPage, extraServicesData, workStatusData, globalWipe2State, linkedClients, linkedContractorsList, linkedDesignersList)`.
+- Slimmed `app/pages/admin/projects/[slug].vue`: ~2453 → 1715 lines (−738 lines, −30%). Page computed is now a 10-line wrapper delegating to the utility.
+- Removed `getBriefSections` and `presetLabel` imports from page (moved to utility). Removed `_W2_SP_LABELS`, `_W2_SP_COLORS` constants and three helper functions.
+- Typecheck: no new errors in changed files (2 pre-existing errors in AdminProjectControl.vue unrelated).
+- lint:errors: exit 0, no new violations.
+- Commit: `35bf004`
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor` Step 1 (picker) + Step 2 (field editor)**: 236+582 строк с ~20 deps (picker refs, ctx, loadingCtx, apply-handlers, field state, vars, generators). Нужен composable `useDocumentEditorSources()` + `useDocumentEditorFields()`.
