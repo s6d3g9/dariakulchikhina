@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { config } from '~/server/config'
 import {
   getAdminSession,
   setAdminSession,
@@ -52,9 +53,7 @@ async function resolveAdminUser(event: H3Event, userId: number) {
   let user = await repo.findUserById(userId)
   if (user) return user
 
-  const fallbackEmail = (
-    process.env.DESIGNER_INITIAL_EMAIL || 'admin@dariakulchikhina.com'
-  ).trim()
+  const fallbackEmail = config.DESIGNER_INITIAL_EMAIL.trim()
   if (fallbackEmail) {
     user = await repo.findUserByEmail(fallbackEmail)
   }

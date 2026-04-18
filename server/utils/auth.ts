@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import bcrypt from 'bcryptjs'
 import { createHmac, randomBytes } from 'crypto'
+import { config, getSessionSecret } from '~/server/config'
 
 // NOTE: h3 v2 RC bundled in Nitro has a bug where parseCookies calls
 // event.req.headers.get() but event.req is deprecated and returns raw IncomingMessage.
@@ -17,7 +18,7 @@ const CHAT_COOKIE = 'daria_chat_session'
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 
 function _getSessionSecret(): string {
-  const secret = process.env.NUXT_SESSION_SECRET || process.env.SESSION_SECRET
+  const secret = getSessionSecret()
   if (!secret) {
     console.error('[SECURITY] NUXT_SESSION_SECRET is not set! Sessions will not work.')
     // Use a random per-process secret so the app still starts but sessions don't persist across restarts
@@ -72,7 +73,7 @@ function _readCookie(event: H3Event, name: string): string | undefined {
 
 function _isSecure(event: H3Event): boolean {
   const req = (event as any).node?.req ?? (event as any).req
-  return req.headers["x-forwarded-proto"] === "https" || process.env.FORCE_HTTPS === "true"
+  return req.headers["x-forwarded-proto"] === "https" || config.FORCE_HTTPS
 }
 
 function _writeCookie(event: H3Event, name: string, value: string, opts: {

@@ -1,18 +1,14 @@
 {
-  "generatedAt": "2026-04-17T23:15:45.777Z",
-  "totalErrors": 22,
+  "generatedAt": "2026-04-18T10:06:13.477Z",
+  "totalErrors": 12,
   "perFile": {
     "messenger/core/src/agent-knowledge-store.ts": 3,
     "messenger/core/src/server.ts": 3,
     "messenger/core/src/storage-paths.ts": 1,
     "server/db/index.ts": 1,
     "server/modules/ai/gemma.service.ts": 1,
-    "server/modules/auth/admin-auth.service.ts": 3,
-    "server/modules/auth/session.service.ts": 1,
     "server/modules/projects/project-governance.service.ts": 1,
     "server/modules/projects/project-work-status.service.ts": 1,
-    "server/modules/uploads/upload-storage.service.ts": 1,
-    "server/utils/auth.ts": 3,
-    "server/utils/messenger-cors.ts": 3
+    "server/modules/uploads/upload-storage.service.ts": 1
   }
 }

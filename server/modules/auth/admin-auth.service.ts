@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { config } from '~/server/config'
 import {
   hashPassword,
   verifyPassword,
@@ -18,15 +19,13 @@ import * as repo from './auth.repository'
  * a manual seed step.
  */
 export async function adminLogin(event: H3Event, body: LoginInput) {
-  const preferredEmail = (
-    process.env.DESIGNER_INITIAL_EMAIL || 'admin@dariakulchikhina.com'
-  ).trim()
+  const preferredEmail = config.DESIGNER_INITIAL_EMAIL.trim()
   const preferredLogin = (
-    process.env.DESIGNER_INITIAL_LOGIN || preferredEmail.split('@')[0] || 'admin'
+    config.DESIGNER_INITIAL_LOGIN || preferredEmail.split('@')[0] || 'admin'
   )
     .trim()
     .toLowerCase()
-  const initialPassword = (process.env.DESIGNER_INITIAL_PASSWORD || '').trim()
+  const initialPassword = (config.DESIGNER_INITIAL_PASSWORD || '').trim()
 
   let user = await repo.findUserByLoginOrEmail(body.login)
 
