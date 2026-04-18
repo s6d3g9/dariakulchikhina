@@ -1,9 +1,9 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { randomUUID } from 'node:crypto'
 
-import { actorKey, hasAdminScope, readAccessToken, signToken, verifyToken } from './auth.ts'
+import { actorKey, hasAdminScope, readAccessToken, signToken, verifyToken } from './auth/auth.ts'
 import { readConfig } from './config.ts'
-import { createCommunicationStore } from './pg-store.ts'
+import { createCommunicationStore } from './store/pg-store.ts'
 import type {
   AuthenticatedActor,
   EncryptedMessageEnvelope,

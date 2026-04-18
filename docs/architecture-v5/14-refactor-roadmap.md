@@ -840,3 +840,22 @@ server/modules/ai/ai.repository.ts (listLegalSourceCounts, findProjectBySlug, li
 Также в этом батче: communications-bootstrap.repository.ts (4 функции) — cherry-pick из worktree; projects split (10 репозиториев, 14 сервисов) — cherry-pick из worktree-agent-a3207ce5.
 
 Итог Wave 7: все `server/modules/**/*.service.ts` чисты от drizzle-orm. ESLint-invariant блокирует регрессии. Проверки: vue-tsc exit 0, lint:errors 0.
+
+### [done] 2026-04-18 — Wave 7 / services/communications-service bounded-context subdirectory split
+Цель: переложить 3 файла из плоского `services/communications-service/src/` в bounded-context поддиректории согласно матрице `12-messenger-services-refactor-map.md`.
+
+Файлы (git mv):
+- services/communications-service/src/auth.ts -> services/communications-service/src/auth/auth.ts
+- services/communications-service/src/store.ts -> services/communications-service/src/store/store.ts
+- services/communications-service/src/pg-store.ts -> services/communications-service/src/store/pg-store.ts
+
+Остались без изменений: src/index.ts (обновлены импорты), src/config.ts, src/types.ts.
+
+Исправлены относительные import-пути во всех затронутых файлах:
+- src/index.ts: `./auth` → `./auth/auth`, `./pg-store` → `./store/pg-store`
+- src/auth/auth.ts: `./types` → `../types`
+- src/store/store.ts: `./types` → `../types`, `./auth` → `../auth/auth`
+- src/store/pg-store.ts: `./types` → `../types`, `./config` → `../config` (./store остался без изменений — тот же каталог)
+
+Проверка:
+- `pnpm comm:typecheck` — exit 0, 0 TS-ошибок на локальных модулях

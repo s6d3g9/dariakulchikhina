@@ -9,8 +9,8 @@ import type {
   RoomKind,
   RoomParticipant,
   SignalEnvelope,
-} from './types.ts'
-import { actorKey } from './auth.ts'
+} from '../types.ts'
+import { actorKey } from '../auth/auth.ts'
 
 export interface CreateRoomInput {
   externalRef: string

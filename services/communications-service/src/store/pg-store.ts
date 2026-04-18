@@ -9,10 +9,10 @@ import type {
   PublishedKeyBundle,
   RoomParticipant,
   SignalEnvelope,
-} from './types.ts'
+} from '../types.ts'
 import type { CommunicationStore, AddMessageInput, CreateRoomInput, ListRoomsInput } from './store.ts'
 import { InMemoryCommunicationStore } from './store.ts'
-import type { ServiceConfig } from './config.ts'
+import type { ServiceConfig } from '../config.ts'
 
 type RoomRow = {
   id: string

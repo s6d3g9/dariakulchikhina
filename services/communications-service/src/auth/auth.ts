@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage } from 'node:http'
 
-import type { AuthenticatedActor, ServiceTokenPayload } from './types.ts'
+import type { AuthenticatedActor, ServiceTokenPayload } from '../types.ts'
 
 function encodeBase64Url(input: string | Buffer) {
   return Buffer.from(input).toString('base64url')
