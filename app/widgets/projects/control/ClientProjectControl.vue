@@ -656,7 +656,7 @@ import {
   type HybridTimelineRow,
   type HybridTimelineScale,
 } from '~~/shared/utils/project-control-timeline'
-import type { HybridControlCallInsight, HybridControlCheckpoint, HybridControlPhase, HybridControlSprint, HybridControlTask } from '~~/shared/types/project'
+import type { HybridControlCallInsight, HybridControlCheckpoint, HybridControlSprint, HybridControlTask } from '~~/shared/types/project'
 import type { ProjectScopeDetailBundle, ProjectScopeType } from '~~/shared/types/project-governance'
 import { getProjectScopeEditableSettingKeys } from '~~/shared/utils/project-governance'
 
@@ -715,26 +715,11 @@ const control = computed(() => ensureHybridControl(project.value?.profile?.hybri
 const summary = computed(() => buildHybridControlSummary(control.value))
 const coordinationBrief = computed(() => buildHybridCoordinationBrief(control.value, { projectSlug: props.slug }))
 
-const phaseStatusLabels: Record<HybridControlPhase['status'], string> = {
-  planned: 'запланирована',
-  active: 'в работе',
-  blocked: 'заблокирована',
-  done: 'завершена',
-}
-
-const sprintStatusLabels: Record<HybridControlSprint['status'], string> = {
-  planned: 'запланирован',
-  active: 'активен',
-  review: 'на ревью',
-  done: 'завершён',
-}
-
-const taskStatusLabels: Record<HybridControlTask['status'], string> = {
-  todo: 'к запуску',
-  doing: 'в работе',
-  review: 'на ревью',
-  done: 'готово',
-}
+import {
+  phaseStatusLabels,
+  sprintStatusLabels,
+  taskStatusLabels,
+} from './model/control-options'
 
 const checkpointStatusLabels: Record<HybridControlCheckpoint['status'], string> = {
   stable: 'стабильно',

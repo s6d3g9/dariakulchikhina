@@ -34,6 +34,13 @@ export const checkpointStatusOptions = [
   { value: 'critical', label: 'критично' },
 ] as const
 
+export const taskStatusOptions = [
+  { value: 'todo', label: 'к запуску' },
+  { value: 'doing', label: 'в работе' },
+  { value: 'review', label: 'на ревью' },
+  { value: 'done', label: 'готово' },
+] as const
+
 export const phaseStatusLabels = Object.fromEntries(
   phaseStatusOptions.map(option => [option.value, option.label]),
 ) as Record<(typeof phaseStatusOptions)[number]['value'], string>
@@ -45,6 +52,10 @@ export const sprintStatusLabels = Object.fromEntries(
 export const checkpointStatusLabels = Object.fromEntries(
   checkpointStatusOptions.map(option => [option.value, option.label]),
 ) as Record<(typeof checkpointStatusOptions)[number]['value'], string>
+
+export const taskStatusLabels = Object.fromEntries(
+  taskStatusOptions.map(option => [option.value, option.label]),
+) as Record<(typeof taskStatusOptions)[number]['value'], string>
 
 export const communicationChannelOptions = (
   ['project-room', 'direct-thread', 'handoff', 'approval', 'daily-digest'] as const satisfies readonly HybridControlCommunicationChannel[]
