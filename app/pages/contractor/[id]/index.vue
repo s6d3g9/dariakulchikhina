@@ -339,203 +339,32 @@
 
           <!-- ── Контактные данные ──────────────────────────────── -->
           <template v-else-if="section === 'contacts'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
-                <h3>Основные контакты</h3>
-                <div class="u-grid-2">
-                  <div class="u-field">
-                    <label>Имя / название</label>
-                    <GlassInput v-model="form.name"  required />
-                  </div>
-                  <div class="u-field">
-                    <label>Компания</label>
-                    <GlassInput v-model="form.companyName"  placeholder="ООО / ИП…" />
-                  </div>
-                  <div class="u-field">
-                    <label>Телефон</label>
-                    <GlassInput v-model="form.phone"  type="tel" placeholder="+7 (___) ___-__-__" />
-                  </div>
-                  <div class="u-field">
-                    <label>Email</label>
-                    <GlassInput v-model="form.email"  type="email" placeholder="mail@example.com" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>Мессенджеры</h3>
-                <div class="u-grid-2">
-                  <div class="u-field">
-                    <label>Telegram</label>
-                    <GlassInput v-model="form.telegram"  placeholder="@username или номер" />
-                  </div>
-                  <div class="u-field">
-                    <label>WhatsApp</label>
-                    <GlassInput v-model="form.whatsapp"  placeholder="+7 (___) ___-__-__" />
-                  </div>
-                  <div class="u-field">
-                    <label>Мессенджер (другой)</label>
-                    <select v-model="form.messenger" class="glass-input cab-select">
-                      <option value="">—</option>
-                      <option>telegram</option>
-                      <option>whatsapp</option>
-                      <option>viber</option>
-                    </select>
-                  </div>
-                  <div class="u-field">
-                    <label>Ник / номер</label>
-                    <GlassInput v-model="form.messengerNick"  />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>Адрес и география</h3>
-                <div class="u-grid-2">
-                  <div class="u-field">
-                    <label>Город</label>
-                    <GlassInput v-model="form.city"  placeholder="Москва" />
-                  </div>
-                  <div class="u-field">
-                    <label>Радиус выезда</label>
-                    <GlassInput v-model="form.workRadius"  placeholder="50 км / Москва и МО" />
-                  </div>
-                  <div class="u-field u-field--full">
-                    <label>Фактический адрес</label>
-                    <GlassInput v-model="form.factAddress"  placeholder="Адрес для корреспонденции" />
-                  </div>
-                  <div class="u-field u-field--full">
-                    <label>Сайт / портфолио</label>
-                    <GlassInput v-model="form.website"  placeholder="https://example.com" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-foot">
-                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
-                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
-              </div>
-            </form>
+            <ContractorContactsSection
+              :form="form"
+              :saving="saving"
+              :save-msg="saveMsg"
+              @submit="saveProfile"
+            />
           </template>
 
           <!-- ── Паспортные данные ──────────────────────────────── -->
           <template v-else-if="section === 'passport'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
-                <h3>Паспорт гражданина РФ</h3>
-                <div class="u-grid-2">
-                  <div class="u-field">
-                    <label>Серия</label>
-                    <GlassInput v-model="form.passportSeries"  placeholder="00 00" maxlength="5" />
-                  </div>
-                  <div class="u-field">
-                    <label>Номер</label>
-                    <GlassInput v-model="form.passportNumber"  placeholder="000000" maxlength="7" />
-                  </div>
-                  <div class="u-field u-field--full">
-                    <label>Кем выдан</label>
-                    <GlassInput v-model="form.passportIssuedBy"  placeholder="ОВД района…" />
-                  </div>
-                  <div class="u-field">
-                    <label>Дата выдачи</label>
-                    <GlassInput v-model="form.passportIssueDate"  placeholder="дд.мм.гггг" />
-                  </div>
-                  <div class="u-field">
-                    <label>Код подразделения</label>
-                    <GlassInput v-model="form.passportDepartmentCode"  placeholder="000-000" maxlength="7" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>Персональные данные</h3>
-                <div class="u-grid-2">
-                  <div class="u-field">
-                    <label>Дата рождения</label>
-                    <GlassInput v-model="form.birthDate"  placeholder="дд.мм.гггг" />
-                  </div>
-                  <div class="u-field">
-                    <label>Место рождения</label>
-                    <GlassInput v-model="form.birthPlace"  placeholder="г. Москва" />
-                  </div>
-                  <div class="u-field u-field--full">
-                    <label>Адрес регистрации</label>
-                    <GlassInput v-model="form.registrationAddress"  placeholder="Адрес по прописке" />
-                  </div>
-                  <div class="u-field">
-                    <label>СНИЛС</label>
-                    <GlassInput v-model="form.snils"  placeholder="000-000-000 00" maxlength="14" />
-                  </div>
-                  <div class="u-field">
-                    <label>ИНН</label>
-                    <GlassInput v-model="form.inn"  placeholder="000000000000" maxlength="12" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-foot">
-                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
-                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
-              </div>
-            </form>
+            <ContractorPassportSection
+              :form="form"
+              :saving="saving"
+              :save-msg="saveMsg"
+              @submit="saveProfile"
+            />
           </template>
 
           <!-- ── Реквизиты ──────────────────────────────────────── -->
           <template v-else-if="section === 'requisites'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
-                <h3>Юридические данные</h3>
-                <div class="u-grid-2">
-                  <div class="u-field">
-                    <label>ИНН</label>
-                    <GlassInput v-model="form.inn"  placeholder="000000000000" maxlength="12" />
-                  </div>
-                  <div class="u-field">
-                    <label>КПП</label>
-                    <GlassInput v-model="form.kpp"  placeholder="000000000" maxlength="9" />
-                  </div>
-                  <div class="u-field">
-                    <label>ОГРН / ОГРНИП</label>
-                    <GlassInput v-model="form.ogrn"  placeholder="0000000000000" maxlength="15" />
-                  </div>
-                  <div class="u-field u-field--full">
-                    <label>Юридический адрес</label>
-                    <GlassInput v-model="form.legalAddress"  placeholder="Адрес регистрации ИП / ООО" />
-                  </div>
-                  <div class="u-field u-field--full">
-                    <label>Фактический адрес</label>
-                    <GlassInput v-model="form.factAddress"  placeholder="Адрес ведения деятельности" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>Банковские реквизиты</h3>
-                <div class="u-grid-2">
-                  <div class="u-field u-field--full">
-                    <label>Наименование банка</label>
-                    <GlassInput v-model="form.bankName"  placeholder="ПАО Сбербанк" />
-                  </div>
-                  <div class="u-field">
-                    <label>БИК</label>
-                    <GlassInput v-model="form.bik"  placeholder="000000000" maxlength="9" />
-                  </div>
-                  <div class="u-field">
-                    <label>Расчётный счёт</label>
-                    <GlassInput v-model="form.settlementAccount"  placeholder="00000000000000000000" maxlength="20" />
-                  </div>
-                  <div class="u-field">
-                    <label>Корреспондентский счёт</label>
-                    <GlassInput v-model="form.correspondentAccount"  placeholder="00000000000000000000" maxlength="20" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-foot">
-                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
-                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
-              </div>
-            </form>
+            <ContractorRequisitesSection
+              :form="form"
+              :saving="saving"
+              :save-msg="saveMsg"
+              @submit="saveProfile"
+            />
           </template>
 
           <!-- ── Документы ──────────────────────────────────────── -->
@@ -619,279 +448,45 @@
 
           <!-- ── Специализации ──────────────────────────────────── -->
           <template v-else-if="section === 'specialization'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
-                <h3>Роль / профессия</h3>
-                <div class="u-field u-field--full">
-                  <div v-for="group in ROLE_GROUPS" :key="group.label" class="u-tag-group">
-                    <div class="u-tag-group__label">{{ group.label }}</div>
-                    <div class="u-tags">
-                      <button
-                        v-for="r in group.items"
-                        :key="`role-${group.label}-${r.value}`"
-                        type="button"
-                        class="u-tag u-tag--picker"
-                        :class="{ 'u-tag--active': form.roleTypes.includes(r.value) }"
-                        @click="toggleArr(form.roleTypes, r.value)"
-                      >{{ r.label }}</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>Виды работ</h3>
-                <div class="u-field u-field--full">
-                  <div v-for="group in WORK_GROUPS" :key="group.label" class="u-tag-group">
-                    <div class="u-tag-group__label">{{ group.label }}</div>
-                    <div class="u-tags">
-                      <button
-                        v-for="w in group.items"
-                        :key="`work-${group.label}-${w.value}`"
-                        type="button"
-                        class="u-tag u-tag--picker"
-                        :class="{ 'u-tag--active': form.workTypes.includes(w.value) }"
-                        @click="toggleArr(form.workTypes, w.value)"
-                      >{{ w.label }}</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>Опыт</h3>
-                <div class="u-grid-2">
-                  <div class="u-field">
-                    <label>Стаж (лет)</label>
-                    <GlassInput v-model.number="form.experienceYears"  type="number" min="0" max="100" placeholder="10" />
-                  </div>
-                  <div class="u-field">
-                    <label>Образование</label>
-                    <GlassInput v-model="form.education"  placeholder="Высшее строительное…" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>О себе</h3>
-                <div class="u-field u-field--full">
-                  <label>Заметки / описание</label>
-                  <textarea v-model="form.notes" class="glass-input u-ta" rows="4" placeholder="Опыт, специализация, особые условия работы…" />
-                </div>
-              </div>
-
-              <div class="u-form-foot">
-                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
-                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
-              </div>
-            </form>
+            <ContractorSpecializationSection
+              :form="form"
+              :saving="saving"
+              :save-msg="saveMsg"
+              @submit="saveProfile"
+            />
           </template>
 
           <!-- ── Финансы ────────────────────────────────────────── -->
           <template v-else-if="section === 'finances'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
-                <h3>Система налогообложения</h3>
-                <div class="u-grid-2">
-                  <div class="u-field">
-                    <label>СНО</label>
-                    <select v-model="form.taxSystem" class="glass-input cab-select">
-                      <option value="">— не указана —</option>
-                      <option value="osn">ОСН (общая)</option>
-                      <option value="usn6">УСН 6%</option>
-                      <option value="usn15">УСН 15%</option>
-                      <option value="patent">Патент</option>
-                      <option value="npd">НПД (самозанятый)</option>
-                      <option value="other">Другая</option>
-                    </select>
-                  </div>
-                  <div class="u-field">
-                    <label>Ставка / стоимость часа</label>
-                    <GlassInput v-model="form.hourlyRate"  placeholder="2 500 ₽/час" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>Способы оплаты</h3>
-                <div class="u-tags">
-                  <button
-                    v-for="pm in PAYMENT_METHOD_OPTIONS"
-                    :key="`pay-${pm.value}`"
-                    type="button"
-                    class="u-tag u-tag--picker"
-                    :class="{ 'u-tag--active': form.paymentMethods.includes(pm.value) }"
-                    @click="toggleArr(form.paymentMethods, pm.value)"
-                  >{{ pm.label }}</button>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>Страхование</h3>
-                <div class="u-grid-2">
-                  <div class="u-field">
-                    <label class="cab-checkbox-label">
-                      <input v-model="form.hasInsurance" type="checkbox" class="cab-checkbox" />
-                      Есть страховка ответственности
-                    </label>
-                  </div>
-                  <div v-if="form.hasInsurance" class="u-field u-field--full">
-                    <label>Детали страхования</label>
-                    <textarea v-model="form.insuranceDetails" class="glass-input u-ta" rows="2" placeholder="Компания, номер полиса, срок…" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="u-form-section">
-                <h3>Сертификаты и допуски</h3>
-                <div class="cab-certs-list">
-                  <div v-for="(cert, idx) in form.certifications" :key="idx" class="cab-cert-item">
-                    <span>{{ cert }}</span>
-                    <button type="button" class="cab-cert-del" @click="removeCert(idx)">✕</button>
-                  </div>
-                </div>
-                <div class="cab-cert-add">
-                  <GlassInput v-model="newCert"  placeholder="Новый сертификат / допуск" @keydown.enter.prevent="addCert" />
-                  <button type="button" class="cab-task-save" @click="addCert">+</button>
-                </div>
-              </div>
-
-              <div class="u-form-foot">
-                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
-                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
-              </div>
-            </form>
+            <ContractorFinancesSection
+              :form="form"
+              :saving="saving"
+              :save-msg="saveMsg"
+              @submit="saveProfile"
+            />
           </template>
 
           <!-- ── Портфолио ──────────────────────────────────────── -->
           <template v-else-if="section === 'portfolio'">
-            <!-- Статистика портфолио -->
-            <div class="cab-portfolio-stats glass-surface">
-              <div class="cab-portfolio-stat">
-                <span class="cab-portfolio-stat-val">{{ portfolioStats.doneCount }}</span>
-                <span class="cab-portfolio-stat-label">Выполнено задач</span>
-              </div>
-              <div class="cab-portfolio-stat">
-                <span class="cab-portfolio-stat-val">{{ portfolioStats.projectCount }}</span>
-                <span class="cab-portfolio-stat-label">Проектов</span>
-              </div>
-              <div class="cab-portfolio-stat">
-                <span class="cab-portfolio-stat-val">{{ portfolioStats.photoCount }}</span>
-                <span class="cab-portfolio-stat-label">Фотографий</span>
-              </div>
-              <div class="cab-portfolio-stat">
-                <span class="cab-portfolio-stat-val">{{ contractor?.experienceYears || '—' }}</span>
-                <span class="cab-portfolio-stat-label">Лет опыта</span>
-              </div>
-            </div>
-
-            <!-- Специализации -->
-            <div v-if="contractor?.workTypes?.length" class="cab-portfolio-specializations glass-surface">
-              <div class="cab-portfolio-spec-title">Специализации</div>
-              <div class="cab-portfolio-chips">
-                <span v-for="wt in contractor.workTypes" :key="wt" class="glass-chip">
-                  {{ CONTRACTOR_WORK_TYPE_OPTIONS.find((o: any) => o.value === wt)?.label || wt }}
-                </span>
-              </div>
-            </div>
-
-            <div class="u-form-section">
-              <h3>Выполненные работы</h3>
-              <div class="cab-portfolio-grid">
-                <div v-for="proj in byProject" :key="proj.slug" class="cab-portfolio-proj glass-surface">
-                  <div class="cab-portfolio-proj-head">
-                    <span class="cab-portfolio-proj-title">{{ proj.title }}</span>
-                    <span class="cab-portfolio-proj-progress">{{ proj.doneCount }}/{{ proj.totalCount }}</span>
-                  </div>
-                  <div v-for="wt in proj.wtGroups" :key="wt.workType">
-                    <div v-for="item in wt.items.filter((i: any) => i.status === 'done')" :key="item.id" class="cab-portfolio-item">
-                      <span class="cab-portfolio-item-check">✓</span>
-                      <span class="cab-portfolio-item-name">{{ item.title }}</span>
-                      <span class="cab-portfolio-item-wt">{{ wt.label }}</span>
-                      <span class="cab-portfolio-item-photos" v-if="item.photoCount">📷 {{ item.photoCount }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div v-if="!byProject.length" class="cab-empty" style="margin-top:12px;">
-                <div class="cab-empty-icon">◖</div>
-                <p>Завершённых проектов пока нет.<br>Ваше портфолио автоматически пополнится по мере выполнения задач.</p>
-              </div>
-            </div>
-
-            <div class="u-form-section">
-              <h3>Ссылки на внешнее портфолио</h3>
-              <div class="u-grid-2">
-                <div class="u-field u-field--full">
-                  <label>Сайт / Behance / Instagram</label>
-                  <GlassInput v-model="form.website"  placeholder="https://…" />
-                </div>
-              </div>
-              <div class="u-form-foot" style="margin-top:12px;">
-                <GlassButton variant="primary" type="button"  :disabled="saving" @click="saveProfile">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
-                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
-              </div>
-            </div>
+            <ContractorPortfolioSection
+              :form="form"
+              :saving="saving"
+              :save-msg="saveMsg"
+              :stats="portfolioStats"
+              :contractor="contractor"
+              :by-project="byProject"
+              @save="saveProfile"
+            />
           </template>
 
           <!-- ── Настройки ──────────────────────────────────────── -->
           <template v-else-if="section === 'settings'">
-            <div class="u-form-section">
-              <h3>Аккаунт</h3>
-              <div class="u-grid-2">
-                <div class="u-field">
-                  <label>ID</label>
-                  <div class="cab-field-static">{{ contractorId }}</div>
-                </div>
-                <div class="u-field">
-                  <label>Slug (ссылка для входа)</label>
-                  <div class="cab-field-static cab-field-slug">{{ contractor?.slug }}</div>
-                </div>
-                <div class="u-field">
-                  <label>Тип</label>
-                  <div class="cab-field-static">{{ contractor?.contractorType === 'company' ? 'Компания-подрядчик' : 'Мастер' }}</div>
-                </div>
-                <div class="u-field">
-                  <label>Зарегистрирован</label>
-                  <div class="cab-field-static">{{ contractor?.createdAt ? new Date(contractor.createdAt).toLocaleDateString('ru-RU') : '—' }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="u-form-section">
-              <h3>Уведомления</h3>
-              <div class="cab-settings-toggles">
-                <label class="cab-toggle-row">
-                  <input type="checkbox" v-model="notifSettings.newTasks" class="cab-toggle-checkbox" />
-                  <span class="cab-toggle-label">Новые задачи</span>
-                  <span class="cab-toggle-hint">Уведомлять о назначении новых задач</span>
-                </label>
-                <label class="cab-toggle-row">
-                  <input type="checkbox" v-model="notifSettings.deadlines" class="cab-toggle-checkbox" />
-                  <span class="cab-toggle-label">Дедлайны</span>
-                  <span class="cab-toggle-hint">Напоминание за 1 день до срока</span>
-                </label>
-                <label class="cab-toggle-row">
-                  <input type="checkbox" v-model="notifSettings.comments" class="cab-toggle-checkbox" />
-                  <span class="cab-toggle-label">Комментарии</span>
-                  <span class="cab-toggle-hint">Новые комментарии к задачам</span>
-                </label>
-                <label class="cab-toggle-row">
-                  <input type="checkbox" v-model="notifSettings.statusChanges" class="cab-toggle-checkbox" />
-                  <span class="cab-toggle-label">Смена статуса</span>
-                  <span class="cab-toggle-hint">Изменение статуса задач дизайнером</span>
-                </label>
-              </div>
-              <GlassButton variant="secondary" density="compact"  style="margin-top:12px" @click="saveNotifSettings">Сохранить настройки</GlassButton>
-            </div>
-
-            <div class="u-form-section">
-              <h3>Безопасность</h3>
-              <p class="cab-settings-hint">
-                Для входа в кабинет используйте ваш ID <b>({{ contractorId }})</b> и slug <b>({{ contractor?.slug }})</b>.
-                Если нужно сменить slug — обратитесь к администратору.
-              </p>
-            </div>
+            <ContractorSettingsSection
+              :contractor-id="contractorId"
+              :contractor="contractor"
+              :notif-settings="notifSettings"
+              @save-notifications="saveNotifSettings"
+            />
           </template>
 
           <!-- ── Бригада ────────────────────────────────────── -->
@@ -930,6 +525,13 @@ import { workTypeLabel } from '~~/shared/utils/work-status'
 import ContractorDashboardSection from './ContractorDashboardSection.vue'
 import ContractorStaffSection from './ContractorStaffSection.vue'
 import ContractorCommunicationsSection from './ContractorCommunicationsSection.vue'
+import ContractorContactsSection from './ContractorContactsSection.vue'
+import ContractorPassportSection from './ContractorPassportSection.vue'
+import ContractorRequisitesSection from './ContractorRequisitesSection.vue'
+import ContractorSpecializationSection from './ContractorSpecializationSection.vue'
+import ContractorFinancesSection from './ContractorFinancesSection.vue'
+import ContractorPortfolioSection from './ContractorPortfolioSection.vue'
+import ContractorSettingsSection from './ContractorSettingsSection.vue'
 
 const PAYMENT_METHOD_OPTIONS = [
   { value: 'cash', label: 'Наличные' },
