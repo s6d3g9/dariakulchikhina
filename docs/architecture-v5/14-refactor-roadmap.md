@@ -985,3 +985,31 @@ Commit: cbe60c3 docs(architecture-v5): add missing docs 18-20 to INDEX.md
 - + 20+ других файлов по матрице `10-frontend-refactor-map.md`
 
 Также открыт backend-долг: `11-backend-shared-refactor-map.md` — 50 строк со статусом "ambiguous", соответствующих fat API handlers в `server/api/**`, которые ещё не полностью перенесены в `server/modules/<domain>/`.
+
+### [done] 2026-04-18 — Wave 4 / batch 1: scoped CSS extraction из 7 giant SFCs
+
+Подготовка к полноценному template/script slicing'у: вынес `<style scoped>` блоки из семи crucial SFCs в sibling-файлы `<Name>.scoped.css`, заменив inline-блок на `<style scoped src="./<Name>.scoped.css"></style>`. Vue сохраняет тот же scope-hash — визуальное поведение не меняется, zero-behavior refactor.
+
+SFC line-count (до → после):
+
+| Файл | Было | Стало | Δ |
+|---|---|---|---|
+| `app/features/ui-editor/ui/UIDesignPanel.vue` | 6624 | 4816 | −1808 (−27%) |
+| `app/widgets/projects/control/AdminProjectControl.vue` | 5844 | 3518 | −2326 (−40%) |
+| `app/widgets/cabinets/designer/AdminDesignerCabinet.vue` | 4332 | 3253 | −1079 (−25%) |
+| `app/pages/admin/projects/[slug].vue` | 3687 | 2633 | −1054 (−29%) |
+| `app/widgets/projects/control/ClientProjectControl.vue` | 3405 | 1969 | −1436 (−42%) |
+| `app/pages/contractor/[id]/index.vue` | 3347 | 2017 | −1330 (−40%) |
+| `app/widgets/documents/AdminDocumentEditor.vue` | 3030 | 2236 | −794 (−26%) |
+| **Итого** | **30269** | **20442** | **−9827 (−32%)** |
+
+Артефакты: семь `<Name>.scoped.css` рядом с каждым SFC + одноразовый helper `scripts/extract-scoped-css.mjs`.
+
+Проверки:
+- `pnpm exec vue-tsc --noEmit` — exit 0
+- `node scripts/lint-ratchet.mjs check` — OK, 0/0 (baseline locked)
+
+Долги (Wave 4 batch 2+):
+- Template slicing — вычленить `<section v-show="activeModule === 'X'">` блоки в sub-components `./sections/Control<Module>.vue` с composable-парой в `./model/useControl<Module>.ts`
+- Script slicing — вычленить обособленные группы state/handlers в composables по FSD
+- Цель — каждый SFC ≤ 500 строк (template + script)
