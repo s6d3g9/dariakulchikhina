@@ -126,27 +126,18 @@
             </div>
 
             <!-- ── Export/Import drawer ── -->
-            <Transition name="dp-drawer">
-              <div v-if="showExport" class="dp-export">
-                <div class="dp-export-inner">
-                  <div class="dp-export-tabs">
-                    <button type="button" :class="['dp-export-tab', { active: exportTab === 'json' }]" @click="exportTab = 'json'">JSON</button>
-                    <button type="button" :class="['dp-export-tab', { active: exportTab === 'css' }]" @click="exportTab = 'css'">CSS</button>
-                  </div>
-                  <textarea
-                    class="glass-input u-ta"
-                    :value="exportTab === 'json' ? exportJSON() : exportCSS()"
-                    @input="importBuffer = ($event.target as HTMLTextAreaElement).value"
-                    spellcheck="false"
-                  />
-                  <div class="dp-export-actions">
-                    <button type="button" class="dp-sm-btn" @click="copyExport">{{ copyLabel }}</button>
-                    <button v-if="exportTab === 'json'" type="button" class="dp-sm-btn" @click="doImport">импорт JSON</button>
-                  </div>
-                  <div v-if="importError && exportTab === 'json'" class="dp-import-error">{{ importError }}</div>
-                </div>
-              </div>
-            </Transition>
+            <UIDesignExportDrawer
+              :show="showExport"
+              :tab="exportTab"
+              :copy-label="copyLabel"
+              :import-error="importError"
+              :export-json="exportJSON"
+              :export-css="exportCSS"
+              @update:tab="(v: 'json' | 'css') => exportTab = v"
+              @update:import-buffer="(v: string) => importBuffer = v"
+              @copy="copyExport"
+              @import="doImport"
+            />
 
             <!-- ── Tab content ── -->
             <div class="dp-tab-content">
