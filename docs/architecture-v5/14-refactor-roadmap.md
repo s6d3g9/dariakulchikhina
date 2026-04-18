@@ -1392,6 +1392,15 @@ Wave 4 для UIDesignPanel закрыт.
 - Fixed two TS errors in the extracted file (TS2347 on `reduce<>` generic, TS18046 on `Object.entries` unknown count).
 - Commit: `4b101bb`
 
+### [done] 2026-04-18 — Wave 4 / ContractorTasksSection extraction
+
+- Created `app/pages/contractor/[id]/ContractorTasksSection.vue` (569 lines) — contains full tasks UI, wt-group state, stage checklist, STATUSES, statusFilter, editMap, FILTERS, byProject (tasks-filtered), allProjects (child-computed from props.projects + child's workItems), showNewTaskModal, createTask, updateStatus, photos, comments, fmtTime, saveTaskDetails, lightbox Teleport.
+- Slimmed `app/pages/contractor/[id]/index.vue`: 1486 → 974 lines (−34%). Parent keeps workItems fetch for dashStats/portfolioStats/activeCount/byProject (portfolio), owns allProjects as `linkedProjects.value || []`.
+- Lightbox `<Teleport to="body">` moved into child component (used only by tasks photos).
+- Typecheck: no new errors in changed files (2 pre-existing errors in AdminProjectControl.vue unrelated).
+- lint:errors: exit 0, no new violations.
+- Commit: `f81ecb9`
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor` Step 1 (picker) + Step 2 (field editor)**: 236+582 строк с ~20 deps (picker refs, ctx, loadingCtx, apply-handlers, field state, vars, generators). Нужен composable `useDocumentEditorSources()` + `useDocumentEditorFields()`.
