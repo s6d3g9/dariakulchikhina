@@ -44,65 +44,15 @@
         </div>
       </section>
 
-      <section class="hpc-summary" v-show="activeModule === 'overview'">
-        <div class="hpc-summary__head">
-          <div>
-            <p class="hpc-eyebrow">Контур контроля</p>
-            <h2 class="hpc-title">Фазовый каркас и спринтовый ритм исполнения</h2>
-          </div>
-          <div class="hpc-summary__meta">
-            <span class="hpc-pill" :class="`hpc-pill--${summary.health.status}`">{{ summary.health.label }}</span>
-            <GlassButton variant="secondary" density="compact" type="button" @click="openProjectScopeDetails">контур проекта</GlassButton>
-            <span v-if="saveMetaText" class="hpc-saved" :class="{ 'hpc-saved--error': saveState === 'error' }">{{ saveMetaText }}</span>
-          </div>
-        </div>
-
-        <div class="hpc-metrics">
-          <div class="hpc-metric">
-            <span class="hpc-metric__label">Фазовый прогресс</span>
-            <strong class="hpc-metric__value">{{ summary.phasePercent }}%</strong>
-          </div>
-          <div class="hpc-metric">
-            <span class="hpc-metric__label">Спринтовое исполнение</span>
-            <strong class="hpc-metric__value">{{ summary.doneTasks }} / {{ summary.totalTasks }}</strong>
-          </div>
-          <div class="hpc-metric">
-            <span class="hpc-metric__label">Блокеры</span>
-            <strong class="hpc-metric__value">{{ summary.blockerCount }}</strong>
-          </div>
-          <div class="hpc-metric">
-            <span class="hpc-metric__label">Следующий обзор</span>
-            <strong class="hpc-metric__value">{{ control.nextReviewDate || 'не задан' }}</strong>
-          </div>
-        </div>
-      </section>
-
-      <section class="hpc-section" v-show="activeModule === 'overview'">
-        <div class="hpc-section__head">
-          <div>
-            <p class="hpc-section__label">Контур</p>
-            <h3 class="hpc-section__title">Управление ритмом проекта</h3>
-          </div>
-        </div>
-        <div class="hpc-grid hpc-grid--top">
-          <div class="u-field">
-            <label class="u-field__label">Ответственный за контроль</label>
-            <GlassInput v-model="control.manager"  placeholder="Менеджер" @blur="save" />
-          </div>
-          <div class="u-field">
-            <label class="u-field__label">Интервал обзора, дней</label>
-            <GlassInput v-model.number="control.cadenceDays" type="number" min="1" max="90"  @blur="save" />
-          </div>
-          <div class="u-field">
-            <label class="u-field__label">Следующий контрольный обзор</label>
-            <AppDatePicker v-model="control.nextReviewDate" model-type="iso" input-class="glass-input" @update:model-value="save" />
-          </div>
-          <div class="u-field">
-            <label class="u-field__label">Последняя синхронизация</label>
-            <AppDatePicker v-model="control.lastSyncAt" model-type="iso" input-class="glass-input" @update:model-value="save" />
-          </div>
-        </div>
-      </section>
+      <ControlOverviewSection
+        v-show="activeModule === 'overview'"
+        :control="control"
+        :summary="summary"
+        :save-meta-text="saveMetaText"
+        :save-state="saveState"
+        @save="save"
+        @open-project-scope-details="openProjectScopeDetails"
+      />
 
       <section class="hpc-section" v-show="activeModule === 'communications'">
         <div class="hpc-section__head">
@@ -1182,38 +1132,7 @@
         <div v-else class="hpc-empty">Нет спринтов</div>
       </section>
 
-      <section class="hpc-section" v-show="activeModule === 'health'">
-        <div class="hpc-section__head">
-          <div>
-            <p class="hpc-section__label">Здоровье проекта</p>
-            <h3 class="hpc-section__title">Контрольные точки и блокеры</h3>
-          </div>
-          <GlassButton variant="secondary" density="compact"  type="button" @click="addCheckpoint">+ точка</GlassButton>
-        </div>
-
-        <div class="hpc-checkpoint-list">
-          <div v-for="(checkpoint, checkpointIndex) in control.checkpoints" :key="checkpoint.id" class="hpc-checkpoint-row">
-            <GlassInput v-model="checkpoint.title"  placeholder="Контрольная точка" @blur="save" />
-            <GlassInput v-model="checkpoint.category"  placeholder="Категория" @blur="save" />
-            <select v-model="checkpoint.status" class="u-status-sel" @change="save">
-              <option v-for="option in checkpointStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-            </select>
-            <GlassInput v-model="checkpoint.note" class=" hpc-checkpoint-row__note" placeholder="Комментарий" @blur="save" />
-            <GlassButton variant="danger" density="compact"  type="button" @click="removeCheckpoint(checkpointIndex)">×</GlassButton>
-          </div>
-        </div>
-
-        <div class="hpc-task-head hpc-task-head--blockers">
-          <span class="hpc-task-head__title">Текущие блокеры</span>
-          <GlassButton variant="secondary" density="compact"  type="button" @click="addBlocker">+ блокер</GlassButton>
-        </div>
-        <div class="hpc-blocker-list">
-          <div v-for="(blocker, blockerIndex) in control.blockers" :key="`blocker-${blockerIndex}`" class="hpc-blocker-row">
-            <GlassInput v-model="control.blockers[blockerIndex]" class=" hpc-blocker-row__input" placeholder="Описание блокера" @blur="save" />
-            <GlassButton variant="danger" density="compact"  type="button" @click="removeBlocker(blockerIndex)">×</GlassButton>
-          </div>
-        </div>
-      </section>
+      <ControlHealthSection v-show="activeModule === 'health'" :control="control" @save="save" />
 
     <Teleport to="body">
       <div v-if="msgModalOpen" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(8px);">
@@ -1379,33 +1298,12 @@ const moduleViewportStart = ref<HTMLElement | null>(null)
 const isMobileModuleDockVisible = ref(true)
 let moduleDockSyncFrame = 0
 
-const phaseStatusOptions = [
-  { value: 'planned', label: 'запланирована' },
-  { value: 'active', label: 'в работе' },
-  { value: 'blocked', label: 'заблокирована' },
-  { value: 'done', label: 'завершена' },
-] as const
-
-const sprintStatusOptions = [
-  { value: 'planned', label: 'запланирован' },
-  { value: 'active', label: 'активен' },
-  { value: 'review', label: 'на ревью' },
-  { value: 'done', label: 'завершён' },
-] as const
-
-const checkpointStatusOptions = [
-  { value: 'stable', label: 'стабильно' },
-  { value: 'warning', label: 'внимание' },
-  { value: 'critical', label: 'критично' },
-] as const
-
-const checkpointStatusLabels = Object.fromEntries(
-  checkpointStatusOptions.map(option => [option.value, option.label]),
-) as Record<(typeof checkpointStatusOptions)[number]['value'], string>
-
-const sprintStatusLabels = Object.fromEntries(
-  sprintStatusOptions.map(option => [option.value, option.label]),
-) as Record<(typeof sprintStatusOptions)[number]['value'], string>
+import {
+  checkpointStatusLabels,
+  phaseStatusOptions,
+  sprintStatusLabels,
+  sprintStatusOptions,
+} from './model/control-options'
 
 const taskStatusLabels: Record<HybridControlTask['status'], string> = {
   todo: 'к запуску',
@@ -1544,12 +1442,7 @@ watch(() => control.sprints.flatMap(sprint => sprint.tasks.map(task => task.id))
 const summary = computed(() => buildHybridControlSummary(control))
 const coordinationBrief = computed(() => buildHybridCoordinationBrief(control, { projectSlug: props.slug }))
 
-const communicationChannelOptions = (
-  ['project-room', 'direct-thread', 'handoff', 'approval', 'daily-digest'] as const satisfies readonly HybridControlCommunicationChannel[]
-).map(value => ({
-  value,
-  label: getHybridCommunicationChannelLabel(value),
-}))
+import { communicationChannelOptions, stakeholderRoleOptions } from './model/control-options'
 
 const projectParticipantRoleOptions = PROJECT_PARTICIPANT_ROLE_KEYS.map(value => ({
   value,
@@ -1588,13 +1481,6 @@ const timelineGovernanceOriginLabels: Record<ProjectScopeDetailBundle['participa
   project: 'проект',
   derived: 'legacy',
 }
-
-const stakeholderRoleOptions = (
-  ['admin', 'manager', 'designer', 'client', 'contractor', 'seller', 'service'] as const satisfies readonly HybridControlStakeholderRole[]
-).map(value => ({
-  value,
-  label: getHybridStakeholderRoleLabel(value),
-}))
 
 const teamMemberRoleLabels: Record<HybridControlTeamMember['role'], string> = {
   architect: 'Архитектор',
@@ -2801,32 +2687,6 @@ function cycleTask(task: HybridControlTask) {
   }
   task.status = next[task.status]
   void save({ refreshAfter: false })
-}
-
-function addCheckpoint() {
-  control.checkpoints.push({
-    id: `hybrid-checkpoint-${Date.now()}`,
-    title: 'Новая контрольная точка',
-    category: 'control',
-    status: 'stable',
-    note: '',
-  })
-  save()
-}
-
-function removeCheckpoint(index: number) {
-  control.checkpoints.splice(index, 1)
-  save()
-}
-
-function addBlocker() {
-  control.blockers.push('')
-  save()
-}
-
-function removeBlocker(index: number) {
-  control.blockers.splice(index, 1)
-  save()
 }
 
 function addCommunicationRule() {
