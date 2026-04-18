@@ -1118,3 +1118,18 @@ AdminDesignerCabinet.vue: 3027 → 2886 (−141, кумулятивно 4332 →
 ClientProjectControl.vue: 1969 → 1866 (−103, кумулятивно 3405 → 1866 = **−45%** от исходника — рекорд Wave 4 по отдельному файлу).
 
 Communications/Timeline/Sprints секции оставлены — они содержат много reactive state (selected sprint, timeline drag, call insight handlers) и требуют полноценного composable-refactor'а.
+
+### [done] 2026-04-18 — Wave 4 / status-labels consolidation
+
+`control-options.ts` получил `taskStatusOptions` + `taskStatusLabels`. В `ClientProjectControl.vue` три inline `Record<>`-мапы (phase/sprint/task) заменены импортом из shared модуля. Также удалён unused `HybridControlPhase` type import (остался мёртвым после выделения `ClientControlPhasesSection`). Admin-вариант тех же labels оставлен inline — он пересекается с параллельной работой над Control{Sprints,Timeline,Communications}Section, сложится в shared модуль после её rebase'а.
+
+### [done] 2026-04-18 — Wave 4 / batch 8: ProjectEntityPanel generic widget
+
+На странице `app/pages/admin/projects/[slug].vue` было 5 почти идентичных inline-блоков `proj-entity-panel` (клиенты/подрядчики/дизайнеры/поставщики/менеджеры — ~50 строк каждый). Схлопнуты в инстансы одного переиспользуемого generic-компонента.
+
+Новый виджет: `app/widgets/projects/entity-panel/ProjectEntityPanel.vue`
+- `<script setup lang="ts" generic="T extends { id; name }">` — работает с любым row-типом
+- Props: title, labels for linked/available sections, meta-formatter callback, brutalist flag, empty states, опциональные error/success. Флаги `canLink`/`canUnlink` позволяют менеджер-панели рендериться read-only без дублирования.
+- Каждый из 5 branch'ей теперь ~15 строк (только meta-formatter closure разная).
+
+`[slug].vue`: 2633 → 2462 (−171, кумулятивно 3687 → 2462 = **−33%**).
