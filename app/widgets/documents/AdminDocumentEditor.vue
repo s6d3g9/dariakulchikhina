@@ -40,149 +40,26 @@
         <span class="de-section-subtitle">— заполнение данных</span>
       </div>
 
-      <!-- Sources row -->
-      <div class="de-sources">
-        <div class="de-source">
-          <label class="de-source-label">📁 Проект</label>
-          <select
-            v-model="pickedProjectSlug"
-            class="u-status-sel"
-            @change="loadContext"
-          >
-            <option value="">
-              — без проекта —
-            </option>
-            <option
-              v-for="p in projects"
-              :key="p.slug"
-              :value="p.slug"
-            >
-              {{ p.title }}
-            </option>
-          </select>
-        </div>
-        <div class="de-source">
-          <label class="de-source-label">
-            🎨 Исполнитель
-            <span
-              v-if="designersList.length"
-              class="de-badge"
-            >{{ designersList.length }}</span>
-          </label>
-          <select
-            v-model="pickedDesignerId"
-            class="u-status-sel"
-            @change="applyDesignerData"
-          >
-            <option :value="0">
-              — не выбран —
-            </option>
-            <option
-              v-for="d in designersList"
-              :key="d.id"
-              :value="d.id"
-            >
-              {{ d.name }}{{ d.companyName ? ` (${d.companyName})` : '' }}
-            </option>
-          </select>
-        </div>
-        <div class="de-source">
-          <label class="de-source-label">👤 Клиент
-            <span
-              v-if="ctx?.clients?.length"
-              class="de-badge"
-            >{{ ctx.clients.length }}</span>
-          </label>
-          <select
-            v-model="pickedClientId"
-            class="u-status-sel"
-            :disabled="loadingCtx"
-            @change="applyClientData"
-          >
-            <option :value="0">
-              {{ loadingCtx ? 'загрузка...' : '— не выбран —' }}
-            </option>
-            <option
-              v-for="c in ctx?.clients || []"
-              :key="c.id"
-              :value="c.id"
-            >
-              {{ c.name }}{{ c.phone ? ` · ${c.phone}` : '' }}
-            </option>
-          </select>
-        </div>
-        <div class="de-source">
-          <label class="de-source-label">
-            🏗 Подрядчик
-            <span
-              v-if="ctx?.contractors?.length"
-              class="de-badge"
-            >{{ ctx.contractors.length }}</span>
-          </label>
-          <select
-            v-model="pickedContractorId"
-            class="u-status-sel"
-            :disabled="loadingCtx"
-            @change="applyContractorData"
-          >
-            <option :value="0">
-              {{ loadingCtx ? 'загрузка...' : '— не выбран —' }}
-            </option>
-            <option
-              v-for="c in ctx?.contractors || []"
-              :key="c.id"
-              :value="c.id"
-            >
-              {{ c.name }}{{ c.companyName ? ` (${c.companyName})` : '' }}
-            </option>
-          </select>
-        </div>
-      </div>
-      <div
-        v-if="loadingCtx"
-        class="de-loading-bar"
-      >
-        <div class="de-loading-fill" />
-      </div>
-
-      <!-- Entity previews -->
-      <div
-        v-if="pickedDesigner || pickedClient || pickedContractor"
-        class="de-preview-row"
-      >
-        <div
-          v-if="pickedDesigner"
-          class="de-preview-chip de-preview-chip--executor"
-        >
-          🎨 {{ pickedDesigner.name }}
-          <span v-if="pickedDesigner.phone"> · {{ pickedDesigner.phone }}</span>
-          <span v-if="pickedDesigner.email"> · {{ pickedDesigner.email }}</span>
-          <button
-            class="de-save-executor-btn"
-            :class="{ 'de-save-executor-btn--saved': executorSaved }"
-            :title="'Сохранить реквизиты исполнителя для автозаполнения'"
-            @click="saveExecutorToStorage"
-          >
-            {{ executorSaved ? '✓ сохранено' : '💾 запомнить реквизиты' }}
-          </button>
-        </div>
-        <div
-          v-if="pickedClient"
-          class="de-preview-chip"
-        >
-          👤 {{ pickedClient.name }}
-          <span v-if="pickedClient.phone"> · {{ pickedClient.phone }}</span>
-          <span v-if="pickedClient.email"> · {{ pickedClient.email }}</span>
-        </div>
-        <div
-          v-if="pickedContractor"
-          class="de-preview-chip"
-        >
-          🏗 {{ pickedContractor.companyName || pickedContractor.name }}
-          <span v-if="pickedContractor.inn"> · ИНН {{ pickedContractor.inn }}</span>
-          <span v-if="pickedContractor.phone"> · {{ pickedContractor.phone }}</span>
-        </div>
-      </div>
+      <!-- Sources row + entity previews -->
+      <AdminDocumentEditorSourcesPanel
+        v-model:picked-project-slug="pickedProjectSlug"
+        v-model:picked-designer-id="pickedDesignerId"
+        v-model:picked-client-id="pickedClientId"
+        v-model:picked-contractor-id="pickedContractorId"
+        :projects="projects"
+        :designers-list="designersList"
+        :ctx="ctx"
+        :loading-ctx="loadingCtx"
+        :picked-designer="pickedDesigner"
+        :picked-client="pickedClient"
+        :picked-contractor="pickedContractor"
+        :executor-saved="executorSaved"
+        @load-context="loadContext"
+        @apply-designer="applyDesignerData"
+        @apply-client="applyClientData"
+        @apply-contractor="applyContractorData"
+        @save-executor="saveExecutorToStorage"
+      />
 
       <!-- Fields -->
       <div class="de-fields-divider">
@@ -860,6 +737,7 @@
 import { useDocumentEditorSources, EXECUTOR_DEFAULTS } from '~/composables/useDocumentEditorSources'
 import type { DocumentTemplate } from '~/composables/useDocumentEditorSources'
 import { useDocumentEditorFields } from '~/composables/useDocumentEditorFields'
+import AdminDocumentEditorSourcesPanel from './AdminDocumentEditorSourcesPanel.vue'
 
 const props = defineProps<{
   templates: Array<DocumentTemplate>
