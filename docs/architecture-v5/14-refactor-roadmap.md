@@ -1362,3 +1362,32 @@ Parent теперь purely shell: topbar trigger + panel frame + tab navigation 
 - `useDesignSystem()` + `useUITheme()` + `useThemeToggle()` — singleton Nuxt composables
 
 Wave 4 для UIDesignPanel закрыт.
+
+### Wave 4 — SESSION END STATUS
+
+Финальные размеры giant SFC'ов после всей session работы (включая параллельные Sonnet batch'и):
+
+| Файл | Исходник | Сейчас | Δ | Техника |
+|---|---|---|---|---|
+| `AdminProjectControl.vue` | 5844 | ~620 | **−89%** | section extract + dead script strip (Sonnet) |
+| `UIDesignPanel.vue` | 6624 | **2205** | **−67%** | 20 tab sub-components + shared composable |
+| `contractor/[id]/index.vue` | 3347 | ~1486 | −55% | 7 section components |
+| `ClientProjectControl.vue` | 3405 | ~1760 | −48% | 3 sections + shared control-options |
+| `ProjectCommunicationsPanel.vue` | 2639 | 1734 | −34% | 2 directory components |
+| `AdminDesignerCabinet.vue` | 4332 | 2886 | −33% | 7 section components |
+| `admin/projects/[slug].vue` | 3687 | 2462 | −33% | ProjectEntityPanel generic + 5 instances |
+| `AdminDocumentEditor.vue` | 3030 | 2213 | −27% | Step 0 (template picker) only |
+
+Новые FSD-артефакты:
+- **`app/entities/design-system/model/useDesignTokenControls.ts`** — композабл-моста между `useDesignSystem()` singleton и 20 tab-компонентами UIDesignPanel
+- **`app/widgets/projects/entity-panel/ProjectEntityPanel.vue`** — generic `<script setup generic>` для list'ов связанных сущностей
+- **`shared/ui/autosave/autosave-state.ts`** — shared `InlineAutosaveState` type + helpers (consumed 5 cabinet'ами)
+- **`app/widgets/projects/control/model/control-options.ts`** — shared select-option lists для Admin/Client control sections
+
+### Остающиеся цели (требуют big-session composable work)
+
+- **`AdminDocumentEditor` Step 1 (picker) + Step 2 (field editor)**: 236+582 строк с ~20 deps (picker refs, ctx, loadingCtx, apply-handlers, field state, vars, generators). Нужен composable `useDocumentEditorSources()` + `useDocumentEditorFields()`.
+- **`AdminDesignerCabinet` services/packages/subscriptions**: stateful autosave per-card, требует `useDesignerCardEditor()` factory.
+- **`AdminDocumentsSection` registry**: search/sort/filter state composable + card grid.
+- **`app/layouts/admin.vue`**: header utility bar (search/notifications/edit mode) → `AdminHeaderUtilities.vue`, hamburger panel — separate work.
+- **`Wipe2Renderer.vue`** (517 строк): conditional content render'ы; вынести bullet block renderers.
