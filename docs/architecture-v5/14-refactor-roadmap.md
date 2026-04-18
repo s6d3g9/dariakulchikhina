@@ -1166,3 +1166,12 @@ Commits:
 - `pnpm exec vue-tsc --noEmit` — exit 0, 0 TS errors в изменённых файлах
 - `pnpm docs:v5:verify` — passed
 - `node scripts/lint-ratchet.mjs check` — OK 0/0
+
+### [done] 2026-04-18 — Wave 4 / batch 12-13: UIDesignPanel inner slices
+
+Паттерн slice'а в 4800-строчной SFC начат и установлен:
+
+- **batch 12** (`UIDesignModeBar.vue`, `UIDesignPresetCardsGrid.vue`): 4-button concept-mode selector row + универсальный grid preset/concept cards (variant-prop выбирает markup between preset и concept layouts — было 2 почти идентичных блока).
+- **batch 13** (`UIDesignPanelToprow.vue`): `.dp-panel-toprow` (tab nav + search input + export toggle + reset + close buttons, 28 строк). Props: `tabs`, `activeTab`, `searchQuery`, `showExportButton`. Events: `update:activeTab`, `update:searchQuery`, `toggle-export`, `reset`, `close`.
+
+Complement to batch 11 (Export/Import drawer extracted earlier). Первые **четыре FSD-sub-components** в `features/ui-editor/ui/` — дальнейший slice'инг 23 tab-страниц (palette, colors, buttons, type, surface, radii, anim, grid, typeScale, darkMode, inputs, tags, nav, statuses, popups, scrollbar, tables, badges, arch) потребует либо composable для `tokens`-объекта (слишком много v-model bindings), либо передачу через provide/inject.
