@@ -908,131 +908,32 @@
 
           <!-- ═══════════════ CLIENTS (Flat Registry pivot) ═══════════════ -->
           <template v-if="(section === 'clients') || showAll">
-            <div class="cab-section" data-section="clients">
-            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Клиенты</h2></div>
-            <div v-if="uniqueClients.length" class="pivot-list">
-              <div v-for="c in uniqueClients" :key="c.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToClient(c.id, c.name)">
-                <div class="pivot-banner-left">
-                  <span class="pivot-banner-name">{{ c.name }}</span>
-                  <span v-if="c.phone || c.email" class="pivot-banner-contact">
-                    {{ [c.phone, c.email].filter(Boolean).join(' / ') }}
-                  </span>
-                </div>
-                <span class="pivot-banner-arrow">→</span>
-              </div>
-            </div>
-            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Клиентов пока нет. Добавьте клиента в проект.</p></div>
-            </div>
+            <CabinetClientsSection :clients="uniqueClients" :is-brutalist="isBrutalistDesignerCabinetMode" />
           </template>
 
           <!-- ═══════════════ CONTRACTORS (Flat Registry pivot) ═══════════════ -->
           <template v-if="(section === 'contractors') || showAll">
-            <div class="cab-section" data-section="contractors">
-            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Подрядчики</h2></div>
-            <div v-if="uniqueContractors.length" class="pivot-list">
-              <div v-for="c in uniqueContractors" :key="c.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToContractor(c.id, c.name)">
-                <div class="pivot-banner-left">
-                  <span class="pivot-banner-name">{{ c.name }}</span>
-                  <span v-if="c.role" class="pivot-banner-contact">{{ c.role }}</span>
-                </div>
-                <span class="pivot-banner-arrow">→</span>
-              </div>
-            </div>
-            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Подрядчиков пока нет. Добавьте подрядчика в проект.</p></div>
-            </div>
+            <CabinetContractorsSection :contractors="uniqueContractors" :is-brutalist="isBrutalistDesignerCabinetMode" />
           </template>
 
           <!-- ═══════════════ SELLERS (Flat Registry pivot) ═══════════════ -->
           <template v-if="(section === 'sellers') || showAll">
-            <div class="cab-section" data-section="sellers">
-            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Продавцы / Поставщики</h2></div>
-            <div v-if="linkedData?.sellers?.length" class="pivot-list">
-              <div v-for="s in linkedData.sellers" :key="s.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToSeller(s.id, s.name)">
-                <div class="pivot-banner-left">
-                  <span class="pivot-banner-name">{{ s.name }}</span>
-                  <span v-if="s.companyName" class="pivot-banner-contact">{{ s.companyName }}</span>
-                  <span v-if="s.phone || s.email" class="pivot-banner-contact">
-                    {{ [s.phone, s.email].filter(Boolean).join(' / ') }}
-                  </span>
-                  <span v-if="s.city" class="pivot-banner-contact">{{ s.city }}</span>
-                </div>
-                <div class="pivot-banner-right">
-                  <span class="pivot-banner-count">{{ s.projects.length }} {{ pluralProjects(s.projects.length) }}</span>
-                  <span class="pivot-banner-arrow">→</span>
-                </div>
-              </div>
-            </div>
-            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Поставщиков пока нет.</p></div>
-            </div>
+            <CabinetSellersSection :sellers="linkedData?.sellers || []" :is-brutalist="isBrutalistDesignerCabinetMode" />
           </template>
 
           <!-- ═══════════════ MANAGERS (Flat Registry) ═══════════════ -->
           <template v-if="(section === 'managers') || showAll">
-            <div class="cab-section" data-section="managers">
-            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Менеджеры</h2></div>
-            <div v-if="linkedData?.managers?.length" class="pivot-list">
-              <div v-for="m in linkedData.managers" :key="m.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToManager(m.id, m.name)">
-                <div class="pivot-banner-left">
-                  <span class="pivot-banner-name">{{ m.name }}</span>
-                  <span v-if="m.role" class="pivot-banner-contact">{{ m.role }}</span>
-                  <span v-if="m.phone || m.email" class="pivot-banner-contact">
-                    {{ [m.phone, m.email].filter(Boolean).join(' / ') }}
-                  </span>
-                  <span v-if="m.telegram" class="pivot-banner-contact">{{ m.telegram }}</span>
-                </div>
-                <div class="pivot-banner-right">
-                  <span class="pivot-banner-count">{{ m.projects.length }} {{ pluralProjects(m.projects.length) }}</span>
-                  <span class="pivot-banner-arrow">→</span>
-                </div>
-              </div>
-            </div>
-            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Менеджеров пока нет.</p></div>
-            </div>
+            <CabinetManagersSection :managers="linkedData?.managers || []" :is-brutalist="isBrutalistDesignerCabinetMode" />
           </template>
 
           <!-- ═══════════════ GALLERY (Flat Registry) ═══════════════ -->
           <template v-if="(section === 'gallery') || showAll">
-            <div class="cab-section" data-section="gallery">
-            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Галерея</h2></div>
-            <div v-if="galleryList.length" class="gallery-grid">
-              <div v-for="g in galleryList" :key="g.id" class="gallery-card glass-surface" :class="{ 'gallery-card--brutalist': isBrutalistDesignerCabinetMode }">
-                <div v-if="g.image" class="gallery-card-img">
-                  <img :src="`/uploads/${g.image}`" :alt="g.title" loading="lazy" />
-                </div>
-                <div class="gallery-card-body">
-                  <span class="gallery-card-title">{{ g.title }}</span>
-                  <span v-if="g.category" class="gallery-card-cat">{{ g.category }}</span>
-                  <div v-if="g.tags?.length" class="gallery-card-tags">
-                    <span v-for="t in g.tags" :key="t" class="gallery-tag">{{ t }}</span>
-                  </div>
-                  <span v-if="g.featured" class="gallery-card-feat">Избранное</span>
-                </div>
-              </div>
-            </div>
-            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Элементов галереи пока нет.</p></div>
-            </div>
+            <CabinetGallerySection :items="galleryList" :is-brutalist="isBrutalistDesignerCabinetMode" />
           </template>
 
           <!-- ═══════════════ MOODBOARDS (Flat Registry) ═══════════════ -->
           <template v-if="(section === 'moodboards') || showAll">
-            <div class="cab-section" data-section="moodboards">
-            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Мудборды</h2></div>
-            <div v-if="moodboardList.length" class="gallery-grid">
-              <div v-for="g in moodboardList" :key="g.id" class="gallery-card glass-surface" :class="{ 'gallery-card--brutalist': isBrutalistDesignerCabinetMode }">
-                <div v-if="g.image" class="gallery-card-img">
-                  <img :src="`/uploads/${g.image}`" :alt="g.title" loading="lazy" />
-                </div>
-                <div class="gallery-card-body">
-                  <span class="gallery-card-title">{{ g.title }}</span>
-                  <div v-if="g.tags?.length" class="gallery-card-tags">
-                    <span v-for="t in g.tags" :key="t" class="gallery-tag">{{ t }}</span>
-                  </div>
-                  <span v-if="g.featured" class="gallery-card-feat">Избранное</span>
-                </div>
-              </div>
-            </div>
-            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Мудбордов пока нет.</p></div>
-            </div>
+            <CabinetMoodboardsSection :items="moodboardList" :is-brutalist="isBrutalistDesignerCabinetMode" />
           </template>
 
           <!-- ═══════════════ PROFILE ═══════════════ -->
@@ -1406,29 +1307,11 @@ const uniqueContractors = computed(() => {
 const galleryList = computed(() => linkedData.value?.gallery || [])
 const moodboardList = computed(() => linkedData.value?.moodboards || [])
 
-function pluralProjects(n: number): string {
-  if (n % 10 === 1 && n % 100 !== 11) return 'проект'
-  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'проекта'
-  return 'проектов'
-}
+// ── Sidebar counters (N) — drillToEntityCabinet navigation is handled
+//    inside each pivot section component directly. ──
+const { setCabinetCounts } = useAdminNav()
 
-// ── Pivot navigation to entity cabinets ──
-const { drillToEntityCabinet, setCabinetCounts } = useAdminNav()
 
-function goToClient(id: number, name?: string) {
-  drillToEntityCabinet('clients', id, name)
-}
-function goToContractor(id: number, name?: string) {
-  drillToEntityCabinet('contractors', id, name)
-}
-function goToSeller(id: number, name?: string) {
-  drillToEntityCabinet('sellers', id, name)
-}
-function goToManager(id: number, name?: string) {
-  drillToEntityCabinet('managers', id, name)
-}
-
-// ── Sidebar counters (N) ──
 watch([designerProjects, linkedData], () => {
   setCabinetCounts({
     des_projects:    designerProjects.value.length,
