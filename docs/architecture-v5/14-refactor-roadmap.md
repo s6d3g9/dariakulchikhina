@@ -1451,10 +1451,19 @@ Wave 4 для UIDesignPanel закрыт.
   imports both composables and owns only `step`, `saving`, `diff*` refs.
 - Commit: `be7b690`
 
+### [done] 2026-04-18 — Wave 4 / AdminDocumentEditorSourcesPanel extraction
+
+- Created `app/widgets/documents/AdminDocumentEditorSourcesPanel.vue` (197 lines).
+  - Props: `projects`, `pickedProjectSlug`, `pickedDesignerId`, `pickedClientId`, `pickedContractorId`, `designersList`, `ctx`, `loadingCtx`, `pickedDesigner`, `pickedClient`, `pickedContractor`, `executorSaved`.
+  - Emits: `update:pickedProjectSlug`, `load-context`, `update:pickedDesignerId`, `apply-designer`, `update:pickedClientId`, `apply-client`, `update:pickedContractorId`, `apply-contractor`, `save-executor`.
+  - Uses `@change` native event handlers that emit v-model update + action in the same synchronous tick, preserving `loadContext` timing.
+- `app/widgets/documents/AdminDocumentEditor.vue`: 1817 → 1695 lines (−122 lines, −7%).
+- Commit: `647b905`
+
 ### Остающиеся цели (требуют big-session composable work)
 
-- **`AdminDocumentEditor` Step 1/2 templates**: 236+582 строк HTML ещё inline в одном файле; следующий шаг — вынести `<template v-if="step === 0">` и `<template v-if="step === 1">` в отдельные компоненты `DocumentEditorStepPicker.vue` и `DocumentEditorStepFields.vue`.
-- **`AdminDesignerCabinet` services/packages/subscriptions**: секции уже вынесены; `CabinetServicesSection.vue` (984 строки) — кандидат на дальнейшую нарезку.
+- **`AdminDocumentEditor`** (1695 lines): Step 2 fields+vars block (lines 64-148) and Step 3 editor (lines 149-735) still inline.
+- **`AdminDesignerCabinet` services section**: `CabinetServicesSection.vue` (984 строки) — кандидат на дальнейшую нарезку.
 - **`AdminDocumentsSection` registry**: search/sort/filter state composable + card grid.
 - **`app/layouts/admin.vue`**: header utility bar (search/notifications/edit mode) → `AdminHeaderUtilities.vue`, hamburger panel — separate work.
 - **`Wipe2Renderer.vue`** (517 строк): conditional content render'ы; вынести bullet block renderers.
