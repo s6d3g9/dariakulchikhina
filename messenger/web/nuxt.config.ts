@@ -6,6 +6,37 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css', '~/assets/css/ios.css'],
   modules: ['@pinia/nuxt', 'vuetify-nuxt-module'],
   ssr: false,
+  components: [
+    // FSD component layers — scanned in reverse FSD order so lower layers don't shadow higher ones
+    { path: '~/shared/ui', pathPrefix: false },
+    { path: '~/entities', pathPrefix: false },
+    { path: '~/features', pathPrefix: false },
+    { path: '~/widgets', pathPrefix: false },
+    // Keep scanning legacy components dir if anything remains
+    { path: '~/components', pathPrefix: false },
+  ],
+  imports: {
+    dirs: [
+      // FSD composable / model layers
+      'entities/*/model',
+      'entities/auth/model',
+      'entities/contacts/model',
+      'entities/conversations/model',
+      'entities/calls/model',
+      'entities/messages/model',
+      'entities/settings/model',
+      'entities/agents/model',
+      'features/*/model',
+      'features/chat-composer/model',
+      'features/project-engine/model',
+      'widgets/*/model',
+      'widgets/shell/model',
+      'widgets/agent-workspace/model',
+      'core/realtime',
+      'core/runtime',
+      'shared/composables',
+    ],
+  },
   vite: {
     build: {
       cssMinify: 'lightningcss',
