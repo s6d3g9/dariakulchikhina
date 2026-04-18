@@ -1,11 +1,9 @@
 {
-  "generatedAt": "2026-04-18T10:24:35.193Z",
-  "totalErrors": 9,
+  "generatedAt": "2026-04-18T10:29:49.372Z",
+  "totalErrors": 7,
   "perFile": {
     "messenger/core/src/agents/agent-knowledge-store.ts": 3,
     "messenger/core/src/media/storage-paths.ts": 1,
-    "messenger/core/src/realtime/server.ts": 3,
-    "server/modules/projects/project-governance.service.ts": 1,
-    "server/modules/projects/project-work-status.service.ts": 1
+    "messenger/core/src/realtime/server.ts": 3
   }
 }

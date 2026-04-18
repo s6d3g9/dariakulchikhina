@@ -12,6 +12,19 @@ import {
   workStatusItems,
 } from '~/server/db/schema'
 
+type Db = ReturnType<typeof useDb>
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
+
+/**
+ * Run a callback inside a DB transaction. Keeps the `useDb()` import
+ * localized to this repository file — services must not import the DB
+ * directly (see docs/architecture-v5/18-repository-layer.md).
+ */
+export async function runInTransaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  const db = useDb()
+  return db.transaction(fn)
+}
+
 // ── Internal helpers ───────────────────────────────────────────────────
 
 function isGovernanceTableMissingError(error: unknown) {

@@ -1,4 +1,3 @@
-import { useDb } from '~/server/db'
 import type {
   CreateProjectParticipant,
   CreateProjectScopeAssignment,
@@ -320,9 +319,8 @@ export async function createProjectGovernanceParticipant(projectSlug: string, in
   const sourceId = sourceKind === 'custom' ? undefined : input.sourceId
   assertGovernanceParticipantSource(sourceKind, sourceId)
 
-  const db = useDb()
   try {
-    return await db.transaction(async (tx) => {
+    return await repo.runInTransaction(async (tx) => {
       const participantRow = await repo.insertParticipantInTx(tx, {
         projectId: project.id,
         sourceKind,
@@ -394,9 +392,8 @@ export async function updateProjectGovernanceParticipant(projectSlug: string, pa
   if (input.notes !== undefined) updates.notes = toNullableTrimmedString(input.notes)
   if (input.meta !== undefined) updates.meta = sanitizeGovernanceRecord(input.meta)
 
-  const db = useDb()
   try {
-    return await db.transaction(async (tx) => {
+    return await repo.runInTransaction(async (tx) => {
       const participantRow = await repo.updateParticipantInTx(tx, project.id, participantId, updates)
 
       if (!participantRow) {
@@ -437,9 +434,8 @@ export async function createProjectGovernanceAssignment(projectSlug: string, inp
     throw createError({ statusCode: 404, statusMessage: 'Контур проекта не найден' })
   }
 
-  const db = useDb()
   try {
-    return await db.transaction(async (tx) => {
+    return await repo.runInTransaction(async (tx) => {
       const assignmentValues: Record<string, unknown> = {
         projectId: project.id,
         participantId: participantPersistedId,
@@ -527,9 +523,8 @@ export async function updateProjectGovernanceAssignment(projectSlug: string, ass
   if (input.meta !== undefined) updates.meta = sanitizeGovernanceRecord(input.meta)
   if (input.assignedBy !== undefined) updates.assignedBy = toNullableTrimmedString(input.assignedBy)
 
-  const db = useDb()
   try {
-    return await db.transaction(async (tx) => {
+    return await repo.runInTransaction(async (tx) => {
       const assignmentRow = await repo.updateAssignmentInTx(tx, project.id, assignmentId, updates)
 
       if (!assignmentRow) {
@@ -569,9 +564,8 @@ export async function deleteProjectGovernanceAssignment(projectSlug: string, ass
     throw createError({ statusCode: 404, statusMessage: 'Назначение не найдено' })
   }
 
-  const db = useDb()
   try {
-    return await db.transaction(async (tx) => {
+    return await repo.runInTransaction(async (tx) => {
       await repo.deleteAssignmentInTx(tx, project.id, assignmentId)
 
       const { revision } = await syncProjectGovernanceLegacySnapshotsTx(tx, project)
@@ -605,10 +599,9 @@ export async function updateProjectGovernanceScopeSettings(
   }
 
   const sanitizedSettings = sanitizeGovernanceRecord(input.settings)
-  const db = useDb()
 
   try {
-    return await db.transaction(async (tx) => {
+    return await repo.runInTransaction(async (tx) => {
       const existingRow = await repo.findScopeSettingsByContextInTx(
         tx,
         project.id,

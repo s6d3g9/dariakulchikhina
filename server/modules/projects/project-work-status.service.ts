@@ -1,4 +1,3 @@
-import { useDb } from '~/server/db'
 import * as repo from '~/server/modules/projects/project-work-status.repository'
 import * as projectsRepo from '~/server/modules/projects/projects.repository'
 
@@ -16,7 +15,6 @@ export type ProjectWorkStatusInputItem = {
 }
 
 export async function replaceProjectWorkStatusBySlug(slug: string, items: ProjectWorkStatusInputItem[]) {
-  const db = useDb()
   const project = await projectsRepo.findProjectIdBySlug(slug)
   if (!project) {
     return null
@@ -26,7 +24,7 @@ export async function replaceProjectWorkStatusBySlug(slug: string, items: Projec
     .map(item => item.id)
     .filter((id): id is number => typeof id === 'number')
 
-  await db.transaction(async (tx) => {
+  await repo.runInTransaction(async (tx) => {
     const existing = await repo.listWorkItemIdsByProject(project.id)
 
     const toDelete = existing

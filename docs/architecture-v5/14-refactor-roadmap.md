@@ -859,3 +859,82 @@ server/modules/ai/ai.repository.ts (listLegalSourceCounts, findProjectBySlug, li
 
 Проверка:
 - `pnpm comm:typecheck` — exit 0, 0 TS-ошибок на локальных модулях
+
+### [done] 2026-04-18 — Wave 7 / messenger/web FSD component and composable split
+Цель: переместить все 27 компонентов из `messenger/web/app/components/messenger/` и все 23 composable из `messenger/web/app/composables/` в целевые FSD-слои согласно матрице 12-messenger-services-refactor-map.md.
+
+Файлы перемещены (git mv):
+
+Компоненты:
+- MessengerAppShell.vue → widgets/shell/
+- MessengerIcon/DockField/AuthField/ProgressCircular/ProgressLinear.vue → shared/ui/
+- MessengerChatSection.vue → widgets/chat/
+- MessengerChatsSection.vue → widgets/chats/
+- MessengerContactsSection.vue → widgets/contacts/
+- MessengerSettingsSection.vue → widgets/settings/
+- MessengerChatHeader.vue → features/conversation-switch/ui/
+- MessengerMessageThread.vue → features/message-thread/ui/
+- MessengerChatComposerDock/Contexts/MediaMenu.vue, MessengerRoleQuickActions.vue → features/chat-composer/ui/
+- MessengerSharedGallery.vue → entities/media/ui/
+- MessengerAudioBubblePlayer.vue → entities/messages/ui/
+- MessengerAudioComposerDraft.vue → features/audio-draft/ui/
+- MessengerCallOverlay.vue → features/call-overlay/ui/
+- MessengerCallAnalysisPanel.vue → entities/calls/ui/
+- MessengerAgentsSection/AgentChatWorkspace.vue → widgets/agent-workspace/
+- MessengerAgentGraphEditor.vue → entities/agents/ui/
+- MessengerProjectEngineGraph/ActionsPanel/MiniTimeline.vue → features/project-engine/ui/
+
+Composables:
+- useMessengerAuth → entities/auth/model/
+- useMessengerContacts → entities/contacts/model/
+- useMessengerConversations/ConversationState → entities/conversations/model/
+- useMessengerRealtime, useMessengerRealtimeIdentity → core/realtime/
+- useMessengerCalls → entities/calls/model/
+- useMessengerCrypto, useMessengerKlipy → entities/messages/model/
+- useMessengerSettings → entities/settings/model/
+- useMessengerSections → widgets/shell/model/
+- useMessengerViewport → shared/composables/
+- useMessengerInstall, useMessengerFeatures → core/runtime/
+- useMessengerHoldActions → features/chat-composer/model/
+- useMessengerProjectEngine, useMessengerProjectActions → features/project-engine/model/
+- useMessengerAgents/AgentKnowledge/AgentRuns/AgentRuntime/AgentEdgePayloads → entities/agents/model/
+- useMessengerAgentWorkspace → widgets/agent-workspace/model/
+
+Исправлены все сломанные импорты (относительные пути к utils/, theme/, и cross-composable ссылки).
+nuxt.config.ts дополнен: добавлены components[] и imports.dirs[] для всех новых FSD-путей.
+
+Два composable отсутствовали в матрице, помещены по семантике:
+- useMessengerProjectActions → features/project-engine/model/ (используется project-engine UI)
+- useMessengerRealtimeIdentity → core/realtime/ (helper WS-идентификации)
+
+Commit:
+- 0ece605 refactor(messenger/web): FSD component and composable split
+
+Проверка:
+- git status — 51 files changed, все переименования + правки импортов корректны
+- Все `from '../../composables/...'` в компонентах исправлены на новые FSD-пути
+- nuxt.config.ts: components[] + imports.dirs[] покрывают все новые слои
+- `messenger/web/app/components/messenger/` — полностью пуст (все файлы перемещены)
+- `messenger/web/app/composables/` — остался только patch_bot.cjs (нетронутый артефакт)
+
+Долги:
+- `pnpm -C messenger/web build` / typecheck не запускался (нет скрипта typecheck в package.json мессенджера); проверка сборки — следующий шаг при деплое
+- matrix 12: все перечисленные в матрице файлы messenger/web перемещены; оставшееся в matrix 12 — core/realtime/api/calls layers в messenger/core (другой runtime, не в этом batch)
+
+### [done] 2026-04-18 — Wave 7 / clear remaining server-side repository-layer violations
+Цель: убрать последние 5 server-side ошибок ESLint из baseline — 3 `process.env` и 2 прямых импорта `~/server/db` из сервисов.
+
+Изменения:
+- `server/db/index.ts` — `process.env.DATABASE_URL` → `config.DATABASE_URL` (Zod уже гарантирует non-empty, убран избыточный null-check).
+- `server/modules/ai/gemma.service.ts` — `process.env.GEMMA_URL` → `config.GEMMA_URL`.
+- `server/modules/uploads/upload-storage.service.ts` — `process.env.UPLOAD_DIR` → `config.UPLOAD_DIR` (относительный путь резолвится через `process.cwd()` для обратной совместимости).
+- `server/modules/projects/project-work-status.repository.ts` и `project-governance.repository.ts` — добавлен `runInTransaction(fn)` helper, инкапсулирующий `useDb().transaction(...)` внутри репозитория.
+- `server/modules/projects/project-work-status.service.ts` и `project-governance.service.ts` — убран `import { useDb } from '~/server/db'`, 7 сайтов `useDb()/db.transaction(...)` заменены на `repo.runInTransaction(...)`.
+
+Ratchet: lint:errors 12 → 7 (−5), 8 → 3 файла. Остаток (7 ошибок) полностью в `messenger/core/src/*` — отдельный runtime, выделенный config-модуль для него — следующий шаг.
+
+Итог: во всём `server/**` не осталось ни одного прямого `process.env` (кроме `server/config.ts` / `server/plugins/error-handler.ts` по whitelist) и ни одного `~/server/db` импорта из сервисов. DDD-lite инвариант полностью удерживается ESLint-правилом `no-restricted-imports`.
+
+Проверка:
+- `pnpm exec vue-tsc --noEmit` — exit 0
+- `node scripts/lint-ratchet.mjs check` — OK, 7/7
