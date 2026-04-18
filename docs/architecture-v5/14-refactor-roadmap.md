@@ -938,3 +938,50 @@ Ratchet: lint:errors 12 → 7 (−5), 8 → 3 файла. Остаток (7 ош
 Проверка:
 - `pnpm exec vue-tsc --noEmit` — exit 0
 - `node scripts/lint-ratchet.mjs check` — OK, 7/7
+
+### [done] 2026-04-18 — Wave 7 / messenger/core process.env → config модуль
+
+Цель: убрать последние 7 ESLint-ошибок baseline (все в `messenger/core/src/*`), маршрутизировав `process.env.*` через уже существующий `messenger/core/src/config.ts`.
+
+Изменения:
+- `messenger/core/src/config.ts` — добавлены в Zod-схему: `GEMMA_URL`, `OLLAMA_BASE_URL`, `MESSENGER_EMBED_MODEL`, `LIVEKIT_API_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
+- `messenger/core/src/media/storage-paths.ts` — `process.env.MESSENGER_CORE_DATA_DIR` → `readMessengerConfig().MESSENGER_CORE_DATA_DIR`.
+- `messenger/core/src/agents/agent-knowledge-store.ts` — добавлен import `readMessengerConfig`, константы `OLLAMA_BASE`/`EMBED_MODEL` переведены на config.
+- `messenger/core/src/realtime/server.ts` — 3 блока `process.env.LIVEKIT_*` заменены на `config.LIVEKIT_*` (config уже был в scope из `readMessengerConfig()` на строке 67).
+- `.lint-baseline.json` — обновлён: totalErrors 7 → 0, perFile пуст.
+
+Commit: c83843d chore(lint): eliminate all remaining process.env violations in messenger/core
+
+Проверка:
+- `npx eslint messenger/core/src/...` — 0 errors
+- `node scripts/lint-ratchet.mjs check` — OK, 0/0
+- `pnpm exec vue-tsc --noEmit` — exit 0
+
+Итог: во всех трёх runtime (`server/`, `messenger/core/`, `services/communications-service/`) не осталось ни одного `process.env` вне config-файла. ESLint ratchet на 0 ошибок — инвариант полностью закрыт.
+
+### [done] 2026-04-18 — docs / INDEX.md синхронизация
+
+Цель: `pnpm docs:v5:verify` завершался с exit 2 — в INDEX.md не были указаны документы 18-20.
+
+Изменения:
+- `docs/architecture-v5/INDEX.md` — добавлены записи для `18-repository-layer.md`, `19-error-handling.md`, `20-config-and-logging.md`; прежний пункт 18 (REFACTORING_PLAN.md) сдвинут на 21.
+
+Commit: cbe60c3 docs(architecture-v5): add missing docs 18-20 to INDEX.md
+
+Проверка:
+- `pnpm docs:v5:verify` — Architecture docs validation passed (24 files checked)
+- Matrix snapshot (informational):
+  - 10-frontend-refactor-map.md: 47/47 done, 0 pending
+  - 11-backend-shared-refactor-map.md: 16/66 done, 50 ambiguous (bridge/partial) — основной долг следующих волн
+  - 12-messenger-services-refactor-map.md: 68/68 done, 0 pending
+
+## Следующий шаг
+
+**Wave 4 — Giant-file slicing** (`wave4-giant-file-slice-phase1`):
+Файлы-кандидаты (>500 строк в `app/`):
+- `UIDesignPanel.vue` (~6624 строк) → `app/features/ui-editor/ui/`
+- `AdminProjectControl.vue` (~5844 строк) → `app/widgets/projects/`
+- `AdminDesignerCabinet.vue` (крупный) → `app/widgets/designer/`
+- + 20+ других файлов по матрице `10-frontend-refactor-map.md`
+
+Также открыт backend-долг: `11-backend-shared-refactor-map.md` — 50 строк со статусом "ambiguous", соответствующих fat API handlers в `server/api/**`, которые ещё не полностью перенесены в `server/modules/<domain>/`.
