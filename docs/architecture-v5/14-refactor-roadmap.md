@@ -1460,6 +1460,15 @@ Wave 4 для UIDesignPanel закрыт.
 - `app/widgets/documents/AdminDocumentEditor.vue`: 1817 → 1695 lines (−122 lines, −7%).
 - Commit: `647b905`
 
+### [done] 2026-04-18 — Wave 4 / extract wipe2 builder from admin clients page
+
+- Created `app/utils/buildClientWipe2Data.ts` (293 lines) — pure `buildClientWipe2Data(client, currentPage, filteredDocs, profileStats)`.
+  - Handles pages: `documents`, `projects`, `signoff`, `profile`, plus the default dashboard view.
+  - Private helpers: `_getClientDocCategoryLabel`, `_getClientProjectStatus`, `_getClientProjectTone`, `_formatDocDate`.
+  - Removed from page: `getClientDocCategoryLabel`, `getClientProjectStatus`, `getClientProjectTone` helper functions and the 232-line inline computed.
+- `app/pages/admin/clients/index.vue`: 705 → 460 lines (−245 lines, −35%).
+- Commit: `4fb3179`
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor`** (1695 lines): Step 2 fields+vars block (lines 64-148) and Step 3 editor (lines 149-735) still inline.
