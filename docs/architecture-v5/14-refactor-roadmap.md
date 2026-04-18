@@ -1301,3 +1301,10 @@ UIDesignPanel.vue кумулятивно за сессию: **6624 → 4035 (−
 Из parent'а также удалены: `animPlaying` ref, `playAnim` function, `EASING_OPTIONS` import (стали неиспользуемыми).
 
 Остающиеся tabs: palette (2 блока, shared с coloring logic), type (178 строк), grid (190 строк, много generator state), nav (96 строк), arch (огромный). Эти требуют либо более сложных child-компонентов (они локально хранят много state), либо следующего этапа с provide/inject для picker presets.
+
+### [done] 2026-04-18 — Wave 4 / batch 22-23: UIDesignPanel Type + Nav
+
+- **batch 22**: `UIDesignTabType.vue` — 178 строк типографики с 4 sub-tab'ами (text/headings/buttons/inputs). `typeCtx` ref + 6 preview-style computeds (typeSampleStyle, previewBtnTypeStyle, previewSmBtnStyle, previewGhostBtnStyle, previewInputStyle, typeScaleSizes) + font picker (currentFontId/pickFont) внутри.
+- **batch 23**: `UIDesignTabNav.vue` — 94 строки navigation transitions + sidebar settings. `archNavTransitions` и `menuPreviewItems` constants локально.
+
+UIDesignPanel.vue: 4035 → **3767 строк (−43% от исходных 6624)**. Всего 16 tab-компонентов извлечены. Остающиеся: palette (2 блока, сложные color pickers), grid (190 строк с tons of generator state + preview computeds), arch (огромный с presets и layouts).
