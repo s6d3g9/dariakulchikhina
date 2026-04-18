@@ -1234,3 +1234,41 @@ Step 1 (236 строк data-source picker) и Step 2 (582 строки field edi
 | `AdminContractorCabinet.vue` | ~1260 | 12 секций по аналогии с designer |
 | `app/layouts/admin.vue` | ~1100 | navigation shell |
 | `Wipe2Renderer.vue` | ~517 | условные блоки render'а |
+
+### [done] 2026-04-18 — Wave 4 / batch 15: Chats + Contacts directories
+
+Ещё один slice из `ProjectCommunicationsPanel.vue` (entities layer, не пересекается с сессией на control-секциях): два directory-компонента:
+- `CommChatsDirectory.vue` — open-chat список с поиском (chats array + active peer + has-available-contacts flag + formatter prop). Events: `update:search`, `open-chat`.
+- `CommContactsDirectory.vue` — contact список с поиском. Events: `update:search`, `start-chat`.
+
+Маркап близок к идентичному между этими двумя, но сохраняем их раздельно из-за разных empty-state copy и разных event-имён. Если coordination brief панели понадобится тот же паттерн — готовить generic `<CommPersonList>`.
+
+ProjectCommunicationsPanel.vue: 1779 → 1734 (−45 строк; кумулятивно 2639 → 1734 = **−34%** от исходника).
+
+### Финал текущей сессии Wave 4
+
+Крупнейшие файлы в `app/` сейчас (после всех session-landings + Sonnet'овских push'ей):
+
+| Файл | Сейчас | Исходник | Δ |
+|---|---|---|---|
+| `UIDesignPanel.vue` | 4737 | 6624 | −28% |
+| `AdminDesignerCabinet.vue` | 2886 | 4332 | −33% |
+| `admin/projects/[slug].vue` | 2462 | 3687 | −33% |
+| `AdminDocumentEditor.vue` | 2213 | 3030 | −27% |
+| `ProjectCommunicationsPanel.vue` | 1734 | 2639 | −34% |
+| `contractor/[id]/index.vue` | 1486 | 3347 | **−56%** |
+| `AdminContractorCabinet.vue` | 1259 | 1505 | (CSS only) |
+| `AdminDocumentsSection.vue` | 1200 | 1654 | (CSS only) |
+| `app/layouts/admin.vue` | 1106 | 1898 | (CSS only) |
+| `ClientProjectControl.vue` | ~1760 | 3405 | −48% |
+| `AdminProjectControl.vue` | ~620 | 5844 | **−89%** (с Sonnet'овским strip dead script) |
+
+Слайсинг ≤500-строчного лимита не достигнут для многих SFC — дальнейшие raids требуют:
+- **UIDesignPanel tab-страницы** — composable `useDesignTokens` с provide/inject для 23 tab subcomponents
+- **AdminDocumentEditor Step 1/Step 2** — composable `useDocumentEditorSources` (picker state) + `useDocumentEditorFields` (field editor)
+- **AdminDesignerCabinet services/packages/subscriptions** — inline autosave state требует отдельного composable per section
+- **admin layout** — header utility bar → `AdminHeaderUtilities.vue`, sidebar → `AdminSidebarNav.vue`
+- **AdminDocumentsSection registry** — search/sort state composable
+- **contractor/[id] tasks section** — 250 строк CRUD + modal + filters
+
+Все перечисленное — многосессионная работа. Механические extract'ы выбраны.
