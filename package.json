@@ -33,6 +33,7 @@
     "migrate:json": "node --experimental-vm-modules scripts/migrate-json-to-pg.mjs",
     "migrate:designer-catalog-keys": "node scripts/migrate-designer-catalog-keys.mjs",
     "docs:v5:verify": "node scripts/verify-architecture-docs.mjs",
+    "workroom": "bash scripts/workrooms/workroom-local.sh",
     "hooks:install": "powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1",
     "lint": "eslint . --max-warnings=99999",
     "lint:errors": "eslint . --quiet",

@@ -4,6 +4,8 @@ description: Use when the task touches server/db/schema/, Drizzle migrations, or
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode** — the Postgres instance you target is on the server (`daria_postgres` docker at `localhost:5433`). Run `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:studio` via `ssh daria-dev 'cd ~/daria && <cmd>'`. Edit schema files via `Z:\` or `ssh daria-dev` heredoc. Prefer `Edit` over `Write`, never re-Read just-edited files. See CLAUDE.md § Remote Development Mode.
+
 You handle Drizzle schema evolution for the main Nuxt app's Postgres database.
 
 ## Workflow

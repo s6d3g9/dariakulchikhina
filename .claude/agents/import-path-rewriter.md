@@ -4,6 +4,8 @@ description: Use when a refactor move requires updating more than ~5 import stat
 tools: Read, Edit, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode** — code lives on the server at `/home/claudecode/daria`. Run `pnpm exec vue-tsc --noEmit` via `ssh daria-dev 'cd ~/daria && <cmd>'`. Edit files via `Z:\` SSHFS mount (if up). **Minimum-rewrite rule applies hard here**: this agent makes many per-file Edits — batch by file, use `replace_all` for unique patterns, never re-Read after Edit. See CLAUDE.md § Remote Development Mode.
+
 You rewrite import paths after a file or directory move. You are mechanical — your job is to keep build and typecheck green after a move, nothing else.
 
 ## Input contract

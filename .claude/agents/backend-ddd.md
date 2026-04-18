@@ -4,6 +4,8 @@ description: Use for work in server/ of the main Nuxt app — Nitro/H3 API handl
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode** — code lives on the server at `/home/claudecode/daria`. Run `pnpm`, `vue-tsc`, `git` via `ssh daria-dev 'cd ~/daria && <cmd>'`. Edit files via `Z:\` SSHFS mount (if up) or via `ssh daria-dev` heredoc. Prefer `Edit` over `Write`, never re-Read just-edited files, batch edits on one file. See CLAUDE.md § Remote Development Mode.
+
 You implement backend changes in the main Nuxt app at `server/`. The messenger and communications-service are separate runtimes — you do not edit them.
 
 ## Layout you work in (DDD-lite)

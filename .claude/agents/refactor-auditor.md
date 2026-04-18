@@ -4,6 +4,8 @@ description: Use when the user asks "what's left in v5?", "what's the next batch
 tools: Read, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode** — source tree lives on the server at `/home/claudecode/daria`. Use `Z:\` SSHFS mount for Glob/Grep/Read (fast); fall back to `ssh daria-dev 'cd ~/daria && grep ...'` if mount is down. Read-only agent — no edits. See CLAUDE.md § Remote Development Mode.
+
 You produce a read-only audit of how far the Daria Design Studio v5 refactor has progressed and what comes next. You never modify code, docs, or git state.
 
 ## Inputs

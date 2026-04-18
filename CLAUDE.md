@@ -2,6 +2,78 @@
 
 CRM/ERP for an interior design studio. Polyruntime pnpm monorepo.
 
+## ⚡ Remote Development Mode (READ FIRST)
+
+Development happens on **remote server** `daria-dev` (152.53.176.165). The Windows host is a thin client for UI only; **all build/test/lint/git operations run on the server** where code actually lives at `/home/claudecode/daria`.
+
+### SSH entry point
+
+```bash
+ssh daria-dev 'cd ~/daria && <cmd>'     # Always wrap commands like this.
+ssh daria-dev 'cd ~/daria && pnpm lint:errors'
+ssh daria-dev 'cd ~/daria && pnpm exec vue-tsc --noEmit'
+ssh daria-dev 'cd ~/daria && git status'
+```
+
+Host `daria-dev` is in `~/.ssh/config`. Uses key `~/.ssh/claudecode_ed25519`.
+
+### File operations
+
+- **When `Z:\` is mounted (SSHFS)**: use standard Read / Edit / Write against `Z:\<path>` — the edits land directly on the server.
+- **When `Z:\` is NOT mounted** (e.g. WinFsp launcher not yet restarted): use `ssh daria-dev 'cat ~/daria/<path>'` for Read, and `scp` / heredoc piped over SSH for writes. Prefer remounting Z:\ (run `C:\Users\STAS\mount-daria.bat` after reboot or as admin).
+- **Local worktree files in `C:\Users\STAS\Downloads\dariakulchikhina-local\*`** are a legacy copy — do NOT edit them. The authoritative code is on the server.
+
+### Which runtime runs where
+
+| Runtime / DB            | Location                        | Port |
+| ----------------------- | ------------------------------- | ---- |
+| Main Nuxt app           | server: `~/daria` via pnpm      | 3000 |
+| PostgreSQL (pgvector)   | server: docker `daria_postgres` | 5433 |
+| Redis (dev)             | server: systemd redis-server    | 6380 |
+| Hiddify Redis (untouch) | server: docker `hiddify_redis`  | 6379 |
+
+`.env` on the server already points at these. Never change those ports.
+
+### Minimum-rewrite rule (cost control)
+
+Each file write over SSH/SSHFS is **expensive** (round-trip + cache invalidation). Apply these:
+
+1. **Always prefer `Edit` over `Write`.** `Edit` sends only the diff; `Write` sends the whole file.
+2. **Never `Read` a file you just `Edit`-ed.** The tool returns the new content; re-reading is wasted work.
+3. **Batch edits to the same file.** Multiple `Edit` calls on one file with no intervening `Read` are fine — avoid the Read-Edit-Read-Edit ping-pong.
+4. **Don't rewrite a file to change one line.** Use `Edit` with a tight `old_string`, or `replace_all` if the pattern is unique.
+5. **Don't create helper / intermediate files** during a refactor. If you need scratch state, keep it in memory.
+6. **When a move touches many imports, delegate to the `import-path-rewriter` agent** — it runs one mechanical pass instead of many per-file Edits.
+
+### Parallel Workrooms (multiple Claude windows)
+
+For parallel work across **several Claude Code windows at once**, use
+**workrooms** — each window gets its own git worktree on the server with
+pre-allocated ports and a dedicated Redis DB. Full spec: [docs/workrooms.md](docs/workrooms.md).
+
+TL;DR:
+
+```bash
+# Create a workroom for this window:
+./scripts/workrooms/workroom-local.sh create w1-wave-4-ui
+
+# Then run every project command inside it:
+./scripts/workrooms/workroom-local.sh run w1-wave-4-ui -- pnpm lint:errors
+./scripts/workrooms/workroom-local.sh run w1-wave-4-ui -- pnpm exec vue-tsc --noEmit
+./scripts/workrooms/workroom-local.sh run w1-wave-4-ui -- git add -A && git commit ...
+```
+
+Rules:
+- **One Claude window = one workroom.** Never edit `~/daria/` directly.
+- **Ports are index-based:** workroom index `N` owns `30N1..30N9` and Redis DB `N`.
+- **Postgres is shared** (`daria_admin_refactor`). If a workroom needs destructive migrations, clone the DB first (see `docs/workrooms.md` § Cross-workroom etiquette).
+- **Model per window:** Opus for architecture / ADR, Sonnet for refactor & fix, Haiku for research / import-rewriter (see `docs/workrooms.md` § Model routing).
+- **Server capacity:** 3–5 workrooms in parallel is the sweet spot on this 12-core / 32 GB host. Run `workroom status` before spinning up a 6th.
+
+### Deploy still runs from Windows
+
+`pnpm deploy:safe:*` still runs from the Windows worktree because it ships `builds/pre-deploy/*.bundle` through a different user (`stas` via Host `daria-deploy`). Remote Dev Mode does not change deploy flow — it only moves *development* to the server.
+
 ## Runtimes and top-level layout
 
 - `app/` + `server/` + `shared/` — main Nuxt 4 app (SSR + REST + SSE in one Nitro process). Frontend follows FSD, backend follows DDD-lite.

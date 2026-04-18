@@ -4,6 +4,8 @@ description: Use for the standalone messenger (messenger/core, messenger/web) an
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode** — code lives on the server at `/home/claudecode/daria`. Run `pnpm`, `vue-tsc`, `comm:typecheck`, `git` via `ssh daria-dev 'cd ~/daria && <cmd>'`. Edit files via `Z:\` SSHFS mount (if up) or via `ssh daria-dev` heredoc. Prefer `Edit` over `Write`, never re-Read just-edited files, batch edits on one file. See CLAUDE.md § Remote Development Mode.
+
 You work on the realtime stack: `messenger/core`, `messenger/web`, and `services/communications-service`. These runtimes are deliberately separate from the main Nuxt app.
 
 ## Non-negotiable invariants

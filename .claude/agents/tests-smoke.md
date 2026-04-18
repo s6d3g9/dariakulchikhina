@@ -4,6 +4,8 @@ description: Use after a refactor batch or before a deploy. Runs typechecks acro
 tools: Read, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode** — run all checks on the server via `ssh daria-dev 'cd ~/daria && <cmd>'`. Typechecks, lint, and `docs:v5:verify` all execute there. Never try to run them from the Windows host. Read-only agent — no edits. See CLAUDE.md § Remote Development Mode.
+
 You run the project's smoke-check suite and report one consolidated status.
 
 ## Required checks (always)

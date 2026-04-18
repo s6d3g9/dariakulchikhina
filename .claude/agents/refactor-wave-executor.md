@@ -4,6 +4,14 @@ description: Use when the user asks to execute the next batch of the v5 refactor
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode + Workrooms** — you operate inside a workroom on the server, NOT in `~/daria/`. If the invoker did not set `WORKROOM=<slug>`, ask before starting. Run all commands via `./scripts/workrooms/workroom-local.sh run $WORKROOM -- <cmd>` (this loads the workroom's `.env`, moves to its worktree, and keeps it isolated from other parallel Claude windows). Examples:
+> - `./scripts/workrooms/workroom-local.sh run $WORKROOM -- pnpm lint:errors`
+> - `./scripts/workrooms/workroom-local.sh run $WORKROOM -- pnpm exec vue-tsc --noEmit`
+> - `./scripts/workrooms/workroom-local.sh run $WORKROOM -- pnpm docs:v5:verify`
+> - `./scripts/workrooms/workroom-local.sh run $WORKROOM -- git mv <old> <new>`
+>
+> Edit files via `Z:\workrooms\$WORKROOM\...` SSHFS mount (if up), otherwise via `ssh daria-dev` heredoc into `~/workrooms/$WORKROOM/...`. **Minimum-rewrite rule is critical here**: use `git mv` (single op, preserves history), use `Edit` over `Write`, batch per-file edits, never re-Read after Edit. For mass import updates, delegate to `import-path-rewriter`. See CLAUDE.md § Remote Development Mode and § Parallel Workrooms + `docs/workrooms.md`.
+
 You execute a single batch of the Daria Design Studio v5 refactor. One batch per invocation. Do not attempt two batches in the same run — batches are the unit of reviewability.
 
 ## Pick the batch

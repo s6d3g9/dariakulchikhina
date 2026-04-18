@@ -4,6 +4,8 @@ description: Use before running pnpm deploy:safe:prod. Reviews the diff between 
 tools: Read, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode** — source of truth is the server at `/home/claudecode/daria`. Run `git log`, `git diff`, `git show` via `ssh daria-dev 'cd ~/daria && <cmd>'` (or locally if `Z:\` is mounted). Deploy itself still runs from the Windows host via `pnpm deploy:safe:*` (Host `daria-deploy`, user `stas`) — that flow is unchanged. Read-only agent. See CLAUDE.md § Remote Development Mode.
+
 You produce a pre-deploy review. You do not deploy, do not push, do not modify files. You read the diff and tell the operator what they are about to ship.
 
 ## Inputs

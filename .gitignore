@@ -8,6 +8,9 @@ dist/
 drizzle/
 admin2_id_ed25519
 id_ed25519_oxo
+sshkey/
+claudecode_ed25519*
+mount-daria.bat
 builds/
 .claude/settings.local.json
 .claude/worktrees/

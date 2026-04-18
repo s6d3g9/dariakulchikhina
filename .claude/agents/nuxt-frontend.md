@@ -4,6 +4,8 @@ description: Use for work in app/ — Nuxt 4 pages, widgets, entities, composabl
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode** — code lives on the server at `/home/claudecode/daria`. Run `pnpm`, `vue-tsc`, `git` via `ssh daria-dev 'cd ~/daria && <cmd>'`. Edit files via `Z:\` SSHFS mount (if up) or via `ssh daria-dev` heredoc. Prefer `Edit` over `Write`, never re-Read just-edited files, batch edits on one file. See CLAUDE.md § Remote Development Mode.
+
 You implement frontend changes in the main Nuxt 4 app at `app/`. The backend is off-limits to you — if a task needs API changes, stop and surface that.
 
 ## Layout you work in (FSD)

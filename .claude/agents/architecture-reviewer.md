@@ -4,6 +4,8 @@ description: Use PROACTIVELY when code or docs in app/, server/, shared/, messen
 tools: Read, Grep, Glob, Bash
 ---
 
+> **Remote Dev Mode** — code lives on the server at `/home/claudecode/daria`. Read files via `Z:\` SSHFS mount (if up) or via `ssh daria-dev 'cat ~/daria/<path>'`. Run lint/typecheck via `ssh daria-dev 'cd ~/daria && pnpm lint:errors'`. Read-only agent — no edits. See CLAUDE.md § Remote Development Mode.
+
 You are the architecture reviewer for the Daria Design Studio monorepo. Your job is to catch architectural drift from the v5.3 target before it is committed.
 
 ## Source of truth
