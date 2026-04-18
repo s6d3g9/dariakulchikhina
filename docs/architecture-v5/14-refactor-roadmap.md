@@ -1346,3 +1346,19 @@ UIDesignPanel.vue: 3767 → **3583 строк (−46% от исходных 6624
 - Оставлены display-helpers и key-lookup функции, нужные `wipe2CabinetData`.
 
 vue-tsc: 0 errors. lint:errors: 0 errors.
+
+### [done] 2026-04-18 — Wave 4 / batches 25-27: Arch + Grid + cleanup — UIDesignPanel finish
+
+- **batch 25** (`UIDesignTabArch.vue`, 360 строк): 4 layout sections × 12 preset-chip groups + archTransitionPresets (5 composite presets через `applyArchitectureTransitionPreset` helper) + contentViewModes/wipeTransitions + wipe geometry detail cards (12 range sliders) + tracking preview. 12 arch* const declarations дублированы locally.
+- **batch 26** (`UIDesignTabGrid.vue`, 220 строк): 4 preset arrays (contentLayoutPresets, contentCardPresets, contentScenePresets, navLayoutPresets) + 4 recipe records (scene → layout + card + nav composition) + 3 active refs + 7 computeds + 7 handlers. Самый complex tab, владеет content/nav generators.
+- **batch 27** (cleanup): 834 строк dead code удалены из UIDesignPanel (все option lists, presets, recipes, state refs, computeds, handlers, preview styles — всё что больше не имеет references в parent'е). Helper script `scripts/cleanup-uidesignpanel.mjs` (one-shot scanner, balance brace tracker) сохранён как reference для подобных cleanup'ов.
+
+**UIDesignPanel.vue финальный результат: 6624 → 2205 строк (−67%).**
+
+Parent теперь purely shell: topbar trigger + panel frame + tab navigation + 20 tab component instances. Бизнес-логика дизайн-tokens полностью инкапсулирована в:
+
+- `useDesignTokenControls()` composable (entities/design-system/model)
+- 20 `UIDesignTab*.vue` компонентов (features/ui-editor/ui)
+- `useDesignSystem()` + `useUITheme()` + `useThemeToggle()` — singleton Nuxt composables
+
+Wave 4 для UIDesignPanel закрыт.
