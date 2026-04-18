@@ -713,41 +713,7 @@
               <UIDesignTabRadii v-show="isTabVisible('radii')" />
 
               <!-- ═══ Анимация ═══ -->
-              <div v-show="isTabVisible('anim')" class="dp-page dp-page--cols">
-                <div class="dp-col">
-                  <div class="dp-col-label">Параметры</div>
-                  <div class="dp-field">
-                    <label class="dp-label">длительность <span class="dp-val">{{ tokens.animDuration }}ms</span></label>
-                    <input type="range" min="0" max="600" step="10" :value="tokens.animDuration" class="dp-range" @input="onRange('animDuration', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">easing</label>
-                    <div class="dp-chip-picker">
-                      <div class="dp-chip-pool">
-                        <button
-                          v-for="e in EASING_OPTIONS"
-                          :key="`anim-easing-${e.id}`"
-                          type="button"
-                          class="dp-chip"
-                          :class="{ 'dp-chip--active': String(tokens.animEasing) === String(e.id) }"
-                          @click="set('animEasing', e.id)"
-                        >{{ e.label }}</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="dp-col">
-                  <div class="dp-col-label">Превью</div>
-                  <div class="dp-live-preview" style="margin-top:0">
-                    <div class="dp-anim-demo">
-                      <div class="dp-anim-ball"
-                        :style="{ transitionDuration: tokens.animDuration + 'ms', transitionTimingFunction: tokens.animEasing }"
-                        :class="{ 'dp-anim-ball--moved': animPlaying }" />
-                      <button type="button" class="dp-sm-btn" @click="playAnim">▶ запуск</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <UIDesignTabAnim v-show="isTabVisible('anim')" />
 
               <!-- ═══ Сетка и макет ═══ -->
               <div v-show="isTabVisible('grid')" class="dp-page dp-page--cols">
@@ -1881,7 +1847,7 @@ import UIDesignModulesMatrix from '~/entities/design-system/ui/UIDesignModulesMa
 import UIAppBlueprintBuilder from '~/entities/app-blueprint/ui/UIAppBlueprintBuilder.vue'
 import UIDesignVisibilityRules from '~/entities/design-system/ui/UIDesignVisibilityRules.vue'
 import {
-  useDesignSystem, FONT_OPTIONS, BTN_SIZE_MAP, EASING_OPTIONS, DESIGN_PRESETS,
+  useDesignSystem, FONT_OPTIONS, BTN_SIZE_MAP, DESIGN_PRESETS,
   DESIGN_CONCEPTS,
   TYPE_SCALE_OPTIONS,
   type DesignTokens, type DesignPreset,
@@ -1925,7 +1891,6 @@ const importError = ref('')
 const exportTab = ref<'json' | 'css'>('json')
 const importBuffer = ref('')
 const copyLabel = ref('копировать')
-const animPlaying = ref(false)
 const searchQuery = ref('')
 const appliedFlash = ref(false)
 const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
@@ -2894,12 +2859,6 @@ function doImport() {
   } catch (e: unknown) {
     importError.value = e instanceof Error ? e.message : 'Ошибка разбора JSON'
   }
-}
-
-function playAnim() {
-  animPlaying.value = false
-  requestAnimationFrame(() => { animPlaying.value = true })
-  setTimeout(() => { animPlaying.value = false }, tokens.value.animDuration + 400)
 }
 
 /* ── Preview computed styles ──────────────────────── */
