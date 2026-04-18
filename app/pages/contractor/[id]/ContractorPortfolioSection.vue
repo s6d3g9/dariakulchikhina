@@ -25,7 +25,7 @@
       <div class="cab-portfolio-spec-title">Специализации</div>
       <div class="cab-portfolio-chips">
         <span v-for="wt in contractor.workTypes" :key="wt" class="glass-chip">
-          {{ CONTRACTOR_WORK_TYPE_OPTIONS.find((o: { value: string; label: string }) => o.value === wt)?.label || wt }}
+          {{ workTypeToLabel(wt) }}
         </span>
       </div>
     </div>
@@ -112,4 +112,9 @@ defineProps<{
 defineEmits<{
   save: []
 }>()
+
+function workTypeToLabel(wt: string): string {
+  const opt = CONTRACTOR_WORK_TYPE_OPTIONS.find(o => o.value === wt)
+  return opt?.label || wt
+}
 </script>
