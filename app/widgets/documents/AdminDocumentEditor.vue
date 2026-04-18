@@ -61,89 +61,18 @@
         @save-executor="saveExecutorToStorage"
       />
 
-      <!-- Fields -->
-      <div class="de-fields-divider">
-        <span>поля документа</span>
-      </div>
-      <div class="de-fields-grid">
-        <div
-          v-for="field in selectedTpl?.fields || []"
-          :key="field.key"
-          class="de-field"
-        >
-          <label class="de-field-label">
-            {{ field.label }}
-            <span
-              v-if="fieldAutoFilled[field.key]"
-              class="de-field-auto"
-              title="заполнено из данных"
-            >⚡</span>
-          </label>
-          <textarea
-            v-if="field.multiline"
-            v-model="fieldValues[field.key]"
-            rows="3"
-            class="glass-input u-ta"
-            :placeholder="field.placeholder || ''"
-          />
-          <GlassInput
-            v-else
-            v-model="fieldValues[field.key]"
-            :placeholder="field.placeholder || ''"
-          />
-        </div>
-      </div>
-
-      <!-- Переменные проекта -->
-      <div class="de-vars-section">
-        <button
-          class="de-vars-toggle"
-          @click="varsOpen = !varsOpen"
-        >
-          <span class="de-vars-icon">{{ '{' }}{{ '{' }}</span> переменные проекта
-          <span class="de-vars-hint">(клик → вставить в шаблон)</span>
-          <span class="de-vars-arrow">{{ varsOpen ? '▴' : '▾' }}</span>
-        </button>
-        <div
-          v-if="varsOpen"
-          class="de-vars-grid"
-        >
-          <div
-            v-for="v in allVars"
-            :key="v.key"
-            class="de-var-row"
-            :class="{ 'de-var-row--empty': !v.value }"
-            :title="'Клик → вставить \u0432 редактор'"
-            @click="insertVar(v.key)"
-          >
-            <code class="de-var-key">{{ '{' }}{{ '{' }}{{ v.key }}{{ '}' }}{{ '}' }}</code>
-            <span class="de-var-val">{{ v.value || '— не заполнено' }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="de-actions">
-        <GlassButton
-          variant="secondary"
-          density="compact"
-          @click="step = 0"
-        >
-          ← шаблоны
-        </GlassButton>
-        <button
-          class="a-btn-ai"
-          title="Перейти в редактор и сразу запустить AI-генерацию"
-          @click="goGenerateAndEdit"
-        >
-          🤖 сгенерировать →
-        </button>
-        <GlassButton
-          variant="primary"
-          @click="goToStep(2)"
-        >
-          редактор →
-        </GlassButton>
-      </div>
+      <!-- Fields + vars + actions -->
+      <AdminDocumentEditorFieldsPanel
+        v-model:vars-open="varsOpen"
+        :selected-tpl="selectedTpl"
+        :field-values="fieldValues"
+        :field-auto-filled="fieldAutoFilled"
+        :all-vars="allVars"
+        @go-back="step = 0"
+        @go-forward="goToStep(2)"
+        @go-generate="goGenerateAndEdit"
+        @insert-var="insertVar"
+      />
     </div>
 
     <!-- ══ Step 3: Document editor ══ -->
@@ -738,6 +667,7 @@ import { useDocumentEditorSources, EXECUTOR_DEFAULTS } from '~/composables/useDo
 import type { DocumentTemplate } from '~/composables/useDocumentEditorSources'
 import { useDocumentEditorFields } from '~/composables/useDocumentEditorFields'
 import AdminDocumentEditorSourcesPanel from './AdminDocumentEditorSourcesPanel.vue'
+import AdminDocumentEditorFieldsPanel from './AdminDocumentEditorFieldsPanel.vue'
 
 const props = defineProps<{
   templates: Array<DocumentTemplate>
