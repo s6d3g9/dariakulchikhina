@@ -1175,3 +1175,37 @@ Commits:
 - **batch 13** (`UIDesignPanelToprow.vue`): `.dp-panel-toprow` (tab nav + search input + export toggle + reset + close buttons, 28 строк). Props: `tabs`, `activeTab`, `searchQuery`, `showExportButton`. Events: `update:activeTab`, `update:searchQuery`, `toggle-export`, `reset`, `close`.
 
 Complement to batch 11 (Export/Import drawer extracted earlier). Первые **четыре FSD-sub-components** в `features/ui-editor/ui/` — дальнейший slice'инг 23 tab-страниц (palette, colors, buttons, type, surface, radii, anim, grid, typeScale, darkMode, inputs, tags, nav, statuses, popups, scrollbar, tables, badges, arch) потребует либо composable для `tokens`-объекта (слишком много v-model bindings), либо передачу через provide/inject.
+
+### [done] 2026-04-18 — Wave 4 / contractor portal sections (batch 14)
+
+Цель: дорезать оставшиеся 7 секций contractor portal (`app/pages/contractor/[id]/index.vue`).
+
+Новые компоненты (`app/pages/contractor/[id]/`):
+- `ContractorContactsSection.vue`
+- `ContractorFinancesSection.vue`
+- `ContractorPassportSection.vue`
+- `ContractorPortfolioSection.vue`
+- `ContractorRequisitesSection.vue`
+- `ContractorSettingsSection.vue`
+- `ContractorSpecializationSection.vue`
+
+Parent `index.vue`: ~1884 → ~1486 строк (−398).
+
+Commits: 7f825ac
+
+### [done] 2026-04-18 — Wave 4 / AdminProjectControl script purge (batch 15)
+
+Цель: удалить ~1756 строк dead-кода из script-секции `AdminProjectControl.vue` после того, как секции были вынесены в дочерние компоненты.
+
+Удалено:
+- Все timeline-типы (`SelectedTimelineRowState`, `TimelineDetailItem`, `TimelineRuleSummary`, `TimelineDetailTaskItem`, `TimelineGovernance*`, `TimelineDragKind`)
+- Весь timeline-state: `timelineScale`, `timelineDrag`, `timelineCollapsedPhases`, `timelineRows`, `timelineBounds`, `timelineColumns`, `timelineGroups`, `timelineEditingEnabled`, `timelineGridStyle`, `timelineWindowLabel`, `visibleTimelineRows` и все производные computeds
+- Все функции drag/drop, governance, scope-detail, tooltip
+- Весь comms-state: `callInsightDraft`, `callInsightSaving`, `msgModal*`, `addCommunicationRule`, `submitCallInsight` и т.д.
+- Dead imports из `project-control-timeline`, `project-governance`, unused types
+
+`moduleCards` переключён на `timelineSectionRef.value?.timelineWindowLabel.value` и `.visibleTimelineRows.value.length` (дочерний computed через defineExpose).
+
+Файл: 2408 → 652 строки. vue-tsc exit 0, lint:errors exit 0.
+
+Commits: ab737aa
