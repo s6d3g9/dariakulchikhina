@@ -12,11 +12,30 @@ import path from 'node:path'
 import process from 'node:process'
 
 const targets = [
-  ['app/features/ui-editor/ui/UIDesignPanel.vue', 'UIDesignPanel'],
-  ['app/pages/admin/projects/[slug].vue', 'AdminProjectSlugPage'],
-  ['app/widgets/projects/control/ClientProjectControl.vue', 'ClientProjectControl'],
-  ['app/widgets/documents/AdminDocumentEditor.vue', 'AdminDocumentEditor'],
-  ['app/pages/contractor/[id]/index.vue', 'ContractorIndexPage'],
+  // Wave 4 batch 1 (already processed):
+  // ['app/features/ui-editor/ui/UIDesignPanel.vue', 'UIDesignPanel'],
+  // ['app/pages/admin/projects/[slug].vue', 'AdminProjectSlugPage'],
+  // ['app/widgets/projects/control/ClientProjectControl.vue', 'ClientProjectControl'],
+  // ['app/widgets/documents/AdminDocumentEditor.vue', 'AdminDocumentEditor'],
+  // ['app/pages/contractor/[id]/index.vue', 'ContractorIndexPage'],
+
+  // Wave 4 batch 6 — mid-tier SFCs (500-2700 lines) with >200 lines of
+  // scoped CSS each. Same zero-behavior extraction.
+  ['app/entities/communications/ui/ProjectCommunicationsPanel.vue', 'ProjectCommunicationsPanel'],
+  ['app/layouts/admin.vue', 'AdminLayout'],
+  ['app/widgets/documents/AdminDocumentsSection.vue', 'AdminDocumentsSection'],
+  ['app/widgets/cabinets/contractor/AdminContractorCabinet.vue', 'AdminContractorCabinet'],
+  ['app/widgets/gallery/AdminGallery.vue', 'AdminGallery'],
+  ['app/entities/design-system/ui/Wipe2Renderer.vue', 'Wipe2Renderer'],
+  ['app/widgets/phases/initiation/AdminSmartBrief.vue', 'AdminSmartBrief'],
+  ['app/entities/app-blueprint/ui/UIAppBlueprintBuilder.vue', 'UIAppBlueprintBuilder'],
+  ['app/pages/client/[slug]/index.vue', 'ClientIndexPage'],
+  ['app/widgets/phases/concept/AdminSpacePlanning.vue', 'AdminSpacePlanning'],
+  ['app/widgets/projects/AdminProjectKanban.vue', 'AdminProjectKanban'],
+  ['app/widgets/phases/initiation/AdminToRContract.vue', 'AdminToRContract'],
+  ['app/features/page-content/ui/ClientPageContent.vue', 'ClientPageContent'],
+  ['app/entities/materials/ui/MaterialPropertyEditor.vue', 'MaterialPropertyEditor'],
+  ['app/entities/gallery/ui/GalleryLightbox.vue', 'GalleryLightbox'],
 ]
 
 const repoRoot = process.argv[2] || process.cwd()

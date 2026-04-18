@@ -1,0 +1,229 @@
+.mpe-wrap {
+  border: 1px solid color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 40%, transparent);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.mpe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--glass-bg, color-mix(in srgb, var(--glass-text) 10%, transparent)) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 25%, transparent);
+}
+
+.mpe-title {
+  font-size: .82rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 70%, transparent);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.mpe-expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 55%, transparent);
+  font-size: .76rem;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all .15s;
+}
+.mpe-expand-btn:hover {
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+  background: color-mix(in srgb, var(--glass-bg, color-mix(in srgb, var(--glass-text) 10%, transparent)) 60%, transparent);
+}
+
+.mpe-body { padding: 0 14px 14px; }
+
+/* ── Табы ──────────────────────────────────────── */
+.mpe-tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 10px 0 8px;
+  scrollbar-width: none;
+}
+.mpe-tabs::-webkit-scrollbar { display: none; }
+
+.mpe-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 50%, transparent);
+  font-size: .74rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: 6px;
+  transition: all .13s;
+}
+.mpe-tab:hover {
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+  background: color-mix(in srgb, var(--glass-bg, color-mix(in srgb, var(--glass-text) 10%, transparent)) 40%, transparent);
+}
+.mpe-tab--active {
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+  background: color-mix(in srgb, var(--glass-bg, color-mix(in srgb, var(--glass-text) 10%, transparent)) 60%, transparent);
+}
+
+.mpe-tab-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ds-success, #4ade80);
+}
+
+/* ── Поля ──────────────────────────────────────── */
+.mpe-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  padding-top: 4px;
+}
+
+.mpe-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.mpe-field--full { grid-column: 1 / -1; }
+.mpe-field--bool { justify-content: center; }
+
+.mpe-label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 45%, transparent);
+}
+
+.mpe-label-bool {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .82rem;
+  cursor: pointer;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+}
+
+.mpe-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ds-success, #4ade80);
+}
+
+.mpe-input {
+  padding: 5px 8px !important;
+  font-size: .82rem !important;
+  font-family: inherit;
+  border: 1px solid color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 30%, transparent) !important;
+  border-radius: 6px;
+  background: transparent !important;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+  transition: border-color .15s;
+}
+.mpe-input:focus {
+  border-color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 35%, #667eea) !important;
+  outline: none;
+}
+.mpe-input--sm { max-width: 120px; }
+
+.mpe-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.mpe-hint {
+  font-size: .68rem;
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 35%, transparent);
+  font-style: italic;
+}
+
+/* ── Cert / Custom blocks ─────────────────────── */
+.mpe-cert-row, .mpe-custom-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+  grid-column: 1 / -1;
+}
+
+.mpe-custom-block {
+  grid-column: 1 / -1;
+  padding: 10px;
+  border: 1px dashed color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 35%, transparent);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.mpe-custom-header {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.mpe-del-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--ds-error, var(--ds-error));
+  font-size: 1.1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: background .1s;
+}
+.mpe-del-btn:hover { background: color-mix(in srgb, var(--ds-error, var(--ds-error)) 13%, transparent); }
+
+.mpe-add-btn {
+  grid-column: 1 / -1;
+  border: 1px dashed color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 40%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 50%, transparent);
+  padding: 8px;
+  font-size: .78rem;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 6px;
+  transition: all .15s;
+}
+.mpe-add-btn:hover {
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+  border-color: color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 60%, transparent);
+}
+.mpe-add-btn--sub { margin-top: 4px; }
+
+/* ── Transitions ───────────────────────────────── */
+.mpe-slide-enter-active, .mpe-slide-leave-active { transition: all .2s ease; }
+.mpe-slide-enter-from, .mpe-slide-leave-to { opacity: 0; max-height: 0; overflow: hidden; }
+.mpe-slide-enter-to, .mpe-slide-leave-from { max-height: 2000px; }
+
+.mpe-fade-enter-active, .mpe-fade-leave-active { transition: opacity .12s; }
+.mpe-fade-enter-from, .mpe-fade-leave-to { opacity: 0; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .mpe-fields { grid-template-columns: 1fr; }
+  .mpe-body { padding: 0 8px 8px; }
+  .mpe-cert-row, .mpe-custom-row {
+    flex-wrap: wrap;
+  }
+  .mpe-custom-block { padding: 8px; }
+  .mpe-custom-header { flex-wrap: wrap; }
+  .mpe-input--sm { max-width: none; }
+}
