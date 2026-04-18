@@ -1323,3 +1323,26 @@ UIDesignPanel.vue: 3767 → **3583 строк (−46% от исходных 6624
 - **arch tab** (~360 строк): archDensities/HeadingCases/Dividers/PageEnters/LinkAnims/SectionStyles/NavStyles/CardChromes/HeroScales/ContentReveals/TextReveals/TransitionPresets — 12+ preset arrays и множество UI elements. Та же история.
 
 Остальные мелочи в parent: preview computeds для type tab (previewBtnTypeStyle, previewSmBtnStyle, previewGhostBtnStyle — теперь дублированы в type-tab child, можно удалить из parent'а в cleanup pass).
+
+### [done] 2026-04-18 — Wave 4 / batch 25: AdminDesignerCabinet sections + script purge
+
+Двухэтапное сжатие `AdminDesignerCabinet.vue`: **2886 → 780 строк (−73%)**.
+
+**Этап A — section extraction (предыдущие коммиты):**
+Пять inline-секций вынесены в отдельные SFC (`sections/`):
+- `CabinetServicesSection.vue` (984 строки) — каталог услуг, inline price edit, card editor. Props: `designerId`, `services`, `packages`, `isBrutalist`.
+- `CabinetPackagesSection.vue` (681 строки) — пакеты дизайнера. Props: `designerId`, `packages`, `services`, `isBrutalist`.
+- `CabinetSubscriptionsSection.vue` (693 строки) — подписки. Props: `designerId`, `subscriptions`, `services`, `isBrutalist`.
+- `CabinetProjectsSection.vue` (386 строки) — проекты + new-project modal. Props: `designerId`, `packages`, `projects`, `isBrutalist`.
+- `CabinetProfileSection.vue` (228 строки) — форма профиля с inline autosave. Props: `designerId`, `designer`, `isBrutalist`.
+
+Все эмитят `refresh` → parent вызывает `refresh()` из `useDesignerCabinet`.
+
+**Этап B — script purge (коммит 3b7e4c3, эта сессия):**
+- Удалены ~1500 строк dead code: все card-editor state/functions (serviceCardEditorKey, packageCardEditorKey, subscriptionCardEditorKey + их обработчики), profile autosave state, project edit state, service catalog state, normalize* functions, helper functions не используемые wipe2CabinetData.
+- Исправлены orphaned HTML-фрагменты в template (остатки regex-замены из этапа A).
+- Сужена деструктуризация `useDesignerCabinet` до только используемых значений.
+- Удалены мёртвые импорты: `BILLING_PERIODS`, `PRICE_UNITS`, `normalizeDesigner*`, `nextTick`.
+- Оставлены display-helpers и key-lookup функции, нужные `wipe2CabinetData`.
+
+vue-tsc: 0 errors. lint:errors: 0 errors.
