@@ -1372,7 +1372,7 @@ Wave 4 для UIDesignPanel закрыт.
 | `AdminProjectControl.vue` | 5844 | ~620 | **−89%** | section extract + dead script strip (Sonnet) |
 | `UIDesignPanel.vue` | 6624 | **2205** | **−67%** | 20 tab sub-components + shared composable |
 | `contractor/[id]/index.vue` | 3347 | ~1486 | −55% | 7 section components |
-| `ClientProjectControl.vue` | 3405 | ~1760 | −48% | 3 sections + shared control-options |
+| `ClientProjectControl.vue` | 3405 | **213** | **−94%** | timeline/phases/sprints → `ClientControlTimelineSection` |
 | `ProjectCommunicationsPanel.vue` | 2639 | 1734 | −34% | 2 directory components |
 | `AdminDesignerCabinet.vue` | 4332 | 2886 | −33% | 7 section components |
 | `admin/projects/[slug].vue` | 3687 | 2462 | −33% | ProjectEntityPanel generic + 5 instances |
@@ -1383,6 +1383,14 @@ Wave 4 для UIDesignPanel закрыт.
 - **`app/widgets/projects/entity-panel/ProjectEntityPanel.vue`** — generic `<script setup generic>` для list'ов связанных сущностей
 - **`shared/ui/autosave/autosave-state.ts`** — shared `InlineAutosaveState` type + helpers (consumed 5 cabinet'ами)
 - **`app/widgets/projects/control/model/control-options.ts`** — shared select-option lists для Admin/Client control sections
+
+### [done] 2026-04-18 — Wave 4 / ClientControlTimelineSection extraction
+
+- Created `app/widgets/projects/control/sections/ClientControlTimelineSection.vue` (3186 lines) — contains full timeline board, phases section, and sprints+kanban section with all their state, computed, and CSS.
+- Rewrote `app/widgets/projects/control/ClientProjectControl.vue`: 1851 → 213 lines (−88%). Parent now delegates via `ref` to child's `defineExpose({ openProjectScopeDetails, focusSprint, selectTask })`.
+- Fixed import path: `./model/control-options` → `../model/control-options` (file lives in `sections/` subdirectory).
+- Fixed two TS errors in the extracted file (TS2347 on `reduce<>` generic, TS18046 on `Object.entries` unknown count).
+- Commit: `4b101bb`
 
 ### Остающиеся цели (требуют big-session composable work)
 
