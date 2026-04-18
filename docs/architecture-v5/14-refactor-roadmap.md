@@ -1308,3 +1308,18 @@ UIDesignPanel.vue кумулятивно за сессию: **6624 → 4035 (−
 - **batch 23**: `UIDesignTabNav.vue` — 94 строки navigation transitions + sidebar settings. `archNavTransitions` и `menuPreviewItems` constants локально.
 
 UIDesignPanel.vue: 4035 → **3767 строк (−43% от исходных 6624)**. Всего 16 tab-компонентов извлечены. Остающиеся: palette (2 блока, сложные color pickers), grid (190 строк с tons of generator state + preview computeds), arch (огромный с presets и layouts).
+
+### [done] 2026-04-18 — Wave 4 / batch 24: Palette tab
+
+`UIDesignTabPalette.vue` — объединяет оба legacy palette блока (189 строк) в один компонент. Block 1 — theme grid + accent HSL sliders + status color sliders. Block 2 — 14 color chips через `COLOR_GROUPS` config const (3 группы: Фоны, Текст, Интерактивные элементы) — заменяет 14 вручную написанных chip-шаблонов на один v-for. `hasAnyCustomColor` computed + typed `resetAllColors` вместо inline 14-setter click-цепочки.
+
+UIDesignPanel.vue: 3767 → **3583 строк (−46% от исходных 6624)**. 17 tab-компонентов извлечены.
+
+### Wave 4 / остается
+
+Финальные 2 таба requires significant architectural work:
+
+- **grid tab** (~220 строк): 4 preset-collection constants (contentLayoutPresets, contentCardPresets, contentScenePresets, navLayoutPresets) + 3 active-id refs + 6 derived computeds (activeContentLayout*, activeNavLayout*, contentPreviewCards, contentPreviewStyle, menuPreviewStyle) + 4 apply-handlers + 4 generate-handlers. Требует composable `useDesignContentLayout()` + `useDesignSceneGenerator()` или просто сквозного переноса ~500 строк state. Лучше как отдельная сессия.
+- **arch tab** (~360 строк): archDensities/HeadingCases/Dividers/PageEnters/LinkAnims/SectionStyles/NavStyles/CardChromes/HeroScales/ContentReveals/TextReveals/TransitionPresets — 12+ preset arrays и множество UI elements. Та же история.
+
+Остальные мелочи в parent: preview computeds для type tab (previewBtnTypeStyle, previewSmBtnStyle, previewGhostBtnStyle — теперь дублированы в type-tab child, можно удалить из parent'а в cleanup pass).
