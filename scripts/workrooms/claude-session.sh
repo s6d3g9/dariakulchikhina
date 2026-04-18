@@ -1,27 +1,35 @@
 #!/usr/bin/env bash
-# claude-session — manage parallel Claude Code CLI sessions in tmux.
-# Runs on the server (daria-dev). Deploy to ~/bin/claude-session and chmod +x.
+# claude-session — orchestrate parallel Claude Code CLI sessions on the server.
+# Deploy to ~/bin/claude-session on daria-dev.
 #
-# Each session lives in a dedicated tmux window inside a single tmux session
-# "cc" (short for claude-code). That keeps all windows reachable with one
-# attach and keeps orchestration simple.
+# Claude Code 2.x requires an interactive TTY onboarding flow that cannot be
+# completed inside a detached tmux window. So this script does NOT use the
+# interactive TUI — it drives the CLI through `--print --session-id <uuid>`
+# and resumes with `--resume <uuid>`. Each session persists its conversation
+# state in ~/.claude/ via the session UUID, independent of our bookkeeping.
+#
+# Output for each prompt is streamed into a tmux window (one per session)
+# using `--output-format stream-json`, piped through `jq` for human-readable
+# lines and teed into a log file. You can attach to a window and watch it
+# live, or fetch logs after the fact.
 #
 # Commands:
-#   create <slug> [--workroom <wr>] [--model <name>] [--prompt "..."]
-#                       create tmux window, launch claude CLI, optionally
-#                       cd into a workroom and send an initial prompt
-#   list                 table of active sessions
-#   attach <slug>        tmux attach into a session (interactive)
-#   logs <slug>          dump last ~2000 lines from the tmux pane
-#   send <slug> "msg"    pipe a message into an existing session
-#   kill <slug>          close the tmux window + cleanup state
-#   resume <slug>        run `claude --resume` in the existing window
-#   state <slug>         print registry row for a session
+#   create <slug> [--workroom <wr>] [--model <name>] --prompt "<initial>"
+#                            create a new session (assigns UUID, runs first
+#                            prompt in background tmux window)
+#   list                      table of active sessions
+#   send <slug> "<prompt>"    resume session with a follow-up prompt (streams
+#                             in the same tmux window)
+#   attach <slug>             tmux attach to the window (interactive viewing)
+#   logs <slug> [N]           print last N lines of the session log (default 200)
+#   tail <slug>               follow the log (like tail -f); Ctrl+C to exit
+#   kill <slug>               kill tmux window + cleanup local state
+#                             (Claude-side session history is kept in ~/.claude)
+#   state <slug>              print registry row for a session
 #
-# State: ~/state/claude-sessions/<slug>.json
-# Registry: ~/state/claude-sessions/.registry.tsv  (slug, window, workroom, model, created)
-#
-# Designed so it is safe to run from non-interactive ssh (no stdin attach).
+# Registry: ~/state/claude-sessions/.registry.tsv
+#   columns: slug, uuid, window, workroom, model, created
+# Per-session log: ~/state/claude-sessions/<slug>.log
 
 set -euo pipefail
 
@@ -31,27 +39,31 @@ REGISTRY="${STATE_DIR}/.registry.tsv"
 CLAUDE_BIN="${HOME}/.local/bin/claude"
 
 mkdir -p "${STATE_DIR}"
-[ -f "${REGISTRY}" ] || printf 'slug\twindow\tworkroom\tmodel\tcreated\n' > "${REGISTRY}"
+[ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\n' > "${REGISTRY}"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
-ensure_tmux_session() {
-  if ! tmux has-session -t "${TMUX_SESSION}" 2>/dev/null; then
-    tmux new-session -d -s "${TMUX_SESSION}" -n "_lobby"
-    tmux send-keys -t "${TMUX_SESSION}:_lobby" "echo 'claude-sessions tmux lobby — windows open to your right'" C-m
-  fi
+# --- helpers ---
+
+gen_uuid() {
+  if command -v uuidgen >/dev/null 2>&1; then uuidgen; return; fi
+  # Fallback: /proc/sys/kernel/random/uuid
+  cat /proc/sys/kernel/random/uuid
 }
 
-window_exists() {
-  tmux list-windows -t "${TMUX_SESSION}" -F '#W' 2>/dev/null | grep -qxF "$1"
+ensure_tmux_session() {
+  tmux has-session -t "${TMUX_SESSION}" 2>/dev/null && return
+  tmux new-session -d -s "${TMUX_SESSION}" -n "_lobby"
+  tmux send-keys -t "${TMUX_SESSION}:_lobby" "clear; echo 'claude-sessions tmux lobby — claude-session list'" C-m
 }
 
 registry_has() {
   awk -v s="$1" -F'\t' 'NR>1 && $1==s {found=1} END {exit !found}' "${REGISTRY}"
 }
 
-registry_get() {
-  awk -v s="$1" -F'\t' 'NR>1 && $1==s {print; exit}' "${REGISTRY}"
+registry_col() {
+  # $1 slug, $2 column index (1-based)
+  awk -v s="$1" -v c="$2" -F'\t' 'NR>1 && $1==s {print $c; exit}' "${REGISTRY}"
 }
 
 registry_remove() {
@@ -59,7 +71,67 @@ registry_remove() {
     && mv "${REGISTRY}.tmp" "${REGISTRY}"
 }
 
-# ---------- create ----------
+# Format stream-json lines into readable text. Each JSON line becomes prefixed output.
+# Falls back to raw if jq unavailable.
+format_stream() {
+  if command -v jq >/dev/null 2>&1; then
+    jq -r --unbuffered '
+      if .type == "system" and .subtype == "init" then
+        "── session=\(.session_id // "?") model=\(.model // "?")"
+      elif .type == "assistant" then
+        (.message.content // [] | map(select(.type == "text").text // "") | add // "")
+      elif .type == "user" then
+        "· (user)"
+      elif .type == "tool_use" then
+        "[tool] \(.name // "?") \((.input // {}) | @json | .[:200])"
+      elif .type == "result" then
+        "── done total_tokens=\(.usage.total_tokens // "?") ms=\(.duration_ms // "?")"
+      elif .type == "error" then
+        "!! error: \(.message // .)"
+      else
+        "· " + (.type // "unknown")
+      end
+    '
+  else
+    cat
+  fi
+}
+
+# Launch a non-interactive claude --print run inside a tmux window, streaming
+# output to stdout (viewable in tmux pane) and teed into the session log.
+run_prompt_in_window() {
+  local slug="$1" window="$2" uuid="$3" model="$4" cwd="$5" prompt="$6" resume="$7"
+  local logfile="${STATE_DIR}/${slug}.log"
+
+  # Prepare the command
+  local args=( --print --model "${model}" --output-format stream-json --include-partial-messages --verbose )
+  if [[ "${resume}" == "yes" ]]; then
+    args+=( --resume "${uuid}" )
+  else
+    args+=( --session-id "${uuid}" )
+  fi
+
+  # Write the prompt to a temp file to avoid shell quoting.
+  local pfile; pfile="${STATE_DIR}/${slug}.prompt.$$"
+  printf '%s' "${prompt}" > "${pfile}"
+
+  # Ensure window exists; create if needed.
+  if ! tmux list-windows -t "${TMUX_SESSION}" -F '#W' 2>/dev/null | grep -qxF "${window}"; then
+    tmux new-window -t "${TMUX_SESSION}" -n "${window}" -c "${cwd}"
+  fi
+
+  # Select and run
+  tmux select-window -t "${TMUX_SESSION}:${window}"
+  # Clear previous output for readability on follow-ups
+  tmux send-keys -t "${TMUX_SESSION}:${window}" "clear" C-m
+
+  # Build one-liner command. Use a helper bash -c so we can tee + format.
+  local cmdline
+  cmdline="cd ${cwd@Q} && cat ${pfile@Q} | ${CLAUDE_BIN} ${args[*]@Q} --input-format text 2>&1 | tee -a ${logfile@Q} | jq -r --unbuffered '. as \$m | try (if .type == \"assistant\" then (.message.content // [] | map(select(.type==\"text\").text // \"\") | add // \"\") elif .type == \"system\" and .subtype == \"init\" then \"── session=\(.session_id) model=\(.model)\" elif .type == \"result\" then \"── done tokens=\(.usage.total_tokens // \"?\") ms=\(.duration_ms // \"?\")\" else empty end) catch empty' && rm -f ${pfile@Q}"
+  tmux send-keys -t "${TMUX_SESSION}:${window}" "${cmdline}" C-m
+}
+
+# --- create ---
 cmd_create() {
   local slug="${1:-}"; shift || true
   [[ -n "${slug}" ]] || die "slug required"
@@ -75,11 +147,8 @@ cmd_create() {
     esac
   done
 
-  registry_has "${slug}" && die "session '${slug}' already exists (use 'kill' first or pick a new slug)"
-
-  ensure_tmux_session
-  local window="cc-${slug}"
-  window_exists "${window}" && die "tmux window ${window} already exists"
+  [[ -n "${prompt}" ]] || die "--prompt required for first message"
+  registry_has "${slug}" && die "session '${slug}' already exists"
 
   local cwd="${HOME}"
   if [[ -n "${workroom}" ]]; then
@@ -87,136 +156,111 @@ cmd_create() {
     [[ -d "${cwd}" ]] || die "workroom '${workroom}' not found at ${cwd}"
   fi
 
-  # Create the window, cd into the target, then launch claude.
-  tmux new-window -t "${TMUX_SESSION}" -n "${window}" -c "${cwd}"
+  local uuid; uuid=$(gen_uuid)
+  local window="cc-${slug}"
 
-  # Register first (before we launch, so list reflects reality even if claude fails)
-  printf '%s\t%s\t%s\t%s\t%s\n' "${slug}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" \
+  ensure_tmux_session
+
+  # Register first so listing is correct even if the run fails.
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" \
     >> "${REGISTRY}"
+  : > "${STATE_DIR}/${slug}.log"
 
-  # Launch claude. If a prompt was passed, feed it via --print then drop to interactive.
-  # We pick `claude` (interactive) so the user can later attach and keep chatting.
-  local launch="${CLAUDE_BIN} --model ${model}"
-  tmux send-keys -t "${TMUX_SESSION}:${window}" "${launch}" C-m
+  run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${cwd}" "${prompt}" "no"
 
-  # Give claude ~2s to boot, then send the initial prompt.
-  if [[ -n "${prompt}" ]]; then
-    sleep 2
-    # Buffer approach so newlines in the prompt don't break tmux parsing.
-    local pbuf; pbuf=$(mktemp)
-    printf '%s' "${prompt}" > "${pbuf}"
-    tmux load-buffer -b cc_prompt_"${slug}" "${pbuf}"
-    tmux paste-buffer -b cc_prompt_"${slug}" -t "${TMUX_SESSION}:${window}"
-    tmux delete-buffer -b cc_prompt_"${slug}"
-    rm -f "${pbuf}"
-    # Submit
-    tmux send-keys -t "${TMUX_SESSION}:${window}" C-m
-  fi
-
-  # Record meta
-  cat > "${STATE_DIR}/${slug}.json" <<EOF
-{
-  "slug": "${slug}",
-  "window": "${window}",
-  "workroom": "${workroom}",
-  "model": "${model}",
-  "cwd": "${cwd}",
-  "created": "$(date -Iseconds)"
-}
-EOF
-
-  echo "[create] slug=${slug} window=${window} model=${model} workroom=${workroom:-<none>}"
-  echo "[create] Attach: tmux attach -t ${TMUX_SESSION} \\; select-window -t :${window}"
-  echo "[create] Or from ssh: ssh -t daria-dev 'tmux attach -t ${TMUX_SESSION}'"
+  echo "[create] slug=${slug} uuid=${uuid} window=${window} model=${model} workroom=${workroom:-<none>}"
+  echo "[create] Attach: ssh -t daria-dev 'tmux attach -t ${TMUX_SESSION} \\; select-window -t :${window}'"
+  echo "[create] Logs:   claude-session logs ${slug}"
 }
 
-# ---------- list ----------
+# --- send ---
+cmd_send() {
+  local slug="${1:-}"; shift || die "slug required"
+  local prompt="${*:-}"
+  [[ -n "${prompt}" ]] || die "follow-up prompt required"
+  registry_has "${slug}" || die "no such session: ${slug}"
+
+  local uuid; uuid=$(registry_col "${slug}" 2)
+  local window; window=$(registry_col "${slug}" 3)
+  local workroom; workroom=$(registry_col "${slug}" 4)
+  local model; model=$(registry_col "${slug}" 5)
+
+  local cwd="${HOME}"
+  [[ -n "${workroom}" ]] && cwd="${HOME}/workrooms/${workroom}"
+
+  ensure_tmux_session
+  run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${cwd}" "${prompt}" "yes"
+  echo "[send] queued follow-up in ${window}"
+}
+
+# --- list ---
 cmd_list() {
   if [[ $(wc -l < "${REGISTRY}") -le 1 ]]; then
-    echo "(no sessions)"
-    return 0
+    echo "(no sessions)"; return 0
   fi
-  printf '%-22s %-18s %-22s %-10s %s\n' SLUG WINDOW WORKROOM MODEL CREATED
-  awk -F'\t' 'NR>1 {printf "%-22s %-18s %-22s %-10s %s\n", $1, $2, $3, $4, $5}' "${REGISTRY}"
+  printf '%-20s %-36s %-16s %-22s %-10s %s\n' SLUG UUID WINDOW WORKROOM MODEL CREATED
+  awk -F'\t' 'NR>1 {printf "%-20s %-36s %-16s %-22s %-10s %s\n", $1, $2, $3, $4, $5, $6}' "${REGISTRY}"
 }
 
-# ---------- attach ----------
+# --- attach ---
 cmd_attach() {
   local slug="${1:-}"; [[ -n "${slug}" ]] || die "slug required"
   registry_has "${slug}" || die "no such session: ${slug}"
-  local window="cc-${slug}"
+  local window; window=$(registry_col "${slug}" 3)
   exec tmux attach -t "${TMUX_SESSION}" \; select-window -t ":${window}"
 }
 
-# ---------- logs ----------
+# --- logs ---
 cmd_logs() {
   local slug="${1:-}"; [[ -n "${slug}" ]] || die "slug required"
-  registry_has "${slug}" || die "no such session: ${slug}"
-  local window="cc-${slug}"
-  tmux capture-pane -pS -2000 -t "${TMUX_SESSION}:${window}"
+  local n="${2:-200}"
+  [[ -f "${STATE_DIR}/${slug}.log" ]] || die "no log for ${slug}"
+  tail -n "${n}" "${STATE_DIR}/${slug}.log"
 }
 
-# ---------- send ----------
-cmd_send() {
-  local slug="${1:-}"; shift || die "slug required"
-  local msg="${*:-}"
-  [[ -n "${msg}" ]] || die "message required"
-  registry_has "${slug}" || die "no such session: ${slug}"
-  local window="cc-${slug}"
-  local pbuf; pbuf=$(mktemp)
-  printf '%s' "${msg}" > "${pbuf}"
-  tmux load-buffer -b cc_send_"${slug}" "${pbuf}"
-  tmux paste-buffer -b cc_send_"${slug}" -t "${TMUX_SESSION}:${window}"
-  tmux delete-buffer -b cc_send_"${slug}"
-  rm -f "${pbuf}"
-  tmux send-keys -t "${TMUX_SESSION}:${window}" C-m
-  echo "[send] delivered to ${window}"
+cmd_tail() {
+  local slug="${1:-}"; [[ -n "${slug}" ]] || die "slug required"
+  [[ -f "${STATE_DIR}/${slug}.log" ]] || die "no log for ${slug}"
+  exec tail -F "${STATE_DIR}/${slug}.log"
 }
 
-# ---------- kill ----------
+# --- kill ---
 cmd_kill() {
   local slug="${1:-}"; [[ -n "${slug}" ]] || die "slug required"
   registry_has "${slug}" || die "no such session: ${slug}"
-  local window="cc-${slug}"
-  # Try graceful /exit first (gives claude a chance to save), then force
-  tmux send-keys -t "${TMUX_SESSION}:${window}" "/exit" C-m 2>/dev/null || true
-  sleep 1
+  local window; window=$(registry_col "${slug}" 3)
   tmux kill-window -t "${TMUX_SESSION}:${window}" 2>/dev/null || true
   registry_remove "${slug}"
-  rm -f "${STATE_DIR}/${slug}.json"
+  rm -f "${STATE_DIR}/${slug}.log" "${STATE_DIR}/${slug}.prompt."*
   echo "[kill] ${slug}"
 }
 
-# ---------- resume ----------
-cmd_resume() {
-  local slug="${1:-}"; [[ -n "${slug}" ]] || die "slug required"
-  registry_has "${slug}" || die "no such session: ${slug}"
-  local window="cc-${slug}"
-  # Send claude --resume in-pane (if claude already exited)
-  tmux send-keys -t "${TMUX_SESSION}:${window}" "${CLAUDE_BIN} --resume" C-m
-  echo "[resume] signalled ${window}"
-}
-
-# ---------- state ----------
+# --- state ---
 cmd_state() {
   local slug="${1:-}"; [[ -n "${slug}" ]] || die "slug required"
-  [[ -f "${STATE_DIR}/${slug}.json" ]] || die "no state for ${slug}"
-  cat "${STATE_DIR}/${slug}.json"
+  registry_has "${slug}" || die "no such session: ${slug}"
+  printf 'slug     = %s\n' "${slug}"
+  printf 'uuid     = %s\n' "$(registry_col "${slug}" 2)"
+  printf 'window   = %s\n' "$(registry_col "${slug}" 3)"
+  printf 'workroom = %s\n' "$(registry_col "${slug}" 4)"
+  printf 'model    = %s\n' "$(registry_col "${slug}" 5)"
+  printf 'created  = %s\n' "$(registry_col "${slug}" 6)"
+  printf 'logfile  = %s\n' "${STATE_DIR}/${slug}.log"
 }
 
-# ---------- help ----------
-cmd_help() { sed -n '2,22p' "$0"; }
+# --- help ---
+cmd_help() { sed -n '2,32p' "$0"; }
 
-# ---------- dispatch ----------
+# --- dispatch ---
 cmd="${1:-help}"; shift || true
 case "${cmd}" in
   create) cmd_create "$@";;
+  send)   cmd_send "$@";;
   list)   cmd_list "$@";;
   attach) cmd_attach "$@";;
   logs)   cmd_logs "$@";;
-  send)   cmd_send "$@";;
+  tail)   cmd_tail "$@";;
   kill)   cmd_kill "$@";;
-  resume) cmd_resume "$@";;
   state)  cmd_state "$@";;
   help|-h|--help) cmd_help;;
   *) die "unknown command: ${cmd}. See --help";;
