@@ -1419,6 +1419,17 @@ Wave 4 для UIDesignPanel закрыт.
 - lint:errors: exit 0, no new violations.
 - Commit: `5ed412f`
 
+### [done] 2026-04-18 — Wave 4 / ContractorDocumentsSection extraction
+
+- Created `app/pages/contractor/[id]/ContractorDocumentsSection.vue` (159 lines).
+  - Props: `contractorId: number | string`, `contractorDocs: any[]`, `refreshDocs: () => void`.
+  - Owns: `DOC_CATEGORIES`, `docsSearch`, `docsFilter`, `docsSort`, `newDocTitle`, `newDocCategory`, `newDocNotes`, `docUploading`, `filteredContractorDocs` computed, `formatDocDate`, `uploadDoc`, `deleteDoc`.
+- Slimmed `app/pages/contractor/[id]/index.vue`: 974 → 836 lines (−138 lines, −14%).
+  - Parent retains `contractorDocs` fetch (+ `refreshDocs`) for sidebar badge (`contractorDocs.length` at nav line).
+  - `refreshDocs` passed to child as a prop so child can trigger refetch after upload/delete.
+- Added `import ContractorDocumentsSection from './ContractorDocumentsSection.vue'` to parent.
+- Commit: pending
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor` Step 1 (picker) + Step 2 (field editor)**: 236+582 строк с ~20 deps (picker refs, ctx, loadingCtx, apply-handlers, field state, vars, generators). Нужен composable `useDocumentEditorSources()` + `useDocumentEditorFields()`.
