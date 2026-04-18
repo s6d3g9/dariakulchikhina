@@ -1428,7 +1428,7 @@ Wave 4 для UIDesignPanel закрыт.
   - Parent retains `contractorDocs` fetch (+ `refreshDocs`) for sidebar badge (`contractorDocs.length` at nav line).
   - `refreshDocs` passed to child as a prop so child can trigger refetch after upload/delete.
 - Added `import ContractorDocumentsSection from './ContractorDocumentsSection.vue'` to parent.
-- Commit: pending
+- Commit: `c605fe6`
 
 ### Остающиеся цели (требуют big-session composable work)
 
