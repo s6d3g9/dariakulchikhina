@@ -736,3 +736,30 @@ nuxt.config.ts расширен: добавлены пути ~/shared/ui, ~/widg
 - 11-backend: source-пути admin-settings (admin-settings → admin/), extra-services (flat → nested directory), suggest и upload отмечены как stays (no DB). Целевые service-файлы уточнены: project-status/client-profile → project-mutations.service.ts, page-content/page-answers → project-pages.service.ts. Удалены несуществующие agent-registry/agent-chat entries.
 - 10-frontend: удалена запись StandaloneChatPanel.vue (файл никогда не существовал в репозитории).
 Результат: 10-frontend: 47/47 done, 0 pending, 0 missing. 11-backend: 0 pending, 0 missing. Проверка: pnpm docs:v5:verify — ok.
+
+### [done] 2026-04-18 — Wave 4 / ClientProjectControl giant-file slice
+Цель: разрезать 3405-строковый ClientProjectControl.vue на родительский виджет (~250 строк) + дочерний ClientControlTimelineSection (~3180 строк).
+
+Файлы:
+- app/widgets/projects/control/ClientControlTimelineSection.vue (новый): три section-корня (Vue 3 fragment) — timeline, phases, sprints. Весь CSS (глобальный, без scope) перенесён сюда. defineExpose: openProjectScopeDetails, focusSprint, selectTask.
+- app/widgets/projects/control/model/control-options.ts (новый): sprintStatusLabels, taskStatusLabels, phaseStatusLabels — общие константы статусов, импортируются дочерним компонентом.
+- app/widgets/projects/control/ClientProjectControl.vue (изменён): сведён к 252 строкам (hero, summary grid, agents, call insights, checkpoints, blockers). Секции timeline/phases/sprints заменены тегом ClientControlTimelineSection с ref="timelineSectionRef".
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- pnpm exec vue-tsc --noEmit — ok
+- pnpm lint:errors — ok (exit 0)
+
+Долги:
+- Дочерний компонент всё ещё велик (3180 строк). Следующие кандидаты на slice: отдельные section-компоненты (ProjectScopeDetailPanel, SprintDetailDrawer и т.д.).
+
+### [done] 2026-04-18 — Docs / INDEX.md references to 18-20 docs
+Цель: добавить в оглавление INDEX.md ссылки на документы 18-repository-layer.md, 19-error-handling.md, 20-config-and-logging.md (файлы существовали, но не были перечислены).
+
+Файлы:
+- docs/architecture-v5/INDEX.md: добавлены пункты 18, 19, 20 в таблицу оглавления.
+
+Проверка:
+- pnpm docs:v5:verify — ok
