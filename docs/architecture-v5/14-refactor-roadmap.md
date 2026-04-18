@@ -1013,3 +1013,51 @@ SFC line-count (до → после):
 - Template slicing — вычленить `<section v-show="activeModule === 'X'">` блоки в sub-components `./sections/Control<Module>.vue` с composable-парой в `./model/useControl<Module>.ts`
 - Script slicing — вычленить обособленные группы state/handlers в composables по FSD
 - Цель — каждый SFC ≤ 500 строк (template + script)
+
+### [done] 2026-04-18 — Wave 4 / batch 2: первые template-извлечения из AdminProjectControl
+
+Первая итерация template slicing'а — вынесены две самые автономные секции из `AdminProjectControl.vue`.
+
+Новые файлы в `app/widgets/projects/control/`:
+- `sections/ControlOverviewSection.vue` — overview summary pill + metrics + rhythm form (2 оригинальные `<section>` → один FSD-компонент). Props: `control`, `summary`, `saveMetaText`, `saveState`. Emits: `save`, `open-project-scope-details`.
+- `sections/ControlHealthSection.vue` — checkpoints + blockers editor, add/remove handlers перенесены внутрь. Props: `control`. Emits: `save`.
+- `model/control-options.ts` — общие select-options (phase/sprint/checkpoint statuses, communication channels, stakeholder roles). Замещает 5 inline-констант в `AdminProjectControl`; переиспользуется ClientProjectControl и остальными секционными компонентами.
+
+Behavior preserved: `control` passed by reference → push/splice сохраняют реактивность; `save()` round-trips через родительский debounce.
+
+Размер: AdminProjectControl.vue 3518 → 3378 (-140, кумулятивно 5844 → 3378 = -42% от исходника).
+
+### [done] 2026-04-18 — Wave 4 / batch 3: mass-extract 6 pivot секций из AdminDesignerCabinet
+
+Массовое извлечение read-only pivot-секций. Все шесть — одинаковый паттерн (список карточек с `drillToEntityCabinet(kind, id, name)` по клику).
+
+Новые компоненты в `app/widgets/cabinets/designer/sections/`:
+- `CabinetClientsSection.vue` — `uniqueClients` pivot
+- `CabinetContractorsSection.vue` — `uniqueContractors` pivot
+- `CabinetSellersSection.vue` — `linkedData.sellers`
+- `CabinetManagersSection.vue` — `linkedData.managers`
+- `CabinetGallerySection.vue` — `galleryList` grid
+- `CabinetMoodboardsSection.vue` — `moodboardList` grid
+
+Новый helper: `app/widgets/cabinets/designer/model/cabinet-formatters.ts` — `pluralProjects` (склонение существительного "проект").
+
+Навигация: каждая секция сама вызывает `useAdminNav().drillToEntityCabinet` — parent'у больше не нужны per-entity `goToClient/Contractor/Seller/Manager` обёртки (4 dead-handler'а удалены).
+
+Row-типы объявлены inline в каждой секции (без утечки родительского `linkedData: Ref<any>` quirk'а наружу). Когда cabinet REST получит zod-схему — типы поднимутся в shared.
+
+Размер: AdminDesignerCabinet.vue 3253 → 3136 (-117, кумулятивно 4332 → 3136 = -28% от исходника).
+
+**Итоги Wave 4 (после batch 1-3):**
+
+| Файл | Исходник | CSS-extract | После section-extract | Общее сокращение |
+|---|---|---|---|---|
+| `AdminProjectControl.vue` | 5844 | 3518 | 3378 | -42% |
+| `AdminDesignerCabinet.vue` | 4332 | 3253 | 3136 | -28% |
+| `UIDesignPanel.vue` | 6624 | 4816 | — | -27% |
+| `admin/projects/[slug].vue` | 3687 | 2633 | — | -29% |
+| `ClientProjectControl.vue` | 3405 | 1969 | — | -42% |
+| `contractor/[id]/index.vue` | 3347 | 2017 | — | -40% |
+| `AdminDocumentEditor.vue` | 3030 | 2236 | — | -26% |
+| **Итого** | **30269** | **20442** | **20185** | **-33%** |
+
+Все прошли `vue-tsc --noEmit` exit 0 и `lint-ratchet check` 0/0.
