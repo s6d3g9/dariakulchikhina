@@ -243,254 +243,83 @@
               </template>
               <!-- Клиенты проекта — inline без модала -->
               <template v-else-if="currentProjectPage === 'project_clients'">
-                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
-                  <div class="proj-entity-panel-title">Клиенты проекта</div>
-
-                  <div v-if="linkedClients.length" class="proj-entity-section">
-                    <div class="proj-entity-section-label">Закреплённые</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="client in linkedClients"
-                        :key="client.id"
-                        class="proj-entity-row proj-entity-row--linked"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ client.name }}</div>
-                          <div class="proj-entity-meta">
-                            <template v-if="client.phone">{{ client.phone }}</template>
-                            <template v-else-if="client.email">{{ client.email }}</template>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          class="proj-entity-btn proj-entity-btn--remove"
-                          @click="unlinkClientFromModal(String(client.id))"
-                        >−</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="proj-entity-section">
-                    <div class="proj-entity-section-label">Добавить из CRM</div>
-                    <div v-if="!availableClientsForModal.length" class="proj-entity-empty">Нет доступных клиентов</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="client in availableClientsForModal"
-                        :key="client.id"
-                        class="proj-entity-row"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ client.name }}</div>
-                          <div class="proj-entity-meta">
-                            <template v-if="client.phone">{{ client.phone }}</template>
-                            <template v-else-if="client.email">{{ client.email }}</template>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          class="proj-entity-btn proj-entity-btn--add"
-                          @click="linkClientFromModal(String(client.id))"
-                        >+</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p v-if="clientLinkError" style="color:var(--ds-error,#c00);font-size:.8rem;margin:8px 0">{{ clientLinkError }}</p>
-                  <p v-if="clientLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ clientLinkSuccess }}</p>
-                </div>
+                <ProjectEntityPanel
+                  title="Клиенты проекта"
+                  linked-label="Закреплённые"
+                  available-label="Добавить из CRM"
+                  available-empty-text="Нет доступных клиентов"
+                  :linked-items="linkedClients"
+                  :available-items="availableClientsForModal"
+                  :format-meta="(c: any) => c.phone || c.email || ''"
+                  :is-brutalist="isBrutalistProjectMode"
+                  :error-text="clientLinkError"
+                  :success-text="clientLinkSuccess"
+                  @link="(id: any) => linkClientFromModal(String(id))"
+                  @unlink="(id: any) => unlinkClientFromModal(String(id))"
+                />
               </template>
               <template v-else-if="currentProjectPage === 'project_contractors'">
-                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
-                  <div class="proj-entity-panel-title">Подрядчики проекта</div>
-
-                  <div v-if="linkedContractorsList.length" class="proj-entity-section">
-                    <div class="proj-entity-section-label">Закреплённые</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="contractor in linkedContractorsList"
-                        :key="contractor.id"
-                        class="proj-entity-row proj-entity-row--linked"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ contractor.name }}</div>
-                          <div class="proj-entity-meta">{{ contractor.companyName || contractor.phone || contractor.email || 'без контакта' }}</div>
-                        </div>
-                        <button
-                          type="button"
-                          class="proj-entity-btn proj-entity-btn--remove"
-                          @click="unlinkContractor(contractor.id)"
-                        >−</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="proj-entity-section">
-                    <div class="proj-entity-section-label">Добавить из CRM</div>
-                    <div v-if="!availableContractorsForModal.length" class="proj-entity-empty">Нет доступных подрядчиков</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="contractor in availableContractorsForModal"
-                        :key="contractor.id"
-                        class="proj-entity-row"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ contractor.name }}</div>
-                          <div class="proj-entity-meta">{{ contractor.companyName || contractor.phone || contractor.email || 'без контакта' }}</div>
-                        </div>
-                        <button
-                          type="button"
-                          class="proj-entity-btn proj-entity-btn--add"
-                          @click="linkContractorFromModal(contractor.id)"
-                        >+</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p v-if="contractorLinkError" style="color:var(--ds-error,#c00);font-size:.8rem;margin:8px 0">{{ contractorLinkError }}</p>
-                  <p v-if="contractorLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ contractorLinkSuccess }}</p>
-                </div>
+                <ProjectEntityPanel
+                  title="Подрядчики проекта"
+                  linked-label="Закреплённые"
+                  available-label="Добавить из CRM"
+                  available-empty-text="Нет доступных подрядчиков"
+                  :linked-items="linkedContractorsList"
+                  :available-items="availableContractorsForModal"
+                  :format-meta="(c: any) => c.companyName || c.phone || c.email || 'без контакта'"
+                  :is-brutalist="isBrutalistProjectMode"
+                  :error-text="contractorLinkError"
+                  :success-text="contractorLinkSuccess"
+                  @link="(id: any) => linkContractorFromModal(id)"
+                  @unlink="(id: any) => unlinkContractor(id)"
+                />
               </template>
               <template v-else-if="currentProjectPage === 'project_designers'">
-                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
-                  <div class="proj-entity-panel-title">Дизайнеры проекта</div>
-
-                  <div v-if="linkedDesignersList.length" class="proj-entity-section">
-                    <div class="proj-entity-section-label">Закреплённые</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="designer in linkedDesignersList"
-                        :key="designer.id"
-                        class="proj-entity-row proj-entity-row--linked"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ designer.name }}</div>
-                          <div class="proj-entity-meta">{{ designer.companyName || designer.phone || designer.email || 'без контакта' }}</div>
-                        </div>
-                        <button
-                          type="button"
-                          class="proj-entity-btn proj-entity-btn--remove"
-                          @click="unlinkDesigner(designer.id)"
-                        >−</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="proj-entity-section">
-                    <div class="proj-entity-section-label">Добавить из CRM</div>
-                    <div v-if="!availableDesignersForModal.length" class="proj-entity-empty">Нет доступных дизайнеров</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="designer in availableDesignersForModal"
-                        :key="designer.id"
-                        class="proj-entity-row"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ designer.name }}</div>
-                          <div class="proj-entity-meta">{{ designer.companyName || designer.phone || designer.email || 'без контакта' }}</div>
-                        </div>
-                        <button
-                          type="button"
-                          class="proj-entity-btn proj-entity-btn--add"
-                          @click="linkDesignerFromModal(designer.id)"
-                        >+</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p v-if="designerLinkError" style="color:var(--ds-error,#c00);font-size:.8rem;margin:8px 0">{{ designerLinkError }}</p>
-                  <p v-if="designerLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ designerLinkSuccess }}</p>
-                </div>
+                <ProjectEntityPanel
+                  title="Дизайнеры проекта"
+                  linked-label="Закреплённые"
+                  available-label="Добавить из CRM"
+                  available-empty-text="Нет доступных дизайнеров"
+                  :linked-items="linkedDesignersList"
+                  :available-items="availableDesignersForModal"
+                  :format-meta="(d: any) => d.companyName || d.phone || d.email || 'без контакта'"
+                  :is-brutalist="isBrutalistProjectMode"
+                  :error-text="designerLinkError"
+                  :success-text="designerLinkSuccess"
+                  @link="(id: any) => linkDesignerFromModal(id)"
+                  @unlink="(id: any) => unlinkDesigner(id)"
+                />
               </template>
               <template v-else-if="currentProjectPage === 'project_sellers'">
-                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
-                  <div class="proj-entity-panel-title">Поставщики проекта</div>
-
-                  <div v-if="linkedSellersList.length" class="proj-entity-section">
-                    <div class="proj-entity-section-label">Закреплённые</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="seller in linkedSellersList"
-                        :key="seller.id"
-                        class="proj-entity-row proj-entity-row--linked"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ seller.name }}</div>
-                          <div class="proj-entity-meta">{{ seller.companyName || seller.city || seller.contactPerson || 'без контакта' }}</div>
-                        </div>
-                        <button
-                          type="button"
-                          class="proj-entity-btn proj-entity-btn--remove"
-                          @click="unlinkSeller(seller.id)"
-                        >−</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="proj-entity-section">
-                    <div class="proj-entity-section-label">Добавить из CRM</div>
-                    <div v-if="!availableSellersForProject.length" class="proj-entity-empty">Нет доступных поставщиков</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="seller in availableSellersForProject"
-                        :key="seller.id"
-                        class="proj-entity-row"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ seller.name }}</div>
-                          <div class="proj-entity-meta">{{ seller.companyName || seller.city || seller.contactPerson || 'без контакта' }}</div>
-                        </div>
-                        <button
-                          type="button"
-                          class="proj-entity-btn proj-entity-btn--add"
-                          @click="linkSeller(seller.id)"
-                        >+</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p v-if="sellerLinkError" style="color:var(--ds-error,#c00);font-size:.8rem;margin:8px 0">{{ sellerLinkError }}</p>
-                  <p v-if="sellerLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ sellerLinkSuccess }}</p>
-                </div>
+                <ProjectEntityPanel
+                  title="Поставщики проекта"
+                  linked-label="Закреплённые"
+                  available-label="Добавить из CRM"
+                  available-empty-text="Нет доступных поставщиков"
+                  :linked-items="linkedSellersList"
+                  :available-items="availableSellersForProject"
+                  :format-meta="(s: any) => s.companyName || s.city || s.contactPerson || 'без контакта'"
+                  :is-brutalist="isBrutalistProjectMode"
+                  :error-text="sellerLinkError"
+                  :success-text="sellerLinkSuccess"
+                  @link="(id: any) => linkSeller(id)"
+                  @unlink="(id: any) => unlinkSeller(id)"
+                />
               </template>
               <template v-else-if="currentProjectPage === 'project_managers'">
-                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
-                  <div class="proj-entity-panel-title">Менеджеры проекта</div>
-
-                  <div v-if="linkedManagersList.length" class="proj-entity-section">
-                    <div class="proj-entity-section-label">Назначенные</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="manager in linkedManagersList"
-                        :key="manager.id"
-                        class="proj-entity-row proj-entity-row--linked"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ manager.name }}</div>
-                          <div class="proj-entity-meta">{{ manager.role || manager.phone || manager.email || 'менеджер проекта' }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-else class="proj-entity-empty">Менеджеры пока не привязаны к проекту</div>
-
-                  <div class="proj-entity-section">
-                    <div class="proj-entity-section-label">Доступные в системе</div>
-                    <div v-if="!availableManagersForProject.length" class="proj-entity-empty">Нет дополнительных менеджеров</div>
-                    <div class="proj-entity-list">
-                      <div
-                        v-for="manager in availableManagersForProject"
-                        :key="manager.id"
-                        class="proj-entity-row"
-                      >
-                        <div class="proj-entity-info">
-                          <div class="proj-entity-name">{{ manager.name }}</div>
-                          <div class="proj-entity-meta">{{ manager.role || manager.phone || manager.email || 'менеджер' }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <ProjectEntityPanel
+                  title="Менеджеры проекта"
+                  linked-label="Назначенные"
+                  available-label="Доступные в системе"
+                  available-empty-text="Нет дополнительных менеджеров"
+                  empty-text="Менеджеры пока не привязаны к проекту"
+                  :linked-items="linkedManagersList"
+                  :available-items="availableManagersForProject"
+                  :format-meta="(m: any) => m.role || m.phone || m.email || 'менеджер'"
+                  :is-brutalist="isBrutalistProjectMode"
+                  :can-link="false"
+                  :can-unlink="false"
+                />
               </template>
               <template v-else-if="currentProjectPage === 'project_communications'">
                 <section class="proj-section-shell" :class="{ 'proj-section-shell--brutalist': isBrutalistProjectMode }">
