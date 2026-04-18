@@ -1,4 +1,4 @@
-import { callMessengerAgentModel } from './agent-llm.ts'
+import { callMessengerAgentModel } from '../agents/agent-llm.ts'
 
 export type MessengerCallAnalysisToolId = 'psychology' | 'business' | 'intent' | 'objections' | 'speech-risks' | 'next-steps'
 

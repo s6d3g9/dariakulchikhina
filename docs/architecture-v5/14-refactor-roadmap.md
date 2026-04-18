@@ -639,6 +639,48 @@ Commit:
 Долги:
 - Next: sellers (5-10 endpoints), managers (~5 endpoints), projects/** (20+ endpoints со связями).
 
+### [done] 2026-04-18 — Wave 7 / messenger/core bounded-context subdirectory split
+Цель: переложить 19 файлов из плоского `messenger/core/src/` в bounded-context поддиректории согласно матрице `12-messenger-services-refactor-map.md`. Matrix 12: 0 → 19 done.
+
+Файлы (git mv):
+- messenger/core/src/server.ts -> messenger/core/src/realtime/server.ts
+- messenger/core/src/auth.ts -> messenger/core/src/auth/auth.ts
+- messenger/core/src/auth-store.ts -> messenger/core/src/auth/auth-store.ts
+- messenger/core/src/crypto-store.ts -> messenger/core/src/crypto/crypto-store.ts
+- messenger/core/src/contact-store.ts -> messenger/core/src/contacts/contact-store.ts
+- messenger/core/src/conversation-store.ts -> messenger/core/src/conversations/conversation-store.ts
+- messenger/core/src/media-store.ts -> messenger/core/src/media/media-store.ts
+- messenger/core/src/storage-paths.ts -> messenger/core/src/media/storage-paths.ts
+- messenger/core/src/agent-knowledge-presets.ts -> messenger/core/src/agents/agent-knowledge-presets.ts
+- messenger/core/src/agent-knowledge-store.ts -> messenger/core/src/agents/agent-knowledge-store.ts
+- messenger/core/src/agent-llm.ts -> messenger/core/src/agents/agent-llm.ts
+- messenger/core/src/agent-run-store.ts -> messenger/core/src/agents/agent-run-store.ts
+- messenger/core/src/agent-settings-store.ts -> messenger/core/src/agents/agent-settings-store.ts
+- messenger/core/src/agent-store.ts -> messenger/core/src/agents/agent-store.ts
+- messenger/core/src/agent-workspace-store.ts -> messenger/core/src/agents/agent-workspace-store.ts
+- messenger/core/src/user-ai-settings-store.ts -> messenger/core/src/profile/user-ai-settings-store.ts
+- messenger/core/src/call-analysis-service.ts -> messenger/core/src/calls/call-analysis-service.ts
+- messenger/core/src/livekit-stt-bot.ts -> messenger/core/src/calls/livekit-stt-bot.ts
+- messenger/core/src/transcription-service.ts -> messenger/core/src/transcription/transcription-service.ts
+- messenger/core/src/project-engine-store.ts -> messenger/core/src/project-engine/project-engine-store.ts
+
+Остались без изменений (entrypoints):
+- messenger/core/src/index.ts (обновлён импорт server.ts → realtime/server.ts)
+- messenger/core/src/config.ts
+
+Commit:
+- (этот коммит)
+
+Проверка:
+- tsc --noEmit: 0 TS2307 ошибок на локальных модулях (все import-пути разрешаются корректно)
+- TS7006 и TS2307-for-fastify/livekit — pre-existing errors из-за отсутствия node_modules в worktree, не связаны с рефактором
+- `pnpm comm:typecheck` (services/communications-service) — ok (не затронут)
+- git mv сохраняет историю файлов
+
+Долги:
+- messenger/web FSD-срез (entities/features/widgets/pages) — ещё не начат, matrix 12 messenger/web: 0/43
+- services/communications-service bounded-context split (auth/store) — ещё не начат
+
 ## Что считается завершением полного рефакторинга
 
 Рефакторинг считается завершенным только когда выполнены все условия:

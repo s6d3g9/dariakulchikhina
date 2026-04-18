@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-import { resolveMessengerDataPath } from './storage-paths.ts'
+import { resolveMessengerDataPath } from '../media/storage-paths.ts'
 
 export type MessengerInterpretationProvider = 'algorithm' | 'api'
 export type MessengerTranscriptionProvider = 'server-default' | 'api'

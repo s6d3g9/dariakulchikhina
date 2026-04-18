@@ -12,7 +12,7 @@ import {
   type MessengerAgentKnowledgeSourceRecord,
   type MessengerAgentSettingsRecord,
 } from './agent-settings-store.ts'
-import { resolveMessengerDataPath } from './storage-paths.ts'
+import { resolveMessengerDataPath } from '../media/storage-paths.ts'
 
 const execFileAsync = promisify(execFile)
 const STORAGE_PATH = resolveMessengerDataPath('agent-knowledge.json')

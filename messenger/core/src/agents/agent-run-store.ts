@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-import { resolveMessengerDataPath } from './storage-paths.ts'
+import { resolveMessengerDataPath } from '../media/storage-paths.ts'
 
 export interface MessengerAgentRunArtifactRecord {
   kind: 'consultation' | 'file' | 'summary'

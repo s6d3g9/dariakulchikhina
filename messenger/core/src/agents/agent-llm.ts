@@ -1,4 +1,4 @@
-import { readMessengerConfig } from './config.ts'
+import { readMessengerConfig } from '../config.ts'
 
 export interface MessengerAgentLlmMessage {
   role: 'system' | 'user' | 'assistant'

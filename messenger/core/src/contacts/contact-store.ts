@@ -2,10 +2,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
-import { listMessengerAgents } from './agent-store.ts'
-import type { MessengerUserRecord } from './auth-store.ts'
-import { readMessengerConfig } from './config.ts'
-import { resolveMessengerDataPath } from './storage-paths.ts'
+import { listMessengerAgents } from '../agents/agent-store.ts'
+import type { MessengerUserRecord } from '../auth/auth-store.ts'
+import { readMessengerConfig } from '../config.ts'
+import { resolveMessengerDataPath } from '../media/storage-paths.ts'
 
 export interface MessengerContactRecord {
   id: string

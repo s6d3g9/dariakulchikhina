@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { randomUUID, scryptSync, timingSafeEqual, randomBytes } from 'node:crypto'
 
-import { resolveMessengerDataPath } from './storage-paths.ts'
+import { resolveMessengerDataPath } from '../media/storage-paths.ts'
 
 export interface MessengerUserRecord {
   id: string

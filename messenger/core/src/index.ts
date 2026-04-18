@@ -1,5 +1,5 @@
 import { readMessengerConfig } from './config.ts'
-import { createMessengerServer } from './server.ts'
+import { createMessengerServer } from './realtime/server.ts'
 
 const config = readMessengerConfig()
 const app = await createMessengerServer()

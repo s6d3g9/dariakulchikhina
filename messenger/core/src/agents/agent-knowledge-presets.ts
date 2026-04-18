@@ -1,5 +1,5 @@
 import type { MessengerAgentKnowledgeSourceRecord, MessengerAgentRepositoryRecord, MessengerAgentSettingsRecord } from './agent-settings-store.ts'
-import { readMessengerConfig } from './config.ts'
+import { readMessengerConfig } from '../config.ts'
 
 export interface MessengerAgentKnowledgePreset {
   summary: string
