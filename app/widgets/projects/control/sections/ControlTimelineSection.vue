@@ -1832,5 +1832,5 @@ function openProjectScopeDetails() {
   void openSelectedTimelineScope(buildProjectScopeState())
 }
 
-defineExpose({ openProjectScopeDetails, openTaskScopeDetails, timelineWindowLabel, visibleTimelineRows })
+defineExpose({ openProjectScopeDetails, openTaskScopeDetails, closeTimelineRowDetails, timelineWindowLabel, visibleTimelineRows })
 </script>

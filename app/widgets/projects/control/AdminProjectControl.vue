@@ -177,9 +177,9 @@
         :active-task-id="activeTaskId"
         :summary="summary"
         @save="save"
-        @update:active-sprint-id="id => { activeSprintId = id }"
-        @update:active-task-id="id => { activeTaskId = id }"
-        @open-task-scope-details="openTaskScopeDetailsFromTimeline"
+        @update:active-sprint-id="(id: string) => { activeSprintId = id }"
+        @update:active-task-id="(id: string) => { activeTaskId = id }"
+        @open-task-scope-details="(taskId?: string, sprintId?: string) => openTaskScopeDetailsFromTimeline(taskId, sprintId)"
       />
 
       <ControlHealthSection v-show="activeModule === 'health'" :control="control" @save="save" />
