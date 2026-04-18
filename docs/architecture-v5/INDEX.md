@@ -22,7 +22,10 @@
 15. [Аудит соответствия target-архитектуре](./15-target-alignment-audit.md)
 16. [Playbook расширения (новые микросервисы и приложения)](./16-extensibility-playbook.md)
 17. [Coding Standards: файлы, имена, LLM-friendly структура](./17-coding-standards.md)
-18. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
+18. [Repository Layer — правила разделения service и persistence](./18-repository-layer.md)
+19. [Error Handling — domain errors + HTTP mapping](./19-error-handling.md)
+20. [Config + Logging — fail-fast конфигурация и structured логи](./20-config-and-logging.md)
+21. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
 
 ## Операционные отчеты
 1. [Refactor tail report](./refactor-tail-report.md)
