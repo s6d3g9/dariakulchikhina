@@ -1061,3 +1061,49 @@ Row-типы объявлены inline в каждой секции (без ут
 | **Итого** | **30269** | **20442** | **20185** | **-33%** |
 
 Все прошли `vue-tsc --noEmit` exit 0 и `lint-ratchet check` 0/0.
+
+
+### [done] 2026-04-18 — Wave 4 / batch 4: Dashboard section из AdminDesignerCabinet
+
+Полностью read-only dashboard (hero + quick-nav + stat grid + recent projects, 131 строк template) вынесен в `./sections/CabinetDashboardSection.vue`. 16 props (designer meta, stats, entity counts) + 2 события (`navigate`, `init-from-templates`) — чисто презентационный компонент без внутреннего state'а или сетевых вызовов.
+
+AdminDesignerCabinet.vue: 3136 → 3027 (−109, кумулятивно 4332 → 3027 = −30%).
+
+### [done] 2026-04-18 — Wave 4 / autosave consolidation
+
+Пять cabinet-файлов (designer + seller + manager + contractor виджеты, плюс composable useContractorCabinet) дублировали `type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'`, а два из них ещё и `autosaveStatusLabel`/`autosaveStatusClass`. Консолидированы в новый `app/shared/ui/autosave/autosave-state.ts` — единый источник для всех cabinet-виджетов.
+
+### [done] 2026-04-18 — Wave 4 / batch 5: Documents section из AdminDesignerCabinet
+
+Весь блок документов (upload form + filter/search/sort + card list + empty states) вынесен в `./sections/CabinetDocumentsSection.vue` вместе с 7 refs, 2 async handlers (upload/delete), filter computed и 2 форматтерами. Parent получил 3 prop'а (`designerId`, `documents`, `isBrutalist`) и обрабатывает событие `refresh` — ничего больше. Новый helper `./model/designer-doc-categories.ts` — `DESIGNER_DOC_CATEGORIES` + `getDesignerDocCategoryLabel`.
+
+AdminDesignerCabinet.vue: 3027 → 2886 (−141, кумулятивно 4332 → 2886 = −33%).
+
+### [done] 2026-04-18 — Wave 4 / batch 6: CSS extraction на 15 mid-tier SFC (500-2700 строк)
+
+Вторая волна zero-behavior CSS relocation — охватывает все SFC в `app/`, в которых ещё оставалось >200 строк inline `<style scoped>`. Механика идентична batch 1: блок в sibling `<Name>.scoped.css`, в SFC — один тег `<style scoped src="./<Name>.scoped.css">`.
+
+Цели и результаты:
+
+| Файл | До | После | CSS |
+|---|---|---|---|
+| `ProjectCommunicationsPanel.vue` | 2639 | 1779 | 859 |
+| `app/layouts/admin.vue` (только scoped блок) | 1898 | 1106 | 781 |
+| `AdminGallery.vue` | 1254 | 638 | 615 |
+| `Wipe2Renderer.vue` | 1085 | 517 | 567 |
+| `AdminDocumentsSection.vue` | 1654 | 1200 | 453 |
+| `AdminProjectKanban.vue` | 787 | 361 | 425 |
+| `client/[slug]/index.vue` | 935 | 536 | 398 |
+| `AdminSmartBrief.vue` | 905 | 521 | 383 |
+| `ClientPageContent.vue` | 674 | 326 | 348 |
+| `AdminSpacePlanning.vue` | 774 | 496 | 277 |
+| `AdminToRContract.vue` | 659 | 395 | 263 |
+| `AdminContractorCabinet.vue` | 1505 | 1259 | 246 |
+| `GalleryLightbox.vue` | 558 | 323 | 234 |
+| `MaterialPropertyEditor.vue` | 618 | 388 | 229 |
+| `UIAppBlueprintBuilder.vue` | 914 | 706 | 208 |
+| **Итого** | **16879** | **10551** | **6286** |
+
+Исключение: `app/layouts/admin.vue` имеет второй не-scoped `<style>` global блок (с 1106 строки) — его оставляем inline, только scoped блок перевезён.
+
+Суммарно по Wave 4 batches 1 и 6 CSS relocation охватывает 22 SFC, вынесено ~16100 строк CSS.
