@@ -576,84 +576,12 @@
           </template>
 
           <template v-if="(section === 'documents') || showAll">
-            <div class="cab-section" data-section="documents">
-            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
-              <h2>Документы</h2>
-            </div>
-
-            <div class="u-modal__row2" style="margin-bottom:12px">
-              <div class="u-field">
-                <label class="u-field__label">Поиск</label>
-                <GlassInput v-model="designerDocSearch"  placeholder="Название, заметка" />
-              </div>
-              <div class="u-field">
-                <label class="u-field__label">Фильтр категории</label>
-                <select v-model="designerDocFilter" class="glass-input">
-                  <option value="">Все категории</option>
-                  <option v-for="dc in DESIGNER_DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
-                </select>
-              </div>
-              <div class="u-field">
-                <label class="u-field__label">Сортировка</label>
-                <select v-model="designerDocSort" class="glass-input">
-                  <option value="new">Сначала новые</option>
-                  <option value="old">Сначала старые</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistDesignerCabinetMode }">
-              <h3>Загрузить документ</h3>
-              <div class="u-modal__row2">
-                <div class="u-field">
-                  <label class="u-field__label">Название</label>
-                  <GlassInput v-model="newDesignerDocTitle"  placeholder="Название документа" />
-                </div>
-                <div class="u-field">
-                  <label class="u-field__label">Категория</label>
-                  <select v-model="newDesignerDocCategory" class="glass-input">
-                    <option v-for="dc in DESIGNER_DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
-                  </select>
-                </div>
-                <div class="u-field u-field--full">
-                  <label class="u-field__label">Примечание</label>
-                  <GlassInput v-model="newDesignerDocNotes"  placeholder="Необязательно" />
-                </div>
-              </div>
-              <div style="margin-top: 12px;">
-                <label class="cab-upload-btn">
-                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadDesignerDoc" />
-                  {{ designerDocUploading ? 'Загрузка…' : '＋ Выбрать файл' }}
-                </label>
-              </div>
-            </div>
-
-            <div v-if="filteredDesignerDocs.length" class="cab-docs-list" :class="{ 'cab-docs-list--brutalist': isBrutalistDesignerCabinetMode }">
-              <div v-for="doc in filteredDesignerDocs" :key="doc.id" class="cab-doc-card glass-surface" :class="{ 'cab-doc-card--brutalist': isBrutalistDesignerCabinetMode }">
-                <div class="cab-doc-icon">📎</div>
-                <div class="cab-doc-info">
-                  <div class="cab-doc-title">{{ doc.title }}</div>
-                  <div class="cab-doc-meta">
-                    <span class="cab-doc-cat">{{ getDesignerDocCategoryLabel(doc.category) }}</span>
-                    <span v-if="doc.notes" class="cab-doc-notes">{{ doc.notes }}</span>
-                    <span v-if="doc.createdAt" class="cab-doc-notes">{{ formatDocDate(doc.createdAt) }}</span>
-                  </div>
-                </div>
-                <div class="cab-doc-actions">
-                  <a v-if="doc.url" :href="doc.url" target="_blank" class="cab-doc-link">Скачать</a>
-                  <button class="cab-doc-del" @click="deleteDesignerDoc(doc.id)">✕</button>
-                </div>
-              </div>
-            </div>
-            <div v-else-if="designerDocs?.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
-              <span>🔎</span>
-              <p>По фильтру ничего не найдено.</p>
-            </div>
-            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
-              <span>📂</span>
-              <p>Документов пока нет.<br>Загрузите договоры, ТЗ, референсы и акты.</p>
-            </div>
-            </div>
+            <CabinetDocumentsSection
+              :designer-id="designerId"
+              :documents="designerDocs ?? []"
+              :is-brutalist="isBrutalistDesignerCabinetMode"
+              @refresh="refreshDesignerDocs"
+            />
           </template>
 
           <!-- ═══════════════ PROJECTS ═══════════════ -->
@@ -1038,15 +966,6 @@ const SERVICE_CATEGORY_OPTIONS = Object.entries(DESIGNER_SERVICE_CATEGORY_LABELS
   label,
 })) as { value: DesignerServiceCategory; label: string }[]
 const BILLING_PERIODS_LIST = Object.entries(BILLING_PERIOD_LABELS).map(([value, label]) => ({ value, label }))
-const DESIGNER_DOC_CATEGORIES: { value: string; label: string }[] = [
-  { value: 'contract', label: 'Договор' },
-  { value: 'tz', label: 'ТЗ' },
-  { value: 'invoice', label: 'Счёт' },
-  { value: 'act', label: 'Акт' },
-  { value: 'reference', label: 'Референс' },
-  { value: 'other', label: 'Другое' },
-]
-
 const { data: designerDocs, refresh: refreshDesignerDocs } = await useFetch<any[]>(
   () => `/api/designers/${props.designerId}/documents`,
   { default: () => [], watch: [designerIdRef] },
@@ -1056,29 +975,10 @@ const { data: linkedData } = await useFetch<any>(
   () => `/api/designers/${props.designerId}/linked-entities`,
   { default: () => ({ sellers: [], managers: [], gallery: [], moodboards: [] }), watch: [designerIdRef] },
 )
-const designerDocUploading = ref(false)
-const newDesignerDocTitle = ref('')
-const newDesignerDocCategory = ref('other')
-const newDesignerDocNotes = ref('')
-const designerDocSearch = ref('')
-const designerDocFilter = ref('')
-const designerDocSort = ref<'new' | 'old'>('new')
 
-const filteredDesignerDocs = computed(() => {
-  const rows = designerDocs.value || []
-  const q = designerDocSearch.value.trim().toLowerCase()
-  return rows.filter((doc: any) => {
-    const byCategory = !designerDocFilter.value || doc.category === designerDocFilter.value
-    if (!byCategory) return false
-    if (!q) return true
-    const hay = `${doc.title || ''} ${doc.notes || ''} ${doc.category || ''}`.toLowerCase()
-    return hay.includes(q)
-  }).slice().sort((a: any, b: any) => {
-    const at = new Date(a.createdAt || 0).getTime()
-    const bt = new Date(b.createdAt || 0).getTime()
-    return designerDocSort.value === 'new' ? bt - at : at - bt
-  })
-})
+// Document upload/filter state and handlers live inside
+// CabinetDocumentsSection.vue; parent only keeps the data fetch so the
+// sidebar counter stays in sync.
 
 const showBrutalistDashboardHero = computed(() => isBrutalistDesignerCabinetMode.value && section.value === 'dashboard')
 const designerHeroSubtitle = computed(() => {
@@ -2306,36 +2206,6 @@ function formatLimitKey(key: string): string {
   return map[key] || key
 }
 
-async function uploadDesignerDoc(ev: Event) {
-  const input = ev.target as HTMLInputElement
-  const files = input.files
-  if (!files?.length) return
-
-  designerDocUploading.value = true
-  try {
-    for (const file of Array.from(files)) {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('title', newDesignerDocTitle.value || file.name)
-      fd.append('category', newDesignerDocCategory.value)
-      fd.append('notes', newDesignerDocNotes.value)
-      await $fetch(`/api/designers/${props.designerId}/documents`, { method: 'POST', body: fd })
-    }
-    await refreshDesignerDocs()
-    newDesignerDocTitle.value = ''
-    newDesignerDocNotes.value = ''
-    input.value = ''
-  } finally {
-    designerDocUploading.value = false
-  }
-}
-
-async function deleteDesignerDoc(docId: number) {
-  if (!confirm('Удалить документ?')) return
-  await $fetch(`/api/designers/${props.designerId}/documents/${docId}`, { method: 'DELETE' })
-  await refreshDesignerDocs()
-}
-
 function getServiceTitle(key: string): string {
   const svc = getServiceBySelectionKey(key)
   if (svc) return svc.title
@@ -2772,10 +2642,6 @@ function queueProjectEditSave() {
   projectEditTimer = setTimeout(() => {
     saveDesignerProjectEdits()
   }, 120)
-}
-
-function getDesignerDocCategoryLabel(category: string): string {
-  return DESIGNER_DOC_CATEGORIES.find(c => c.value === category)?.label ?? category
 }
 
 // ── Wipe2 card view ──
