@@ -857,16 +857,12 @@
 </template>
 
 <script setup lang="ts">
+import { useDocumentEditorSources, EXECUTOR_DEFAULTS } from '~/composables/useDocumentEditorSources'
+import type { DocumentTemplate } from '~/composables/useDocumentEditorSources'
+import { useDocumentEditorFields } from '~/composables/useDocumentEditorFields'
+
 const props = defineProps<{
-  templates: Array<{
-    key: string
-    name: string
-    icon: string
-    description: string
-    category: string
-    fields: Array<{ key: string; label: string; placeholder?: string; multiline?: boolean }>
-    template: string
-  }>
+  templates: Array<DocumentTemplate>
   projects: Array<{ slug: string; title: string }>
   /** Если передан — редактор открывается с готовым содержимым существующего документа */
   existingDoc?: { id: number; content: string; templateKey?: string | null; projectSlug?: string | null } | null
@@ -879,15 +875,9 @@ const emit = defineEmits<{
 
 const STEPS = ['Шаблон', 'Данные', 'Редактор']
 
-// ── State ──
+// ── Coordinator-owned state ──
 const step = ref(0)
-const selectedTpl = ref<typeof props.templates[number] | null>(null)
-const pickedProjectSlug  = ref('')
-const pickedClientId     = ref(0)
-const pickedContractorId = ref(0)
-const pickedDesignerId   = ref(0)
-const designersList      = ref<any[]>([])
-const executorSaved      = ref(false)
+const selectedTpl = ref<DocumentTemplate | null>(null)
 const fieldValues = ref<Record<string, string>>({})
 const fieldAutoFilled = ref<Record<string, boolean>>({})
 const editorContent = ref('')
@@ -897,113 +887,56 @@ const saving        = ref(false)
 const copyMsg       = ref('')
 const saveMsg       = ref('')
 const saveMsgType   = ref<'ok' | 'err'>('ok')
-const ctx           = ref<any>(null)
-const loadingCtx    = ref(false)
+
 // ── Diff-состояние (для «улучшить») ──
 const diffMode     = ref<'' | 'streaming' | 'review'>('')
 const diffOriginal = ref('')
 const diffNew      = ref('')
 
-// ── Панель переменных {{...}} ──
-const varsOpen = ref(false)
-
-// Все доступные переменные: поля шаблона + проектные мета-данные
-const allVars = computed(() => {
-  const result: Array<{ key: string; label: string; value: string; group: string }> = []
-  const vals = fieldValues.value
-
-  // 1. Поля текущего шаблона
-  if (selectedTpl.value) {
-    for (const f of selectedTpl.value.fields) {
-      result.push({ key: f.key, label: f.label, value: vals[f.key] || '', group: 'Поля шаблона' })
-    }
-  }
-
-  // 2. Проектные данные (автозаполнение из проекта/клиента)
-  const p = ctx.value?.project
-  const projectVars: Array<[string, string, string]> = [
-    ['client_name',          'ФИО клиента',              p?.client_name || vals.client_name || ''],
-    ['client_phone',         'Телефон клиента',           p?.phone || vals.client_phone || ''],
-    ['client_email',         'Email клиента',             p?.email || vals.client_email || ''],
-    ['client_passport',      'Паспорт (серия номер)',     vals.client_passport || ''],
-    ['client_passport_issued','Паспорт выдан',            vals.client_passport_issued || ''],
-    ['client_passport_date', 'Дата выдачи паспорта',      vals.client_passport_date || ''],
-    ['client_registration',  'Адрес регистрации',         vals.client_registration || ''],
-    ['client_inn',           'ИНН клиента',               vals.client_inn || ''],
-    ['client_address',       'Адрес клиента',             vals.client_address || ''],
-    ['object_address',       'Адрес объекта',             p?.objectAddress || vals.object_address || ''],
-    ['object_type',          'Тип объекта',               p?.objectType || vals.object_type || ''],
-    ['area',                 'Площадь (кв.м)',            p?.objectArea || vals.area || ''],
-    ['budget',               'Бюджет',                    p?.budget || vals.budget || ''],
-    ['deadline',             'Срок выполнения',           p?.deadline || vals.deadline || ''],
-    ['style',                'Стиль интерьера',           p?.style || vals.style || ''],
-    ['contractor_name',      'Подрядчик',                 vals.contractor_name || ''],
-    ['contractor_inn',       'ИНН подрядчика',            vals.contractor_inn || ''],
-    ['contractor_address',   'Адрес подрядчика',          vals.contractor_address || ''],
-    ['contractor_phone',     'Телефон подрядчика',        vals.contractor_phone || ''],
-    ['contractor_account',   'Расчётный счёт',            vals.contractor_account || ''],
-    ['contractor_bik',       'БИК',                       vals.contractor_bik || ''],
-    ['contractor_bank',      'Банк',                      vals.contractor_bank || ''],
-    ['remaining_amount',     'Остаток суммы',             computedRemaining.value || ''],
-  ]
-  for (const [key, label, value] of projectVars) {
-    // Не дублируем поля шаблона
-    if (!result.find(r => r.key === key)) {
-      result.push({ key, label, value, group: 'Данные проекта' })
-    }
-  }
-
-  // 3. Реквизиты исполнителя
-  const executorVars: Array<[string, string]> = [
-    ['executor_name',            'ФИО исполнителя'],
-    ['executor_inn',             'ИНН исполнителя'],
-    ['executor_passport',        'Паспорт исполнителя'],
-    ['executor_passport_issued', 'Паспорт выдан'],
-    ['executor_passport_date',   'Дата выдачи'],
-    ['executor_registration',    'Прописка исполнителя'],
-    ['executor_phone',           'Телефон исполнителя'],
-    ['executor_email',           'Email исполнителя'],
-    ['executor_bank',            'Банк'],
-    ['executor_bik',             'БИК'],
-    ['executor_account',         'Расчётный счёт'],
-    ['executor_corr_account',    'Корреспондентский счёт'],
-  ]
-  for (const [key, label] of executorVars) {
-    if (!result.find(r => r.key === key)) {
-      result.push({ key, label, value: vals[key] || EXECUTOR_DEFAULTS[key] || '', group: 'Исполнитель' })
-    }
-  }
-
-  return result
+// ── Step 1: data sources + apply-entity handlers ──
+const {
+  pickedProjectSlug,
+  pickedClientId,
+  pickedContractorId,
+  pickedDesignerId,
+  designersList,
+  executorSaved,
+  ctx,
+  loadingCtx,
+  pickedClient,
+  pickedContractor,
+  pickedDesigner,
+  loadContext,
+  ensureDesignersLoaded,
+  applyClientData,
+  applyContractorData,
+  applyDesignerData,
+  saveExecutorToStorage,
+  loadExecutorFromStorage,
+} = useDocumentEditorSources({
+  selectedTpl,
+  fieldValues,
+  fieldAutoFilled,
 })
 
-function insertVar(key: string) {
-  const token = `{{${key}}}`
-  if (step.value === 2 && editorEl.value) {
-    // Вставляем в позицию курсора редактора
-    editorEl.value.focus()
-    const sel = window.getSelection()
-    if (sel && sel.rangeCount) {
-      const range = sel.getRangeAt(0)
-      range.deleteContents()
-      range.insertNode(document.createTextNode(token))
-      range.collapse(false)
-      sel.removeAllRanges()
-      sel.addRange(range)
-      // Синхронизируем с моделью
-      editorContent.value = editorEl.value.innerText
-    } else {
-      // Нет курсора — добавляем в конец
-      editorContent.value += token
-      editorEl.value.innerText = editorContent.value
-    }
-  } else {
-    // На шаге 2 или вне редактора — копируем в буфер
-    navigator.clipboard.writeText(token).catch(() => {})
-    copyMsg.value = `✓ скопировано: ${token}`
-    setTimeout(() => { copyMsg.value = '' }, 2000)
-  }
-}
+// ── Step 2: field values + derived + template vars ──
+const {
+  varsOpen,
+  computedRemaining,
+  allVars,
+  insertVar,
+  generateText,
+  computeDerivedFields,
+} = useDocumentEditorFields({
+  selectedTpl,
+  fieldValues,
+  fieldAutoFilled,
+  ctx,
+  editorEl,
+  editorContent,
+  step,
+  copyMsg,
+})
 
 type DiffSeg = { type: 'equal' | 'del' | 'ins'; text: string }
 
@@ -1068,42 +1001,13 @@ function stripMarkdown(text: string): string {
     .trim()
 }
 
-// ── Computed ──
-const pickedClient = computed(() =>
-  ctx.value?.clients?.find((c: any) => c.id === pickedClientId.value) || null
-)
-const pickedContractor = computed(() =>
-  ctx.value?.contractors?.find((c: any) => c.id === pickedContractorId.value) || null
-)
-const pickedDesigner = computed(() =>
-  designersList.value.find((d: any) => d.id === pickedDesignerId.value) || null
-)
-
 // ── Navigation ──
 function handleBack() {
   if (step.value > 0) { step.value-- }
   else { emit('close') }
 }
 
-// ── Template selection ──
-// ── Реквизиты исполнителя (Кульчихина Дария Андреевна) — дефолты
-// Заполните один раз — будут подставляться во все шаблоны автоматически
-const EXECUTOR_DEFAULTS: Record<string, string> = {
-  executor_name:            'Кульчихина Дария Андреевна',
-  executor_inn:             '',   // ← заполнить ИНН
-  executor_passport:        '',
-  executor_passport_issued: '',
-  executor_passport_date:   '',
-  executor_registration:    '',
-  executor_phone:           '',
-  executor_email:           'daria@kulchikhina.ru',
-  executor_bank:            '',
-  executor_bik:             '',
-  executor_account:         '',
-  executor_corr_account:    '',
-}
-
-function selectTemplate(tpl: typeof props.templates[number]) {
+function selectTemplate(tpl: DocumentTemplate) {
   selectedTpl.value = tpl
   // Сбрасываем ID сохранённого документа — новый шаблон = новый документ
   savedDocId.value = null
@@ -1138,15 +1042,7 @@ function goToStep(i: number) {
   if (i === 0) { step.value = 0; return }
   if (i >= 1 && !selectedTpl.value) return
   // Загружаем дизайнеров при переходе на шаг 1 (даже без проекта)
-  if (i === 1 && !designersList.value.length) {
-    $fetch<any[]>('/api/designers').then(ds => {
-      designersList.value = ds || []
-      if (designersList.value.length === 1 && !pickedDesignerId.value) {
-        pickedDesignerId.value = designersList.value[0].id
-        applyDesignerData()
-      }
-    }).catch(() => {})
-  }
+  if (i === 1) { ensureDesignersLoaded() }
   // syncEditorContent вызовет watch(step) ниже — не дублируем
   step.value = i
 }
@@ -1157,298 +1053,6 @@ async function goGenerateAndEdit() {
   await nextTick()
   onAiGenerate()
 }
-
-// ── Load context from API ──
-async function loadContext() {
-  loadingCtx.value = true
-  // Загружаем список дизайнеров при первом обращении
-  if (!designersList.value.length) {
-    try {
-      const ds = await $fetch<any[]>('/api/designers')
-      designersList.value = ds || []
-      // Авто-выбор первого дизайнера если только один
-      if (designersList.value.length === 1 && !pickedDesignerId.value) {
-        pickedDesignerId.value = designersList.value[0].id
-        applyDesignerData()
-      }
-    } catch { /* ignore */ }
-  }
-  try {
-    ctx.value = await $fetch('/api/documents/context', {
-      query: { projectSlug: pickedProjectSlug.value || '' },
-    })
-    if (ctx.value?.project) {
-      applyProjectData()
-    }
-    if (ctx.value?.clients?.length === 1) {
-      pickedClientId.value = ctx.value.clients[0].id
-      applyClientData()
-    }
-  } catch (e) {
-    console.error('Failed to load context', e)
-  } finally {
-    loadingCtx.value = false
-  }
-}
-
-function applyProjectData() {
-  if (!ctx.value?.project || !selectedTpl.value) return
-  const p = ctx.value.project
-  const map: Record<string, string> = {
-    object_address: p.objectAddress || '',
-    delivery_address: p.objectAddress || '',
-    area: p.objectArea || '',
-    budget: p.budget || '',
-    deadline: p.deadline || '',
-    client_name: p.client_name || '',
-    client_address: p.objectAddress || '',
-    client_phone: p.phone || '',
-    client_email: p.email || '',
-    object_type: p.objectType || '',
-    object: `${p.objectType || ''} ${p.objectArea || ''} кв.м, ${p.objectAddress || ''}`.trim(),
-    style: p.style || p._profile?.style || '',
-    // Passport data from project profile
-    client_passport: [p.passport_series, p.passport_number].filter(Boolean).join(' '),
-    client_passport_issued: p.passport_issued_by || '',
-    client_passport_date: p.passport_issue_date || '',
-    client_registration: p.passport_registration_address || '',
-    client_inn: p.passport_inn || '',
-    penalty_pct: '0,1%',
-  }
-  applyMap(map)
-}
-
-function applyClientData() {
-  const c = pickedClient.value
-  if (!c || !selectedTpl.value) return
-  applyMap({
-    client_name: c.name || '',
-    client_address: c.address || '',
-    client_phone: c.phone || '',
-    client_email: c.email || '',
-  })
-}
-
-function applyContractorData() {
-  const c = pickedContractor.value
-  if (!c || !selectedTpl.value) return
-  const companyOrName = c.companyName || c.name || ''
-  applyMap({
-    contractor_name: companyOrName,
-    contractor: companyOrName,
-    supplier_name: companyOrName,
-    contractor_inn: c.inn || '',
-    contractor_address: c.legalAddress || c.factAddress || '',
-    contractor_phone: c.phone || '',
-    contractor_email: c.email || '',
-    contractor_bank: c.bankName || '',
-    contractor_bik: c.bik || '',
-    contractor_account: c.settlementAccount || '',
-  })
-}
-
-function applyDesignerData() {
-  const d = pickedDesigner.value
-  if (!selectedTpl.value) return
-  // Берём сохранённые реквизиты из localStorage
-  const stored = loadExecutorFromStorage()
-  const map: Record<string, string> = {
-    ...stored,
-    executor_name:  d?.name  || stored.executor_name  || EXECUTOR_DEFAULTS.executor_name,
-    executor_phone: d?.phone || stored.executor_phone || EXECUTOR_DEFAULTS.executor_phone,
-    executor_email: d?.email || stored.executor_email || EXECUTOR_DEFAULTS.executor_email,
-  }
-  applyMap(map)
-}
-
-const EXECUTOR_STORAGE_KEY = 'de_executor_defaults'
-
-function loadExecutorFromStorage(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(EXECUTOR_STORAGE_KEY)
-    return raw ? JSON.parse(raw) : {}
-  } catch { return {} }
-}
-
-function saveExecutorToStorage() {
-  const vals = fieldValues.value
-  const data: Record<string, string> = {}
-  for (const key of Object.keys(EXECUTOR_DEFAULTS)) {
-    if (vals[key]) data[key] = vals[key]
-  }
-  try {
-    localStorage.setItem(EXECUTOR_STORAGE_KEY, JSON.stringify(data))
-    executorSaved.value = true
-    setTimeout(() => { executorSaved.value = false }, 2500)
-  } catch { /* ignore */ }
-}
-
-function applyMap(map: Record<string, string>) {
-  if (!selectedTpl.value) return
-  for (const f of selectedTpl.value.fields) {
-    if (map[f.key] && (!fieldValues.value[f.key] || fieldAutoFilled.value[f.key])) {
-      fieldValues.value[f.key] = map[f.key]
-      fieldAutoFilled.value[f.key] = true
-    }
-  }
-}
-
-// ── Editor ──
-function generateText(): string {
-  if (!selectedTpl.value) return ''
-  let text = selectedTpl.value.template
-  for (const [k, v] of Object.entries(fieldValues.value)) {
-    text = text.split(`{{${k}}}`).join(v || '__________')
-  }
-  // Replace any {{remaining}} shorthand
-  const rem = computedRemaining.value
-  text = text.split('{{remaining_amount}}').join(rem || '__________')
-  return text
-}
-
-// ── Number → Russian words ──────────────────────────────────────────────────
-const ONES  = ['','один','два','три','четыре','пять','шесть','семь','восемь','девять',
-                'десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать',
-                'шестнадцать','семнадцать','восемнадцать','девятнадцать']
-const TENS  = ['','','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто']
-const HUND  = ['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот']
-const THOU  = ['','одна','две','три','четыре','пять','шесть','семь','восемь','девять',
-                'десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать',
-                'шестнадцать','семнадцать','восемнадцать','девятнадцать']
-const THOUS_SFX = (n: number) => {
-  const r100 = n % 100
-  if (r100 >= 11 && r100 <= 14) return 'тысяч'
-  const r = n % 10
-  if (r === 1) return 'тысяча'
-  if (r >= 2 && r <= 4) return 'тысячи'
-  return 'тысяч'
-}
-const MILL_SFX = (n: number) => {
-  const r100 = n % 100
-  if (r100 >= 11 && r100 <= 14) return 'миллионов'
-  const r = n % 10
-  if (r === 1) return 'миллион'
-  if (r >= 2 && r <= 4) return 'миллиона'
-  return 'миллионов'
-}
-
-function threeDigitsToWords(n: number, fem = false): string {
-  if (n === 0) return ''
-  const parts: string[] = []
-  const h = Math.floor(n / 100)
-  const t = Math.floor((n % 100) / 10)
-  const o = n % 10
-  if (h) parts.push(HUND[h])
-  if (t === 1) {
-    parts.push(fem ? THOU[t * 10 + o] : ONES[t * 10 + o])
-  } else {
-    if (t) parts.push(TENS[t])
-    if (o) parts.push(fem ? THOU[o] : ONES[o])
-  }
-  return parts.join(' ')
-}
-
-function numberToWords(n: number): string {
-  if (n === 0) return 'ноль'
-  const parts: string[] = []
-  const mill = Math.floor(n / 1_000_000)
-  const thou = Math.floor((n % 1_000_000) / 1000)
-  const rest = n % 1000
-
-  if (mill) {
-    parts.push(threeDigitsToWords(mill, false))
-    parts.push(MILL_SFX(mill))
-  }
-  if (thou) {
-    parts.push(threeDigitsToWords(thou, true))
-    parts.push(THOUS_SFX(thou))
-  }
-  if (rest || (!mill && !thou)) {
-    parts.push(threeDigitsToWords(rest, false))
-  }
-  return parts.filter(Boolean).join(' ')
-}
-
-// Capitalize first letter
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-// Parse amount from string like "350 000 руб." or "350000" → number
-function parseRuAmount(s: string): number {
-  const n = parseInt(s.replace(/\s/g, '').replace(/[^0-9]/g, ''), 10)
-  return isNaN(n) ? 0 : n
-}
-
-// Format ISO date YYYY-MM-DD → DD.MM.YYYY
-function formatIsoDate(s: string): string {
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (m) return `${m[3]}.${m[2]}.${m[1]}`
-  return s
-}
-
-// Computed: remaining = price - advance_amount
-const computedRemaining = computed<string>(() => {
-  const priceNum = parseRuAmount(fieldValues.value['price'] || '')
-  const advAmt   = parseRuAmount(fieldValues.value['advance_amount'] || '')
-  if (!priceNum || !advAmt) return ''
-  const rem = priceNum - advAmt
-  if (rem <= 0) return ''
-  return `${rem.toLocaleString('ru-RU')} руб.`
-})
-
-// Auto-derive advance_amount and price_words when price/advance changes
-function computeDerivedFields() {
-  const vals = fieldValues.value
-  const priceNum = parseRuAmount(vals['price'] || '')
-
-  // advance_amount: if price + advance% filled and advance_amount empty
-  if (priceNum && vals['advance'] && !vals['advance_amount']) {
-    const pct = parseFloat(vals['advance'].replace('%', '').replace(',', '.'))
-    if (!isNaN(pct) && pct > 0 && pct <= 100) {
-      const amt = Math.round(priceNum * pct / 100)
-      fieldValues.value['advance_amount'] = `${amt.toLocaleString('ru-RU')} руб.`
-      fieldAutoFilled.value['advance_amount'] = true
-    }
-  }
-
-  // price_words: if price filled and price_words empty
-  if (priceNum && !vals['price_words']) {
-    const words = capitalize(numberToWords(priceNum))
-    const kopecks = `00 копеек`
-    fieldValues.value['price_words'] = `${words} рублей ${kopecks}`
-    fieldAutoFilled.value['price_words'] = true
-  }
-
-  // Format ISO dates
-  for (const key of ['contract_date', 'client_passport_date', 'act_date', 'date', 'delivery_date']) {
-    if (vals[key] && /^\d{4}-\d{2}-\d{2}/.test(vals[key])) {
-      fieldValues.value[key] = formatIsoDate(vals[key])
-      fieldAutoFilled.value[key] = true
-    }
-  }
-}
-
-// Watch price + advance to auto-fill
-watch(
-  () => [fieldValues.value['price'], fieldValues.value['advance']],
-  ([price, advance]) => {
-    if (!price) return
-    const priceNum = parseRuAmount(price)
-    if (!priceNum) return
-
-    const pct = parseFloat((advance || '').replace('%', '').replace(',', '.'))
-    if (!isNaN(pct) && pct > 0 && pct <= 100) {
-      const amt = Math.round(priceNum * pct / 100)
-      fieldValues.value['advance_amount'] = `${amt.toLocaleString('ru-RU')} руб.`
-      fieldAutoFilled.value['advance_amount'] = true
-    }
-    if (!fieldValues.value['price_words']) {
-      fieldValues.value['price_words'] = `${capitalize(numberToWords(priceNum))} рублей 00 копеек`
-      fieldAutoFilled.value['price_words'] = true
-    }
-  }
-)
 
 function syncEditorContent() {
   computeDerivedFields()
