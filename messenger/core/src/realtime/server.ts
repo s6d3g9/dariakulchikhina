@@ -2591,9 +2591,9 @@ export async function createMessengerServer() {
         return reply.status(404).send({ error: 'User not found' })
       }
 
-      const LIVEKIT_URL = process.env.LIVEKIT_API_URL || 'wss://dariakulchikhina.com/livekit'
-      const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY
-      const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET
+      const LIVEKIT_URL = config.LIVEKIT_API_URL
+      const LIVEKIT_API_KEY = config.LIVEKIT_API_KEY
+      const LIVEKIT_API_SECRET = config.LIVEKIT_API_SECRET
 
       if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
         return reply.status(500).send({ error: 'LIVEKIT_API_KEY and LIVEKIT_API_SECRET env vars are required' })

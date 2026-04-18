@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
+import { readMessengerConfig } from '../config.ts'
 
-const runtimeDataDir = process.env.MESSENGER_CORE_DATA_DIR?.trim()
+const runtimeDataDir = readMessengerConfig().MESSENGER_CORE_DATA_DIR?.trim()
 
 export const MESSENGER_CORE_DATA_ROOT = runtimeDataDir
   ? resolve(runtimeDataDir)

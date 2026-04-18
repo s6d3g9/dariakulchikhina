@@ -79,6 +79,14 @@ const envSchema = z.object({
   MESSENGER_TRANSCRIPTION_TIMEOUT_MS: z.coerce.number().int().positive().default(20000),
   KLIPY_APP_KEY: z.string().trim().optional(),
   KLIPY_API_BASE_URL: z.string().trim().url().default('https://api.klipy.com'),
+  // Embedding / Ollama — used by agent-knowledge-store
+  GEMMA_URL: z.string().trim().optional(),
+  OLLAMA_BASE_URL: z.string().trim().default('http://localhost:11434'),
+  MESSENGER_EMBED_MODEL: z.string().trim().default('nomic-embed-text'),
+  // LiveKit — used by realtime server for call token generation
+  LIVEKIT_API_URL: z.string().trim().default('wss://dariakulchikhina.com/livekit'),
+  LIVEKIT_API_KEY: z.string().trim().optional(),
+  LIVEKIT_API_SECRET: z.string().trim().optional(),
 })
 
 export function readMessengerConfig() {

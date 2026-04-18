@@ -13,11 +13,13 @@ import {
   type MessengerAgentSettingsRecord,
 } from './agent-settings-store.ts'
 import { resolveMessengerDataPath } from '../media/storage-paths.ts'
+import { readMessengerConfig } from '../config.ts'
 
+const _cfg = readMessengerConfig()
 const execFileAsync = promisify(execFile)
 const STORAGE_PATH = resolveMessengerDataPath('agent-knowledge.json')
-const OLLAMA_BASE = process.env.GEMMA_URL || process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
-const EMBED_MODEL = process.env.MESSENGER_EMBED_MODEL || 'nomic-embed-text'
+const OLLAMA_BASE = _cfg.GEMMA_URL || _cfg.OLLAMA_BASE_URL
+const EMBED_MODEL = _cfg.MESSENGER_EMBED_MODEL
 const MAX_SOURCE_BYTES = 256 * 1024
 const CHUNK_SIZE = 1400
 const CHUNK_OVERLAP = 220
