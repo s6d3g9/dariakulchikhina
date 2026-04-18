@@ -1107,3 +1107,14 @@ AdminDesignerCabinet.vue: 3027 → 2886 (−141, кумулятивно 4332 →
 Исключение: `app/layouts/admin.vue` имеет второй не-scoped `<style>` global блок (с 1106 строки) — его оставляем inline, только scoped блок перевезён.
 
 Суммарно по Wave 4 batches 1 и 6 CSS relocation охватывает 22 SFC, вынесено ~16100 строк CSS.
+
+### [done] 2026-04-18 — Wave 4 / batch 7: read-only sections из ClientProjectControl
+
+Три презентационных компонента извлечены из клиент-варианта (`ClientProjectControl.vue`):
+- `ClientControlSummaryCards.vue` — 4-card grid наверху страницы (фаза/спринт/обзор/блокеры). Props: `summary`, `nextReviewDate`.
+- `ClientControlBlockersSection.vue` — read-only список блокеров с v-if-guard'ом на content. Props: `blockers: string[]`.
+- `ClientControlPhasesSection.vue` — секция "Фазы проекта" со stats overview, карточками фаз и gate progress. `getPhaseGateProgress` переехал внутрь компонента; `formatHybridTimelineDateRange` импортируется напрямую из shared util. Props: `phases`, `phaseStats`.
+
+ClientProjectControl.vue: 1969 → 1866 (−103, кумулятивно 3405 → 1866 = **−45%** от исходника — рекорд Wave 4 по отдельному файлу).
+
+Communications/Timeline/Sprints секции оставлены — они содержат много reactive state (selected sprint, timeline drag, call insight handlers) и требуют полноценного composable-refactor'а.
