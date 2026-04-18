@@ -1410,6 +1410,15 @@ Wave 4 для UIDesignPanel закрыт.
 - lint:errors: exit 0, no new violations.
 - Commit: `35bf004`
 
+### [done] 2026-04-18 — Wave 4 / DOC_TEMPLATES extraction from AdminDocumentsSection
+
+- Created `app/widgets/documents/model/doc-templates.ts` (495 lines) — pure static `DOC_TEMPLATES: DocumentTemplate[]` array with 8 document templates (contract_design, contract_supply, contract_work, act_acceptance, act_defect, invoice, estimate, tz_doc). Typed against `DocumentTemplate` interface from `~/composables/useDocumentEditorSources`.
+- Slimmed `app/widgets/documents/AdminDocumentsSection.vue`: 1200 → 709 lines (−491 lines, −41%).
+- Added `import { DOC_TEMPLATES } from './model/doc-templates'` to replace the inline const.
+- vue-tsc: 0 new errors in changed files (2 pre-existing in AdminProjectControl.vue unrelated).
+- lint:errors: exit 0, no new violations.
+- Commit: `5ed412f`
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor` Step 1 (picker) + Step 2 (field editor)**: 236+582 строк с ~20 deps (picker refs, ctx, loadingCtx, apply-handlers, field state, vars, generators). Нужен composable `useDocumentEditorSources()` + `useDocumentEditorFields()`.
