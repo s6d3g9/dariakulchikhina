@@ -1224,7 +1224,11 @@ const svcEditSuccess = ref('')
 const inlinePriceKey = ref<string | null>(null)
 const inlinePriceVal = ref(0)
 
-type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
+import {
+  type InlineAutosaveState,
+  autosaveStatusClass,
+  autosaveStatusLabel,
+} from '~/shared/ui/autosave/autosave-state'
 
 function cloneDraft<T>(value: T): T {
   return JSON.parse(JSON.stringify(value))
@@ -1243,17 +1247,6 @@ function showTransientMessage(target: { value: string }, message: string) {
   setTimeout(() => {
     if (target.value === message) target.value = ''
   }, 2500)
-}
-
-function autosaveStatusLabel(state: InlineAutosaveState) {
-  if (state === 'saving') return '[ СОХРАНЕНИЕ... ]'
-  if (state === 'saved') return '[ СОХРАНЕНО ]'
-  if (state === 'error') return '[ ОШИБКА СОХРАНЕНИЯ ]'
-  return '[ AUTOSAVE ]'
-}
-
-function autosaveStatusClass(state: InlineAutosaveState) {
-  return state ? `cab-autosave-status--${state}` : 'cab-autosave-status--idle'
 }
 
 function getServicePersistedKey(service: DesignerServicePrice, index = services.value.findIndex((item) => item === service)) {

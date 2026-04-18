@@ -321,9 +321,10 @@ const profilePct = computed(() => {
 
 // Profile form
 const form = reactive({ name: '', role: '', phone: '', email: '', telegram: '', city: '', notes: '' })
+import { type InlineAutosaveState } from '~/shared/ui/autosave/autosave-state'
+
 const saving = ref(false)
 const saveMsg = ref('')
-type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
 const profileSaveState = ref<InlineAutosaveState>('')
 let profileSaveTimer: ReturnType<typeof setTimeout> | null = null
 

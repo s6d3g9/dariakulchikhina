@@ -104,7 +104,7 @@ interface WtGroup {
   stages: any[]
 }
 
-type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
+import { type InlineAutosaveState } from '~/shared/ui/autosave/autosave-state'
 
 export function useContractorCabinet(contractorId: Ref<number | null>) {
   const cid = computed(() => contractorId.value)
