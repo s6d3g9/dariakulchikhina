@@ -1,8 +1,10 @@
 import { promises as fs } from 'fs'
 import path from 'path'
+import { config } from '~/server/config'
 
 export function getUploadDir(): string {
-  return process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads')
+  const configured = config.UPLOAD_DIR
+  return path.isAbsolute(configured) ? configured : path.join(process.cwd(), configured)
 }
 export async function ensureUploadDir() {
   const dir = getUploadDir()

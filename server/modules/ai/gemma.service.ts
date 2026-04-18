@@ -4,6 +4,8 @@
  * Модель: gemma3:27b
  */
 
+import { config } from '~/server/config'
+
 const MODEL = 'gemma3:27b'
 const DEFAULT_GEMMA_URL = 'http://localhost:11434'
 const TIMEOUT_MS = 180_000 // 3 минуты — Gemma 27B на CPU может быть медленной
@@ -18,7 +20,7 @@ export async function callGemma(
   userPrompt: string,
   temperature = 0.3,
 ): Promise<string> {
-  const baseUrl = process.env.GEMMA_URL || DEFAULT_GEMMA_URL
+  const baseUrl = config.GEMMA_URL || DEFAULT_GEMMA_URL
 
   const response = await fetch(`${baseUrl}/v1/chat/completions`, {
     method: 'POST',
