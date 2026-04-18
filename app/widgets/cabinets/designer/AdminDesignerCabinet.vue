@@ -1128,7 +1128,7 @@ import {
   type InlineAutosaveState,
   autosaveStatusClass,
   autosaveStatusLabel,
-} from '~/shared/ui/autosave/autosave-state'
+} from '~~/shared/ui/autosave/autosave-state'
 
 function cloneDraft<T>(value: T): T {
   return JSON.parse(JSON.stringify(value))

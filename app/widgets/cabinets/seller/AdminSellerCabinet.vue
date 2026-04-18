@@ -385,7 +385,7 @@ watch(section, (val) => {
   if (props.modelValue !== undefined) emit('update:modelValue', val)
 })
 
-import { type InlineAutosaveState } from '~/shared/ui/autosave/autosave-state'
+import { type InlineAutosaveState } from '~~/shared/ui/autosave/autosave-state'
 
 const saving = ref(false)
 const saveMsg = ref('')

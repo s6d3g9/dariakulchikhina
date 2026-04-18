@@ -1044,7 +1044,7 @@ const contractorDashboardFacts = computed(() => [
   { label: 'проекты', value: String(linkedProjects.value?.length || 0) },
   { label: 'документы', value: String(contractorDocs.value?.length || 0) },
 ])
-import { type InlineAutosaveState } from '~/shared/ui/autosave/autosave-state'
+import { type InlineAutosaveState } from '~~/shared/ui/autosave/autosave-state'
 
 const profileSaveState = ref<InlineAutosaveState>('')
 let profileSaveTimer: ReturnType<typeof setTimeout> | null = null

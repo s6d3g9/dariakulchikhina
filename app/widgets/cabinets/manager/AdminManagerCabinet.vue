@@ -321,7 +321,7 @@ const profilePct = computed(() => {
 
 // Profile form
 const form = reactive({ name: '', role: '', phone: '', email: '', telegram: '', city: '', notes: '' })
-import { type InlineAutosaveState } from '~/shared/ui/autosave/autosave-state'
+import { type InlineAutosaveState } from '~~/shared/ui/autosave/autosave-state'
 
 const saving = ref(false)
 const saveMsg = ref('')

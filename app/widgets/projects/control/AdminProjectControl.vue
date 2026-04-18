@@ -61,8 +61,8 @@
         :slug="props.slug"
         :project="project"
         @save="save"
-        @focus-task="(taskId, sprintId) => focusTask(taskId, sprintId, 'kanban')"
-        @open-sprint-in-kanban="(sprintId) => openTimelineSprintInKanban(sprintId)"
+        @focus-task="(taskId: string, sprintId?: string) => focusTask(taskId, sprintId, 'kanban')"
+        @open-sprint-in-kanban="(sprintId?: string) => openTimelineSprintInKanban(sprintId)"
       />
 
       <ControlTimelineSection
@@ -76,8 +76,8 @@
         @save="save"
         @open-timeline-sprint-in-kanban="openTimelineSprintInKanban"
         @open-timeline-phase-editor="openTimelinePhaseEditor"
-        @focus-task="(taskId, sprintId) => focusTask(taskId, sprintId, 'kanban')"
-        @open-task-scope-details="openTaskScopeDetailsFromTimeline"
+        @focus-task="(taskId: string, sprintId?: string) => focusTask(taskId, sprintId, 'kanban')"
+        @open-task-scope-details="(taskId?: string, sprintId?: string) => openTaskScopeDetailsFromTimeline(taskId, sprintId)"
       />
 
 
@@ -192,6 +192,7 @@
 
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
+import ControlTimelineSection from './sections/ControlTimelineSection.vue'
 import {
   buildHybridControlSummary,
   buildHybridCoordinationBrief,
@@ -330,6 +331,7 @@ const activeTaskId = ref('')
 const controlShell = ref<HTMLElement | null>(null)
 const moduleNavRef = ref<HTMLElement | null>(null)
 const moduleViewportStart = ref<HTMLElement | null>(null)
+const timelineSectionRef = ref<InstanceType<typeof ControlTimelineSection> | null>(null)
 const isMobileModuleDockVisible = ref(true)
 let moduleDockSyncFrame = 0
 
@@ -338,14 +340,8 @@ import {
   phaseStatusOptions,
   sprintStatusLabels,
   sprintStatusOptions,
+  taskStatusLabels,
 } from './model/control-options'
-
-const taskStatusLabels: Record<HybridControlTask['status'], string> = {
-  todo: 'к запуску',
-  doing: 'в работе',
-  review: 'на ревью',
-  done: 'готово',
-}
 
 const taskStatuses: HybridControlTask['status'][] = ['todo', 'doing', 'review', 'done']
 const taskDateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -2392,21 +2388,20 @@ async function openTimelineRowDetails(row: HybridTimelineRow) {
 }
 
 async function openProjectScopeDetails() {
-  await openSelectedTimelineScope(buildProjectScopeState())
+  selectModule('timeline')
+  await nextTick()
+  timelineSectionRef.value?.openProjectScopeDetails()
 }
 
-async function openTaskScopeDetails(taskId?: string, sprintId?: string) {
+async function openTaskScopeDetailsFromTimeline(taskId?: string, sprintId?: string) {
   if (!taskId) return
-  const scope = buildTaskScopeState(taskId, sprintId)
-  if (!scope) return
-  await openSelectedTimelineScope(scope)
+  selectModule('timeline')
+  await nextTick()
+  timelineSectionRef.value?.openTaskScopeDetails(taskId, sprintId)
 }
 
 function closeTimelineRowDetails() {
-  hideTimelineTooltip()
-  timelineScopeDetailRequestId.value += 1
-  resetTimelineScopeDetailState()
-  selectedTimelineRowState.value = null
+  timelineSectionRef.value?.closeTimelineRowDetails()
 }
 </script>
 
