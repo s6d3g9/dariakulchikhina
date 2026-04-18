@@ -1209,3 +1209,28 @@ Commits: 7f825ac
 Файл: 2408 → 652 строки. vue-tsc exit 0, lint:errors exit 0.
 
 Commits: ab737aa
+
+### [done] 2026-04-18 — Wave 4 / batch 14 addendum: AdminDocumentEditor Step 0 slice
+
+Первый slice из 2236-строчного document-editor wizard'a: `AdminDocumentEditorStepTemplate.vue` (28 строк template картинок шаблонов). Props: `templates`, `selectedKey`. Один event `select(tpl)` — parent обрабатывает и `selectTemplate`, и `goToStep(1)`.
+
+Step 1 (236 строк data-source picker) и Step 2 (582 строки field editor) требуют composable-рефактора `pickedProjectSlug/DesignerId/ClientId/ContractorId/SellerId + ctx`-объекта — отдельная сессия.
+
+### [open] Wave 4 / остающиеся цели
+
+Файлы > 500 строк в `app/` после всех batches этого захода (ориентировочно, после всех session-landings и Sonnet'овского `ab737aa` strip):
+
+| Файл | Размер | Следующий шаг |
+|---|---|---|
+| `UIDesignPanel.vue` | ~4780 | 23 tab-страницы → нужен tokens composable + provide/inject |
+| `AdminDocumentEditor.vue` | ~2200 | Step 1/Step 2 → picker composable + field editor composable |
+| `AdminProjectControl.vue` | ~620 (после Sonnet'a) | ближе к цели ≤500; возможны финальные script cleanup'ы |
+| `AdminDesignerCabinet.vue` | ~2700 | services/packages/subscriptions секции (stateful autosave) |
+| `contractor/[id]/index.vue` | ~1500 | tasks section (253 строки, самый сложный) |
+| `admin/projects/[slug].vue` | ~2460 | project_communications секция |
+| `ClientProjectControl.vue` | ~1860 | timeline/sprints sections |
+| `ProjectCommunicationsPanel.vue` | ~1780 | внутренняя структура (calls/agents/chat) |
+| `AdminDocumentsSection.vue` | ~1200 | registry секция |
+| `AdminContractorCabinet.vue` | ~1260 | 12 секций по аналогии с designer |
+| `app/layouts/admin.vue` | ~1100 | navigation shell |
+| `Wipe2Renderer.vue` | ~517 | условные блоки render'а |
