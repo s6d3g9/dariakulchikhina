@@ -80,9 +80,6 @@ const formError = ref('')
 const actionSearch = ref('')
 const projectSearch = ref('')
 const selectedCategory = ref<ProjectActionCategoryGroup['category'] | ''>('')
-const scopeParticipantName = ref('')
-const scopeParticipantRole = ref<GovernanceRoleKey>('manager')
-const scopeParticipantResponsibility = ref<GovernanceResponsibilityKey>('owner')
 const scopeSettingsDraft = ref<Record<string, unknown>>({})
 
 const allActions = computed(() => props.groups.flatMap(group => group.actions))
@@ -256,19 +253,6 @@ const selectedTaskStatusLabel = computed(() => {
   return selectedTaskStatusItems.value.find(option => option.value === selectedTaskStatus.value)?.title || ''
 })
 
-const governanceRoleItems = [
-  { title: 'Клиент', value: 'client' },
-  { title: 'Менеджер', value: 'manager' },
-  { title: 'Дизайнер', value: 'designer' },
-  { title: 'Юрист', value: 'lawyer' },
-  { title: 'Подрядчик', value: 'contractor' },
-  { title: 'Поставщик', value: 'seller' },
-  { title: 'Инженер', value: 'engineer' },
-  { title: 'Консультант', value: 'consultant' },
-  { title: 'Сервис', value: 'service' },
-  { title: 'Другая роль', value: 'other' },
-] as const satisfies ReadonlyArray<{ title: string; value: GovernanceRoleKey }>
-
 const governanceResponsibilityItems = [
   { title: 'Лидирует', value: 'lead' },
   { title: 'Владелец', value: 'owner' },
@@ -379,10 +363,6 @@ const subjectActionMenus = computed(() => {
       actions: [...preferredActions, ...fallbackActions].slice(0, 4),
     }
   })
-})
-
-const canCreateScopeParticipant = computed(() => {
-  return Boolean(props.scopeDetail && scopeParticipantName.value.trim() && !props.governanceMutationPending)
 })
 
 const editableScopeSettings = computed(() => {
@@ -576,18 +556,6 @@ function updateScopeSettingDraft(key: string, kind: ScopeSettingFieldKind, value
 
 function commitScopeSettings() {
   emit('updateScopeSettings', { settings: cloneScopeSettings(scopeSettingsDraft.value) })
-}
-
-function submitScopeParticipant() {
-  if (!canCreateScopeParticipant.value) {
-    return
-  }
-
-  emit('createScopeParticipant', {
-    displayName: scopeParticipantName.value.trim(),
-    roleKey: scopeParticipantRole.value,
-    responsibility: scopeParticipantResponsibility.value,
-  })
 }
 
 function matchesText(value: string | undefined, query: string) {
@@ -1002,12 +970,6 @@ watch(serviceItems, (items) => {
   }
 }, { immediate: true })
 
-watch(() => props.governanceMutationNotice, (value) => {
-  if (value.includes('Участник добавлен')) {
-    scopeParticipantName.value = ''
-  }
-})
-
 watch(selectedTask, (task) => {
   if (!task || taskMode.value !== 'existing') {
     return
@@ -1257,42 +1219,11 @@ watch(selectedTask, (task) => {
               </div>
               <p v-else class="pa-empty-state">Для этого контура пока нет прямых назначений.</p>
 
-              <div class="pa-scope-manage-grid">
-                <VTextField
-                  v-model="scopeParticipantName"
-                  variant="outlined"
-                  density="comfortable"
-                  label="Новый участник"
-                  placeholder="Например: Юрист проекта"
-                  hide-details
-                  :disabled="props.governanceMutationPending"
-                />
-                <VSelect
-                  v-model="scopeParticipantRole"
-                  :items="governanceRoleItems"
-                  item-title="title"
-                  item-value="value"
-                  variant="outlined"
-                  density="comfortable"
-                  label="Роль"
-                  hide-details
-                  :disabled="props.governanceMutationPending"
-                />
-                <VSelect
-                  v-model="scopeParticipantResponsibility"
-                  :items="governanceResponsibilityItems"
-                  item-title="title"
-                  item-value="value"
-                  variant="outlined"
-                  density="comfortable"
-                  label="Ответственность"
-                  hide-details
-                  :disabled="props.governanceMutationPending"
-                />
-                <VBtn color="primary" variant="flat" :disabled="!canCreateScopeParticipant" @click="submitScopeParticipant">
-                  Добавить в контур
-                </VBtn>
-              </div>
+              <ScopeParticipantForm
+                :disabled="props.governanceMutationPending"
+                :mutation-notice="props.governanceMutationNotice"
+                @submit="emit('createScopeParticipant', $event)"
+              />
 
               <p v-if="props.governanceMutationError" class="pa-state pa-state--error">{{ props.governanceMutationError }}</p>
               <p v-else-if="props.governanceMutationNotice" class="pa-state pa-state--muted">{{ props.governanceMutationNotice }}</p>
