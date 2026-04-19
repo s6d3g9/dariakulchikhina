@@ -2535,25 +2535,30 @@ onBeforeUnmount(() => {
         :relation-title="relationTitle(composerRelationMode)"
         :relation-author="composerRelationMessage ? (composerRelationMessage.own ? 'Вы' : composerRelationMessage.senderDisplayName) : ''"
         :relation-preview="relationPreviewText(composerRelationMessage)"
-        :show-forward-panel="Boolean(forwardingMessage && !detailsOpen)"
-        :forward-author="forwardingMessage ? (forwardingMessage.own ? 'Вы' : forwardingMessage.senderDisplayName) : ''"
-        :forward-preview="relationPreviewText(forwardingMessage)"
-        :forward-search-draft="forwardSearchDraft"
-        :selected-forward-targets="selectedForwardTargets"
-        :available-forward-targets="availableForwardTargets"
-        :contacts-pending="contacts.pending.value"
-        :message-pending="conversations.messagePending.value"
-        :forward-submit-label="forwardSubmitLabel"
         :show-klipy-pill="Boolean(selectedKlipyItem && (!detailsOpen || !conversations.activeConversation.value))"
         :selected-klipy-item="selectedKlipyItem"
         :media-upload-pending="mediaUploadPending"
         @clear-relation="clearComposerRelation"
-        @close-forward-picker="closeForwardPicker"
-        @update:forward-search-draft="forwardSearchDraft = $event"
-        @forward-message="forwardMessage"
-        @toggle-forward-target="toggleForwardTarget"
         @clear-selected-klipy-item="clearSelectedKlipyItem"
       />
+
+      <Transition name="chrome-reveal">
+        <MessengerChatSectionForwardPicker
+          v-if="Boolean(forwardingMessage && !detailsOpen)"
+          :forward-author="forwardingMessage ? (forwardingMessage.own ? 'Вы' : forwardingMessage.senderDisplayName) : ''"
+          :forward-preview="relationPreviewText(forwardingMessage)"
+          :forward-search-draft="forwardSearchDraft"
+          :selected-forward-targets="selectedForwardTargets"
+          :available-forward-targets="availableForwardTargets"
+          :contacts-pending="contacts.pending.value"
+          :message-pending="conversations.messagePending.value"
+          :forward-submit-label="forwardSubmitLabel"
+          @close="closeForwardPicker"
+          @forward="forwardMessage"
+          @update:forward-search-draft="forwardSearchDraft = $event"
+          @toggle-forward-target="toggleForwardTarget"
+        />
+      </Transition>
 
       <MessengerCallAnalysisPanel v-if="showDesktopCallAnalysisPanel" class="chat-call-analysis-panel" />
 
