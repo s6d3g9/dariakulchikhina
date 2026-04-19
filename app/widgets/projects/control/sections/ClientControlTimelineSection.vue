@@ -592,7 +592,6 @@ import { getProjectScopeEditableSettingKeys } from '~~/shared/utils/project-gove
 import {
   phaseStatusLabels,
   sprintStatusLabels,
-  taskStatusLabels,
 } from '../model/control-options'
 
 type TimelineDetailItem = {
@@ -653,6 +652,13 @@ const checkpointStatusLabels: Record<HybridControlCheckpoint['status'], string> 
   stable: 'стабильно',
   warning: 'внимание',
   critical: 'критично',
+}
+
+const taskStatusLabels: Record<HybridControlTask['status'], string> = {
+  todo: 'к запуску',
+  doing: 'в работе',
+  review: 'на ревью',
+  done: 'готово',
 }
 
 const taskStatuses: HybridControlTask['status'][] = ['todo', 'doing', 'review', 'done']

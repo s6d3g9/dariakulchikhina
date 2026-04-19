@@ -1,5 +1,5 @@
 export type MessengerAgentConnectionMode = 'review' | 'enrich' | 'validate' | 'summarize' | 'route'
-export type MessengerAgentKnowledgeSourceType = 'rag' | 'vector'
+type MessengerAgentKnowledgeSourceType = 'rag' | 'vector'
 
 export interface MessengerAgentConnection {
   targetAgentId: string

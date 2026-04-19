@@ -9,7 +9,7 @@ import { normalizeMessengerProjectRoot } from '../../../utils/messenger-project-
 import type { MessengerProjectRecord } from './useMessengerProjectEngine'
 import { buildMessengerUrl } from '../../../utils/messenger-url'
 
-export type ProjectActionRole = 'designer' | 'client' | 'contractor' | 'general'
+type ProjectActionRole = 'designer' | 'client' | 'contractor' | 'general'
 
 export type ProjectActionCategory = 'tasks' | 'stages' | 'documents' | 'finance' | 'communication'
 
@@ -47,7 +47,7 @@ export interface ProjectActionDefinition {
   confirmRequired?: boolean
 }
 
-export type ProjectActionResult = {
+type ProjectActionResult = {
   success: boolean
   message: string
   data?: Record<string, unknown>
