@@ -1,55 +1,8 @@
-export interface MessengerAgentTraceEvent {
-  type: 'agent.trace'
-  conversationId?: string
-  trace: {
-    runId: string
-    agentId: string
-    phase: 'started' | 'context' | 'files' | 'consulting' | 'reasoning' | 'completed' | 'failed'
-    status: 'running' | 'completed' | 'failed'
-    summary: string
-    focus?: string
-    activeTargetAgentIds?: string[]
-    activeConnections?: Array<{
-      targetAgentId: string
-      mode: 'review' | 'enrich' | 'validate' | 'summarize' | 'route'
-      payloadPreview?: string
-    }>
-    fileNames?: string[]
-    artifacts?: Array<{
-      kind: 'consultation' | 'file' | 'summary'
-      label: string
-      content: string
-      agentId?: string
-    }>
-    timestamp: string
-  }
-}
-
-export interface MessengerAgentRuntimeState {
-  runId: string
-  agentId: string
-  conversationId?: string
-  phase: MessengerAgentTraceEvent['trace']['phase']
-  status: MessengerAgentTraceEvent['trace']['status']
-  summary: string
-  focus: string
-  activeTargetAgentIds: string[]
-  activeConnections: Array<{
-    targetAgentId: string
-    mode: 'review' | 'enrich' | 'validate' | 'summarize' | 'route'
-    payloadPreview?: string
-  }>
-  fileNames: string[]
-  artifacts: Array<{
-    kind: 'consultation' | 'file' | 'summary'
-    label: string
-    content: string
-    agentId?: string
-  }>
-  updatedAt: string
-}
-
-export interface MessengerAgentRuntimeTimelineItem extends MessengerAgentRuntimeState {}
+export type {
+  MessengerAgentTraceEvent,
+  MessengerAgentRuntimeState,
+  MessengerAgentRuntimeTimelineItem,
+} from '~/shared/types/agent-chat/agent-chat'
 
 const TRACE_TTL_MS = 6000
 

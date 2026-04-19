@@ -1,7 +1,6 @@
 import type { MessengerAgentItem, MessengerAgentSettings, MessengerAgentGraphNodeInput } from '../../entities/agents/model/useMessengerAgents'
 import type { MessengerAgentKnowledgeStatus, MessengerAgentKnowledgePreset } from '../../entities/agents/model/useMessengerAgentKnowledge'
-import type { MessengerAgentRun } from '../../entities/agents/model/useMessengerAgentRuns'
-import type { MessengerAgentEdgePayload } from '../../entities/agents/model/useMessengerAgentEdgePayloads'
+import type { MessengerAgentRun, MessengerAgentEdgePayload } from '~/shared/types/agent-chat/agent-chat'
 import type { MessengerAgentWorkspaceListing, MessengerAgentWorkspaceFilePreview } from '../../widgets/agent-workspace/model/useMessengerAgentWorkspace'
 
 export function useAgentsApi() {

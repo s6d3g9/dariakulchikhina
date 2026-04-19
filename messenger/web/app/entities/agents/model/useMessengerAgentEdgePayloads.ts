@@ -1,12 +1,4 @@
-export interface MessengerAgentEdgePayload {
-  sourceAgentId: string
-  targetAgentId: string
-  mode: 'review' | 'enrich' | 'validate' | 'summarize' | 'route'
-  payloadPreview: string
-  runId: string
-  conversationId?: string
-  timestamp: string
-}
+export type { MessengerAgentEdgePayload } from '~/shared/types/agent-chat/agent-chat'
 
 export function useMessengerAgentEdgePayloads() {
   const api = useAgentsApi()

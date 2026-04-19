@@ -1,4 +1,4 @@
-import type { MessengerAgentTraceEvent } from '../../entities/agents/model/useMessengerAgentRuntime'
+import type { MessengerAgentTraceEvent } from '~/shared/types/agent-chat/agent-chat'
 
 type MessengerRealtimeEvent = {
   type: 'hello' | 'contacts.updated' | 'conversations.updated' | 'messages.updated' | 'call.signal' | 'error'

@@ -1,7 +1,8 @@
 import type { Ref } from 'vue'
 import { buildMessengerWsUrl } from '../../../utils/messenger-url'
+import type { AgentSubstate } from '~/shared/types/agent-chat/agent-chat'
 
-export type AgentSubstate = 'idle' | 'thinking' | 'tool_call' | 'awaiting_input' | 'streaming' | 'error'
+export type { AgentSubstate } from '~/shared/types/agent-chat/agent-chat'
 
 interface AgentStreamEvent {
   type: 'run_start' | 'substate' | 'delta' | 'tool_use' | 'tokens' | 'complete' | 'error'

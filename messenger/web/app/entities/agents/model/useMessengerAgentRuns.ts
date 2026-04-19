@@ -1,30 +1,8 @@
-export interface MessengerAgentRunArtifact {
-  kind: 'consultation' | 'file' | 'summary'
-  label: string
-  content: string
-  agentId?: string
-}
-
-export interface MessengerAgentRunEvent {
-  phase: 'started' | 'context' | 'files' | 'consulting' | 'reasoning' | 'completed' | 'failed'
-  status: 'running' | 'completed' | 'failed'
-  summary: string
-  focus?: string
-  activeTargetAgentIds: string[]
-  fileNames: string[]
-  artifacts: MessengerAgentRunArtifact[]
-  timestamp: string
-}
-
-export interface MessengerAgentRun {
-  runId: string
-  conversationId?: string
-  agentId: string
-  status: 'running' | 'completed' | 'failed'
-  startedAt: string
-  updatedAt: string
-  events: MessengerAgentRunEvent[]
-}
+export type {
+  MessengerAgentRunArtifact,
+  MessengerAgentRunEvent,
+  MessengerAgentRun,
+} from '~/shared/types/agent-chat/agent-chat'
 
 export function useMessengerAgentRuns() {
   const api = useAgentsApi()

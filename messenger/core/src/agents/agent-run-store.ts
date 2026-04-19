@@ -1,40 +1,14 @@
-export interface MessengerAgentRunArtifactRecord {
-  kind: 'consultation' | 'file' | 'summary'
-  label: string
-  content: string
-  agentId?: string
-}
+import type {
+  MessengerAgentRunArtifact,
+  MessengerAgentRunEvent,
+  MessengerAgentRun,
+  MessengerAgentEdgePayload,
+} from '~/shared/types/agent-chat/agent-chat'
 
-export interface MessengerAgentRunEventRecord {
-  phase: 'started' | 'context' | 'files' | 'consulting' | 'reasoning' | 'completed' | 'failed'
-  status: 'running' | 'completed' | 'failed'
-  summary: string
-  focus?: string
-  activeTargetAgentIds: string[]
-  fileNames: string[]
-  artifacts: MessengerAgentRunArtifactRecord[]
-  timestamp: string
-}
-
-export interface MessengerAgentRunRecord {
-  runId: string
-  conversationId?: string
-  agentId: string
-  status: 'running' | 'completed' | 'failed'
-  startedAt: string
-  updatedAt: string
-  events: MessengerAgentRunEventRecord[]
-}
-
-export interface MessengerAgentEdgePayloadRecord {
-  sourceAgentId: string
-  targetAgentId: string
-  mode: 'review' | 'enrich' | 'validate' | 'summarize' | 'route'
-  payloadPreview: string
-  runId: string
-  conversationId?: string
-  timestamp: string
-}
+export type MessengerAgentRunArtifactRecord = MessengerAgentRunArtifact
+export type MessengerAgentRunEventRecord = MessengerAgentRunEvent
+export type MessengerAgentRunRecord = MessengerAgentRun
+export type MessengerAgentEdgePayloadRecord = MessengerAgentEdgePayload
 
 const MAX_RUNS = 120
 const MAX_EVENTS_PER_RUN = 40
