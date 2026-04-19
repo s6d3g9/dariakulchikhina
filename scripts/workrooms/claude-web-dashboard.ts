@@ -81,8 +81,14 @@ function readRegistry() {
 function zeroMetrics(slug) {
   return {
     slug, lastLineAt: 0, state: 'idle',
+    // cumulative (across all turns in the session)
     tokensIn: 0, tokensOut: 0, cacheRead: 0, cacheCreate: 0,
-    contextUsed: 0, totalCostUsd: 0, durationMs: 0, turns: 0,
+    totalTokensProcessed: 0,
+    totalCostUsd: 0, durationMs: 0, turns: 0,
+    // per-API-call snapshots (honest context-window occupancy)
+    lastTurnInput: 0, lastTurnOutput: 0, lastTurnCacheRead: 0, lastTurnCacheCreate: 0,
+    lastTurnContextUsed: 0,   // most recent LLM call's input+cache → occupied window
+    peakContextUsed: 0,        // worst-case LLM call throughout the session
     lastAssistantSnippet: '', lastThinkingSnippet: '',
   };
 }
@@ -128,7 +134,16 @@ async function computeMetrics(slug) {
     } catch { /* skip non-json lines */ }
   }
 
-  // Forward pass: accumulate tokens / cost from ALL results in the log
+  // Two passes:
+  // (A) Cumulative from `result` events (session-wide totals, useful for cost/quota)
+  // (B) Peak per-API-call context from `stream_event.message_start` events
+  //     — each internal LLM call inside a --print run emits one of these, and
+  //     its usage.{input_tokens + cache_read + cache_create} is the real context
+  //     window occupancy for that specific API call. The max across all calls
+  //     is the closest honest "how full was the window at its worst" metric.
+  let peakApiCallContext = 0;
+  let lastApiCallUsage = null;
+
   for (const ln of lines) {
     if (!ln) continue;
     try {
@@ -143,9 +158,29 @@ async function computeMetrics(slug) {
         m.durationMs += e.duration_ms || 0;
         m.turns += e.num_turns || 0;
       }
+      // Peak single-API-call usage from stream_event.message_start (most honest window measurement)
+      if (e.type === 'stream_event' && e.event?.type === 'message_start' && e.event.message?.usage) {
+        const u = e.event.message.usage;
+        const thisCtx = (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
+        if (thisCtx > peakApiCallContext) peakApiCallContext = thisCtx;
+        lastApiCallUsage = u;
+      }
     } catch { /* skip */ }
   }
-  m.contextUsed = m.tokensIn + m.tokensOut + m.cacheRead + m.cacheCreate;
+
+  m.totalTokensProcessed = m.tokensIn + m.tokensOut + m.cacheRead + m.cacheCreate;
+
+  // Report the most recent single-API-call usage as "last turn" — this is
+  // what actually occupied the context window at that moment.
+  if (lastApiCallUsage) {
+    m.lastTurnInput = lastApiCallUsage.input_tokens || 0;
+    m.lastTurnOutput = lastApiCallUsage.output_tokens || 0;
+    m.lastTurnCacheRead = lastApiCallUsage.cache_read_input_tokens || 0;
+    m.lastTurnCacheCreate = lastApiCallUsage.cache_creation_input_tokens || 0;
+    m.lastTurnContextUsed = m.lastTurnInput + m.lastTurnCacheRead + m.lastTurnCacheCreate;
+  }
+  m.peakContextUsed = peakApiCallContext;
+
   m.lastAssistantSnippet = lastAssistantText.slice(-400);
   m.lastThinkingSnippet = lastThinkingText.slice(-400);
 
@@ -207,24 +242,60 @@ function broadcastSse(event, data, slug = null) {
 // Watch registry + log files for changes and broadcast.
 // Simple approach: per-file mtime poll every 1s (reliable across FS events).
 let lastSnapshot = {};
+// Per-session byte offset of what was already streamed to SSE clients.
+let lastStreamPos = {};
+
+async function readLogTailSince(slug, byteOffset) {
+  const path = sessionLogPath(slug);
+  if (!existsSync(path)) return { bytes: byteOffset, raw: '' };
+  const st = statSync(path);
+  if (st.size <= byteOffset) return { bytes: st.size, raw: '' };
+  const fd = await fsp.open(path, 'r');
+  try {
+    const buf = Buffer.alloc(st.size - byteOffset);
+    await fd.read(buf, 0, buf.length, byteOffset);
+    return { bytes: st.size, raw: buf.toString('utf8') };
+  } finally {
+    await fd.close();
+  }
+}
 
 async function pollLoop() {
   setInterval(async () => {
     try {
       const rows = readRegistry();
-      // Per-session log mtime changes → push metrics update
       for (const r of rows) {
         const p = sessionLogPath(r.slug);
         if (!existsSync(p)) continue;
         const mt = statSync(p).mtimeMs;
+        const sz = statSync(p).size;
+
+        // (A) Stream new log bytes (append-only to clients)
+        if (lastStreamPos[r.slug] === undefined) {
+          // First time we see this slug — baseline at EOF so we don't flood old content
+          lastStreamPos[r.slug] = sz;
+        } else if (sz > lastStreamPos[r.slug]) {
+          const { bytes, raw } = await readLogTailSince(r.slug, lastStreamPos[r.slug]);
+          lastStreamPos[r.slug] = bytes;
+          if (raw) {
+            // Only send complete lines — hold back an incomplete tail for next cycle
+            const lastNl = raw.lastIndexOf('\n');
+            if (lastNl >= 0) {
+              const complete = raw.slice(0, lastNl);
+              lastStreamPos[r.slug] = bytes - (raw.length - lastNl - 1);
+              broadcastSse('log-append', { slug: r.slug, raw: complete }, '*');
+            }
+          }
+        }
+
+        // (B) Metrics update on mtime change (left panel)
         if (lastSnapshot[r.slug] !== mt) {
           lastSnapshot[r.slug] = mt;
           const m = await computeMetrics(r.slug);
-          broadcastSse('metrics', { session: r, metrics: m }, r.slug);
-          broadcastSse('metrics', { session: r, metrics: m }, '*'); // status feed
+          broadcastSse('metrics', { session: r, metrics: m }, '*');
         }
       }
-      // Always push overall status once per cycle
+      // Overall status every cycle
       const cost = await monthCostSoFar();
       broadcastSse('status', {
         activeSessions: rows.length,
@@ -393,6 +464,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .content{padding:.6rem 1rem;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem}
   .log{flex:1;background:#06080a;border:1px solid var(--line);border-radius:4px;padding:.5rem;overflow-y:auto;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5}
   .log .assistant{color:#e5e7eb}
+  .log .assistant.streaming{border-left:2px solid var(--accent);padding-left:6px;margin-left:-8px}
   .log .thinking{color:#94a3b8;font-style:italic}
   .log .tool{color:#a78bfa}
   .log .meta{color:var(--mute);font-size:11px}
@@ -462,7 +534,9 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     const s = state.sessions.find(x => x.slug === slug);
     const m = state.metrics[slug];
     if (!s || !m) { sideEl.innerHTML = '<div class="placeholder">loading…</div>'; return; }
-    const ctxPct = Math.min(100, (m.contextUsed / state.status.ctxLimit) * 100);
+    const ctxPct = Math.min(100, (m.lastTurnContextUsed / state.status.ctxLimit) * 100);
+    const ctxPctRaw = (m.lastTurnContextUsed / state.status.ctxLimit) * 100;
+    const pctColor = ctxPctRaw > 85 ? 'var(--err)' : ctxPctRaw > 60 ? 'var(--warn)' : 'var(--accent)';
     sideEl.innerHTML = \`
       <dl>
         <dt>slug</dt><dd>\${s.slug}</dd>
@@ -472,14 +546,22 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
         <dt>uuid</dt><dd style="font-size:10px;color:var(--mute)">\${s.uuid.slice(0,8)}…</dd>
         <dt>created</dt><dd style="font-size:11px">\${s.created.slice(0,19).replace('T',' ')}</dd>
       </dl>
-      <h3>context \${ctxPct.toFixed(0)}%</h3>
-      <div class="bar"><i style="width:\${ctxPct}%"></i></div>
+      <h3>context window — last API call <span style="color:\${pctColor}">\${ctxPct.toFixed(0)}%</span></h3>
+      <div class="bar"><i style="width:\${ctxPct}%;background:\${pctColor}"></i></div>
       <dl style="margin-top:.3rem">
-        <dt>used</dt><dd>\${fmt(m.contextUsed)} / \${fmt(state.status.ctxLimit)}</dd>
-        <dt>cache read</dt><dd>\${fmt(m.cacheRead)}</dd>
-        <dt>cache create</dt><dd>\${fmt(m.cacheCreate)}</dd>
-        <dt>input</dt><dd>\${fmt(m.tokensIn)}</dd>
-        <dt>output</dt><dd>\${fmt(m.tokensOut)}</dd>
+        <dt>last call</dt><dd>\${fmt(m.lastTurnContextUsed)} / \${fmt(state.status.ctxLimit)}</dd>
+        <dt>peak call</dt><dd>\${fmt(m.peakContextUsed)} (\${((m.peakContextUsed/state.status.ctxLimit)*100).toFixed(0)}%)</dd>
+        <dt>├ input</dt><dd>\${fmt(m.lastTurnInput)}</dd>
+        <dt>├ cache read</dt><dd>\${fmt(m.lastTurnCacheRead)}</dd>
+        <dt>├ cache create</dt><dd>\${fmt(m.lastTurnCacheCreate)}</dd>
+        <dt>└ output</dt><dd>\${fmt(m.lastTurnOutput)}</dd>
+      </dl>
+      <h3>session total work</h3>
+      <dl>
+        <dt>tokens processed</dt><dd>\${fmt(m.totalTokensProcessed)}</dd>
+        <dt>├ input</dt><dd>\${fmt(m.tokensIn)}</dd>
+        <dt>├ output</dt><dd>\${fmt(m.tokensOut)}</dd>
+        <dt>└ cache read</dt><dd>\${fmt(m.cacheRead)}</dd>
       </dl>
       <h3>cost & time</h3>
       <dl>
@@ -589,18 +671,63 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   };
   refresh();
 
+  // ── append helper used by SSE log-append and initial load ──
+  function appendLinesToLog(slug, ndjsonText) {
+    const logBox = document.getElementById('log-'+slug);
+    if (!logBox) return;
+    const wasAtBottom = Math.abs(logBox.scrollTop + logBox.clientHeight - logBox.scrollHeight) < 60;
+    const lines = ndjsonText.split('\\n');
+    for (const ln of lines) {
+      if (!ln) continue;
+      try {
+        const e = JSON.parse(ln);
+        if (e.type === 'assistant') {
+          const txt = (e.message?.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
+          if (txt) { const d = document.createElement('div'); d.className='assistant'; d.textContent = txt; logBox.appendChild(d); }
+        } else if (e.type === 'stream_event') {
+          const delta = e.event?.delta;
+          if (delta?.type === 'thinking_delta' && delta.thinking) {
+            const d = document.createElement('span'); d.className='thinking'; d.textContent = delta.thinking;
+            logBox.appendChild(d);
+          } else if (delta?.type === 'text_delta' && delta.text) {
+            // live assistant streaming chunk
+            let last = logBox.lastElementChild;
+            if (!last || !last.classList.contains('streaming')) {
+              last = document.createElement('div'); last.className = 'assistant streaming';
+              logBox.appendChild(last);
+            }
+            last.textContent += delta.text;
+          }
+        } else if (e.type === 'user' && e.message?.content?.[0]?.type === 'tool_result' && e.message.content[0].is_error) {
+          const d = document.createElement('div'); d.className='err';
+          d.textContent = '! ' + (e.message.content[0].content || '').slice(0, 400);
+          logBox.appendChild(d);
+        } else if (e.type === 'result') {
+          const d = document.createElement('div'); d.className='meta';
+          d.textContent = '── done tokens=' + (e.usage?.output_tokens || '?')
+            + ' duration=' + ((e.duration_ms||0)/1000).toFixed(1) + 's'
+            + ' cost=' + (e.total_cost_usd||0).toFixed(4);
+          logBox.appendChild(d);
+        }
+      } catch {/* skip non-json */}
+    }
+    if (wasAtBottom) logBox.scrollTop = logBox.scrollHeight;
+  }
+
   // SSE
   const sse = new EventSource('/api/stream');
+  // Left panel + tab-badge updates only — NO full log reload
   sse.addEventListener('metrics', ev => {
     const { session, metrics } = JSON.parse(ev.data);
     state.metrics[session.slug] = metrics;
-    if (state.active === session.slug) {
-      renderSide(session.slug);
-      // Append newly arrived log lines by bumping the tail lazily — easiest: just reload log when it's short
-      delete renderCache[session.slug];
-      renderContent(session.slug);
-    }
+    if (state.active === session.slug) renderSide(session.slug);
     renderTabs();
+  });
+  // Append new log chunks to the right-side log box in real time
+  sse.addEventListener('log-append', ev => {
+    const { slug, raw } = JSON.parse(ev.data);
+    if (state.active !== slug) return;         // other tab — ignore
+    appendLinesToLog(slug, raw);
   });
   sse.addEventListener('status', ev => { state.status = JSON.parse(ev.data); renderHeader(); });
 })();
