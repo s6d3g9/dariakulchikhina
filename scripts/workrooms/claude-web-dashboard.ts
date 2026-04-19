@@ -476,6 +476,57 @@ async function monthCostSoFar() {
   return total;
 }
 
+// Cost per time-window + per model family. Scans active + archived session
+// logs. Each stream starts with a `system init` event carrying the model;
+// subsequent `result` events in that stream attribute cost to that model.
+async function costWindows() {
+  const now = Date.now();
+  const w5h = now - 5 * 3600 * 1000;
+  const w7d = now - 7 * 86400 * 1000;
+  const res = { last5hUsd: 0, last7dUsd: 0, byModel: { opus: 0, sonnet: 0, haiku: 0, other: 0 } };
+  const dirs = [STATE_DIR];
+  if (existsSync(ARCHIVE_DIR)) dirs.push(ARCHIVE_DIR);
+  for (const dir of dirs) {
+    if (!existsSync(dir)) continue;
+    for (const f of readdirSync(dir)) {
+      if (!f.endsWith('.log')) continue;
+      const p = join(dir, f);
+      const st = statSync(p);
+      if (st.mtimeMs < w7d) continue;
+      let content;
+      try { content = await fsp.readFile(p, 'utf8'); } catch { continue; }
+      let currentModel = 'other';
+      for (const ln of content.split('\n')) {
+        if (!ln) continue;
+        let e;
+        try { e = JSON.parse(ln); } catch { continue; }
+        if (e.type === 'system' && e.subtype === 'init' && typeof e.model === 'string') {
+          const m = e.model.toLowerCase();
+          if (m.includes('opus')) currentModel = 'opus';
+          else if (m.includes('haiku')) currentModel = 'haiku';
+          else if (m.includes('sonnet')) currentModel = 'sonnet';
+          else currentModel = 'other';
+        }
+        if (e.type === 'result' && e.total_cost_usd) {
+          const ts = e.timestamp ? Date.parse(e.timestamp) : st.mtimeMs;
+          if (ts >= w7d) { res.last7dUsd += e.total_cost_usd; res.byModel[currentModel] = (res.byModel[currentModel] || 0) + e.total_cost_usd; }
+          if (ts >= w5h) res.last5hUsd += e.total_cost_usd;
+        }
+      }
+    }
+  }
+  return res;
+}
+
+// Anthropic Max subscription limits we mirror. The real quota UI is owned
+// by the CLI's /usage; we expose the same *shape* so the dashboard doesn't
+// look empty. Tunable via env vars if the user has a different plan.
+const MAX_5H_USD         = Number(process.env.DASHBOARD_MAX_5H_USD || 10);
+const MAX_7D_USD         = Number(process.env.DASHBOARD_MAX_7D_USD || 50);
+const MAX_SONNET_7D_USD  = Number(process.env.DASHBOARD_MAX_SONNET_7D_USD || 35);
+const CTX_1M = 1_000_000;
+const CTX_200K = 200_000;
+
 // ──────────────────────── SSE plumbing ────────────────────────
 
 const sseClients = new Set();
@@ -544,13 +595,23 @@ async function pollLoop() {
           broadcastSse('metrics', { session: r, metrics: m }, '*');
         }
       }
-      // Overall status every cycle
+      // Overall status every cycle. Includes the quota breakdown the
+      // dashboard header renders (context / 5h / 7d / per-model).
       const cost = await monthCostSoFar();
+      const win = await costWindows();
       broadcastSse('status', {
         activeSessions: rows.length,
         monthCostUsd: Number(cost.toFixed(4)),
         monthBudgetUsd: MAX_SUBSCRIPTION_BUDGET_USD,
         ctxLimit: CTX_WINDOW_LIMIT,
+        last5hUsd: Number(win.last5hUsd.toFixed(4)),
+        last5hBudgetUsd: MAX_5H_USD,
+        last7dUsd: Number(win.last7dUsd.toFixed(4)),
+        last7dBudgetUsd: MAX_7D_USD,
+        sonnet7dUsd: Number((win.byModel.sonnet || 0).toFixed(4)),
+        sonnet7dBudgetUsd: MAX_SONNET_7D_USD,
+        opus7dUsd: Number((win.byModel.opus || 0).toFixed(4)),
+        haiku7dUsd: Number((win.byModel.haiku || 0).toFixed(4)),
       }, '*');
     } catch (err) {
       console.error('[poll]', err);
@@ -634,12 +695,21 @@ async function handle(req, res) {
   // ── overall status ──
   if (p === '/api/status' && req.method === 'GET') {
     const cost = await monthCostSoFar();
+    const win = await costWindows();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       activeSessions: readRegistry().length,
       monthCostUsd: Number(cost.toFixed(4)),
       monthBudgetUsd: MAX_SUBSCRIPTION_BUDGET_USD,
       ctxLimit: CTX_WINDOW_LIMIT,
+      last5hUsd: Number(win.last5hUsd.toFixed(4)),
+      last5hBudgetUsd: MAX_5H_USD,
+      last7dUsd: Number(win.last7dUsd.toFixed(4)),
+      last7dBudgetUsd: MAX_7D_USD,
+      sonnet7dUsd: Number((win.byModel.sonnet || 0).toFixed(4)),
+      sonnet7dBudgetUsd: MAX_SONNET_7D_USD,
+      opus7dUsd: Number((win.byModel.opus || 0).toFixed(4)),
+      haiku7dUsd: Number((win.byModel.haiku || 0).toFixed(4)),
     }));
     return;
   }
@@ -725,8 +795,33 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   }
   *{box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-size:13px}
+  body{display:flex;flex-direction:column;min-height:100vh}
   header{display:flex;gap:1rem;align-items:center;padding:.6rem 1rem;border-bottom:1px solid var(--line);background:var(--panel)}
   header h1{margin:0;font-size:14px;letter-spacing:.5px;color:var(--accent)}
+  /* ── Claude Code style "Plan usage" card at the top (mirrors the desktop app) ── */
+  .plan-header{background:var(--panel);border-bottom:1px solid var(--line);padding:.7rem 1.1rem .85rem;display:flex;flex-direction:column;gap:.4rem}
+  .plan-header .ctx-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink)}
+  .plan-header .ctx-row .label{color:var(--mute)}
+  .plan-header .ctx-row .val{font-variant-numeric:tabular-nums;color:var(--mute)}
+  .plan-header .ctx-row .val b{color:var(--ink);font-weight:600}
+  .plan-header .ph-bar{width:100%;height:3px;background:#1a1f26;border-radius:99px;overflow:hidden}
+  .plan-header .ph-bar > i{display:block;height:100%;background:var(--accent);transition:width .4s cubic-bezier(.2,0,0,1);border-radius:99px}
+  .plan-header .ph-bar > i.warn{background:var(--warn)}
+  .plan-header .ph-bar > i.err{background:var(--err)}
+  .plan-header .plan-usage-label{margin-top:.3rem;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--mute);letter-spacing:.3px;text-transform:uppercase}
+  .plan-header .plan-usage-label .arrow{color:var(--mute);opacity:.6}
+  .plan-header .quota-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.3rem .9rem}
+  .plan-header .quota-row{display:flex;flex-direction:column;gap:2px;padding:.1rem 0}
+  .plan-header .quota-row .top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px}
+  .plan-header .quota-row .top .k{color:var(--ink);font-weight:500}
+  .plan-header .quota-row .top .v{color:var(--mute);font-variant-numeric:tabular-nums;font-size:11px}
+  .plan-header .quota-row .top .v b{color:var(--ink);font-weight:600}
+  .plan-header .footer{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-size:11px;color:var(--mute);margin-top:.25rem}
+  .plan-header .footer .active-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);background:#0f1419}
+  .plan-header .footer .active-pill .glyph{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 5px var(--accent)}
+  .plan-header.collapsed .quota-grid, .plan-header.collapsed .plan-usage-label .arrow-text{display:none}
+  .plan-header .toggle{cursor:pointer;user-select:none}
+  .plan-header .toggle:hover{color:var(--ink)}
   .stat{display:flex;flex-direction:column;gap:2px;padding:2px 10px;border-left:1px solid var(--line)}
   .stat b{font-size:12px;color:var(--mute);font-weight:normal}
   .stat span{font-variant-numeric:tabular-nums}
@@ -818,7 +913,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .nav-row .toggle-btn{font-size:11px;padding:.2rem .5rem;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--mute);cursor:pointer}
   .nav-row .toggle-btn.active{color:var(--accent);border-color:var(--accent)}
   .nav-row .toggle-btn:hover{color:var(--ink)}
-  main{display:grid;grid-template-columns:minmax(240px,300px) 1fr minmax(240px,320px);height:calc(100vh - 100px)}
+  main{display:grid;grid-template-columns:minmax(240px,300px) 1fr minmax(240px,320px);flex:1;min-height:0;overflow:hidden}
   .side{border-right:1px solid var(--line);padding:.8rem;overflow-y:auto;background:var(--panel)}
   .right-side{border-left:1px solid var(--line);padding:.8rem;overflow-y:auto;background:var(--panel)}
   .side dl, .right-side dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12px}
@@ -869,13 +964,43 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 <header>
   <h1>◼ claude sessions</h1>
   <div class="stat"><b>active</b><span id="hdr-count">–</span></div>
-  <div class="stat"><b>cost this month</b><span id="hdr-cost">–</span>
-    <div class="bar"><i id="hdr-cost-bar" style="width:0%"></i></div>
-  </div>
   <div class="stat"><b>uptime</b><span id="hdr-uptime">–</span></div>
   <div style="flex:1"></div>
   <button id="btn-refresh" title="force refresh">↻</button>
 </header>
+<section class="plan-header" id="plan-header">
+  <div class="ctx-row toggle" id="plan-toggle">
+    <span class="label">Context window</span>
+    <span class="val"><b id="ph-ctx-val">–</b> <span id="ph-ctx-pct" style="color:var(--mute);margin-left:6px">–</span> <span class="arrow" id="ph-chev">›</span></span>
+  </div>
+  <div class="ph-bar"><i id="ph-ctx-bar" style="width:0%"></i></div>
+  <div class="plan-usage-label">
+    <span>Plan usage</span>
+    <span class="arrow arrow-text">↗</span>
+  </div>
+  <div class="quota-grid" id="quota-grid">
+    <div class="quota-row" data-row="5h">
+      <div class="top"><span class="k">5-hour limit</span><span class="v"><b id="q5h-pct">–</b> · resets <span id="q5h-reset">–</span></span></div>
+      <div class="ph-bar"><i id="q5h-bar" style="width:0%"></i></div>
+    </div>
+    <div class="quota-row" data-row="7d-all">
+      <div class="top"><span class="k">Weekly · all models</span><span class="v"><b id="q7d-pct">–</b> · resets <span id="q7d-reset">–</span></span></div>
+      <div class="ph-bar"><i id="q7d-bar" style="width:0%"></i></div>
+    </div>
+    <div class="quota-row" data-row="opus">
+      <div class="top"><span class="k">Weekly · Opus</span><span class="v"><b id="qopus-usd">$0.00</b></span></div>
+      <div class="ph-bar"><i id="qopus-bar" style="width:0%"></i></div>
+    </div>
+    <div class="quota-row" data-row="sonnet">
+      <div class="top"><span class="k">Sonnet only</span><span class="v"><b id="qson-pct">–</b> · resets <span id="qson-reset">–</span></span></div>
+      <div class="ph-bar"><i id="qson-bar" style="width:0%"></i></div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="active-pill"><span class="glyph"></span><span id="ph-active-model">–</span></span>
+    <span id="ph-active-slug" style="color:var(--mute);font-size:11px">–</span>
+  </div>
+</section>
 <div class="navs">
   <svg id="deps-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
   <div class="nav-row orchestrators" id="nav-orchestrators"><span class="label">◆ orchestrators</span></div>
@@ -912,15 +1037,86 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     return m+'m'+r+'s';
   };
 
+  function modelCtxLimit(model) {
+    const m = String(model || '').toLowerCase();
+    if (m.includes('haiku')) return 200_000;
+    return 1_000_000;
+  }
+  function fmtK(n) {
+    if (n >= 1_000_000) return (n/1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000) return (n/1_000).toFixed(1) + 'k';
+    return String(n);
+  }
+  function barClass(pct){ return pct > 85 ? 'err' : pct > 60 ? 'warn' : ''; }
+  // "resets in Nh"/"Nd" helpers. 5h window: rolling — reset time is 5h
+  // from the oldest cost-contributing event we've seen. We don't track
+  // that precisely; show "~5h" as a static hint. 7d window: weekly ISO,
+  // next Monday 00:00 local.
+  function fmtResetHours(h){ return Math.max(0, Math.round(h)) + 'h'; }
+  function fmtResetDays(d){ return Math.max(0, Math.ceil(d)) + 'd'; }
+  function weeklyResetDaysLeft(){
+    const now = new Date();
+    // Reset at next Monday 00:00 local.
+    const day = now.getDay(); // 0=Sun..6=Sat
+    const daysToMon = (8 - day) % 7 || 7;
+    const next = new Date(now); next.setDate(now.getDate()+daysToMon); next.setHours(0,0,0,0);
+    return (next.getTime() - now.getTime()) / 86400000;
+  }
+
   function renderHeader() {
     document.getElementById('hdr-count').textContent = state.status.activeSessions;
-    document.getElementById('hdr-cost').textContent =
-      fmtUsd(state.status.monthCostUsd) + ' / ' + fmtUsd(state.status.monthBudgetUsd);
-    const pct = Math.min(100, (state.status.monthCostUsd / state.status.monthBudgetUsd) * 100);
-    document.getElementById('hdr-cost-bar').style.width = pct + '%';
     document.getElementById('hdr-uptime').textContent = fmtDur(Date.now() - state.startedAt);
+
+    // Plan-header (Claude Code style): context for active session, plus
+    // 5h / 7d / sonnet rolling quota bars.
+    const s = state.sessions.find(x => x.slug === state.active);
+    const m = state.metrics[state.active] || {};
+    const ctxLimit = modelCtxLimit(s ? s.model : 'sonnet');
+    const ctxUsed = m.lastTurnContextUsed || 0;
+    const ctxPct = Math.min(100, (ctxUsed / ctxLimit) * 100);
+    document.getElementById('ph-ctx-val').textContent = fmtK(ctxUsed) + ' / ' + fmtK(ctxLimit);
+    document.getElementById('ph-ctx-pct').textContent = '(' + ctxPct.toFixed(0) + '%)';
+    const ctxBar = document.getElementById('ph-ctx-bar');
+    ctxBar.style.width = ctxPct + '%';
+    ctxBar.className = barClass(ctxPct);
+
+    const st = state.status;
+    const pct5h = Math.min(100, ((st.last5hUsd||0) / (st.last5hBudgetUsd||10)) * 100);
+    const pct7d = Math.min(100, ((st.last7dUsd||0) / (st.last7dBudgetUsd||50)) * 100);
+    const pctSon = Math.min(100, ((st.sonnet7dUsd||0) / (st.sonnet7dBudgetUsd||35)) * 100);
+    const pctOpus = Math.min(100, ((st.opus7dUsd||0) / 30) * 100); // no stated limit; show vs $30
+
+    document.getElementById('q5h-pct').textContent = pct5h.toFixed(0) + '%';
+    document.getElementById('q5h-reset').textContent = '~5h';
+    const q5hBar = document.getElementById('q5h-bar');
+    q5hBar.style.width = pct5h + '%'; q5hBar.className = barClass(pct5h);
+
+    const weekLeft = weeklyResetDaysLeft();
+    document.getElementById('q7d-pct').textContent = pct7d.toFixed(0) + '%';
+    document.getElementById('q7d-reset').textContent = fmtResetDays(weekLeft);
+    const q7dBar = document.getElementById('q7d-bar');
+    q7dBar.style.width = pct7d + '%'; q7dBar.className = barClass(pct7d);
+
+    document.getElementById('qopus-usd').textContent = fmtUsd(st.opus7dUsd||0);
+    const qOpusBar = document.getElementById('qopus-bar');
+    qOpusBar.style.width = pctOpus + '%'; qOpusBar.className = barClass(pctOpus);
+
+    document.getElementById('qson-pct').textContent = pctSon.toFixed(0) + '%';
+    document.getElementById('qson-reset').textContent = fmtResetDays(weekLeft);
+    const qSonBar = document.getElementById('qson-bar');
+    qSonBar.style.width = pctSon + '%'; qSonBar.className = barClass(pctSon);
+
+    document.getElementById('ph-active-model').textContent = s ? (s.model || '?') + ' · ' + fmtK(ctxLimit) : '—';
+    document.getElementById('ph-active-slug').textContent = s ? s.slug : '';
   }
   setInterval(renderHeader, 1000);
+
+  // Collapse/expand the detail grid — clicking the context row flips a flag.
+  document.getElementById('plan-toggle').addEventListener('click', () => {
+    const el = document.getElementById('plan-header');
+    el.classList.toggle('collapsed');
+    document.getElementById('ph-chev').textContent = el.classList.contains('collapsed') ? '›' : '⌄';
+  });
 
   function displayState(s, m) {
     // Orchestrators don't die on --print completion — their conversation
