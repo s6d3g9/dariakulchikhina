@@ -1469,6 +1469,29 @@ Wave 4 для UIDesignPanel закрыт.
 - `app/pages/admin/clients/index.vue`: 705 → 460 lines (−245 lines, −35%).
 - Commit: `4fb3179`
 
+### [done] 2026-04-19 — Wave 7 / services/communications-service layout alignment with matrix 12
+
+Цель: Проверить, что `services/communications-service/src/**` структура полностью соответствует матрице 12 (нет legacy flat-файлов).
+
+Файлы (проверка):
+- services/communications-service/src/auth/auth.ts ✓ (существует в subdir)
+- services/communications-service/src/store/store.ts ✓ (существует в subdir)
+- services/communications-service/src/store/pg-store.ts ✓ (существует в subdir)
+- services/communications-service/src/types.ts ✓ (top-level, как ожидается)
+- services/communications-service/src/config.ts ✓ (top-level, как ожидается)
+- services/communications-service/src/index.ts ✓ (top-level, как ожидается)
+
+Поиск drift:
+- Нет flat `src/auth.ts` (только `src/auth/auth.ts`) ✓
+- Нет flat `src/store.ts` (только `src/store/store.ts`) ✓
+- Нет flat `src/pg-store.ts` (только `src/store/pg-store.ts`) ✓
+
+Проверка:
+- `pnpm comm:typecheck` — exit 0 ✓
+- `pnpm docs:v5:verify` — exit 0, matrix 12: 68 rows parsed, 68 done, 0 pending, 0 ambiguous ✓
+
+Результат: **Zero drift**. Макет уже соответствует целевой архитектуре. Коммит не требуется.
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor`** (1695 lines): Step 2 fields+vars block (lines 64-148) and Step 3 editor (lines 149-735) still inline.
