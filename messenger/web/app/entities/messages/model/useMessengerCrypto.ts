@@ -1,3 +1,5 @@
+import { useMessengerCryptoApi } from '../../../core/api/crypto'
+
 type MessengerRequest = <T>(path: string, options?: Parameters<typeof $fetch<T>>[1]) => Promise<T>
 
 export interface MessengerDevicePublicKey {
@@ -107,6 +109,7 @@ async function deriveWrappingKey(privateKey: JsonWebKey, publicKey: MessengerDev
 }
 
 export function useMessengerCrypto() {
+  const cryptoApi = useMessengerCryptoApi()
   const deviceKeys = useState<Record<string, MessengerStoredDeviceKeyPair>>('messenger-device-keys', () => ({}))
   const conversationKeys = useState<Record<string, string>>('messenger-conversation-keys', () => ({}))
   const registeredUserIds = useState<Record<string, string>>('messenger-crypto-registered-users', () => ({}))
@@ -173,7 +176,7 @@ export function useMessengerCrypto() {
     }
   }
 
-  async function ensureDeviceIdentity(request: MessengerRequest, userId: string) {
+  async function ensureDeviceIdentity(userId: string) {
     if (!import.meta.client) {
       throw new Error('CRYPTO_CLIENT_ONLY')
     }
@@ -187,12 +190,7 @@ export function useMessengerCrypto() {
     deviceKeys.value[userId] = stored
 
     if (registeredUserIds.value[userId] !== stored.publicKey.x) {
-      await request('/crypto/device-key', {
-        method: 'PUT',
-        body: {
-          publicKey: stored.publicKey,
-        },
-      })
+      await cryptoApi.putDeviceKey(stored.publicKey)
       registeredUserIds.value[userId] = stored.publicKey.x
     }
 
@@ -250,7 +248,7 @@ export function useMessengerCrypto() {
       return await importConversationKey(decodeBase64(storedRawKey))
     }
 
-    const deviceIdentity = await ensureDeviceIdentity(request, userId)
+    const deviceIdentity = await ensureDeviceIdentity(userId)
     const encryptionState = await request<{ keyPackage: MessengerConversationKeyPackage | null }>(`/conversations/${conversationId}/encryption`, {
       method: 'GET',
     })
@@ -263,9 +261,7 @@ export function useMessengerCrypto() {
       return await importConversationKey(rawConversationKey)
     }
 
-    const peerKeyResponse = await request<{ publicKey: MessengerDevicePublicKey | null }>(`/users/${peerUserId}/device-key`, {
-      method: 'GET',
-    })
+    const peerKeyResponse = await cryptoApi.getDeviceKey(peerUserId)
 
     if (!peerKeyResponse.publicKey) {
       throw new Error('PEER_DEVICE_KEY_MISSING')
