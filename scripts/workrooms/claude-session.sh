@@ -39,7 +39,12 @@ REGISTRY="${STATE_DIR}/.registry.tsv"
 CLAUDE_BIN="${HOME}/.local/bin/claude"
 
 mkdir -p "${STATE_DIR}"
-[ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\n' > "${REGISTRY}"
+[ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tkind\n' > "${REGISTRY}"
+# Backward-compat migration: existing registries lack the `kind` column.
+if [ -f "${REGISTRY}" ] && ! head -1 "${REGISTRY}" | grep -q kind; then
+  awk -F'\t' -v OFS='\t' 'NR==1 {print $0, "kind"; next} {print $0, ""}' "${REGISTRY}" > "${REGISTRY}.tmp" \
+    && mv "${REGISTRY}.tmp" "${REGISTRY}"
+fi
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -157,16 +162,37 @@ cmd_create() {
   [[ -n "${slug}" ]] || die "slug required"
   [[ "${slug}" =~ ^[a-z0-9][a-z0-9-]{1,39}$ ]] || die "slug must be [a-z0-9-]{2,40}"
 
-  local workroom="" model="sonnet" prompt="" effort=""
+  local workroom="" model="sonnet" prompt="" effort="" kind=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --workroom) workroom="$2"; shift 2;;
       --model)    model="$2"; shift 2;;
       --prompt)   prompt="$2"; shift 2;;
       --effort)   effort="$2"; shift 2;;
+      --kind)     kind="$2"; shift 2;;
       *) die "unknown flag: $1";;
     esac
   done
+
+  # --- resolve kind -> skill bundle --------------------------------------
+  if [[ -z "${kind}" ]]; then
+    case "${slug}" in
+      composer|composer-*) kind="composer" ;;
+      *orchestrator*|*coordinator*|*planner*|*manager*) kind="orchestrator" ;;
+      *) kind="default" ;;
+    esac
+  fi
+  local bundles_file="${HOME}/daria/scripts/workrooms/skill-bundles.json"
+  local kind_purpose=""
+  local kind_plugins=""
+  if command -v jq >/dev/null 2>&1 && [ -f "${bundles_file}" ]; then
+    kind_purpose=$(jq -r --arg k "${kind}" '.[$k].purpose // .default.purpose // ""' "${bundles_file}")
+    kind_plugins=$(jq -r --arg k "${kind}" '(.[$k].plugins // .default.plugins // []) | join(", ")' "${bundles_file}")
+  fi
+  local bias=""
+  if [[ -n "${kind_purpose}" && -n "${kind_plugins}" ]]; then
+    bias=$(printf '\n\n---\nWorker subjectivity: kind=%s. Purpose: %s Recommended skills (installed plugins you should prefer when they apply): %s. Other plugins remain available; use them only when the task truly calls for it.\n---' "${kind}" "${kind_purpose}" "${kind_plugins}")
+  fi
 
   [[ -n "${prompt}" ]] || die "--prompt required for first message"
   registry_has "${slug}" && die "session '${slug}' already exists"
@@ -182,8 +208,12 @@ cmd_create() {
 
   ensure_tmux_session
 
+  # Prepend the subjectivity bias to the user's prompt so the very first
+  # assistant turn sees its role.
+  prompt="${prompt}${bias}"
+
   # Register first so listing is correct even if the run fails.
-  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" \
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" "${kind}" \
     >> "${REGISTRY}"
   : > "${STATE_DIR}/${slug}.log"
 
@@ -194,7 +224,7 @@ cmd_create() {
 
   run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${cwd}" "${prompt}" "no"
 
-  echo "[create] slug=${slug} uuid=${uuid} window=${window} model=${model} workroom=${workroom:-<none>}"
+  echo "[create] slug=${slug} uuid=${uuid} window=${window} model=${model} workroom=${workroom:-<none>} kind=${kind}"
   echo "[create] Attach: ssh -t daria-dev 'tmux attach -t ${TMUX_SESSION} \\; select-window -t :${window}'"
   echo "[create] Logs:   claude-session logs ${slug}"
 }
@@ -224,8 +254,8 @@ cmd_list() {
   if [[ $(wc -l < "${REGISTRY}") -le 1 ]]; then
     echo "(no sessions)"; return 0
   fi
-  printf '%-20s %-36s %-16s %-22s %-10s %s\n' SLUG UUID WINDOW WORKROOM MODEL CREATED
-  awk -F'\t' 'NR>1 {printf "%-20s %-36s %-16s %-22s %-10s %s\n", $1, $2, $3, $4, $5, $6}' "${REGISTRY}"
+  printf '%-20s %-36s %-16s %-22s %-10s %-25s %s\n' SLUG UUID WINDOW WORKROOM MODEL CREATED KIND
+  awk -F'\t' 'NR>1 {printf "%-20s %-36s %-16s %-22s %-10s %-25s %s\n", $1, $2, $3, $4, $5, $6, ($7 ? $7 : "-")}' "${REGISTRY}"
 }
 
 # --- attach ---

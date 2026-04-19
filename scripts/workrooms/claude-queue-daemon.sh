@@ -105,6 +105,10 @@ spawn_task() {
   base=$(fm_get "$task_file" base_branch main)
   local effort
   effort=$(fm_get "$task_file" effort "")
+  # TASK.md may declare `kind:` to select the skill-bundle for the worker.
+  # Optional — claude-session infers a sensible default from the slug if omitted.
+  local kind
+  kind=$(fm_get "$task_file" kind "")
   # Derive workroom slug: sanitize task_id to match [a-z0-9-]{2,31}
   workroom_slug=$(echo "$task_id" | tr 'A-Z_' 'a-z-' | tr -cd 'a-z0-9-' | cut -c 1-31)
   [ -z "$workroom_slug" ] && { log "bad task id: $task_id"; return 1; }
@@ -135,6 +139,7 @@ spawn_task() {
                        --model "$model"
                        --prompt "$initial_prompt" )
   [ -n "$effort" ] && session_args+=( --effort "$effort" )
+  [ -n "$kind" ] && session_args+=( --kind "$kind" )
   "$BIN_CLAUDE_SESSION" "${session_args[@]}" >> "$LOG_FILE" 2>&1 || {
     log "[spawn] claude-session failed for $session_slug"
     mv "$task_file" "$QUEUE_DIR/failed/"

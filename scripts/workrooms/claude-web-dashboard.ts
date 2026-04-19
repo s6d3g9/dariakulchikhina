@@ -274,8 +274,10 @@ function readRegistry() {
     .slice(1)
     .map(l => l.split('\t'))
     .filter(cols => cols.length >= 6)
-    .map(([slug, uuid, window, workroom, model, created]) => ({
-      slug, uuid, window, workroom: workroom || '', model, created, archived: false,
+    .map(([slug, uuid, window, workroom, model, created, kind]) => ({
+      slug, uuid, window, workroom: workroom || '', model, created,
+      kind: (kind || '').trim(),
+      archived: false,
     }));
 }
 
@@ -723,6 +725,15 @@ async function handle(req, res) {
   }
 
   // ── dependency graph (real, parsed from TASK.md and session timing) ──
+  // ── skill bundles (kind → plugin list) ──
+  if (p === '/api/skill-bundles' && req.method === 'GET') {
+    const f = join(HOME, 'daria/scripts/workrooms/skill-bundles.json');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    try { res.end(readFileSync(f, 'utf8')); }
+    catch { res.end('{}'); }
+    return;
+  }
+
   if (p === '/api/deps' && req.method === 'GET') {
     const edges = await computeDependencyEdges();
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -960,6 +971,13 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .side dd, .right-side dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
   .side h3, .right-side h3{margin:1rem 0 .3rem;font-size:11px;color:var(--mute);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
   .model-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;border:1px solid currentColor;background:rgba(255,255,255,0.03)}
+  .kind-pill{display:inline-block;padding:1px 7px;border-radius:9px;font-size:9px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;border:1px solid currentColor;background:rgba(255,255,255,0.02);white-space:nowrap}
+  .skill-list{display:flex;flex-direction:column;gap:3px;margin-top:.4rem}
+  .skill-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 6px;border-radius:4px;background:#0f1419;border:1px solid var(--line)}
+  .skill-row .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+  .skill-row .name{flex:1;color:var(--ink);font-family:ui-monospace,monospace}
+  .skill-row.muted{opacity:.5}
+  .kind-select{background:#0e1116;border:1px solid var(--line);color:var(--ink);padding:3px 6px;border-radius:4px;font:inherit;font-size:11px;width:100%;margin-top:.3rem}
   .model-pill.opus{color:#c4b5fd}
   .model-pill.sonnet{color:#7cc4ff}
   .model-pill.haiku{color:#4ade80}
@@ -1175,6 +1193,15 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     if (m.includes('sonnet')) return 'sonnet';
     return model || '?';
   }
+  // Color per worker kind — stable hash so "frontend-ui" is always cyan-ish etc.
+  function kindColor(kind) {
+    if (!kind) return 'hsl(220, 10%, 55%)';
+    if (kind === 'composer') return '#fbbf24';
+    if (kind === 'orchestrator') return '#a78bfa';
+    let h = 0;
+    for (let i = 0; i < kind.length; i++) h = (h * 31 + kind.charCodeAt(i)) >>> 0;
+    return 'hsl(' + (h % 360) + ', 55%, 62%)';
+  }
   function makeTabEl(s) {
     const m = state.metrics[s.slug] || {};
     const st = displayState(s, m);
@@ -1182,8 +1209,13 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     t.className = 'tab' + (state.active === s.slug ? ' active' : '') + (s.archived ? ' archived' : '');
     t.dataset.slug = s.slug;
     const mc = modelClass(s.model);
+    const kind = s.kind || '';
+    const kindPill = kind
+      ? '<span class="kind-pill" style="color:' + kindColor(kind) + ';border-color:' + kindColor(kind) + '">' + kind + '</span>'
+      : '';
     t.innerHTML = '<span class="dot ' + st + '"></span>' +
                   '<span>' + s.slug + '</span>' +
+                  kindPill +
                   '<span class="model-pill ' + mc + '" style="padding:1px 6px;font-size:9px"><span class="glyph"></span>' + modelShort(s.model) + '</span>' +
                   '<small style="color:var(--mute)">[' + st + ']</small>';
     t.onclick = () => selectTab(s.slug);
@@ -1594,7 +1626,45 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
           \`).join('')}
         </div>
       \` : '<h3>files touched</h3><div style="color:var(--mute);font-size:11px">none yet</div>';
-      rightSideEl.innerHTML = taskHtml + filesHtml;
+
+      // Skill bundle block — driven off the session's kind column from the
+      // registry (falls back to inferred default). Per-kind plugin list is
+      // fetched once from /api/skill-bundles and stashed on state.
+      const session = state.sessions.find(x => x.slug === slug);
+      const bundles = state.skillBundles || {};
+      const kind = (session && session.kind) ||
+                   (session && session.role === 'composer' ? 'composer' :
+                    session && session.role === 'orchestrator' ? 'orchestrator' : 'default');
+      const bundle = bundles[kind] || bundles.default || { purpose: '', plugins: [] };
+      const kindOptions = Object.keys(bundles).sort()
+        .map(k => '<option value="'+esc(k)+'"'+(k===kind?' selected':'')+'>'+esc(k)+'</option>')
+        .join('');
+      const skillsHtml = \`
+        <h3>skill bundle
+          <span class="kind-pill" style="color:\${kindColor(kind)};border-color:\${kindColor(kind)}">\${esc(kind)}</span>
+        </h3>
+        <div style="color:var(--mute);font-size:11px;line-height:1.4">\${esc(bundle.purpose || '—')}</div>
+        <select class="kind-select" id="skill-kind-select">\${kindOptions}</select>
+        <div class="skill-list">
+          \${(bundle.plugins || []).map(pl => '<div class="skill-row"><span class="dot"></span><span class="name">'+esc(pl)+'</span></div>').join('') ||
+            '<div class="skill-row muted"><span class="name">(no plugins)</span></div>'}
+        </div>
+        <div style="color:var(--mute);font-size:10px;margin-top:.4rem;line-height:1.4">
+          Selecting a new kind changes the bias prompt for the next turn; existing turns keep their original subjectivity.
+        </div>
+      \`;
+      rightSideEl.innerHTML = taskHtml + filesHtml + skillsHtml;
+      const sel = document.getElementById('skill-kind-select');
+      if (sel) sel.onchange = async () => {
+        const newKind = sel.value;
+        const b = (state.skillBundles[newKind]) || {};
+        const plugins = (b.plugins || []).join(', ');
+        const msg = 'System update: your worker kind is now \`'+newKind+'\`. Purpose: '+(b.purpose||'—')+' Recommended skills: '+plugins+'. Acknowledge and continue.';
+        await fetch('/api/sessions/'+slug+'/send', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ prompt: msg })
+        });
+      };
     } catch (e) {
       rightSideEl.innerHTML = '<div class="placeholder">failed to load context</div>';
     }
@@ -1678,6 +1748,13 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   }
 
   async function refresh() {
+    // Skill-bundles (kind → { purpose, plugins[] }) — lazy-fetched once.
+    if (!state.skillBundles) {
+      try {
+        const sb = await fetch('/api/skill-bundles');
+        state.skillBundles = await sb.json();
+      } catch { state.skillBundles = {}; }
+    }
     // Always include archive now — folder collapses/hides it visually
     const r = await fetch('/api/sessions?include=archive');
     const arr = await r.json();
