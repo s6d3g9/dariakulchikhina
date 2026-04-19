@@ -527,6 +527,44 @@ const MAX_SONNET_7D_USD  = Number(process.env.DASHBOARD_MAX_SONNET_7D_USD || 35)
 const CTX_1M = 1_000_000;
 const CTX_200K = 200_000;
 
+// ──────────────── Anthropic live quota (mirrors Claude Code /status) ────────────────
+// The CLI stores an OAuth token in ~/.claude/.credentials.json and hits
+// https://api.anthropic.com/api/oauth/usage for the Plan Usage panel.
+// We replay the same call — response shape (observed 2026-04-19):
+//   { five_hour: { utilization, resets_at },
+//     seven_day: { utilization, resets_at },
+//     seven_day_opus: { utilization, resets_at } | null,
+//     seven_day_sonnet: { utilization, resets_at } | null,
+//     seven_day_omelette: { utilization, resets_at } | null,   // "Claude Design"
+//     extra_usage: { is_enabled, monthly_limit, utilization, ... } }
+// Utilization is already in percent (0-100), so we don't guess budgets.
+const CLAUDE_CREDS_PATH = join(HOME, '.claude/.credentials.json');
+let _quotaCache = { at: 0, data: null };
+const QUOTA_TTL_MS = 60_000; // refresh once per minute — API has its own rate limits
+
+async function fetchAnthropicUsage() {
+  const now = Date.now();
+  if (_quotaCache.data && now - _quotaCache.at < QUOTA_TTL_MS) return _quotaCache.data;
+  try {
+    const raw = await fsp.readFile(CLAUDE_CREDS_PATH, 'utf8');
+    const token = JSON.parse(raw)?.claudeAiOauth?.accessToken;
+    if (!token) return null;
+    const r = await fetch('https://api.anthropic.com/api/oauth/usage', {
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'anthropic-beta': 'oauth-2025-04-20',
+        'User-Agent': 'claude-web-dashboard/1.0',
+      },
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    _quotaCache = { at: now, data: j };
+    return j;
+  } catch {
+    return null;
+  }
+}
+
 // ──────────────────────── SSE plumbing ────────────────────────
 
 const sseClients = new Set();
@@ -595,23 +633,16 @@ async function pollLoop() {
           broadcastSse('metrics', { session: r, metrics: m }, '*');
         }
       }
-      // Overall status every cycle. Includes the quota breakdown the
-      // dashboard header renders (context / 5h / 7d / per-model).
+      // Overall status every cycle. Quota is the live Anthropic
+      // /api/oauth/usage response (cached 60s inside fetchAnthropicUsage).
       const cost = await monthCostSoFar();
-      const win = await costWindows();
+      const usage = await fetchAnthropicUsage();
       broadcastSse('status', {
         activeSessions: rows.length,
         monthCostUsd: Number(cost.toFixed(4)),
         monthBudgetUsd: MAX_SUBSCRIPTION_BUDGET_USD,
         ctxLimit: CTX_WINDOW_LIMIT,
-        last5hUsd: Number(win.last5hUsd.toFixed(4)),
-        last5hBudgetUsd: MAX_5H_USD,
-        last7dUsd: Number(win.last7dUsd.toFixed(4)),
-        last7dBudgetUsd: MAX_7D_USD,
-        sonnet7dUsd: Number((win.byModel.sonnet || 0).toFixed(4)),
-        sonnet7dBudgetUsd: MAX_SONNET_7D_USD,
-        opus7dUsd: Number((win.byModel.opus || 0).toFixed(4)),
-        haiku7dUsd: Number((win.byModel.haiku || 0).toFixed(4)),
+        quota: usage,
       }, '*');
     } catch (err) {
       console.error('[poll]', err);
@@ -695,21 +726,17 @@ async function handle(req, res) {
   // ── overall status ──
   if (p === '/api/status' && req.method === 'GET') {
     const cost = await monthCostSoFar();
-    const win = await costWindows();
+    const usage = await fetchAnthropicUsage();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       activeSessions: readRegistry().length,
       monthCostUsd: Number(cost.toFixed(4)),
       monthBudgetUsd: MAX_SUBSCRIPTION_BUDGET_USD,
       ctxLimit: CTX_WINDOW_LIMIT,
-      last5hUsd: Number(win.last5hUsd.toFixed(4)),
-      last5hBudgetUsd: MAX_5H_USD,
-      last7dUsd: Number(win.last7dUsd.toFixed(4)),
-      last7dBudgetUsd: MAX_7D_USD,
-      sonnet7dUsd: Number((win.byModel.sonnet || 0).toFixed(4)),
-      sonnet7dBudgetUsd: MAX_SONNET_7D_USD,
-      opus7dUsd: Number((win.byModel.opus || 0).toFixed(4)),
-      haiku7dUsd: Number((win.byModel.haiku || 0).toFixed(4)),
+      // Real live quotas from Anthropic (mirror of Claude Code /status).
+      // Shape matches the API response verbatim so the client can read
+      // utilization/resets_at directly.
+      quota: usage,
     }));
     return;
   }
@@ -987,9 +1014,9 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       <div class="top"><span class="k">Weekly · all models</span><span class="v"><b id="q7d-pct">–</b> · resets <span id="q7d-reset">–</span></span></div>
       <div class="ph-bar"><i id="q7d-bar" style="width:0%"></i></div>
     </div>
-    <div class="quota-row" data-row="opus">
-      <div class="top"><span class="k">Weekly · Opus</span><span class="v"><b id="qopus-usd">$0.00</b></span></div>
-      <div class="ph-bar"><i id="qopus-bar" style="width:0%"></i></div>
+    <div class="quota-row" data-row="design">
+      <div class="top"><span class="k">Weekly · Claude Design</span><span class="v"><b id="qdes-pct">0%</b> · resets <span id="qdes-reset">—</span></span></div>
+      <div class="ph-bar"><i id="qdes-bar" style="width:0%"></i></div>
     </div>
     <div class="quota-row" data-row="sonnet">
       <div class="top"><span class="k">Sonnet only</span><span class="v"><b id="qson-pct">–</b> · resets <span id="qson-reset">–</span></span></div>
@@ -1052,15 +1079,18 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   // from the oldest cost-contributing event we've seen. We don't track
   // that precisely; show "~5h" as a static hint. 7d window: weekly ISO,
   // next Monday 00:00 local.
-  function fmtResetHours(h){ return Math.max(0, Math.round(h)) + 'h'; }
-  function fmtResetDays(d){ return Math.max(0, Math.ceil(d)) + 'd'; }
-  function weeklyResetDaysLeft(){
-    const now = new Date();
-    // Reset at next Monday 00:00 local.
-    const day = now.getDay(); // 0=Sun..6=Sat
-    const daysToMon = (8 - day) % 7 || 7;
-    const next = new Date(now); next.setDate(now.getDate()+daysToMon); next.setHours(0,0,0,0);
-    return (next.getTime() - now.getTime()) / 86400000;
+  // Format "resets in Nh" / "Nd" from an ISO timestamp returned by
+  // /api/oauth/usage. Matches Claude Code desktop copy ("resets 4h",
+  // "resets 5d"). Under 1h shows minutes, otherwise hours/days.
+  function humanResetIn(isoTs) {
+    const target = Date.parse(isoTs);
+    if (!target || isNaN(target)) return '—';
+    const diff = Math.max(0, target - Date.now());
+    const s = Math.floor(diff / 1000);
+    if (s < 3600) return Math.ceil(s / 60) + 'm';
+    const h = s / 3600;
+    if (h < 24) return Math.ceil(h) + 'h';
+    return Math.ceil(h / 24) + 'd';
   }
 
   function renderHeader() {
@@ -1080,31 +1110,23 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     ctxBar.style.width = ctxPct + '%';
     ctxBar.className = barClass(ctxPct);
 
-    const st = state.status;
-    const pct5h = Math.min(100, ((st.last5hUsd||0) / (st.last5hBudgetUsd||10)) * 100);
-    const pct7d = Math.min(100, ((st.last7dUsd||0) / (st.last7dBudgetUsd||50)) * 100);
-    const pctSon = Math.min(100, ((st.sonnet7dUsd||0) / (st.sonnet7dBudgetUsd||35)) * 100);
-    const pctOpus = Math.min(100, ((st.opus7dUsd||0) / 30) * 100); // no stated limit; show vs $30
-
-    document.getElementById('q5h-pct').textContent = pct5h.toFixed(0) + '%';
-    document.getElementById('q5h-reset').textContent = '~5h';
-    const q5hBar = document.getElementById('q5h-bar');
-    q5hBar.style.width = pct5h + '%'; q5hBar.className = barClass(pct5h);
-
-    const weekLeft = weeklyResetDaysLeft();
-    document.getElementById('q7d-pct').textContent = pct7d.toFixed(0) + '%';
-    document.getElementById('q7d-reset').textContent = fmtResetDays(weekLeft);
-    const q7dBar = document.getElementById('q7d-bar');
-    q7dBar.style.width = pct7d + '%'; q7dBar.className = barClass(pct7d);
-
-    document.getElementById('qopus-usd').textContent = fmtUsd(st.opus7dUsd||0);
-    const qOpusBar = document.getElementById('qopus-bar');
-    qOpusBar.style.width = pctOpus + '%'; qOpusBar.className = barClass(pctOpus);
-
-    document.getElementById('qson-pct').textContent = pctSon.toFixed(0) + '%';
-    document.getElementById('qson-reset').textContent = fmtResetDays(weekLeft);
-    const qSonBar = document.getElementById('qson-bar');
-    qSonBar.style.width = pctSon + '%'; qSonBar.className = barClass(pctSon);
+    // Real quota from Anthropic /api/oauth/usage (mirror of Claude Code
+    // /status). Each bucket has { utilization: 0-100, resets_at: ISO }.
+    const q = (state.status && state.status.quota) || {};
+    const bucket = (key) => q[key] || null;
+    const renderBucket = (b, pctId, resetId, barId) => {
+      const pct = b && typeof b.utilization === 'number' ? b.utilization : 0;
+      const resetStr = b && b.resets_at ? humanResetIn(b.resets_at) : '—';
+      document.getElementById(pctId).textContent = pct.toFixed(0) + '%';
+      document.getElementById(resetId).textContent = resetStr;
+      const bar = document.getElementById(barId);
+      bar.style.width = Math.min(100, pct) + '%';
+      bar.className = barClass(pct);
+    };
+    renderBucket(bucket('five_hour'),            'q5h-pct',  'q5h-reset',  'q5h-bar');
+    renderBucket(bucket('seven_day'),            'q7d-pct',  'q7d-reset',  'q7d-bar');
+    renderBucket(bucket('seven_day_omelette'),   'qdes-pct', 'qdes-reset', 'qdes-bar');
+    renderBucket(bucket('seven_day_sonnet'),     'qson-pct', 'qson-reset', 'qson-bar');
 
     document.getElementById('ph-active-model').textContent = s ? (s.model || '?') + ' · ' + fmtK(ctxLimit) : '—';
     document.getElementById('ph-active-slug').textContent = s ? s.slug : '';
