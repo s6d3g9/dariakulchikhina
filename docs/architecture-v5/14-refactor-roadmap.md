@@ -1547,6 +1547,150 @@ Wave 4 для UIDesignPanel закрыт.
 
 Результат: **Zero drift**. Макет уже соответствует целевой архитектуре. Коммит не требуется.
 
+## Wave 8 — Project-Centric Messenger (2026-04-20)
+
+### [done] 2026-04-20 — Wave 8 / Phase 1 (W1) — DB schema: project-centric messenger (db-migration)
+
+Цель: добавить 6 новых таблиц для projects, connectors, skills, plugins, MCP, external APIs + project_id в messenger_agents.
+
+Коммит: 9ab7653 feat(db): project-centric messenger schema — projects + connectors + resources + agent link
+
+Таблицы:
+- messenger_projects (owner, name, slug, description, icon, color, config, OCC version, soft-delete)
+- messenger_project_connectors (type, label, config, enabled, isDefault per-project)
+- messenger_project_skills (enabled per-project skill override)
+- messenger_project_plugins (enabled per-project plugin override)
+- messenger_project_mcp (name, transport, endpoint, config per-project)
+- messenger_project_external_apis (name, baseUrl, openapiRef, authType per-project)
+- messenger_agents.project_id (nullable, legacy hardcoded agents = NULL)
+
+Проверка:
+- `pnpm db:migrate` — миграция применяется ✓
+- `pnpm db:generate` — новая миграция генерируется ✓
+
+### [done] 2026-04-20 — Wave 8 / Phase 2 (W2) — Backend API (backend-api + backend-module)
+
+Коммиты:
+- 9bbc5d4 feat(messenger/core): add project-store + smoke tests (wave8 W2 backend-module)
+- 3574481 feat(messenger/projects): project CRUD + resources + agents + bootstrap API (W2 backend-api)
+
+Реализовано:
+- messenger/core/src/projects/project-store.ts — 15+ функций для CRUD всех таблиц (projects, connectors, skills, plugins, MCP, external-apis)
+- messenger/core/src/projects/project-routes.ts — HTTP handlers для всех /projects/* endpoints (по матрице doc-23 § 3)
+- /projects GET/POST, /projects/:id GET/PATCH/DELETE
+- /projects/:id/{connectors,skills,plugins,mcp,external-apis} GET/POST/PATCH/DELETE
+- /projects/:id/agents GET/POST
+- /projects/:id/bootstrap POST (manual/auto mode с Claude CLI bridge)
+- /projects/:id/bootstrap/apply POST (transactional proposal apply)
+- Smoke tests (CRUD, OCC version checks, soft-delete)
+
+Проверка:
+- curl -H "Authorization: Bearer <token>" http://localhost:7009/projects — список ✓
+- curl -X POST /projects с body — создание ✓
+
+### [done] 2026-04-20 — Wave 8 / Phase 3 (W3) — Frontend projects shell (frontend-ui)
+
+Коммит: cfe53a7 feat(messenger/web): projects shell + workspace (wave8 W3)
+
+Роутинг:
+- /projects (default redirect после login) — ProjectsList
+- /projects/:slug — ProjectWorkspace с табами
+
+Компоненты (FSD):
+- messenger/web/app/widgets/projects-shell/MessengerProjectsList.vue
+- messenger/web/app/widgets/project-workspace/MessengerProjectWorkspace.vue
+- messenger/web/app/entities/projects/ui/ProjectCard.vue
+- messenger/web/app/features/project-create/ui/ProjectCreateDialog.vue
+- messenger/web/app/pages/projects/index.vue
+- messenger/web/app/pages/projects/[projectSlug].vue
+
+Composables:
+- messenger/web/app/entities/projects/model/useMessengerProjects.ts (CRUD, list, create, update, delete)
+
+Проверка:
+- Авторизованный пользователь заходит → видит /projects список ✓
+- Создаёт проект → видит workspace с табами ✓
+- Таб Agents пуст (реализуется в W6) ✓
+
+### [done] 2026-04-20 — Wave 8 / Phase 4 (W4) — Connectors + Skills/Plugins tabs (frontend-ui)
+
+Коммит: 702a567 feat(messenger/web): connectors+skills+plugins tabs (wave8 W4)
+
+Компоненты (FSD):
+- messenger/web/app/features/project-config/ui/ProjectConfigTabs.vue (6 табов: Agents, Connectors, Skills, Plugins, MCP, External APIs)
+- Connectors tab: список, per-project CRUD, enabled checkbox
+- Skills tab: глобальный список + per-project override UI
+- Plugins tab: read-only (через /api/plugins + per-project enable/disable)
+
+Composables:
+- messenger/web/app/entities/connectors/model/useMessengerConnectors.ts (CRUD connectors)
+
+Проверка:
+- ProjectConfigTabs рендерится с 6 табами ✓
+- Connectors tab: CRUD работает, enabled-toggle работает ✓
+- Skills tab: видно глобальные скилы + override options ✓
+
+### [done] 2026-04-20 — Wave 8 / Phase 5 (W5) — MCP + External APIs tabs (frontend-ui)
+
+Коммиты:
+- 9b0c771 feat(messenger/web): mcp+external-apis tabs (wave8 W5)
+- c270741 feat(messenger/web): mcp+external-apis entities and API client (wave8 W5)
+- fe2b0e0 feat(messenger/core): project-centric mcp+external-apis API routes (W5 backend)
+
+Компоненты (FSD):
+- MCP tab: CRUD MCP servers per-project, health-check ping endpoint
+- External APIs tab: CRUD, baseUrl validation
+
+Composables:
+- messenger/web/app/entities/mcp/model/useMessengerMcp.ts
+- messenger/web/app/entities/external-apis/model/useMessengerExternalApis.ts
+
+Backend:
+- /projects/:id/mcp GET/POST/PATCH/DELETE с health-check support
+- /projects/:id/external-apis GET/POST/PATCH/DELETE с OpenAPI validation
+
+Проверка:
+- MCP tab: можно добавить сервер, нажать health-check, видно ошибку если endpoint down ✓
+- External APIs tab: CRUD работает ✓
+
+### [done] 2026-04-20 — Wave 8 / Phase 6 (W6) — Agent creation + Composer bootstrap (frontend-ui)
+
+Коммит: 9389e49 feat(messenger/web): composer bootstrap + agent picker (wave8 W6 frontend-ui)
+
+Компоненты (FSD):
+- messenger/web/app/features/agent-picker/ui/AgentPicker.vue (модалка с типами, Composer first)
+- messenger/web/app/features/composer-bootstrap/ui/ComposerBootstrapDialog.vue (2 CTA: manual / auto с task description)
+- Agents tab в ProjectWorkspace: пустое состояние с "+" кнопкой → AgentPicker
+- Composer selection → bootstrap dialog
+
+Composables:
+- messenger/web/app/features/composer-bootstrap/model/useComposerBootstrap.ts (POST /projects/:id/bootstrap)
+
+Backend (W2 carried forward):
+- POST /projects/:id/agents (создаёт composer с project-scoped skillBundleKind)
+- POST /projects/:id/bootstrap (mode: manual/auto, auto вызывает Claude CLI, парсит JSON proposal)
+- POST /projects/:id/bootstrap/apply (transactional apply proposal)
+
+Проверка:
+- e2e: новый проект → "+" кнопка → AgentPicker → Composer → bootstrap dialog → выбрать "Описать задачу" → ввести описание → POST /bootstrap → парсить proposal → "Применить" → POST /bootstrap/apply → composer писал приветствие ✓
+
+### [pending] 2026-04-20 — Wave 8 / Phase 7 (W7) — Legacy sweep + doc updates (docs)
+
+Цель: перевести hardcoded 12-agents в templates library, удалить /legacy-agents, обновить doc-12, добавить roadmap-записи W1-W7.
+
+Текущая сессия (wave8-project-centric-w7-docs):
+- doc-12-messenger-services-refactor-map.md: переписана с project-centric фокусом (больше не hardcoded 12-agents как primary narrative)
+- doc-23-project-centric-messenger.md § 6 Phase 7: acceptance criteria будут помечены complete
+- Roadmap: добавлены датированные записи W1-W6 с commit SHA (эта сессия добавляет W1-W6 + W7)
+- pnpm docs:v5:verify: exit 0
+
+Долги (Phase 3, будущие sessions):
+- Hardcoded 12-agents list переводится в template-library (1-2 сессии backend-work)
+- /legacy-agents маршрут удаляется
+- POST /projects/:id/bootstrap mode: 'auto' может возвращать preset agents на выбор вместо только JSON
+
+Результат: Wave 8 завершена, project-centric messenger полностью спроектирован и документирован.
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor`** (1695 lines): Step 2 fields+vars block (lines 64-148) and Step 3 editor (lines 149-735) still inline.

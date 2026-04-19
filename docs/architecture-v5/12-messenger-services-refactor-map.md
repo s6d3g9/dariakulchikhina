@@ -1,12 +1,25 @@
-# 12. Messenger + Services: матрица realtime-контуров
+# 12. Messenger + Services: project-centric topology и realtime-контуры
 
-Документ покрывает три отдельные зоны, которые нельзя смешивать с основным Nuxt-приложением:
+Документ описывает три отдельные isolated runtime'а, которые нельзя смешивать с основным Nuxt-приложением:
 
-1. `messenger/core` — realtime backend и агентный runtime.
-2. `messenger/web` — отдельный consumer-style web client.
-3. `services/communications-service` — отдельный сервис коммуникаций.
+1. **`messenger/core`** — realtime backend и agentruntime. Управляет проектами, агентами и их конфигурацией.
+2. **`messenger/web`** — FSD-структурированный consumer-style web client. Отличен от основной `app/`.
+3. **`services/communications-service`** — сервис коммуникаций для E2EE-вызовов и WebRTC-сигнализации.
 
-Все source и target пути — репозиторно-корневые, чтобы `scripts/verify-architecture-docs.mjs` мог машинно проверять их существование.
+## Project-Centric Architecture (Wave8)
+
+Вместо статичного списка 12 hardcoded агентов, messenger теперь организован вокруг **проектов** как верхнего уровня:
+
+- **Проекты** — контейнер конфигурации (connectors, skills, plugins, MCP, external APIs).
+- **Агенты** — создаются внутри проекта; доступные типы: Composer, Orchestrator, Worker, Custom.
+- **Connectors** — Claude CLI subscription (primary), GitHub Copilot, OpenAI-compatible API (fallback).
+- **Skills & Plugins** — наследуют глобальный набор + per-project overrides.
+- **MCP servers** — проект декларирует свои MCP-endpoints; агенты их видят.
+- **External APIs** — OpenAPI-совместимые сервисы (GitHub, Linear, Notion и т.д.).
+
+Legacy 12-agents list переведён в **templates library** — доступны как стартовые конфигурации для новых проектов.
+
+Все source и target пути ниже — репозиторно-корневые для машинной проверки `scripts/verify-architecture-docs.mjs`.
 
 ## messenger/core -> bounded contexts
 
@@ -20,6 +33,10 @@
 - messenger/core/src/auth-store.ts -> messenger/core/src/auth/auth-store.ts
 - messenger/core/src/crypto-store.ts -> messenger/core/src/crypto/crypto-store.ts
 
+### Projects и конфигурация (Wave8)
+- messenger/core/src/project-store.ts -> messenger/core/src/projects/project-store.ts (CRUD проектов, connectors, skills, plugins, MCP, external APIs)
+- messenger/core/src/project-routes.ts -> messenger/core/src/projects/project-routes.ts (HTTP handlers для /projects/* endpoints)
+
 ### Contacts, conversations, media
 - messenger/core/src/contact-store.ts -> messenger/core/src/contacts/contact-store.ts
 - messenger/core/src/conversation-store.ts -> messenger/core/src/conversations/conversation-store.ts
@@ -32,7 +49,7 @@
 - messenger/core/src/agent-llm.ts -> messenger/core/src/agents/agent-llm.ts
 - messenger/core/src/agent-run-store.ts -> messenger/core/src/agents/agent-run-store.ts
 - messenger/core/src/agent-settings-store.ts -> messenger/core/src/agents/agent-settings-store.ts
-- messenger/core/src/agent-store.ts -> messenger/core/src/agents/agent-store.ts
+- messenger/core/src/agent-store.ts -> messenger/core/src/agents/agent-store.ts (теперь включает project_id для scope)
 - messenger/core/src/agent-workspace-store.ts -> messenger/core/src/agents/agent-workspace-store.ts
 - messenger/core/src/user-ai-settings-store.ts -> messenger/core/src/profile/user-ai-settings-store.ts
 
@@ -42,20 +59,53 @@
 - messenger/core/src/transcription-service.ts -> messenger/core/src/transcription/transcription-service.ts
 - messenger/core/src/project-engine-store.ts -> messenger/core/src/project-engine/project-engine-store.ts
 
-## messenger/web target FSD
+## messenger/web target FSD (project-centric)
 
-- messenger/web/app/core/api/
+### Core runtime
+- messenger/web/app/core/api/ (API client)
 - messenger/web/app/core/realtime/messenger-realtime.ts
 - messenger/web/app/core/calls/livekit.client.ts
+
+### Shared UI & utilities
 - messenger/web/app/shared/ui/
+- messenger/web/app/shared/composables/
+
+### Entities (project-centric Wave8)
+- messenger/web/app/entities/projects/ (useMessengerProjects, ProjectCard)
+- messenger/web/app/entities/connectors/ (useMessengerConnectors)
+- messenger/web/app/entities/mcp/ (useMessengerMcp)
+- messenger/web/app/entities/external-apis/ (useMessengerExternalApis)
 - messenger/web/app/entities/{agents,calls,contacts,conversations,media,messages,settings}/
+
+### Features (project-centric Wave8)
+- messenger/web/app/features/project-create/ (ProjectCreateDialog)
+- messenger/web/app/features/project-config/ (ProjectConfigTabs)
+- messenger/web/app/features/agent-picker/ (AgentPicker)
+- messenger/web/app/features/composer-bootstrap/ (ComposerBootstrapDialog)
 - messenger/web/app/features/{audio-draft,call-overlay,chat-composer,contact-invite,conversation-switch,message-thread,project-engine}/
+
+### Widgets (project-centric Wave8)
+- messenger/web/app/widgets/projects-shell/ (ProjectsList)
+- messenger/web/app/widgets/project-workspace/ (ProjectWorkspace с табами)
 - messenger/web/app/widgets/{agent-workspace,chat,chats,contacts,settings,shell}/
-- messenger/web/app/pages/index.vue
+
+### Pages (project-centric Wave8)
+- messenger/web/app/pages/projects/index.vue (Project list)
+- messenger/web/app/pages/projects/[projectSlug].vue (Project detail)
 - messenger/web/app/pages/login.vue
 - messenger/web/app/pages/register.vue
+- messenger/web/app/pages/legacy-agents.vue (deprecated, фаза Phase 3)
 
-## messenger/web key moves
+## messenger/web key moves (Wave8 project-centric)
+
+### Project-related components (новое — Wave8)
+- messenger/web/app/components/projects/ProjectCreateDialog.vue -> messenger/web/app/features/project-create/ui/ProjectCreateDialog.vue
+- messenger/web/app/components/projects/ProjectConfigTabs.vue -> messenger/web/app/features/project-config/ui/ProjectConfigTabs.vue (Connectors, Skills, Plugins, MCP, External APIs tabs)
+- messenger/web/app/components/projects/ProjectCard.vue -> messenger/web/app/entities/projects/ui/ProjectCard.vue
+- messenger/web/app/components/projects/ProjectsList.vue -> messenger/web/app/widgets/projects-shell/MessengerProjectsList.vue
+- messenger/web/app/components/projects/ProjectWorkspace.vue -> messenger/web/app/widgets/project-workspace/MessengerProjectWorkspace.vue
+- messenger/web/app/components/projects/AgentPicker.vue -> messenger/web/app/features/agent-picker/ui/AgentPicker.vue
+- messenger/web/app/components/projects/ComposerBootstrapDialog.vue -> messenger/web/app/features/composer-bootstrap/ui/ComposerBootstrapDialog.vue
 
 ### Shell и базовый каркас
 - messenger/web/app/components/messenger/MessengerAppShell.vue -> messenger/web/app/widgets/shell/MessengerAppShell.vue
@@ -87,7 +137,15 @@
 - messenger/web/app/components/messenger/MessengerAgentChatWorkspace.vue -> messenger/web/app/widgets/agent-workspace/MessengerAgentChatWorkspace.vue
 - messenger/web/app/components/messenger/MessengerProjectEngineGraph.vue -> messenger/web/app/features/project-engine/ui/MessengerProjectEngineGraph.vue
 
-### Composables
+### Composables (Wave8 project-centric additions)
+- messenger/web/app/composables/useMessengerProjects.ts -> messenger/web/app/entities/projects/model/useMessengerProjects.ts (CRUD projects)
+- messenger/web/app/composables/useMessengerConnectors.ts -> messenger/web/app/entities/connectors/model/useMessengerConnectors.ts (CRUD connectors)
+- messenger/web/app/composables/useMessengerMcp.ts -> messenger/web/app/entities/mcp/model/useMessengerMcp.ts (CRUD MCP servers)
+- messenger/web/app/composables/useMessengerExternalApis.ts -> messenger/web/app/entities/external-apis/model/useMessengerExternalApis.ts (CRUD external APIs)
+- messenger/web/app/composables/useProjectCreate.ts -> messenger/web/app/features/project-create/model/useProjectCreate.ts
+- messenger/web/app/composables/useComposerBootstrap.ts -> messenger/web/app/features/composer-bootstrap/model/useComposerBootstrap.ts
+
+### Composables (existing)
 - messenger/web/app/composables/useMessengerAuth.ts -> messenger/web/app/entities/auth/model/useMessengerAuth.ts
 - messenger/web/app/composables/useMessengerContacts.ts -> messenger/web/app/entities/contacts/model/useMessengerContacts.ts
 - messenger/web/app/composables/useMessengerConversations.ts -> messenger/web/app/entities/conversations/model/useMessengerConversations.ts
@@ -119,9 +177,30 @@
 - services/communications-service/src/pg-store.ts -> services/communications-service/src/store/pg-store.ts
 - services/communications-service/src/types.ts -> services/communications-service/src/types.ts  (contracts, stays)
 
-## Новые realtime-файлы первого этапа
+## Новые realtime-файлы (Wave8 project-centric)
 
-### messenger/core
+### messenger/core (Wave8 additions)
+- messenger/core/src/projects/project-store.ts (CRUD projects, connectors, skills, plugins, MCP, external APIs)
+- messenger/core/src/projects/project-routes.ts (HTTP handlers for /projects/*, /projects/:id/*, /projects/:id/agents)
+- messenger/core/src/agents/agent-store.ts (обновлено для поддержки project_id)
+
+### messenger/web (Wave8 additions)
+- messenger/web/app/entities/projects/model/useMessengerProjects.ts
+- messenger/web/app/entities/connectors/model/useMessengerConnectors.ts
+- messenger/web/app/entities/mcp/model/useMessengerMcp.ts
+- messenger/web/app/entities/external-apis/model/useMessengerExternalApis.ts
+- messenger/web/app/features/project-create/ui/ProjectCreateDialog.vue
+- messenger/web/app/features/project-create/model/useProjectCreate.ts
+- messenger/web/app/features/project-config/ui/ProjectConfigTabs.vue
+- messenger/web/app/features/agent-picker/ui/AgentPicker.vue
+- messenger/web/app/features/composer-bootstrap/ui/ComposerBootstrapDialog.vue
+- messenger/web/app/features/composer-bootstrap/model/useComposerBootstrap.ts
+- messenger/web/app/widgets/projects-shell/MessengerProjectsList.vue
+- messenger/web/app/widgets/project-workspace/MessengerProjectWorkspace.vue
+- messenger/web/app/pages/projects/index.vue
+- messenger/web/app/pages/projects/[projectSlug].vue
+
+### Наследованные из Wave7
 - messenger/core/src/realtime/server.ts
 - messenger/core/src/auth/auth.ts
 - messenger/core/src/auth/auth-store.ts
@@ -129,7 +208,7 @@
 - messenger/core/src/calls/call-analysis-service.ts
 - messenger/core/src/transcription/transcription-service.ts
 
-### messenger/web
+### messenger/web (Wave7 refactored)
 - messenger/web/app/core/realtime/messenger-realtime.ts
 - messenger/web/app/widgets/shell/MessengerAppShell.vue
 - messenger/web/app/widgets/chat/MessengerChatSection.vue
@@ -143,11 +222,23 @@
 - services/communications-service/src/store/store.ts
 - services/communications-service/src/store/pg-store.ts
 
-Эти файлы замыкают отдельный realtime-контур и позволяют рефакторить его независимо от main app.
+Эти файлы замыкают отдельный realtime-контур и позволяют рефакторить его независимо от main app. Теперь с поддержкой project-centric архитектуры.
 
-## Current Status vs Target (2026-04-17)
+## Current Status vs Target (2026-04-20, Wave8 project-centric)
 
-- Status source: `14-refactor-roadmap.md` и профильные messenger-документы.
-- Что уже достигнуто: отдельные runtime-контуры `messenger/core`, `messenger/web`, `services/communications-service` сохранены; базовая декомпозиция по auth/store/core закреплена; все пути в матрице нормализованы до repo-root для машинной проверки.
-- Что ещё не доведено до полного match: полный FSD-срез `messenger/web/app/{entities,features}` и финальная alignment-раскладка bounded contexts в `messenger/core/src/**`.
-- Критерий завершения этого документа: realtime-контур полностью независим от main Nuxt app и использует shared-контракты без дублирования.
+- Status source: `14-refactor-roadmap.md`, doc-23, и completed wave8 phases.
+- **Что достигнуто (Wave8 W1-W6)**:
+  - W1: project-centric DB schema с `messenger_projects`, connectors, skills, plugins, MCP, external APIs
+  - W2: Core API (`project-store.ts`, `project-routes.ts`) с CRUD и дымовыми тестами
+  - W3: Frontend projects shell с navigation (/projects, /projects/:slug)
+  - W4: Connectors + Skills/Plugins tabs с per-project config
+  - W5: MCP + External APIs tabs с CRUD и health-checks
+  - W6: Agent creation (Composer) + bootstrap dialog (manual/auto modes) + JSON proposal parsing
+  - Отдельные runtime-контуры (`messenger/core`, `messenger/web`, `services/communications-service`) независимы от main Nuxt app
+  - FSD-структура в `messenger/web/app/{entities,features,widgets,pages}` для проектов и связанных конфигураций
+- **W7 (Wave8) — это wave текущей документации**:
+  - Переводим 12-agents hardcoded list в templates library для per-project использования
+  - Актуализируем doc-12 с project-centric топологией (текущий документ)
+  - Добавляем roadmap-записи по W1-W7 с commit SHA'ами
+  - Помечаем Phase 7 acceptance criteria как complete в doc-23
+- **Критерий завершения Wave8**: realtime-контур полностью спроектирован для project-centric моделі; легаси `/legacy-agents` удален в Phase 3 (будущее).

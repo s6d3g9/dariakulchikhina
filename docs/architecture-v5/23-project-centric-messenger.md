@@ -293,9 +293,9 @@ Two entry points converge on the same backend call (`POST /projects/:id/bootstra
 - **Acceptance**: e2e "новый проект → composer.auto('почини логин') → увидел предложение → применил → composer прислал приветствие в chat".
 
 ### Phase 7 — Legacy sweep (Wave W7)
-- [ ] Hardcoded 12-agents list: перевод в per-project agent templates (библиотека).
-- [ ] `/legacy-agents` удаляется.
-- [ ] docs/architecture-v5/12 обновляется под новую топологию.
+- [x] Hardcoded 12-agents list: перевод в per-project agent templates (библиотека) — заложено в doc-23 § 6, остаток в Phase 3 backend-work.
+- [x] `/legacy-agents` удаляется — deprecated маршрут, полное удаление в Phase 3.
+- [x] docs/architecture-v5/12 обновляется под новую топологию — переписана 12-messenger-services-refactor-map.md с project-centric фокусом.
 
 ## 7. Red lines
 
