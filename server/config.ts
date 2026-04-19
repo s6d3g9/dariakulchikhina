@@ -28,7 +28,7 @@ const ConfigSchema = z.object({
 
   // ── Session / auth secrets ───────────────────────────────────────
   // Nuxt reads NUXT_SESSION_SECRET automatically; SESSION_SECRET is the
-  // fallback used by HMAC signing in server/utils/auth. They should be
+  // fallback used by HMAC signing in server/modules/auth/session.service. They should be
   // the same value in production.
   NUXT_SESSION_SECRET: z.string().min(32).optional(),
   SESSION_SECRET: z.string().min(32).optional(),

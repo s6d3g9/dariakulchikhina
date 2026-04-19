@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto'
 import type { H3Event } from 'h3'
 
-import { getAdminSession, getClientSession, getContractorSession } from '~/server/utils/auth'
+import { getAdminSession, getClientSession, getContractorSession } from '~/server/modules/auth/session.service'
 import { getProjectRelationsSnapshot } from '~/server/modules/projects/project-relations.service'
 import type { ProjectCommunicationBootstrap } from '~/shared/types/communications/communications'
 import {

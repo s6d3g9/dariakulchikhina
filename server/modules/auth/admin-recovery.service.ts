@@ -1,4 +1,4 @@
-import { hashPassword, verifyPassword } from '~/server/utils/auth'
+import { hashPassword, verifyPassword } from '~/server/modules/auth/password.service'
 import type { RecoverInput } from '~/shared/types/auth'
 import * as repo from './auth.repository'
 

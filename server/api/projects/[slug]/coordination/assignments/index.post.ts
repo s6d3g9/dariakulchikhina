@@ -1,4 +1,4 @@
-import { requireAdmin } from '~/server/utils/auth'
+import { requireAdmin } from '~/server/modules/auth/session.service'
 import { readValidatedNodeBody } from '~/server/utils/body'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
 import { createProjectGovernanceAssignment } from '~/server/modules/projects/project-governance.service'

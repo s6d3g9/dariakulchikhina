@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto'
 import type { H3Event } from 'h3'
 
-import { requireChatSession } from '~/server/utils/auth'
+import { requireChatSession } from '~/server/modules/auth/session.service'
 import { findStandaloneChatUserById, listStandaloneChatUsers } from '~/server/modules/chat/chat-users.service'
 import type { ProjectCommunicationBootstrap } from '~/shared/types/communications/communications'
 

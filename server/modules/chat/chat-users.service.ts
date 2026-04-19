@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
-import { hashPassword, verifyPassword } from '~/server/utils/auth'
+import { hashPassword, verifyPassword } from '~/server/modules/auth/password.service'
 
 export interface StandaloneChatUserRecord {
   id: string

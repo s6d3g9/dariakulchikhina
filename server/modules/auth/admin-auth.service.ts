@@ -1,10 +1,7 @@
 import type { H3Event } from 'h3'
 import { config } from '~/server/config'
-import {
-  hashPassword,
-  verifyPassword,
-  setAdminSession,
-} from '~/server/utils/auth'
+import { hashPassword, verifyPassword } from '~/server/modules/auth/password.service'
+import { setAdminSession } from '~/server/modules/auth/session.service'
 import { generateRecoveryPhrase } from '~/server/modules/auth/recovery.service'
 import type {
   LoginInput,
