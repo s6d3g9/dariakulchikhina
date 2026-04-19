@@ -1,25 +1,11 @@
 import { normalizeMessengerProjectRoot } from '../../../utils/messenger-project-root'
 import { buildMessengerUrl } from '../../../utils/messenger-url'
+import { useCallE2EESecurity, type MessengerCallE2EEPublicKey, type MessengerCallE2EEPayload } from './use-call-e2ee-security'
 
 type MessengerCallMode = 'audio' | 'video'
 type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
 type MessengerMediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerPermissionTarget = 'microphone' | 'camera' | 'media'
-
-interface MessengerCallE2EEPublicKey {
-  kty: 'EC'
-  crv: 'P-256'
-  x: string
-  y: string
-  ext?: boolean
-  key_ops?: string[]
-}
-
-interface MessengerCallE2EEPayload {
-  supported: boolean
-  publicKey?: MessengerCallE2EEPublicKey
-  salt?: string
-}
 
 interface MessengerCallSecurityState {
   available: boolean
@@ -121,10 +107,7 @@ let remoteAudioEl: HTMLAudioElement | null = null
 let peerConnectionCallId = ''
 const liveKitRemoteTracks = new Set<MessengerLiveKitTrack>()
 const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
-const transformedSenders = new WeakSet<object>()
-const transformedReceivers = new WeakSet<object>()
 const CALL_VIEW_MODE_ORDER: MessengerCallViewMode[] = ['split', 'full', 'mini']
-const CALL_VERIFICATION_EMOJIS = ['🔒', '🎧', '🎤', '🛡️', '🎼', '🌿', '🔥', '⚡', '🌊', '🪐', '🍀', '🧩', '🛰️', '🎯', '🌙', '🫧', '🎹', '🦋', '☀️', '🧭', '💎', '🪶', '🎛️', '🧠', '🐚', '🕊️', '🧿', '🪙', '🌈', '❄️', '🍃', '🔑']
 const CALL_ANALYSIS_TOOLS: MessengerCallAnalysisTool[] = [
   { id: 'psychology', title: 'Психология клиента', description: 'Эмоции, доверие, скрытые триггеры и тревожность.' },
   { id: 'business', title: 'Деловая практика', description: 'Решения, бюджет, сроки, договорённости и риски.' },
@@ -140,23 +123,6 @@ const CALL_ANALYSIS_WORD_LIBRARY = {
   concern: ['сомнева', 'боюсь', 'сложно', 'не уверен', 'риск', 'дорого', 'неудоб'],
   decision: ['реши', 'подтверд', 'соглас', 'окончательно', 'берем', 'делаем'],
 } as const
-
-interface MessengerCallSecurityContext {
-  callId: string
-  role: 'initiator' | 'responder'
-  localPublicKey: MessengerCallE2EEPublicKey
-  localPrivateKey: JsonWebKey
-  remotePublicKey?: MessengerCallE2EEPublicKey
-  salt: Uint8Array
-  encryptKey?: CryptoKey
-  decryptKey?: CryptoKey
-  encryptCounterSalt?: Uint8Array
-  decryptCounterSalt?: Uint8Array
-  verificationEmojis: string[]
-  active: boolean
-}
-
-let callSecurityContext: MessengerCallSecurityContext | null = null
 
 type SpeechRecognitionEventLike = {
   resultIndex: number
@@ -423,198 +389,6 @@ function buildAnalysisInterpretation(toolId: MessengerCallAnalysisToolId, review
   ].join('\n')
 }
 
-function isExperimentalCallE2EEEnabled() {
-  if (!import.meta.client) {
-    return false
-  }
-
-  try {
-    return window.localStorage.getItem('daria-messenger-call-e2ee') === '1'
-  } catch {
-    return false
-  }
-}
-
-function supportsInsertableCallEncryption() {
-  if (!import.meta.client || typeof RTCRtpSender === 'undefined' || typeof RTCRtpReceiver === 'undefined') {
-    return false
-  }
-
-  if (!isExperimentalCallE2EEEnabled()) {
-    return false
-  }
-
-  return typeof (RTCRtpSender.prototype as { createEncodedStreams?: unknown }).createEncodedStreams === 'function'
-    && typeof (RTCRtpReceiver.prototype as { createEncodedStreams?: unknown }).createEncodedStreams === 'function'
-    && typeof crypto?.subtle !== 'undefined'
-}
-
-function encodeCallBase64(buffer: ArrayBuffer | Uint8Array) {
-  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer)
-  let binary = ''
-
-  for (const value of bytes) {
-    binary += String.fromCharCode(value)
-  }
-
-  return btoa(binary)
-}
-
-function decodeCallBase64(value: string) {
-  const binary = atob(value)
-  const bytes = new Uint8Array(binary.length)
-
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index)
-  }
-
-  return bytes
-}
-
-function buildCtrCounter(counterSalt: Uint8Array, timestampValue: number) {
-  const counter = new Uint8Array(16)
-  counter.set(counterSalt.slice(0, 8), 0)
-
-  let nextValue = BigInt(Math.max(0, Math.floor(timestampValue)))
-  for (let index = 15; index >= 8; index -= 1) {
-    counter[index] = Number(nextValue & BigInt(255))
-    nextValue >>= BigInt(8)
-  }
-
-  return counter
-}
-
-async function generateCallE2EEKeyPair() {
-  const keyPair = await crypto.subtle.generateKey(
-    { name: 'ECDH', namedCurve: 'P-256' },
-    true,
-    ['deriveBits'],
-  )
-
-  return {
-    publicKey: await crypto.subtle.exportKey('jwk', keyPair.publicKey) as MessengerCallE2EEPublicKey,
-    privateKey: await crypto.subtle.exportKey('jwk', keyPair.privateKey),
-  }
-}
-
-async function importCallPrivateKey(privateKey: JsonWebKey) {
-  return await crypto.subtle.importKey('jwk', privateKey, { name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])
-}
-
-async function importCallPublicKey(publicKey: MessengerCallE2EEPublicKey) {
-  return await crypto.subtle.importKey('jwk', publicKey, { name: 'ECDH', namedCurve: 'P-256' }, true, [])
-}
-
-async function deriveCallSharedSecret(privateKey: JsonWebKey, publicKey: MessengerCallE2EEPublicKey) {
-  const importedPrivateKey = await importCallPrivateKey(privateKey)
-  const importedPublicKey = await importCallPublicKey(publicKey)
-  const bits = await crypto.subtle.deriveBits(
-    { name: 'ECDH', public: importedPublicKey },
-    importedPrivateKey,
-    256,
-  )
-
-  return new Uint8Array(bits)
-}
-
-async function deriveCallHkdfBits(secret: Uint8Array, salt: Uint8Array, label: string, length: number) {
-  const hkdfKey = await crypto.subtle.importKey('raw', secret as unknown as ArrayBuffer, 'HKDF', false, ['deriveBits'])
-  const bits = await crypto.subtle.deriveBits({
-    name: 'HKDF',
-    hash: 'SHA-256',
-    salt: salt as unknown as ArrayBuffer,
-    info: new TextEncoder().encode(label),
-  }, hkdfKey, length)
-
-  return new Uint8Array(bits)
-}
-
-async function buildCallVerificationEmojis(secret: Uint8Array) {
-  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', secret as unknown as ArrayBuffer))
-  return Array.from({ length: 4 }, (_, index) => CALL_VERIFICATION_EMOJIS[digest[index]! % CALL_VERIFICATION_EMOJIS.length]!)
-}
-
-async function activateCallSecurityContext(remotePublicKey: MessengerCallE2EEPublicKey) {
-  if (!callSecurityContext) {
-    return false
-  }
-
-  const sharedSecret = await deriveCallSharedSecret(callSecurityContext.localPrivateKey, remotePublicKey)
-  const txLabel = callSecurityContext.role === 'initiator' ? 'caller->callee' : 'callee->caller'
-  const rxLabel = callSecurityContext.role === 'initiator' ? 'callee->caller' : 'caller->callee'
-  const encryptKeyBytes = await deriveCallHkdfBits(sharedSecret, callSecurityContext.salt, `${txLabel}:key`, 256)
-  const decryptKeyBytes = await deriveCallHkdfBits(sharedSecret, callSecurityContext.salt, `${rxLabel}:key`, 256)
-  const encryptCounterSalt = await deriveCallHkdfBits(sharedSecret, callSecurityContext.salt, `${txLabel}:ctr`, 128)
-  const decryptCounterSalt = await deriveCallHkdfBits(sharedSecret, callSecurityContext.salt, `${rxLabel}:ctr`, 128)
-
-  callSecurityContext.remotePublicKey = remotePublicKey
-  callSecurityContext.encryptKey = await crypto.subtle.importKey('raw', encryptKeyBytes, 'AES-CTR', false, ['encrypt'])
-  callSecurityContext.decryptKey = await crypto.subtle.importKey('raw', decryptKeyBytes, 'AES-CTR', false, ['decrypt'])
-  callSecurityContext.encryptCounterSalt = encryptCounterSalt
-  callSecurityContext.decryptCounterSalt = decryptCounterSalt
-  callSecurityContext.verificationEmojis = await buildCallVerificationEmojis(sharedSecret)
-  callSecurityContext.active = true
-  return true
-}
-
-async function transformEncodedFrame(frame: { data: ArrayBuffer; timestamp?: number }, key: CryptoKey, counterSalt: Uint8Array, action: 'encrypt' | 'decrypt') {
-  const timestampValue = Number(frame.timestamp || 0)
-  const transformed = action === 'encrypt'
-    ? await crypto.subtle.encrypt({ name: 'AES-CTR', counter: buildCtrCounter(counterSalt, timestampValue), length: 64 }, key, frame.data)
-    : await crypto.subtle.decrypt({ name: 'AES-CTR', counter: buildCtrCounter(counterSalt, timestampValue), length: 64 }, key, frame.data)
-
-  frame.data = transformed
-  return frame
-}
-
-function applySenderCallSecurity(sender: RTCRtpSender) {
-  if (!callSecurityContext?.active || !callSecurityContext.encryptKey || !callSecurityContext.encryptCounterSalt || transformedSenders.has(sender)) {
-    return false
-  }
-
-  const maybeSender = sender as RTCRtpSender & { createEncodedStreams?: () => { readable: ReadableStream<unknown>; writable: WritableStream<unknown> } }
-  if (typeof maybeSender.createEncodedStreams !== 'function') {
-    return false
-  }
-
-  const { readable, writable } = maybeSender.createEncodedStreams()
-  const transformer = new TransformStream({
-    async transform(frame, controller) {
-      controller.enqueue(await transformEncodedFrame(frame as { data: ArrayBuffer; timestamp?: number }, callSecurityContext!.encryptKey!, callSecurityContext!.encryptCounterSalt!, 'encrypt'))
-    },
-  })
-
-  void readable.pipeThrough(transformer).pipeTo(writable).catch(() => {})
-  transformedSenders.add(sender)
-  return true
-}
-
-function applyReceiverCallSecurity(receiver: RTCRtpReceiver) {
-  if (!callSecurityContext?.active || !callSecurityContext.decryptKey || !callSecurityContext.decryptCounterSalt || transformedReceivers.has(receiver)) {
-    return false
-  }
-
-  const maybeReceiver = receiver as RTCRtpReceiver & { createEncodedStreams?: () => { readable: ReadableStream<unknown>; writable: WritableStream<unknown> } }
-  if (typeof maybeReceiver.createEncodedStreams !== 'function') {
-    return false
-  }
-
-  const { readable, writable } = maybeReceiver.createEncodedStreams()
-  const transformer = new TransformStream({
-    async transform(frame, controller) {
-      controller.enqueue(await transformEncodedFrame(frame as { data: ArrayBuffer; timestamp?: number }, callSecurityContext!.decryptKey!, callSecurityContext!.decryptCounterSalt!, 'decrypt'))
-    },
-  })
-
-  void readable.pipeThrough(transformer).pipeTo(writable).catch(() => {})
-  transformedReceivers.add(receiver)
-  return true
-}
-
-function clearCallSecurityContext() {
-  callSecurityContext = null
-}
-
 async function resolvePermissionState(kind: 'microphone' | 'camera'): Promise<MessengerMediaPermissionState> {
   if (!import.meta.client) {
     return 'unknown'
@@ -805,6 +579,19 @@ async function flushPendingIceCandidates(callId: string, connection: RTCPeerConn
 }
 
 export function useMessengerCalls() {
+  const {
+    supportsInsertableCallEncryption,
+    encodeCallBase64,
+    decodeCallBase64,
+    generateCallE2EEKeyPair,
+    activateCallSecurityContext,
+    clearCallSecurityContext,
+    applySenderCallSecurity,
+    applyReceiverCallSecurity,
+    getCallSecurityContext,
+    setCallSecurityContext,
+  } = useCallE2EESecurity()
+
   const runtimeConfig = useRuntimeConfig()
   const messengerProjectRoot = computed(() => normalizeMessengerProjectRoot(runtimeConfig.public.messengerProjectRoot || ''))
   const auth = useMessengerAuth()
@@ -2074,7 +1861,7 @@ export function useMessengerCalls() {
     security.value = {
       available: true,
       active: true,
-      verificationEmojis: callSecurityContext?.verificationEmojis || [],
+      verificationEmojis: getCallSecurityContext()?.verificationEmojis || [],
       status: 'Дополнительное E2EE для звонка активно. Сверьте символы с собеседником.',
       fallbackReason: '',
     }
@@ -2269,7 +2056,7 @@ export function useMessengerCalls() {
     if (localStream) {
       for (const track of localStream.getTracks()) {
         const sender = connection.addTrack(track, localStream)
-        if (callSecurityContext?.active) {
+        if (getCallSecurityContext()?.active) {
           applySenderCallSecurity(sender)
         }
         if (track.kind === 'audio') {
@@ -2284,7 +2071,7 @@ export function useMessengerCalls() {
     }
 
     connection.ontrack = (event) => {
-      if (callSecurityContext?.active) {
+      if (getCallSecurityContext()?.active) {
         applyReceiverCallSecurity(event.receiver)
       }
 
@@ -2467,7 +2254,7 @@ export function useMessengerCalls() {
       if (supportsInsertableCallEncryption()) {
         const callKeys = await generateCallE2EEKeyPair()
         const salt = crypto.getRandomValues(new Uint8Array(16))
-        callSecurityContext = {
+        setCallSecurityContext({
           callId,
           role: 'initiator',
           localPublicKey: callKeys.publicKey,
@@ -2475,7 +2262,7 @@ export function useMessengerCalls() {
           salt,
           verificationEmojis: [],
           active: false,
-        }
+        })
         security.value = {
           available: true,
           active: false,
@@ -2556,7 +2343,7 @@ export function useMessengerCalls() {
 
       if (supportsInsertableCallEncryption() && incomingCall.value.e2ee?.supported && incomingCall.value.e2ee.publicKey && incomingCall.value.e2ee.salt) {
         const callKeys = await generateCallE2EEKeyPair()
-        callSecurityContext = {
+        setCallSecurityContext({
           callId: incomingCall.value.callId,
           role: 'responder',
           localPublicKey: callKeys.publicKey,
@@ -2565,7 +2352,7 @@ export function useMessengerCalls() {
           salt: decodeCallBase64(incomingCall.value.e2ee.salt),
           verificationEmojis: [],
           active: false,
-        }
+        })
         await activateCallSecurityContext(incomingCall.value.e2ee.publicKey)
         setCallSecurityActive()
         ringingE2EE = {
@@ -2775,7 +2562,7 @@ export function useMessengerCalls() {
     if (event.signal.kind === 'ringing' && activeCall.value?.initiator) {
       try {
         const ringingE2EE = event.signal.payload?.e2ee as MessengerCallE2EEPayload | undefined
-        if (callSecurityContext && ringingE2EE?.supported && ringingE2EE.publicKey) {
+        if (getCallSecurityContext() && ringingE2EE?.supported && ringingE2EE.publicKey) {
           await activateCallSecurityContext(ringingE2EE.publicKey)
           setCallSecurityActive()
         } else {
@@ -3011,7 +2798,7 @@ export function useMessengerCalls() {
       await videoSender.replaceTrack(nextTrack)
     } else if (peerConnection) {
       const sender = peerConnection.addTrack(nextTrack, localStream)
-      if (callSecurityContext?.active) {
+      if (getCallSecurityContext()?.active) {
         applySenderCallSecurity(sender)
       }
     } else if (liveKitRoom) {
@@ -3153,7 +2940,7 @@ export function useMessengerCalls() {
       await videoSender.replaceTrack(nextTrack)
     } else if (peerConnection) {
       const sender = peerConnection.addTrack(nextTrack, localStream)
-      if (callSecurityContext?.active) {
+      if (getCallSecurityContext()?.active) {
         applySenderCallSecurity(sender)
       }
     }
