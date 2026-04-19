@@ -73,6 +73,17 @@ export function useAgentsApi() {
     })
   }
 
+  function cancelRun(runId: string) {
+    return auth.request<void>(`/agents/runs/${runId}/cancel`, { method: 'POST' })
+  }
+
+  function createRun(agentId: string, payload: { prompt: string; attachmentIds: string[] }) {
+    return auth.request<{ runId: string; rootRunId: string }>(`/agents/${agentId}/runs`, {
+      method: 'POST',
+      body: payload,
+    })
+  }
+
   return {
     listAgents,
     getAgentSettings,
@@ -86,5 +97,7 @@ export function useAgentsApi() {
     listAgentRuns,
     getAgentRun,
     listAgentEdgePayloads,
+    cancelRun,
+    createRun,
   }
 }

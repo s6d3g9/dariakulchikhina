@@ -2415,12 +2415,10 @@ async function handleRunStarted() {
   composerInputEl.value?.focus({ preventScroll: true })
 
   try {
-    const response = await $fetch<{ runId: string; rootRunId: string }>(`/agents/${agentId}/runs`, {
-      method: 'POST',
-      body: {
-        prompt: text,
-        attachmentIds: [],
-      },
+    const api = useAgentsApi()
+    const response = await api.createRun(agentId, {
+      prompt: text,
+      attachmentIds: [],
     })
     viewport.scheduleViewportSync()
   } catch {

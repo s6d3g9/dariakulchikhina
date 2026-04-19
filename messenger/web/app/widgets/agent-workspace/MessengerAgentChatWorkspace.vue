@@ -731,9 +731,8 @@ async function openRunDetail(runId: string) {
 async function cancelRun(runId: string) {
   selectedRunCancelPending.value = true
   try {
-    await $fetch(`/agents/runs/${runId}/cancel`, {
-      method: 'POST',
-    })
+    const api = useAgentsApi()
+    await api.cancelRun(runId)
     await runsModel.refresh(resolvedAgent.value?.id, 6)
   } catch {
     feedbackMessage.value = 'Не удалось отменить прогон.'

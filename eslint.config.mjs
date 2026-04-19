@@ -438,6 +438,35 @@ export default tseslint.config(
     },
   },
 
+  // messenger/web/app/** — forbid $fetch and buildMessengerUrl outside core/api
+  {
+    files: ['messenger/web/app/**/*.{ts,js,mjs,vue}'],
+    ignores: ['messenger/web/app/core/api/**', 'messenger/web/app/plugins/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'messenger/web/app/utils/messenger-url',
+              importNames: ['buildMessengerUrl'],
+              message:
+                'buildMessengerUrl should only be used in messenger/web/app/core/api/**. Import and use the API client from the core module instead.',
+            },
+          ],
+        },
+      ],
+      'no-restricted-globals': [
+        'error',
+        {
+          name: '$fetch',
+          message:
+            '$fetch should only be used in messenger/web/app/core/api/**. Import and use the API client from the core module instead.',
+        },
+      ],
+    },
+  },
+
   // ----------------------------------------------------------------
   // Overrides for Nuxt / Vue / tooling files where default-export
   // and certain patterns are part of the framework contract.

@@ -4,7 +4,7 @@ interface MessengerAuthUser {
   displayName: string
 }
 
-import { buildMessengerUrl } from '../../../utils/messenger-url'
+import { messengerApi, setAuthTokenProvider } from '../../../core/api/client'
 
 export interface MessengerContactsOverview {
   contacts: Array<{
@@ -56,7 +56,6 @@ function isUnauthorizedError(error: unknown) {
 }
 
 export function useMessengerAuth() {
-  const config = useRuntimeConfig()
   const token = useState<string | null>('messenger-auth-token', () => null)
   const user = useState<MessengerAuthUser | null>('messenger-auth-user', () => null)
   const ready = useState<boolean>('messenger-auth-ready', () => false)
@@ -122,16 +121,9 @@ export function useMessengerAuth() {
     }
   }
 
-  async function request<T>(path: string, options: Parameters<typeof $fetch<T>>[1] = {}) {
-    const headers = new Headers(options.headers as HeadersInit | undefined)
-    if (token.value) {
-      headers.set('Authorization', `Bearer ${token.value}`)
-    }
-
-    return await $fetch<T>(buildMessengerUrl(config.public.messengerCoreBaseUrl, path), {
-      ...options,
-      headers,
-    })
+  async function request<T>(path: string, options: Parameters<typeof messengerApi<T>>[1] = {}) {
+    setAuthTokenProvider(() => token.value)
+    return await messengerApi<T>(path, options)
   }
 
   async function hydrate() {
