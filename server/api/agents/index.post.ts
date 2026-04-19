@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { requireAdmin } from '~/server/utils/auth'
+import { requireAdmin } from '~/server/modules/auth/session.service'
 import { createAgent } from '~/server/modules/agent-registry/agent-registry.service'
 
 const CreateAgentSchema = z.object({
