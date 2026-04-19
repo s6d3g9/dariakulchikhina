@@ -1,5 +1,4 @@
 import { normalizeMessengerProjectRoot } from '../../../utils/messenger-project-root'
-import { buildMessengerUrl } from '../../../utils/messenger-url'
 
 type MessengerCallMode = 'audio' | 'video'
 type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
@@ -808,6 +807,7 @@ export function useMessengerCalls() {
   const runtimeConfig = useRuntimeConfig()
   const messengerProjectRoot = computed(() => normalizeMessengerProjectRoot(runtimeConfig.public.messengerProjectRoot || ''))
   const auth = useMessengerAuth()
+  const callsApi = useCallsApi()
   const settingsModel = useMessengerSettings()
   const { clientId } = useMessengerRealtimeIdentity()
   const conversations = useMessengerConversations()
@@ -1159,26 +1159,14 @@ export function useMessengerCalls() {
     projectSyncStatus.value = ''
 
     try {
-      const response = await $fetch<{
-        insight?: {
-          id?: string
-        }
-        meta?: {
-          blockerCountAdded?: number
-          checkpointCreated?: boolean
-        }
-      }>(buildMessengerUrl(messengerProjectRoot.value, `/api/projects/${encodeURIComponent(projectSlug)}/communications/call-insights`), {
-        method: 'POST',
-        credentials: 'include',
-        body: {
-          title: syncTitle,
-          summary: review.summary.slice(0, 8000),
-          transcript: review.cleanedTranscript.slice(0, 32000),
-          callId: review.callId,
-          conversationId: review.conversationId,
-          happenedAt: new Date(review.generatedAt || Date.now()).toISOString(),
-          actorName: review.peerDisplayName.slice(0, 120) || undefined,
-        },
+      const response = await callsApi.postCallInsight(messengerProjectRoot.value, projectSlug, {
+        title: syncTitle,
+        summary: review.summary.slice(0, 8000),
+        transcript: review.cleanedTranscript.slice(0, 32000),
+        callId: review.callId,
+        conversationId: review.conversationId,
+        happenedAt: new Date(review.generatedAt || Date.now()).toISOString(),
+        actorName: review.peerDisplayName.slice(0, 120) || undefined,
       })
 
       const blockerCountAdded = Number(response.meta?.blockerCountAdded || 0)
@@ -1250,16 +1238,7 @@ export function useMessengerCalls() {
         return null
       }
 
-      const response = await $fetch<{
-        meta?: {
-          createdTaskCount?: number
-          createdSprint?: boolean
-        }
-      }>(buildMessengerUrl(messengerProjectRoot.value, `/api/projects/${encodeURIComponent(projectSlug)}/communications/call-insights/${encodeURIComponent(insightId)}/apply`), {
-        method: 'POST',
-        credentials: 'include',
-        body: {},
-      })
+      const response = await callsApi.postCallInsightApply(messengerProjectRoot.value, projectSlug, insightId)
 
       const createdTaskCount = Number(response.meta?.createdTaskCount || 0)
       const createdSprint = Boolean(response.meta?.createdSprint)
@@ -2660,10 +2639,7 @@ export function useMessengerCalls() {
 
   async function connectLiveKitRoom(conversationId: string, mode: MessengerCallMode) {
     try {
-      const response = await $fetch<{ token: string, serverUrl: string }>(buildMessengerUrl(runtimeConfig.public.messengerCoreBaseUrl || '/', `/conversations/${encodeURIComponent(conversationId)}/calls/livekit-token`), {
-        method: 'POST',
-        headers: auth.token.value ? { Authorization: `Bearer ${auth.token.value}` } : undefined
-      })
+      const response = await callsApi.postLiveKitToken(conversationId)
 
       const { Room, RoomEvent } = await import('livekit-client')
       clearLiveKitRemoteTracks()
