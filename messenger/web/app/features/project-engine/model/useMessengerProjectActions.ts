@@ -7,7 +7,7 @@
 
 import { normalizeMessengerProjectRoot } from '../../../utils/messenger-project-root'
 import type { MessengerProjectRecord } from './useMessengerProjectEngine'
-import { buildMessengerUrl } from '../../../utils/messenger-url'
+import { usePlatformProjectActionsApi } from '../../../core/api/platform-project-actions'
 
 export type ProjectActionRole = 'designer' | 'client' | 'contractor' | 'general'
 
@@ -273,24 +273,6 @@ export interface MessengerPlatformActionCatalog {
   extraServices: MessengerPlatformExtraServiceOption[]
 }
 
-interface ProjectActionMutationResponse {
-  ok: boolean
-  message: string
-  mutation?: {
-    kind: string
-    id: string
-    label: string
-  }
-}
-
-interface GovernanceParticipantMutationResponse {
-  participant: {
-    persistedId: number
-  }
-}
-
-type GovernanceMutationRequestMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
-
 interface GovernanceScopeParticipantDraft {
   displayName: string
   roleKey: string
@@ -311,28 +293,6 @@ const PROJECT_MUTATION_ACTIONS = new Set<ProjectMutationActionId>([
   'order_extra_service',
   'update_work_status',
 ])
-
-function readCookieValue(name: string) {
-  if (!import.meta.client) {
-    return ''
-  }
-
-  const cookiePrefix = `${name}=`
-  const entry = document.cookie
-    .split(';')
-    .map(value => value.trim())
-    .find(value => value.startsWith(cookiePrefix))
-
-  if (!entry) {
-    return ''
-  }
-
-  try {
-    return decodeURIComponent(entry.slice(cookiePrefix.length))
-  } catch {
-    return ''
-  }
-}
 
 function extractPlatformErrorMeta(error: unknown) {
   if (!error || typeof error !== 'object') {
@@ -672,6 +632,7 @@ export function useMessengerProjectActions() {
   })
 
   const projectRoot = computed(() => normalizeMessengerProjectRoot(runtimeConfig.public.messengerProjectRoot || ''))
+  const platformApi = usePlatformProjectActionsApi(projectRoot)
 
   function mapMessengerProjectToPlatformSummary(project: MessengerProjectRecord): MessengerPlatformProjectSummary {
     return {
@@ -751,28 +712,6 @@ export function useMessengerProjectActions() {
     return Array.from(merged.values())
   }
 
-  async function requestPlatform<T>(
-    path: string,
-    options: { method?: GovernanceMutationRequestMethod; body?: BodyInit | Record<string, any> | null } = {},
-  ) {
-    const method = options.method || 'GET'
-    const headers: Record<string, string> = {}
-
-    if (method !== 'GET') {
-      const csrfToken = readCookieValue('csrf_token')
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken
-      }
-    }
-
-    return await $fetch<T>(buildMessengerUrl(projectRoot.value, path), {
-      method,
-      body: options.body,
-      credentials: 'include',
-      headers,
-    })
-  }
-
   async function fetchPlatformProjects(force = false) {
     if (platformProjectsPending.value || (!force && platformProjects.value.length)) {
       return
@@ -784,7 +723,7 @@ export function useMessengerProjectActions() {
     const fallbackProjects = await loadMessengerProjectFallback(force)
 
     try {
-      const response = await requestPlatform<Array<Partial<MessengerPlatformProjectSummary> & { slug: string; title: string }>>('/api/projects')
+      const response = await platformApi.listPlatformProjects()
       const platformProjectSummaries = response.map((project) => ({
         slug: project.slug,
         title: project.title,
@@ -862,7 +801,7 @@ export function useMessengerProjectActions() {
     platformCatalogError.value = ''
 
     try {
-      const catalog = await requestPlatform<MessengerPlatformActionCatalog>(`/api/projects/${encodeURIComponent(slug)}/communications/action-catalog`)
+      const catalog = await platformApi.getActionCatalog(slug)
 
       if (platformCatalogRequestId.value !== requestId) {
         return
@@ -892,19 +831,7 @@ export function useMessengerProjectActions() {
       throw new Error('PROJECT_SLUG_REQUIRED')
     }
 
-    return await requestPlatform<ProjectActionMutationResponse>(
-      `/api/projects/${encodeURIComponent(projectSlug)}/communications/action-execute`,
-      {
-        method: 'POST',
-        body: {
-          actionId,
-          payload: {
-            ...payload,
-            projectSlug,
-          },
-        },
-      },
-    )
+    return await platformApi.executeProjectAction(projectSlug, actionId, payload)
   }
 
   function setPeerLogin(login: string) {
@@ -972,9 +899,7 @@ export function useMessengerProjectActions() {
     platformScopeDetailError.value = ''
 
     try {
-      const detail = await requestPlatform<MessengerPlatformScopeDetailBundle>(
-        `/api/projects/${encodeURIComponent(slug)}/coordination/scopes/${encodeURIComponent(normalizedScopeType)}/${encodeURIComponent(normalizedScopeId)}`,
-      )
+      const detail = await platformApi.getScopeDetail(slug, normalizedScopeType, normalizedScopeId)
 
       if (platformScopeDetailRequestId.value !== requestId) {
         return
@@ -1051,31 +976,19 @@ export function useMessengerProjectActions() {
     governanceMutationPending.value = true
 
     try {
-      const participantResponse = await requestPlatform<GovernanceParticipantMutationResponse>(
-        `/api/projects/${encodeURIComponent(slug)}/coordination/participants`,
-        {
-          method: 'POST',
-          body: {
-            displayName,
-            roleKey: payload.roleKey,
-            sourceKind: 'custom',
-          },
-        },
-      )
+      const participantResponse = await platformApi.createParticipant(slug, {
+        displayName,
+        roleKey: payload.roleKey,
+        sourceKind: 'custom',
+      })
 
-      await requestPlatform(
-        `/api/projects/${encodeURIComponent(slug)}/coordination/assignments`,
-        {
-          method: 'POST',
-          body: {
-            participantId: participantResponse.participant.persistedId,
-            scopeType: scopeDetail.scope.scopeType,
-            scopeSource: scopeDetail.scope.scopeSource,
-            scopeId: scopeDetail.scope.scopeId,
-            responsibility: payload.responsibility,
-          },
-        },
-      )
+      await platformApi.createAssignment(slug, {
+        participantId: participantResponse.participant.persistedId,
+        scopeType: scopeDetail.scope.scopeType,
+        scopeSource: scopeDetail.scope.scopeSource,
+        scopeId: scopeDetail.scope.scopeId,
+        responsibility: payload.responsibility,
+      })
 
       await refreshGovernanceViews()
       governanceMutationNotice.value = 'Участник добавлен в контур.'
@@ -1102,13 +1015,7 @@ export function useMessengerProjectActions() {
     governanceMutationPending.value = true
 
     try {
-      await requestPlatform(
-        `/api/projects/${encodeURIComponent(slug)}/coordination/assignments/${persistedAssignmentId}`,
-        {
-          method: 'PATCH',
-          body: patch,
-        },
-      )
+      await platformApi.updateAssignment(slug, persistedAssignmentId, patch)
 
       await refreshGovernanceViews()
       governanceMutationNotice.value = 'Назначение обновлено.'
@@ -1135,12 +1042,7 @@ export function useMessengerProjectActions() {
     governanceMutationPending.value = true
 
     try {
-      await requestPlatform(
-        `/api/projects/${encodeURIComponent(slug)}/coordination/assignments/${persistedAssignmentId}`,
-        {
-          method: 'DELETE',
-        },
-      )
+      await platformApi.deleteAssignment(slug, persistedAssignmentId)
 
       await refreshGovernanceViews()
       governanceMutationNotice.value = 'Назначение удалено.'
@@ -1167,15 +1069,7 @@ export function useMessengerProjectActions() {
     governanceMutationPending.value = true
 
     try {
-      await requestPlatform(
-        `/api/projects/${encodeURIComponent(slug)}/coordination/scopes/${encodeURIComponent(scopeDetail.scope.scopeType)}/${encodeURIComponent(scopeDetail.scope.scopeId)}/settings`,
-        {
-          method: 'PATCH',
-          body: {
-            settings: cloneGovernanceSettings(settings),
-          },
-        },
-      )
+      await platformApi.updateScopeSettings(slug, scopeDetail.scope.scopeType, scopeDetail.scope.scopeId, cloneGovernanceSettings(settings))
 
       await refreshGovernanceViews()
       governanceMutationNotice.value = 'Настройки контура обновлены.'
