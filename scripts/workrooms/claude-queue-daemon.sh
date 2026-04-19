@@ -223,7 +223,8 @@ while :; do
   done < <(find "$QUEUE_DIR/running" -maxdepth 1 -name '*.md' 2>/dev/null | sort)
 
   # 2. Spawn while there are free slots
-  running_count=$(find "$QUEUE_DIR/running" -maxdepth 1 -name '*.md' 2>/dev/null | wc -l)
+  running_files=( "$QUEUE_DIR"/running/*.md )
+  running_count=${#running_files[@]}
   free=$(( POOL_SIZE - running_count ))
   if [ "$free" -gt 0 ]; then
     # Sort pending by filename (priority-prefix in name acts as ordering)
