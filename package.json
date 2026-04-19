@@ -39,7 +39,8 @@
     "lint:errors": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "lint:baseline": "node scripts/lint-ratchet.mjs update",
-    "lint:ratchet": "node scripts/lint-ratchet.mjs check"
+    "lint:ratchet": "node scripts/lint-ratchet.mjs check",
+    "e2e:dispatcher": "bash tests/e2e/messenger-cli-dispatcher/run-e2e.sh"
   },
   "dependencies": {
     "@nuxt/ui": "^3.1.0",

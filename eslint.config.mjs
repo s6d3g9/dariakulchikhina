@@ -464,6 +464,17 @@ export default tseslint.config(
     },
   },
 
+  // Tests — relax rules for test harnesses and helpers; they are one-off
+  // testing utilities not subject to production architecture constraints.
+  {
+    files: ['tests/**/*.{ts,js,mjs,cjs}'],
+    rules: {
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+      'no-restricted-syntax': 'off',
+    },
+  },
+
   // Central config files — allowed to read process.env directly. Each
   // runtime has exactly one: main Nuxt app -> server/config.ts,
   // messenger -> messenger/core/src/config.ts, communications relay ->
