@@ -195,10 +195,12 @@ complete_task() {
 # ──────────────── main loop ────────────────
 log "[daemon] starting, pool=$POOL_SIZE, poll=${POLL_INTERVAL}s, queue=$QUEUE_DIR"
 
+shopt -s nullglob  # empty globs become empty lists instead of literal "*.md"
+
 while :; do
-  # 1. Reap finished sessions from running/
-  shopt -s nullglob
-  for task_file in "$QUEUE_DIR"/running/*.md; do
+  # 1. Reap finished sessions from running/ (robust listing under set -e)
+  while IFS= read -r task_file; do
+    [ -n "$task_file" ] || continue
     task_id=$(fm_get "$task_file" id "$(basename "$task_file" .md)")
     workroom_slug=$(echo "$task_id" | tr 'A-Z_' 'a-z-' | tr -cd 'a-z0-9-' | cut -c 1-31)
     state=$(session_state "$workroom_slug")
@@ -206,18 +208,19 @@ while :; do
       done)    complete_task "$task_file" done ;;
       error)   complete_task "$task_file" failed ;;
       stalled) complete_task "$task_file" failed ;;
-      *)       : ;; # running / idle — keep
+      *)       : ;;
     esac
-  done
+  done < <(find "$QUEUE_DIR/running" -maxdepth 1 -name '*.md' 2>/dev/null | sort)
 
   # 2. Spawn while there are free slots
-  running_count=$(ls "$QUEUE_DIR"/running/*.md 2>/dev/null | wc -l)
+  running_count=$(find "$QUEUE_DIR/running" -maxdepth 1 -name '*.md' 2>/dev/null | wc -l)
   free=$(( POOL_SIZE - running_count ))
   if [ "$free" -gt 0 ]; then
-    # Sort pending by priority (frontmatter) then filename
-    for task_file in $(ls -1 "$QUEUE_DIR"/pending/*.md 2>/dev/null | head -n "$free"); do
+    # Sort pending by filename (priority-prefix in name acts as ordering)
+    while IFS= read -r task_file; do
+      [ -n "$task_file" ] || continue
       spawn_task "$task_file" || true
-    done
+    done < <(find "$QUEUE_DIR/pending" -maxdepth 1 -name '*.md' 2>/dev/null | sort | head -n "$free")
   fi
 
   sleep "$POLL_INTERVAL"
