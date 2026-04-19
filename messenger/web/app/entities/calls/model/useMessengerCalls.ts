@@ -1,5 +1,6 @@
 import { normalizeMessengerProjectRoot } from '../../../utils/messenger-project-root'
 import { buildMessengerUrl } from '../../../utils/messenger-url'
+import { useCallPeerConnection } from './use-call-peer-connection'
 
 type MessengerCallMode = 'audio' | 'video'
 type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
@@ -110,7 +111,6 @@ interface MessengerLiveKitTrack {
   detach: (element?: HTMLMediaElement) => HTMLMediaElement[] | HTMLMediaElement
 }
 
-let peerConnection: RTCPeerConnection | null = null
 let liveKitRoom: any = null
 let localStream: MediaStream | null = null
 let remoteStream: MediaStream | null = null
@@ -118,9 +118,7 @@ let localVideoEl: HTMLVideoElement | null = null
 let remoteVideoEl: HTMLVideoElement | null = null
 let remoteSpeakerVideoEl: HTMLVideoElement | null = null
 let remoteAudioEl: HTMLAudioElement | null = null
-let peerConnectionCallId = ''
 const liveKitRemoteTracks = new Set<MessengerLiveKitTrack>()
-const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
 const transformedSenders = new WeakSet<object>()
 const transformedReceivers = new WeakSet<object>()
 const CALL_VIEW_MODE_ORDER: MessengerCallViewMode[] = ['split', 'full', 'mini']
@@ -205,7 +203,6 @@ let transcriptionChunkUploadQueue: Promise<void> = Promise.resolve()
 let transcriptionChunkSequence = 0
 let transcriptionChunkMimeType = ''
 let transcriptionServerSessionKey = ''
-let peerDataChannel: RTCDataChannel | null = null
 
 function resolveSpeechRecognitionCtor(): SpeechRecognitionCtorLike | null {
   if (!import.meta.client) {
@@ -785,25 +782,6 @@ function assignMediaTargets() {
   }
 }
 
-function queueIceCandidate(callId: string, candidate: RTCIceCandidateInit) {
-  const queue = pendingIceCandidates.get(callId) || []
-  queue.push(candidate)
-  pendingIceCandidates.set(callId, queue)
-}
-
-async function flushPendingIceCandidates(callId: string, connection: RTCPeerConnection) {
-  const queue = pendingIceCandidates.get(callId)
-  if (!queue?.length) {
-    return
-  }
-
-  pendingIceCandidates.delete(callId)
-
-  for (const candidate of queue) {
-    await connection.addIceCandidate(candidate).catch(() => {})
-  }
-}
-
 export function useMessengerCalls() {
   const runtimeConfig = useRuntimeConfig()
   const messengerProjectRoot = computed(() => normalizeMessengerProjectRoot(runtimeConfig.public.messengerProjectRoot || ''))
@@ -874,6 +852,23 @@ export function useMessengerCalls() {
   const projectTaskSyncError = useState<string>('messenger-call-project-task-sync-error', () => '')
   const projectTaskSyncStatus = useState<string>('messenger-call-project-task-sync-status', () => '')
 
+  const pc = useCallPeerConnection({
+    callStatusText,
+    renegotiating,
+    callError,
+    getLocalStream: () => localStream,
+    getRemoteStream: () => remoteStream,
+    setRemoteStream: (stream) => { remoteStream = stream },
+    applySenderCallSecurity,
+    applyReceiverCallSecurity,
+    assignMediaTargets,
+    setupDataChannel: setupPeerDataChannel,
+    sendSignal,
+    setNetworkState,
+    startTranscriptionEnergySampler,
+  })
+  const { buildPeerConnection, resetPeerConnection, queueIceCandidate, flushPendingIceCandidates, getPeerDataChannel } = pc
+
   if (import.meta.client) {
     let transcriptionSyncTimer: ReturnType<typeof setTimeout> | null = null
     let transcriptionSyncPending = false
@@ -888,9 +883,10 @@ export function useMessengerCalls() {
         entries: transcriptionEntries.value
       })
 
-      if (peerDataChannel?.readyState === 'open') {
+      const dataChannel = getPeerDataChannel()
+      if (dataChannel?.readyState === 'open') {
         try {
-          peerDataChannel.send(payload)
+          dataChannel.send(payload)
         } catch {}
       }
       
@@ -2041,25 +2037,6 @@ export function useMessengerCalls() {
     assignMediaTargets()
   }
 
-  function resetPeerConnection() {
-    peerDataChannel?.close()
-    peerDataChannel = null
-    peerConnection?.close()
-    peerConnection = null
-    peerConnectionCallId = ''
-    pendingIceCandidates.clear()
-
-    if (remoteStream) {
-      for (const track of remoteStream.getTracks()) {
-        track.stop()
-      }
-    }
-
-    remoteStream = null
-    assignMediaTargets()
-    startTranscriptionEnergySampler()
-  }
-
   function setCallSecurityFallback(reason: string) {
     security.value = {
       available: supportsInsertableCallEncryption(),
@@ -2239,149 +2216,6 @@ export function useMessengerCalls() {
 
   async function ensureCameraAccess() {
     return await ensureMediaAccess('video')
-  }
-
-  function buildPeerConnection(callId: string, conversationId: string, mode: MessengerCallMode) {
-    if (peerConnection && peerConnectionCallId === callId) {
-      return peerConnection
-    }
-
-    resetPeerConnection()
-
-    const connection = new RTCPeerConnection({
-      bundlePolicy: 'max-bundle',
-      iceCandidatePoolSize: 4,
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-    })
-
-    peerConnection = connection
-    peerConnectionCallId = callId
-    remoteStream = new MediaStream()
-    assignMediaTargets()
-
-    try {
-      peerDataChannel = connection.createDataChannel('transcription-sync', { negotiated: true, id: 0 })
-      setupPeerDataChannel(peerDataChannel)
-    } catch (e) {
-      console.warn('[DataChannel] Failed to create negotiated channel:', e)
-    }
-
-    if (localStream) {
-      for (const track of localStream.getTracks()) {
-        const sender = connection.addTrack(track, localStream)
-        if (callSecurityContext?.active) {
-          applySenderCallSecurity(sender)
-        }
-        if (track.kind === 'audio') {
-          const parameters = sender.getParameters()
-          parameters.encodings = [{
-            ...(parameters.encodings?.[0] || {}),
-            maxBitrate: 32000,
-          }]
-          void sender.setParameters(parameters).catch(() => {})
-        }
-      }
-    }
-
-    connection.ontrack = (event) => {
-      if (callSecurityContext?.active) {
-        applyReceiverCallSecurity(event.receiver)
-      }
-
-      const remoteTracks = event.streams[0]?.getTracks()?.length
-        ? event.streams[0].getTracks()
-        : [event.track]
-
-      for (const track of remoteTracks) {
-        const alreadyAdded = remoteStream?.getTracks().some(existingTrack => existingTrack.id === track.id)
-        if (!alreadyAdded) {
-          remoteStream?.addTrack(track)
-        }
-      }
-
-      event.track.onunmute = () => {
-        assignMediaTargets()
-      }
-
-      assignMediaTargets()
-    }
-
-    connection.onicecandidate = (event) => {
-      if (!event.candidate) {
-        return
-      }
-
-      void sendSignal(conversationId, {
-        kind: 'ice-candidate',
-        callId,
-        payload: {
-          candidate: event.candidate.toJSON(),
-          mode,
-        },
-      })
-    }
-
-    connection.onconnectionstatechange = () => {
-      if (connection.connectionState) {
-        if (connection.connectionState === 'connected') {
-          callStatusText.value = activeCall.value?.mode === 'video' || controls.value.videoEnabled
-            ? 'Видеозвонок подключён'
-            : 'Аудиозвонок подключён'
-          setNetworkState('stable', 'Соединение стабильно.')
-        } else if (connection.connectionState === 'connecting') {
-          callStatusText.value = 'Устанавливаем соединение…'
-          setNetworkState('reconnecting', 'Подключаем звонок…')
-        } else if (connection.connectionState === 'disconnected') {
-          callStatusText.value = 'Соединение прервалось, пытаемся восстановить…'
-          setNetworkState('reconnecting', 'Сеть просела, пробуем восстановить канал.')
-        } else if (connection.connectionState === 'failed') {
-          callStatusText.value = 'Соединение потеряно'
-          setNetworkState('lost', 'Соединение потеряно. Попробуйте перезвонить.')
-        } else {
-          callStatusText.value = `Соединение: ${connection.connectionState}`
-        }
-      }
-
-      if (connection.connectionState === 'failed') {
-        callError.value = 'Не удалось установить аудиосоединение. Попробуйте перезвонить.'
-      }
-    }
-
-    connection.oniceconnectionstatechange = () => {
-      if (!connection.iceConnectionState) {
-        return
-      }
-
-      if (connection.iceConnectionState === 'connected' || connection.iceConnectionState === 'completed') {
-        setNetworkState('stable', 'Маршрут WebRTC стабилен.')
-        return
-      }
-
-      if (connection.iceConnectionState === 'checking') {
-        setNetworkState('reconnecting', 'Подбираем маршрут для медиаканала…')
-        return
-      }
-
-      if (connection.iceConnectionState === 'failed' || connection.iceConnectionState === 'disconnected') {
-        setNetworkState(connection.iceConnectionState === 'failed' ? 'lost' : 'weak', connection.iceConnectionState === 'failed'
-          ? 'Маршрут WebRTC потерян.'
-          : 'Связь нестабильна, возможны задержки и артефакты.')
-        callError.value = 'Аудиоканал нестабилен. Проверьте соединение и попробуйте перезвонить.'
-      }
-    }
-
-    connection.onsignalingstatechange = () => {
-      if (connection.signalingState === 'have-local-offer' || connection.signalingState === 'have-remote-offer') {
-        renegotiating.value = true
-        return
-      }
-
-      if (connection.signalingState === 'stable') {
-        renegotiating.value = false
-      }
-    }
-
-    return connection
   }
 
   function teardownCall(status = '') {
@@ -2875,7 +2709,7 @@ export function useMessengerCalls() {
       return
     }
 
-    if (event.signal.kind === 'answer' && peerConnection) {
+    if (event.signal.kind === 'answer' && pc.getPeerConnection()) {
       try {
         if (activeCall.value) {
           activeCall.value = {
@@ -2883,11 +2717,11 @@ export function useMessengerCalls() {
             mode,
           }
         }
-        await peerConnection.setRemoteDescription({
+        await pc.getPeerConnection()!.setRemoteDescription({
           type: 'answer',
           sdp: String(event.signal.payload?.sdp || ''),
         })
-        await flushPendingIceCandidates(event.signal.callId, peerConnection)
+        await flushPendingIceCandidates(event.signal.callId, pc.getPeerConnection()!)
         callStatusText.value = 'Канал установлен'
         busy.value = false
         if (mode === 'audio') {
@@ -2904,14 +2738,15 @@ export function useMessengerCalls() {
 
     if (event.signal.kind === 'ice-candidate' && event.signal.payload?.candidate) {
       const candidate = event.signal.payload.candidate as RTCIceCandidateInit
-      const remoteDescriptionReady = Boolean(peerConnection?.remoteDescription)
+      const currentPc = pc.getPeerConnection()
+      const remoteDescriptionReady = Boolean(currentPc?.remoteDescription)
 
-      if (!peerConnection || !remoteDescriptionReady) {
+      if (!currentPc || !remoteDescriptionReady) {
         queueIceCandidate(event.signal.callId, candidate)
         return
       }
 
-      await peerConnection.addIceCandidate(candidate).catch(() => {
+      await currentPc.addIceCandidate(candidate).catch(() => {
         queueIceCandidate(event.signal!.callId, candidate)
       })
       return
@@ -2953,7 +2788,8 @@ export function useMessengerCalls() {
   }
 
   async function renegotiateActiveCall(mode: MessengerCallMode) {
-    if (!activeCall.value || !peerConnection || peerConnection.signalingState !== 'stable' || renegotiating.value) {
+    const currentPc = pc.getPeerConnection()
+    if (!activeCall.value || !currentPc || currentPc.signalingState !== 'stable' || renegotiating.value) {
       callStatusText.value = mode === 'video'
         ? 'Видео будет обновлено, как только сигнализация стабилизируется…'
         : 'Аудиорежим обновится после стабилизации соединения…'
@@ -2961,8 +2797,8 @@ export function useMessengerCalls() {
     }
 
     renegotiating.value = true
-    const offer = await peerConnection.createOffer()
-    await peerConnection.setLocalDescription(offer)
+    const offer = await currentPc.createOffer()
+    await currentPc.setLocalDescription(offer)
     await sendSignal(activeCall.value.conversationId, {
       kind: 'offer',
       callId: activeCall.value.callId,
@@ -3005,12 +2841,13 @@ export function useMessengerCalls() {
     }
 
     nextTrack.contentHint = 'motion'
-    const videoSender = peerConnection?.getSenders().find(sender => sender.track?.kind === 'video') || null
+    const enableVideoPc = pc.getPeerConnection()
+    const videoSender = enableVideoPc?.getSenders().find(sender => sender.track?.kind === 'video') || null
 
     if (videoSender) {
       await videoSender.replaceTrack(nextTrack)
-    } else if (peerConnection) {
-      const sender = peerConnection.addTrack(nextTrack, localStream)
+    } else if (enableVideoPc) {
+      const sender = enableVideoPc.addTrack(nextTrack, localStream)
       if (callSecurityContext?.active) {
         applySenderCallSecurity(sender)
       }
@@ -3047,11 +2884,12 @@ export function useMessengerCalls() {
       return false
     }
 
+    const disableVideoPc = pc.getPeerConnection()
     const videoTracks = localStream.getVideoTracks()
-    for (const sender of peerConnection?.getSenders() || []) {
+    for (const sender of disableVideoPc?.getSenders() || []) {
       if (sender.track?.kind === 'video') {
         await sender.replaceTrack(null).catch(() => {})
-        peerConnection?.removeTrack(sender)
+        disableVideoPc?.removeTrack(sender)
       }
     }
 
@@ -3148,11 +2986,12 @@ export function useMessengerCalls() {
     localStream.addTrack(nextTrack)
     nextTrack.contentHint = 'motion'
 
-    const videoSender = peerConnection?.getSenders().find(sender => sender.track?.kind === 'video') || null
+    const switchCameraPc = pc.getPeerConnection()
+    const videoSender = switchCameraPc?.getSenders().find(sender => sender.track?.kind === 'video') || null
     if (videoSender) {
       await videoSender.replaceTrack(nextTrack)
-    } else if (peerConnection) {
-      const sender = peerConnection.addTrack(nextTrack, localStream)
+    } else if (switchCameraPc) {
+      const sender = switchCameraPc.addTrack(nextTrack, localStream)
       if (callSecurityContext?.active) {
         applySenderCallSecurity(sender)
       }
