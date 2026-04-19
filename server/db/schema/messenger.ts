@@ -11,6 +11,8 @@ import {
   foreignKey,
   customType,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { messengerProjects } from './messenger-projects.ts'
 
 const bytea = customType<{ data: Buffer }>({
   dataType() {
@@ -101,21 +103,32 @@ export const messengerMessages = pgTable(
   ],
 )
 
-export const messengerAgents = pgTable('messenger_agents', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  ownerUserId: uuid('owner_user_id')
-    .notNull()
-    .references(() => messengerUsers.id),
-  name: text('name').notNull(),
-  description: text('description'),
-  model: text('model'),
-  ingestToken: text('ingest_token').notNull().unique(),
-  config: jsonb('config').notNull().default('{}'),
-  createdAt: tstz('created_at').defaultNow().notNull(),
-  updatedAt: tstz('updated_at').defaultNow().notNull(),
-  version: integer('version').default(1).notNull(),
-  deletedAt: tstz('deleted_at'),
-})
+export const messengerAgents = pgTable(
+  'messenger_agents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => messengerUsers.id),
+    projectId: uuid('project_id').references(() => messengerProjects.id, {
+      onDelete: 'set null',
+    }),
+    name: text('name').notNull(),
+    description: text('description'),
+    model: text('model'),
+    ingestToken: text('ingest_token').notNull().unique(),
+    config: jsonb('config').notNull().default('{}'),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    updatedAt: tstz('updated_at').defaultNow().notNull(),
+    version: integer('version').default(1).notNull(),
+    deletedAt: tstz('deleted_at'),
+  },
+  (t) => [
+    index('messenger_agents_project_idx')
+      .on(t.projectId)
+      .where(sql`deleted_at is null`),
+  ],
+)
 
 export const messengerAgentRuns = pgTable(
   'messenger_agent_runs',

@@ -43,6 +43,13 @@
       "when": 1776594581386,
       "tag": "0005_tan_kylun",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776630287195,
+      "tag": "0006_yummy_the_fallen",
+      "breakpoints": true
     }
   ]
 }
