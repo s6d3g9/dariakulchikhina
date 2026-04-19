@@ -7,7 +7,7 @@ import {
   jsonb,
   boolean,
 } from 'drizzle-orm/pg-core'
-import { projects } from './projects'
+import { projects } from './projects.ts'
 
 export const uploads = pgTable('uploads', {
   id: serial('id').primaryKey(),

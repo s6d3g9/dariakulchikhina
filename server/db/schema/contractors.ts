@@ -8,7 +8,7 @@ import {
   boolean,
   unique,
 } from 'drizzle-orm/pg-core'
-import { projects } from './projects'
+import { projects } from './projects.ts'
 
 export const contractors = pgTable('contractors', {
   id: serial('id').primaryKey(),

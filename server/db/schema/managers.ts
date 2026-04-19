@@ -6,7 +6,7 @@ import {
   timestamp,
   unique,
 } from 'drizzle-orm/pg-core'
-import { projects } from './projects'
+import { projects } from './projects.ts'
 
 export const managers = pgTable('managers', {
   id: serial('id').primaryKey(),

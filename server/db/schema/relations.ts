@@ -4,34 +4,34 @@
 // here so the table files stay cycle-free.
 
 import { relations } from 'drizzle-orm'
-import { users } from './users'
-import { projects, pageContent } from './projects'
-import { clients } from './clients'
+import { users } from './users.ts'
+import { projects, pageContent } from './projects.ts'
+import { clients } from './clients.ts'
 import {
   contractors,
   projectContractors,
-} from './contractors'
+} from './contractors.ts'
 import {
   workStatusItems,
-} from './work-status'
-import { uploads } from './uploads'
+} from './work-status.ts'
+import { uploads } from './uploads.ts'
 import {
   documents,
   projectExtraServices,
-} from './documents'
+} from './documents.ts'
 import {
   designers,
   designerProjects,
   designerProjectClients,
   designerProjectContractors,
-} from './designers'
-import { sellers, sellerProjects } from './sellers'
-import { managers, managerProjects } from './managers'
+} from './designers.ts'
+import { sellers, sellerProjects } from './sellers.ts'
+import { managers, managerProjects } from './managers.ts'
 import {
   projectParticipants,
   projectScopeAssignments,
   projectScopeSettings,
-} from './project-governance'
+} from './project-governance.ts'
 
 export const projectsRelations = relations(projects, ({ many, one }) => ({
   user: one(users, { fields: [projects.userId], references: [users.id] }),
