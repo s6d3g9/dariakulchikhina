@@ -1,6 +1,8 @@
 import type { MessengerProject } from '../../entities/projects/model/useMessengerProjects'
 import type { MessengerMcpServer, McpPingResult } from '../../entities/mcp/model/useMessengerMcp'
 import type { MessengerExternalApi } from '../../entities/external-apis/model/useMessengerExternalApis'
+import type { MessengerProjectAgent } from '../../entities/agents/model/useMessengerProjectAgents'
+import type { BootstrapProposal } from '../../features/composer-bootstrap/model/useComposerBootstrap'
 
 export function useProjectsApi() {
   const auth = useMessengerAuth()
@@ -76,6 +78,30 @@ export function useProjectsApi() {
     return auth.request<{ ok: true }>(`/projects/${projectId}/external-apis/${entryId}`, { method: 'DELETE' })
   }
 
+  // ── Project Agents ─────────────────────────────────────────────────────────
+
+  function listProjectAgents(projectId: string) {
+    return auth.request<{ agents: MessengerProjectAgent[] }>(`/projects/${projectId}/agents`, { method: 'GET' })
+  }
+
+  function createProjectAgent(projectId: string, body: { type: 'composer' | 'orchestrator' | 'worker' | 'custom'; name?: string; description?: string; model?: string; skillBundleKind?: string }) {
+    return auth.request<{ agent: MessengerProjectAgent }>(`/projects/${projectId}/agents`, { method: 'POST', body })
+  }
+
+  function deleteProjectAgent(projectId: string, agentId: string) {
+    return auth.request<{ ok: true }>(`/projects/${projectId}/agents/${agentId}`, { method: 'DELETE' })
+  }
+
+  // ── Bootstrap ──────────────────────────────────────────────────────────────
+
+  function bootstrapProject(projectId: string, body: { mode: 'manual' | 'auto'; taskDescription?: string }) {
+    return auth.request<{ ok: true } | { composerAgentId: string; proposal: BootstrapProposal; applyUrl: string }>(`/projects/${projectId}/bootstrap`, { method: 'POST', body })
+  }
+
+  function bootstrapApply(projectId: string, body: { proposal: BootstrapProposal }) {
+    return auth.request<{ ok: true }>(`/projects/${projectId}/bootstrap/apply`, { method: 'POST', body })
+  }
+
   return {
     listProjects,
     getProject,
@@ -91,5 +117,10 @@ export function useProjectsApi() {
     createExternalApi,
     updateExternalApi,
     deleteExternalApi,
+    listProjectAgents,
+    createProjectAgent,
+    deleteProjectAgent,
+    bootstrapProject,
+    bootstrapApply,
   }
 }

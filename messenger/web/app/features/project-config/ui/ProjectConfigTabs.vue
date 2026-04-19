@@ -20,9 +20,12 @@ const tabs = [
 
 const mcpModel = useMessengerMcp(projectIdRef)
 const extApisModel = useMessengerExternalApis(projectIdRef)
+const agentsModel = useMessengerProjectAgents(projectIdRef)
+
+const agentPickerOpen = ref(false)
 
 onMounted(async () => {
-  await Promise.all([mcpModel.refresh(), extApisModel.refresh()])
+  await Promise.all([mcpModel.refresh(), extApisModel.refresh(), agentsModel.refresh()])
 })
 
 // ── MCP form ───────────────────────────────────────────────────────────────
@@ -184,15 +187,45 @@ async function submitExtForm() {
     </VTabs>
 
     <VTabsWindow v-model="activeTab" class="project-config-tabs__panels">
-      <!-- Agents tab stub (W6) -->
+      <!-- Agents tab (W6 — LIVE) -->
       <VTabsWindowItem value="agents" class="project-config-tabs__panel">
-        <div class="project-config-tabs__stub">
-          <VIcon size="48" class="mb-3" color="secondary">mdi-robot-outline</VIcon>
-          <p class="project-config-tabs__empty-title">Агентов пока нет</p>
-          <p class="project-config-tabs__empty-hint">Выбор агентов появится в Wave 6.</p>
-          <VBtn color="primary" variant="flat" prepend-icon="mdi-plus" class="mt-4" disabled>Добавить агента</VBtn>
-          <p class="project-config-tabs__coming-label mt-2">W6</p>
+        <div class="project-config-tabs__toolbar">
+          <span class="project-config-tabs__count">Агенты ({{ agentsModel.agents.value.length }})</span>
+          <VBtn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="agentPickerOpen = true">
+            Добавить
+          </VBtn>
         </div>
+
+        <VList v-if="agentsModel.agents.value.length" bg-color="transparent" density="comfortable">
+          <VListItem
+            v-for="agent in agentsModel.agents.value"
+            :key="agent.id"
+            :title="agent.name"
+            :subtitle="agent.description || agent.type"
+          >
+            <template #prepend>
+              <VIcon size="20" color="primary">mdi-robot-outline</VIcon>
+            </template>
+            <template #append>
+              <VChip :color="agent.type === 'composer' ? 'primary' : 'secondary'" size="x-small" label class="mr-2">
+                {{ agent.type }}
+              </VChip>
+              <VBtn size="small" variant="text" color="error" icon="mdi-delete-outline" title="Удалить" @click="agentsModel.remove(agent.id)" />
+            </template>
+          </VListItem>
+        </VList>
+
+        <div v-else class="project-config-tabs__empty">
+          <VIcon size="36" color="on-surface-variant">mdi-robot-off-outline</VIcon>
+          <p>Нет агентов. Добавьте первого — начните с Composer.</p>
+        </div>
+
+        <AgentPicker
+          v-model="agentPickerOpen"
+          :project-id="props.project.id"
+          @agent-created="agentsModel.refresh()"
+          @proposal-applied="agentsModel.refresh()"
+        />
       </VTabsWindowItem>
 
       <!-- Connectors stub (W4) -->
