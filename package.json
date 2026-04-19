@@ -45,6 +45,7 @@
     "test:server:ai": "node --env-file=.env --experimental-strip-types --import ./server/modules/ai/__tests__/tilde-resolver.mjs ./server/modules/ai/__tests__/ai.repositories.test.ts",
     "bridge:smoke": "node --experimental-strip-types scripts/workrooms/__tests__/claude-stream-bridge.smoke.ts",
     "test:server:auth": "node --experimental-strip-types --import=./server/modules/auth/__tests__/tilde-register.mjs server/modules/auth/__tests__/auth.repository.test.ts",
+    "test:server:designers": "node --env-file=.env --experimental-strip-types --import ./server/modules/designers/__tests__/tilde-resolver.mjs ./server/modules/designers/__tests__/designers.repositories.test.ts",
     "e2e:dispatcher": "bash tests/e2e/messenger-cli-dispatcher/run-e2e.sh"
   },
   "dependencies": {
