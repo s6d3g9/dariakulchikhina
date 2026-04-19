@@ -40,13 +40,37 @@ watchEffect(() => {
 // pane on the next press).
 const searchInputRef = ref<HTMLInputElement | null>(null)
 
+// Number-key filter shortcuts pair with `/` for keyboard-first triage:
+// 1 → all, 2 → awaiting (no-op when pool empty so we don't strand the
+// user on a blank tree), 3 → crashed. Re-pressing the active filter's
+// key snaps back to "all" — same toggle semantics as the chip click.
+function applyFilterShortcut(key: string): boolean {
+  if (key === '1') {
+    filter.value = 'all'
+    return true
+  }
+  if (key === '2' && counters.value.awaiting > 0) {
+    filter.value = filter.value === 'awaiting' ? 'all' : 'awaiting'
+    return true
+  }
+  if (key === '3' && counters.value.crashed > 0) {
+    filter.value = filter.value === 'crashed' ? 'all' : 'crashed'
+    return true
+  }
+  return false
+}
+
 function onGlobalKeydown(ev: KeyboardEvent) {
-  if (ev.key !== '/' || ev.metaKey || ev.ctrlKey || ev.altKey) return
+  if (ev.metaKey || ev.ctrlKey || ev.altKey) return
   const target = ev.target as HTMLElement | null
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
-  ev.preventDefault()
-  searchInputRef.value?.focus()
-  searchInputRef.value?.select()
+  if (ev.key === '/') {
+    ev.preventDefault()
+    searchInputRef.value?.focus()
+    searchInputRef.value?.select()
+    return
+  }
+  if (applyFilterShortcut(ev.key)) ev.preventDefault()
 }
 
 function onSearchKeydown(ev: KeyboardEvent) {
@@ -232,6 +256,7 @@ function onTreeKeydown(ev: KeyboardEvent) {
           class="monitor-tree__filter-chip"
           :class="{ 'is-active': filter === 'all' }"
           :aria-pressed="filter === 'all'"
+          title="Показать все сессии (1)"
           @click="filter = 'all'"
         >все · {{ counters.total }}</button>
         <button
@@ -241,6 +266,7 @@ function onTreeKeydown(ev: KeyboardEvent) {
           :disabled="counters.awaiting === 0"
           :aria-pressed="filter === 'awaiting'"
           :aria-label="`Сессий, ждущих ответа: ${counters.awaiting}`"
+          title="Только ждущие ответа (2)"
           @click="filter = filter === 'awaiting' ? 'all' : 'awaiting'"
         >
           <v-icon
@@ -257,6 +283,7 @@ function onTreeKeydown(ev: KeyboardEvent) {
           :class="{ 'is-active': filter === 'crashed' }"
           :aria-pressed="filter === 'crashed'"
           :aria-label="`Сессий с ошибкой: ${counters.crashed}`"
+          title="Только упавшие (3)"
           @click="filter = filter === 'crashed' ? 'all' : 'crashed'"
         >
           <v-icon
