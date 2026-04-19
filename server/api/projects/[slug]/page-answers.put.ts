@@ -1,7 +1,7 @@
 import {
   upsertPageAnswers,
   PageAnswersSchema,
-} from '~/server/modules/projects/project-pages.service'
+} from '~/server/modules/projects/page-answers.service'
 
 /**
  * PUT /api/projects/[slug]/page-answers — upsert selections, text,

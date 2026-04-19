@@ -1,4 +1,4 @@
-import { getPageContent } from '~/server/modules/projects/project-pages.service'
+import { getPageContent } from '~/server/modules/projects/page-content.service'
 
 /**
  * GET /api/projects/[slug]/page-content?page=<slug>

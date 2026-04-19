@@ -1,7 +1,7 @@
 import {
   upsertPageContent,
   UpsertPageContentSchema,
-} from '~/server/modules/projects/project-pages.service'
+} from '~/server/modules/projects/page-content.service'
 
 /**
  * PUT /api/projects/[slug]/page-content — upsert. Content is sanitized
