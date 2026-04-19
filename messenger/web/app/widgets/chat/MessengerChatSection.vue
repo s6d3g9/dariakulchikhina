@@ -2044,7 +2044,6 @@ async function refreshSecuritySummary() {
 
   try {
     securitySummary.value = await messengerCrypto.getConversationSecuritySummary(
-      auth.request,
       auth.user.value.id,
       activeConversation.id,
       activeConversation.peerUserId,

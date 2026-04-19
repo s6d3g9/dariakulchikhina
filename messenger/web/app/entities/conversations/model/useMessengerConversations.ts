@@ -252,7 +252,6 @@ export function useMessengerConversations() {
       const encryptedResponse = await fetch(attachment.absoluteUrl)
       const encryptedBuffer = await encryptedResponse.arrayBuffer()
       const decryptedBuffer = await messengerCrypto.decryptBinary(
-        auth.request,
         auth.user.value.id,
         conversation.id,
         conversation.peerUserId,
@@ -289,7 +288,6 @@ export function useMessengerConversations() {
 
     try {
       const decryptedBody = await messengerCrypto.decryptText(
-        auth.request,
         auth.user.value.id,
         conversation.id,
         conversation.peerUserId,
@@ -493,7 +491,6 @@ export function useMessengerConversations() {
           body,
           encryptedBody: conversation.secret
             ? await messengerCrypto.encryptText(
-                auth.request,
                 auth.user.value.id,
                 conversationId,
                 conversation.peerUserId,
@@ -606,7 +603,6 @@ export function useMessengerConversations() {
 
     if (conversation?.secret && auth.user.value) {
       const encryptedFile = await messengerCrypto.encryptBinary(
-        auth.request,
         auth.user.value.id,
         conversationId,
         conversation.peerUserId,
@@ -659,7 +655,6 @@ export function useMessengerConversations() {
           body,
           encryptedBody: conversation.secret
             ? await messengerCrypto.encryptText(
-                auth.request,
                 auth.user.value.id,
                 conversationId,
                 conversation.peerUserId,
