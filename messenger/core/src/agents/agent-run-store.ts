@@ -1,8 +1,3 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
-
-import { resolveMessengerDataPath } from '../media/storage-paths.ts'
-
 export interface MessengerAgentRunArtifactRecord {
   kind: 'consultation' | 'file' | 'summary'
   label: string
@@ -31,10 +26,6 @@ export interface MessengerAgentRunRecord {
   events: MessengerAgentRunEventRecord[]
 }
 
-interface AgentRunsFile {
-  runs: MessengerAgentRunRecord[]
-}
-
 export interface MessengerAgentEdgePayloadRecord {
   sourceAgentId: string
   targetAgentId: string
@@ -45,34 +36,10 @@ export interface MessengerAgentEdgePayloadRecord {
   timestamp: string
 }
 
-const STORAGE_PATH = resolveMessengerDataPath('agent-runs.json')
 const MAX_RUNS = 120
 const MAX_EVENTS_PER_RUN = 40
 
-async function ensureStorage() {
-  await mkdir(dirname(STORAGE_PATH), { recursive: true })
-}
-
-async function readRunsFile(): Promise<AgentRunsFile> {
-  await ensureStorage()
-
-  try {
-    const raw = await readFile(STORAGE_PATH, 'utf8')
-    const parsed = JSON.parse(raw) as Partial<AgentRunsFile>
-    return {
-      runs: Array.isArray(parsed.runs) ? parsed.runs as MessengerAgentRunRecord[] : [],
-    }
-  } catch {
-    return {
-      runs: [],
-    }
-  }
-}
-
-async function writeRunsFile(payload: AgentRunsFile) {
-  await ensureStorage()
-  await writeFile(STORAGE_PATH, JSON.stringify(payload, null, 2) + '\n', 'utf8')
-}
+const _runs: MessengerAgentRunRecord[] = []
 
 export async function appendMessengerAgentRunEvent(input: {
   runId: string
@@ -87,7 +54,6 @@ export async function appendMessengerAgentRunEvent(input: {
   artifacts?: MessengerAgentRunArtifactRecord[]
   timestamp?: string
 }) {
-  const payload = await readRunsFile()
   const timestamp = input.timestamp || new Date().toISOString()
   const event: MessengerAgentRunEventRecord = {
     phase: input.phase,
@@ -100,9 +66,9 @@ export async function appendMessengerAgentRunEvent(input: {
     timestamp,
   }
 
-  const existingIndex = payload.runs.findIndex(run => run.runId === input.runId)
+  const existingIndex = _runs.findIndex(run => run.runId === input.runId)
   if (existingIndex === -1) {
-    payload.runs.unshift({
+    _runs.unshift({
       runId: input.runId,
       conversationId: input.conversationId,
       agentId: input.agentId,
@@ -112,8 +78,8 @@ export async function appendMessengerAgentRunEvent(input: {
       events: [event],
     })
   } else {
-    const current = payload.runs[existingIndex]
-    payload.runs[existingIndex] = {
+    const current = _runs[existingIndex]
+    _runs[existingIndex] = {
       ...current,
       conversationId: input.conversationId || current.conversationId,
       status: input.status,
@@ -122,49 +88,40 @@ export async function appendMessengerAgentRunEvent(input: {
     }
   }
 
-  payload.runs = payload.runs
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-    .slice(0, MAX_RUNS)
-
-  await writeRunsFile(payload)
+  _runs.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  if (_runs.length > MAX_RUNS) {
+    _runs.splice(MAX_RUNS)
+  }
 }
 
 export async function listMessengerAgentRuns(input: {
   agentId?: string
   limit?: number
 }) {
-  const payload = await readRunsFile()
   const limit = Math.min(Math.max(input.limit || 10, 1), 30)
-
-  return payload.runs
+  return _runs
     .filter(run => !input.agentId || run.agentId === input.agentId)
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, limit)
 }
 
 export async function getMessengerAgentRunById(runId: string) {
-  const payload = await readRunsFile()
-  return payload.runs.find(run => run.runId === runId) ?? null
+  return _runs.find(run => run.runId === runId) ?? null
 }
 
 export async function listMessengerAgentEdgePayloads(input: {
   agentId?: string
   limit?: number
 }) {
-  const payload = await readRunsFile()
   const limit = Math.min(Math.max(input.limit || 24, 1), 80)
   const edgePayloads: MessengerAgentEdgePayloadRecord[] = []
 
-  for (const run of payload.runs) {
-    if (input.agentId && run.agentId !== input.agentId) {
-      continue
-    }
+  for (const run of _runs) {
+    if (input.agentId && run.agentId !== input.agentId) continue
 
     for (const event of run.events) {
       for (const artifact of event.artifacts) {
-        if (artifact.kind !== 'consultation' || !artifact.agentId) {
-          continue
-        }
+        if (artifact.kind !== 'consultation' || !artifact.agentId) continue
 
         const connection = (event as MessengerAgentRunEventRecord & {
           activeConnections?: Array<{
@@ -188,6 +145,6 @@ export async function listMessengerAgentEdgePayloads(input: {
   }
 
   return edgePayloads
-    .sort((left, right) => right.timestamp.localeCompare(left.timestamp))
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     .slice(0, limit)
 }
