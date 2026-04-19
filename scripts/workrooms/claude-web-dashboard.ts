@@ -671,6 +671,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .nav-row .tab.active{border-color:var(--accent);color:var(--accent)}
   .nav-row.orchestrators .tab.active{border-color:#a78bfa;color:#a78bfa}
   .nav-row .tab .dot{width:8px;height:8px;border-radius:50%;background:var(--mute)}
+  .nav-row .tab .dot.standby{background:#a78bfa;box-shadow:0 0 4px #a78bfa}
   .nav-row .tab .dot.thinking{background:var(--warn);box-shadow:0 0 4px var(--warn)}
   .nav-row .tab .dot.tool_call{background:#a78bfa;box-shadow:0 0 4px #a78bfa}
   .nav-row .tab .dot.streaming{background:var(--accent);box-shadow:0 0 4px var(--accent)}
@@ -756,9 +757,17 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   }
   setInterval(renderHeader, 1000);
 
+  function displayState(s, m) {
+    // Orchestrators don't die on --print completion — their conversation
+    // state is resumable. Show "done" for them as "standby" so it's clear
+    // they're available for another poke.
+    if (s.role === 'orchestrator' && m.state === 'done') return 'standby';
+    return m.state || (s.archived ? 'archived' : 'idle');
+  }
+
   function makeTabEl(s) {
     const m = state.metrics[s.slug] || {};
-    const st = m.state || (s.archived ? 'archived' : 'idle');
+    const st = displayState(s, m);
     const t = document.createElement('div');
     t.className = 'tab' + (state.active === s.slug ? ' active' : '') + (s.archived ? ' archived' : '');
     t.dataset.slug = s.slug;
@@ -1005,8 +1014,15 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       <div style="display:flex;flex-direction:column;gap:6px">
         \${s.archived ? '<button id="btn-kill" class="danger" disabled title="session archived">archived</button>'
                      : '<button id="btn-kill" class="danger">kill</button>'}
-        \${(!s.archived && m.state === 'done') ? '<button id="btn-archive">archive</button>' : ''}
+        \${(!s.archived && m.state === 'done' && s.role !== 'orchestrator') ? '<button id="btn-archive">archive</button>' : ''}
+        \${(!s.archived && s.role === 'orchestrator') ? '<button id="btn-poke" title="Resume session with a new instruction">poke (resume)</button>' : ''}
       </div>
+      \${(!s.archived && s.role === 'orchestrator') ? \`
+      <h3>why 'standby'?</h3>
+      <div style="font-size:11px;color:var(--mute);line-height:1.4">
+        claude --print one-shot completed and session is resumable by UUID.
+        Use 'poke' to continue the conversation — nothing was lost.
+      </div>\` : ''}
     \`;
     const kBtn = document.getElementById('btn-kill');
     if (kBtn && !s.archived) kBtn.onclick = () => {
@@ -1016,6 +1032,17 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     const aBtn = document.getElementById('btn-archive');
     if (aBtn) aBtn.onclick = async () => {
       await fetch('/api/sessions/'+slug+'/archive', { method: 'POST' });
+      delete renderCache[slug];
+      refresh();
+    };
+    const pBtn = document.getElementById('btn-poke');
+    if (pBtn) pBtn.onclick = async () => {
+      const msg = prompt('Resume orchestrator with what instruction?', 'Check ~/state/queue/{pending,running,done}/, then if pending count is below 10 generate another 15-20 TASK.md tasks from the open matrices in docs/architecture-v5/11-*.md and 12-*.md. Final report.');
+      if (!msg) return;
+      await fetch('/api/sessions/'+slug+'/send', {
+        method: 'POST', headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ prompt: msg })
+      });
       delete renderCache[slug];
       refresh();
     };
