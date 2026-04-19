@@ -3,10 +3,12 @@ import {
   uuid,
   text,
   integer,
+  numeric,
   jsonb,
   timestamp,
   index,
   unique,
+  foreignKey,
   customType,
 } from 'drizzle-orm/pg-core'
 
@@ -115,24 +117,40 @@ export const messengerAgents = pgTable('messenger_agents', {
   deletedAt: tstz('deleted_at'),
 })
 
-export const messengerAgentRuns = pgTable('messenger_agent_runs', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  agentId: uuid('agent_id')
-    .notNull()
-    .references(() => messengerAgents.id),
-  conversationId: uuid('conversation_id')
-    .notNull()
-    .references(() => messengerConversations.id),
-  status: text('status').notNull().default('pending'),
-  prompt: text('prompt'),
-  result: text('result'),
-  error: text('error'),
-  startedAt: tstz('started_at'),
-  finishedAt: tstz('finished_at'),
-  createdAt: tstz('created_at').defaultNow().notNull(),
-  version: integer('version').default(1).notNull(),
-  deletedAt: tstz('deleted_at'),
-})
+export const messengerAgentRuns = pgTable(
+  'messenger_agent_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    agentId: uuid('agent_id')
+      .notNull()
+      .references(() => messengerAgents.id),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => messengerConversations.id),
+    parentRunId: uuid('parent_run_id'),
+    rootRunId: uuid('root_run_id'),
+    spawnedByAgentId: uuid('spawned_by_agent_id').references(() => messengerAgents.id),
+    status: text('status').notNull().default('pending'),
+    prompt: text('prompt'),
+    result: text('result'),
+    error: text('error'),
+    costUsd: numeric('cost_usd', { precision: 10, scale: 4 }).default('0').notNull(),
+    tokenInTotal: integer('token_in_total').default(0).notNull(),
+    tokenOutTotal: integer('token_out_total').default(0).notNull(),
+    attachmentIds: jsonb('attachment_ids').default('[]').notNull(),
+    startedAt: tstz('started_at'),
+    finishedAt: tstz('finished_at'),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    version: integer('version').default(1).notNull(),
+    deletedAt: tstz('deleted_at'),
+  },
+  (t) => [
+    foreignKey({ columns: [t.parentRunId], foreignColumns: [t.id] }).onDelete('set null'),
+    foreignKey({ columns: [t.rootRunId], foreignColumns: [t.id] }),
+    index('messenger_agent_runs_parent_run_idx').on(t.parentRunId),
+    index('messenger_agent_runs_root_run_cursor_idx').on(t.rootRunId, t.createdAt.desc()),
+  ],
+)
 
 export const messengerAgentRunEvents = pgTable(
   'messenger_agent_run_events',
@@ -149,4 +167,27 @@ export const messengerAgentRunEvents = pgTable(
     payload: jsonb('payload'),
   },
   (t) => [index('messenger_agent_run_events_run_cursor_idx').on(t.runId, t.occurredAt.desc())],
+)
+
+export const messengerCliSessions = pgTable(
+  'messenger_cli_sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    agentId: uuid('agent_id')
+      .notNull()
+      .references(() => messengerAgents.id),
+    runId: uuid('run_id').references(() => messengerAgentRuns.id),
+    slug: text('slug').notNull().unique(),
+    workroom: text('workroom'),
+    model: text('model'),
+    status: text('status').notNull().default('starting'),
+    prompt: text('prompt'),
+    tmuxWindow: text('tmux_window'),
+    startedAt: tstz('started_at'),
+    stoppedAt: tstz('stopped_at'),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    version: integer('version').default(1).notNull(),
+    deletedAt: tstz('deleted_at'),
+  },
+  (t) => [index('messenger_cli_sessions_agent_status_idx').on(t.agentId, t.status)],
 )
