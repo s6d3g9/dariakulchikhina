@@ -537,7 +537,12 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .stat span{font-variant-numeric:tabular-nums}
   .bar{width:100%;height:4px;background:#222;border-radius:2px;overflow:hidden;margin-top:2px}
   .bar > i{display:block;height:100%;background:linear-gradient(90deg,#5b8ff9,#b78fff);transition:width .4s}
-  .navs{display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:var(--panel)}
+  .navs{display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:var(--panel);position:relative}
+  #deps-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+  #deps-svg .dep-line{fill:none;stroke-width:1.6;opacity:.55;stroke-dasharray:6 4;animation:dep-flow 1.6s linear infinite}
+  #deps-svg .dep-line.highlight{opacity:1;stroke-width:2.5;filter:drop-shadow(0 0 4px currentColor)}
+  #deps-svg .dep-arrow{fill:currentColor;opacity:.8}
+  @keyframes dep-flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-20}}
   .nav-row{display:flex;gap:.3rem;padding:.4rem .6rem;overflow-x:auto;align-items:center}
   .nav-row + .nav-row{border-top:1px solid var(--line)}
   .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0}
@@ -593,10 +598,12 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   <button id="btn-refresh" title="force refresh">↻</button>
 </header>
 <div class="navs">
+  <svg id="deps-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
   <div class="nav-row orchestrators" id="nav-orchestrators"><span class="label">◆ orchestrators</span></div>
   <div class="nav-row workers" id="nav-workers"><span class="label">workers</span><span class="spacer"></span>
     <button class="toggle-btn" id="btn-archive-all-done" title="Archive all sessions in state=done">archive done</button>
     <button class="toggle-btn" id="btn-toggle-archive" title="Show archived sessions">show archive</button>
+    <button class="toggle-btn" id="btn-toggle-deps" title="Show dependency lines">deps ✓</button>
   </div>
 </div>
 <main>
@@ -605,7 +612,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 </main>
 <script>
 (() => {
-  const state = { sessions: [], metrics: {}, active: null, showArchive: false, startedAt: Date.now(),
+  const state = { sessions: [], metrics: {}, active: null, showArchive: false, showDeps: true, hoveredSlug: null, startedAt: Date.now(),
                   status: { activeSessions:0, monthCostUsd:0, monthBudgetUsd:200, ctxLimit:200000 } };
   const orchRowEl = document.getElementById('nav-orchestrators');
   const workersRowEl = document.getElementById('nav-workers');
@@ -636,11 +643,110 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     const st = m.state || (s.archived ? 'archived' : 'idle');
     const t = document.createElement('div');
     t.className = 'tab' + (state.active === s.slug ? ' active' : '') + (s.archived ? ' archived' : '');
+    t.dataset.slug = s.slug;
     t.innerHTML = '<span class="dot ' + st + '"></span><span>' + s.slug + '</span>' +
                   '<small style="color:var(--mute)">[' + st + ']</small>';
     t.onclick = () => selectTab(s.slug);
+    t.onmouseenter = () => { state.hoveredSlug = s.slug; drawDeps(); };
+    t.onmouseleave = () => { state.hoveredSlug = null; drawDeps(); };
     return t;
   }
+
+  // ── Dependency graph ──
+
+  // Stable hue from a chain prefix → distinct color per chain
+  function chainColor(prefix) {
+    if (prefix === 'orchestrator') return '#a78bfa'; // violet
+    let h = 0;
+    for (let i = 0; i < prefix.length; i++) h = (h * 31 + prefix.charCodeAt(i)) >>> 0;
+    return 'hsl(' + (h % 360) + ', 70%, 62%)';
+  }
+
+  // Group slug into a "chain" key — shared prefix family
+  function chainOf(slug) {
+    // wave3-calls-XXX   → wave3-calls
+    // wave3-actions-XXX → wave3-actions
+    // wave3-chat-XXX    → wave3-chat
+    // wm/ other         → first segment
+    const parts = slug.split('-');
+    if (parts.length >= 2) return parts[0] + '-' + parts[1];
+    return parts[0];
+  }
+
+  // Derive edges from current state:
+  //  • within each chain, order by created timestamp → linear dependency
+  //  • orchestrator → every worker session created after it
+  function inferDeps() {
+    const deps = [];
+    const byChain = {};
+    for (const s of state.sessions) {
+      if (s.role === 'orchestrator') continue;
+      const c = chainOf(s.slug);
+      (byChain[c] ||= []).push(s);
+    }
+    for (const [chain, items] of Object.entries(byChain)) {
+      if (items.length < 2) continue;
+      items.sort((a, b) => (a.created || '').localeCompare(b.created || ''));
+      for (let i = 1; i < items.length; i++) {
+        deps.push({ from: items[i-1].slug, to: items[i].slug, chain, color: chainColor(chain) });
+      }
+    }
+    // Orchestrator edges
+    const orch = state.sessions.filter(s => s.role === 'orchestrator');
+    for (const o of orch) {
+      for (const s of state.sessions) {
+        if (s.role !== 'orchestrator' && (s.created || '') > (o.created || '')) {
+          deps.push({ from: o.slug, to: s.slug, chain: 'orchestrator', color: chainColor('orchestrator'), orchestrator: true });
+        }
+      }
+    }
+    return deps;
+  }
+
+  function drawDeps() {
+    const svg = document.getElementById('deps-svg');
+    if (!svg) return;
+    svg.innerHTML = '';
+    if (!state.showDeps) return;
+    const navs = document.querySelector('.navs');
+    const nRect = navs.getBoundingClientRect();
+    svg.setAttribute('viewBox', '0 0 ' + nRect.width + ' ' + nRect.height);
+    svg.setAttribute('width', nRect.width);
+    svg.setAttribute('height', nRect.height);
+
+    const tabEls = {};
+    for (const el of document.querySelectorAll('.navs .tab[data-slug]')) {
+      tabEls[el.dataset.slug] = el;
+    }
+
+    const deps = inferDeps();
+    const hover = state.hoveredSlug;
+    for (const dep of deps) {
+      const a = tabEls[dep.from], b = tabEls[dep.to];
+      if (!a || !b) continue;
+      const aR = a.getBoundingClientRect(), bR = b.getBoundingClientRect();
+      const x1 = aR.left + aR.width / 2 - nRect.left;
+      const y1 = aR.bottom - nRect.top;
+      const x2 = bR.left + bR.width / 2 - nRect.left;
+      const y2 = bR.bottom - nRect.top;
+      // Bezier that dips below the tab row
+      const midY = Math.max(y1, y2) + Math.max(20, Math.abs(x2 - x1) * 0.18);
+      const d = 'M ' + x1 + ' ' + y1 +
+                ' C ' + x1 + ' ' + midY + ', ' + x2 + ' ' + midY + ', ' + x2 + ' ' + y2;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('stroke', dep.color);
+      path.setAttribute('style', 'color:' + dep.color);
+      const isHl = hover === dep.from || hover === dep.to;
+      path.setAttribute('class', 'dep-line' + (isHl ? ' highlight' : ''));
+      svg.appendChild(path);
+    }
+  }
+  window.addEventListener('resize', drawDeps);
+  document.addEventListener('scroll', drawDeps, true);
+  // Also redraw when nav rows scroll horizontally
+  for (const row of document.querySelectorAll('.nav-row')) row.addEventListener('scroll', drawDeps);
+  setInterval(drawDeps, 2000); // periodic re-layout guard
 
   function renderTabs() {
     // Orchestrators row
@@ -809,6 +915,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     renderTabs();
     if (state.active) { renderSide(state.active); renderContent(state.active); }
     else { sideEl.innerHTML = '<div class="placeholder">no session selected</div>'; contentEl.innerHTML = '<div class="placeholder">no session selected</div>'; }
+    requestAnimationFrame(drawDeps);
   }
   document.getElementById('btn-refresh').onclick = () => {
     for (const k of Object.keys(renderCache)) delete renderCache[k];
@@ -821,6 +928,13 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     for (const k of Object.keys(renderCache)) delete renderCache[k];
     refresh();
   };
+  document.getElementById('btn-toggle-deps').onclick = (e) => {
+    state.showDeps = !state.showDeps;
+    e.target.textContent = 'deps ' + (state.showDeps ? '✓' : '✗');
+    e.target.classList.toggle('active', state.showDeps);
+    drawDeps();
+  };
+  document.getElementById('btn-toggle-deps').classList.add('active');
   document.getElementById('btn-archive-all-done').onclick = async () => {
     if (!confirm('Archive all sessions in state=done? (orchestrators are skipped)')) return;
     const r = await fetch('/api/sessions/archive-all-done', { method: 'POST' });
