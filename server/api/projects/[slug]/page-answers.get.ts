@@ -1,4 +1,4 @@
-import { getPageAnswers } from '~/server/modules/projects/project-pages.service'
+import { getPageAnswers } from '~/server/modules/projects/page-answers.service'
 
 /**
  * GET /api/projects/[slug]/page-answers?page=<slug>
