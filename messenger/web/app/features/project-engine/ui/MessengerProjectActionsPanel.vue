@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import TaskSelector from './builder/TaskSelector.vue'
 import type {
   MessengerPlatformActionCatalog,
   MessengerPlatformProjectSummary,
@@ -1503,52 +1504,22 @@ watch(selectedTask, (task) => {
           </div>
 
           <div v-else-if="props.catalog" class="pa-form-grid">
-            <div v-if="usesTaskSelection" class="pa-field-block pa-field-block--full">
-              <div class="pa-field-block__head">
-                <span class="pa-field-block__title">Задача</span>
-                <span class="pa-field-block__hint">Новая или из существующего списка.</span>
-              </div>
-
-              <div class="pa-mode-row">
-                <button type="button" class="pa-mode-chip" :class="{ 'pa-mode-chip--active': taskMode === 'new' }" @click="taskMode = 'new'">Новая</button>
-                <button type="button" class="pa-mode-chip" :class="{ 'pa-mode-chip--active': taskMode === 'existing' }" @click="taskMode = 'existing'">Из списка</button>
-              </div>
-
-              <VAutocomplete
-                v-if="taskMode === 'existing'"
-                v-model="selectedTaskId"
-                :items="taskItems"
-                item-title="title"
-                item-value="id"
-                variant="outlined"
-                density="comfortable"
-                label="Задача"
-                clearable
-                hide-details
-              />
-
-              <VTextField
-                v-else
-                v-model="taskTitle"
-                variant="outlined"
-                density="comfortable"
-                label="Название задачи"
-                placeholder="Например: Согласовать акт"
-                hide-details
-              />
-
-              <VSelect
-                v-if="usesTaskStatusSelection"
-                v-model="selectedTaskStatus"
-                :items="selectedTaskStatusItems"
-                item-title="title"
-                item-value="value"
-                variant="outlined"
-                density="comfortable"
-                label="Статус"
-                hide-details
-              />
-            </div>
+            <TaskSelector
+              v-if="usesTaskSelection"
+              :task-mode="taskMode"
+              :selected-task-id="selectedTaskId"
+              :task-title="taskTitle"
+              :selected-task-status="selectedTaskStatus"
+              :task-items="taskItems"
+              :phase-items="phaseItems"
+              :sprint-items="sprintItems"
+              :selected-task-status-items="selectedTaskStatusItems"
+              :uses-task-status-selection="usesTaskStatusSelection"
+              @update:task-mode="taskMode = $event"
+              @update:selected-task-id="selectedTaskId = $event"
+              @update:task-title="taskTitle = $event"
+              @update:selected-task-status="selectedTaskStatus = $event"
+            />
 
             <VSelect
               v-if="usesStageSelection || usesTaskSelection"
