@@ -1,6 +1,7 @@
 import { getMessengerAgentSettings, resolveMessengerAgentActiveRepository, resolveMessengerAgentWorkspacePath, type MessengerAgentConnectionMode } from './agent-settings-store.ts'
 import { retrieveMessengerAgentKnowledge, type MessengerAgentKnowledgeRetrieval } from './agent-knowledge-store.ts'
 import { callMessengerAgentModel, isMessengerAgentLlmConfigured, type MessengerAgentLlmMessage } from './agent-llm.ts'
+import { callClaudeSessionReply } from './claude-cli-reply.ts'
 
 export interface MessengerAgentRecord {
   id: string
@@ -11,6 +12,15 @@ export interface MessengerAgentRecord {
   prompts: string[]
   systemPrompt: string
   modelOptions: string[]
+  /**
+   * Optional — route this agent's replies through a claude-session
+   * registered in ~/state/claude-sessions/.registry.tsv with that slug.
+   * When set, messenger-core resumes the session via the local Claude
+   * CLI (consuming the user's Max subscription) instead of calling an
+   * external OpenAI-compatible endpoint. Fallback chain: CLI fails →
+   * external LLM (if configured) → hardcoded template reply.
+   */
+  claudeSessionSlug?: string
 }
 
 interface MessengerAgentReplyHistoryItem {
@@ -58,6 +68,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
   {
     id: 'composer',
     login: 'agent.composer',
+    claudeSessionSlug: 'composer',
     displayName: 'Composer',
     description: 'Верхний уровень иерархии — стратегический собеседник. Обсуждает архитектуру, пивоты, триаж. Делегирует исполнение оркестратору через claude-session.',
     greeting: 'Я сверху трёхуровневой иерархии composer → orchestrator → workers. Обсудим стратегию, а исполнение я передам дальше.',
@@ -68,6 +79,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
   {
     id: 'orchestrator',
     login: 'agent.orchestrator',
+    claudeSessionSlug: 'orchestrator',
     displayName: 'Техлид-оркестратор',
     description: 'Маршрутизирует задачи по агентам, собирает план работ и определяет следующий шаг.',
     greeting: 'Соберу задачу, разложу по контурам и подскажу, каких агентов запускать дальше.',
@@ -587,6 +599,33 @@ export async function buildMessengerAgentReply(
       agentId: item.agentId,
     })),
   })
+
+  // Prefer the user's Claude Code CLI subscription when the agent is
+  // wired to a claude-session slug. Ephemeral per-call session: system
+  // prompt + recent messenger transcript go in; plain reply text comes
+  // out. Falls through to the external LLM path on any failure.
+  if (normalizedMessage && agent.claudeSessionSlug) {
+    try {
+      const text = await callClaudeSessionReply({
+        slug: agent.claudeSessionSlug,
+        model: settings.model?.toLowerCase().includes('opus') ? 'opus'
+             : settings.model?.toLowerCase().includes('haiku') ? 'haiku'
+             : 'sonnet',
+        systemPrompt: agent.systemPrompt,
+        history: history.slice(-8).map(h => ({ role: h.role, content: h.content })),
+        message: normalizedMessage,
+      })
+      await runtimeHooks.onTrace?.({
+        phase: 'completed',
+        status: 'completed',
+        summary: `Ответ получен через claude-session ${agent.claudeSessionSlug}.`,
+      })
+      return text
+    } catch (err) {
+      // Non-fatal: log and fall through to the external LLM path below.
+      console.warn('[agent-reply] claude-session failed, falling back:', err instanceof Error ? err.message : err)
+    }
+  }
 
   if (!normalizedMessage || !isMessengerAgentLlmConfigured({
     model: settings.model,
