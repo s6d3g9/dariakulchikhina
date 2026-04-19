@@ -1504,6 +1504,28 @@ Wave 4 для UIDesignPanel закрыт.
 Долги: нет.
 
 Статус: Wave 7 messenger/core bounded-context refactor полностью завершен, нулевой drift vs матрица.
+### [done] 2026-04-19 — Wave 7 / services/communications-service layout alignment with matrix 12
+
+Цель: Проверить, что `services/communications-service/src/**` структура полностью соответствует матрице 12 (нет legacy flat-файлов).
+
+Файлы (проверка):
+- services/communications-service/src/auth/auth.ts ✓ (существует в subdir)
+- services/communications-service/src/store/store.ts ✓ (существует в subdir)
+- services/communications-service/src/store/pg-store.ts ✓ (существует в subdir)
+- services/communications-service/src/types.ts ✓ (top-level, как ожидается)
+- services/communications-service/src/config.ts ✓ (top-level, как ожидается)
+- services/communications-service/src/index.ts ✓ (top-level, как ожидается)
+
+Поиск drift:
+- Нет flat `src/auth.ts` (только `src/auth/auth.ts`) ✓
+- Нет flat `src/store.ts` (только `src/store/store.ts`) ✓
+- Нет flat `src/pg-store.ts` (только `src/store/pg-store.ts`) ✓
+
+Проверка:
+- `pnpm comm:typecheck` — exit 0 ✓
+- `pnpm docs:v5:verify` — exit 0, matrix 12: 68 rows parsed, 68 done, 0 pending, 0 ambiguous ✓
+
+Результат: **Zero drift**. Макет уже соответствует целевой архитектуре. Коммит не требуется.
 
 ### Остающиеся цели (требуют big-session composable work)
 
