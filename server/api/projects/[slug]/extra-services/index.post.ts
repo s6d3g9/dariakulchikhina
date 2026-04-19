@@ -1,7 +1,7 @@
 import {
   createProjectExtraService,
   CreateExtraServiceSchema,
-} from '~/server/modules/projects/project-extra-services-api.service'
+} from '~/server/modules/projects/project-extra-services.service'
 
 /**
  * POST /api/projects/[slug]/extra-services — create extra-service
