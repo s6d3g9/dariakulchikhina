@@ -551,7 +551,6 @@ export async function listMessagesForConversation(conversationId: string, actor:
         replyTo: replyTo ? {
           id: replyTo.id,
           body: getMessageBodyPreview(replyTo, conversation),
-          encryptedBody: replyTo.deletedAt ? undefined : replyTo.encryptedBody,
           kind: replyTo.kind,
           own: replyTo.senderUserId === actor.id,
           senderDisplayName: await resolveSenderDisplayName(replyTo.senderUserId, users),
@@ -560,7 +559,6 @@ export async function listMessagesForConversation(conversationId: string, actor:
         commentOn: commentOn ? {
           id: commentOn.id,
           body: getMessageBodyPreview(commentOn, conversation),
-          encryptedBody: commentOn.deletedAt ? undefined : commentOn.encryptedBody,
           kind: commentOn.kind,
           own: commentOn.senderUserId === actor.id,
           senderDisplayName: await resolveSenderDisplayName(commentOn.senderUserId, users),

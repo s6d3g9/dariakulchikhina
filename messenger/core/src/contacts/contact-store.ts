@@ -214,12 +214,11 @@ export async function buildContactsOverview(user: MessengerUserRecord, users: Me
   }
 
   const contactsOverview: ContactOverviewItem[] = contacts
-    .map((contact) => {
+    .flatMap((contact) => {
       const peer = users.find(u => u.id === contact.userBId)
-      if (!peer || !matchesQuery(peer)) return null
-      return { id: peer.id, displayName: peer.displayName, login: peer.login, createdAt: contact.createdAt, peerType: 'user' as const }
+      if (!peer || !matchesQuery(peer)) return []
+      return [{ id: peer.id, displayName: peer.displayName, login: peer.login, createdAt: contact.createdAt, peerType: 'user' as const } satisfies ContactOverviewItem]
     })
-    .filter((v): v is ContactOverviewItem => Boolean(v))
 
   const agentContacts: ContactOverviewItem[] = agents
     .filter(agent => {
