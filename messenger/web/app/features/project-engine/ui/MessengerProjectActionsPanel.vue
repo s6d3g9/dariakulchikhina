@@ -12,6 +12,7 @@ import type {
   ProjectActionExecutePayload,
   ProjectActionId,
 } from '../model/useMessengerProjectActions'
+import ProjectPicker from './project-picker/ProjectPicker.vue'
 
 type ProjectOverviewPane = 'timeline' | 'sprints' | 'subjects' | 'scope-detail'
 
@@ -78,7 +79,6 @@ const rangeEnd = ref('')
 const detailsText = ref('')
 const formError = ref('')
 const actionSearch = ref('')
-const projectSearch = ref('')
 const selectedCategory = ref<ProjectActionCategoryGroup['category'] | ''>('')
 const scopeParticipantName = ref('')
 const scopeParticipantRole = ref<GovernanceRoleKey>('manager')
@@ -88,7 +88,6 @@ const scopeSettingsDraft = ref<Record<string, unknown>>({})
 const allActions = computed(() => props.groups.flatMap(group => group.actions))
 const currentAction = computed(() => allActions.value.find(action => action.id === props.selectedActionId) || null)
 const normalizedActionSearch = computed(() => actionSearch.value.trim().toLowerCase())
-const normalizedProjectSearch = computed(() => projectSearch.value.trim().toLowerCase())
 const selectedProjectLabel = computed(() => {
   return props.catalog?.project.title
     || props.projects.find(project => project.slug === props.selectedProjectSlug)?.title
@@ -138,23 +137,6 @@ const showExpansion = computed(() => {
     || showScopeDetailPane.value
     || Boolean(currentAction.value)
     || Boolean(formError.value)
-})
-
-const filteredProjectItems = computed(() => {
-  const query = normalizedProjectSearch.value
-  const projects = !query
-    ? [...props.projects]
-    : props.projects.filter(project => projectMatchesSearch(project, query))
-
-  return projects.sort((left, right) => {
-    const leftSelected = Number(left.slug === props.selectedProjectSlug)
-    const rightSelected = Number(right.slug === props.selectedProjectSlug)
-    if (leftSelected !== rightSelected) {
-      return rightSelected - leftSelected
-    }
-
-    return left.title.localeCompare(right.title, 'ru')
-  })
 })
 
 const taskItems = computed(() => {
@@ -606,27 +588,6 @@ function matchesActionSearch(action: ProjectActionDefinition, query: string) {
   return [action.label, action.description].some(text => matchesText(text, query))
 }
 
-function projectMatchesSearch(project: MessengerPlatformProjectSummary, query: string) {
-  return [
-    project.title,
-    project.slug,
-    project.status,
-    project.projectType,
-    project.activePhaseTitle,
-    project.activeSprintName,
-  ].some(value => matchesText(value, query))
-}
-
-function buildProjectPickerMeta(project: MessengerPlatformProjectSummary) {
-  return [
-    project.slug,
-    project.status,
-    project.activePhaseTitle,
-    project.activeSprintName,
-    project.taskTotal ? formatCountLabel(project.taskTotal, 'задача', 'задачи', 'задач') : '',
-  ].filter(Boolean).join(' · ')
-}
-
 function formatActionCount(count: number) {
   const mod10 = count % 10
   const mod100 = count % 100
@@ -673,7 +634,6 @@ function resetCategorySelection() {
 
 function closeUtilityPanes() {
   projectPickerOpen.value = false
-  projectSearch.value = ''
   searchPanelOpen.value = false
   overviewPane.value = ''
 }
@@ -763,7 +723,6 @@ function toggleProjectPane() {
 
 function selectProjectFromPicker(slug: string) {
   emit('selectProject', slug)
-  projectSearch.value = ''
   projectPickerOpen.value = false
 }
 
@@ -1039,50 +998,15 @@ watch(selectedTask, (task) => {
   <div v-if="props.open" class="pa-shell" :class="{ 'pa-shell--expanded': showExpansion }" @click.stop>
     <Transition name="pa-expand">
       <div v-if="showExpansion" class="pa-expand">
-        <section v-if="showProjectPane" class="pa-pane pa-pane--project">
-          <div class="pa-pane__head">
-            <span class="pa-pane__title">Проект</span>
-            <span class="pa-pane__value">{{ selectedProjectLabel }}</span>
-          </div>
-
-          <VTextField
-            v-model="projectSearch"
-            class="pa-search-field"
-            variant="solo-filled"
-            density="comfortable"
-            flat
-            clearable
-            hide-details
-            bg-color="surface-container-highest"
-            prepend-inner-icon="mdi-magnify"
-            label="Поиск проекта"
-            placeholder="Название, slug, фаза, статус"
-          />
-
-          <div v-if="!props.projectsPending && filteredProjectItems.length" class="pa-project-list">
-            <button
-              v-for="project in filteredProjectItems"
-              :key="project.slug"
-              type="button"
-              class="pa-project-card"
-              :class="{ 'pa-project-card--active': project.slug === props.selectedProjectSlug }"
-              @click="selectProjectFromPicker(project.slug)"
-            >
-              <div class="pa-project-card__head">
-                <span class="pa-project-card__title">{{ project.title }}</span>
-                <span v-if="project.slug === props.selectedProjectSlug" class="pa-project-card__badge">выбран</span>
-              </div>
-              <span class="pa-project-card__meta">{{ buildProjectPickerMeta(project) }}</span>
-            </button>
-          </div>
-
-          <p v-if="props.projectsError" class="pa-state pa-state--error">{{ props.projectsError }}</p>
-          <p v-else-if="platformSessionNotice" class="pa-state pa-state--muted">{{ platformSessionNotice }}</p>
-          <p v-else-if="props.catalogError" class="pa-state pa-state--error">{{ props.catalogError }}</p>
-          <p v-else-if="props.catalogPending" class="pa-state pa-state--muted">Загружаю каталог проекта…</p>
-          <p v-else-if="props.projectsPending" class="pa-state pa-state--muted">Загружаю список проектов…</p>
-          <p v-else-if="!filteredProjectItems.length" class="pa-empty-state">По этому запросу проекты не найдены.</p>
-        </section>
+        <ProjectPicker
+          v-if="showProjectPane"
+          :projects="props.projects"
+          :selected-slug="props.selectedProjectSlug"
+          :pending="props.projectsPending"
+          :error="props.projectsError"
+          :notice="platformSessionNotice"
+          @select="selectProjectFromPicker"
+        />
 
         <section v-if="showSearchPane" class="pa-pane pa-pane--search">
           <VTextField
