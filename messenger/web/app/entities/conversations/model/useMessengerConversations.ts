@@ -1,120 +1,35 @@
-interface MessengerConversationPolicy {
-  secret: boolean
-  allowMutualDelete: boolean
-  encryptedMessages: boolean
-  encryptedAttachments: boolean
-  encryptedVoice: boolean
-  callsSecurityMode: 'webrtc-only' | 'beta-e2ee'
-  allowForwardOut: boolean
-  hideListPreview: boolean
-}
-
-export interface MessengerConversationItem {
-  id: string
-  kind: 'direct' | 'direct-secret' | 'agent'
-  secret: boolean
-  peerUserId: string
-  peerDisplayName: string
-  peerLogin: string
-  peerType: 'user' | 'agent'
-  peerDescription?: string
-  updatedAt: string
-  policy: MessengerConversationPolicy
-  lastMessage: {
-    id: string
-    body: string
-    encryptedBody?: MessengerEncryptedPayload
-    createdAt: string
-    own: boolean
-  } | null
-}
-
+import {
+  listConversations,
+  createDirect,
+  createSecret,
+  createAgentConversation,
+  deleteConversation as apiDeleteConversation,
+  listMessages,
+  sendMessage as apiSendMessage,
+  editMessage as apiEditMessage,
+  deleteMessage as apiDeleteMessage,
+  addReaction as apiAddReaction,
+  uploadAttachment as apiUploadAttachment,
+} from '../../../core/api/conversations'
 import { buildMessengerUrl } from '../../../utils/messenger-url'
 import type { MessengerEncryptedBinaryPayload, MessengerEncryptedPayload } from '../../messages/model/useMessengerCrypto'
 
-export interface MessengerAttachmentKlipyPayload {
-  id: string
-  slug: string
-  kind: 'gif' | 'sticker'
-  title: string
-  previewUrl: string
-  originalUrl: string
-  mimeType: string
-  width?: number
-  height?: number
-}
+export type {
+  MessengerConversationItem,
+  MessengerConversationMessage,
+  MessengerAttachmentKlipyPayload,
+  MessengerMessageReactionSummary,
+  MessengerMessageRelationPreview,
+  MessengerForwardedMessagePreview,
+} from '../../../core/api/conversations'
 
-interface MessengerMessageRelationPreview {
-  id: string
-  body: string
-  encryptedBody?: MessengerEncryptedPayload
-  kind: 'text' | 'file'
-  own: boolean
-  senderDisplayName: string
-  attachment?: {
-    name: string
-    mimeType: string
-    size: number
-    url: string
-    absoluteUrl: string
-    resolvedUrl: string
-    encryptedFile?: MessengerEncryptedBinaryPayload
-    klipy?: MessengerAttachmentKlipyPayload
-  }
-}
-
-export interface MessengerMessageReactionSummary {
-  emoji: string
-  count: number
-  own: boolean
-}
-
-interface MessengerForwardedMessagePreview {
-  messageId: string
-  conversationId: string
-  senderUserId: string
-  body: string
-  encryptedBody?: MessengerEncryptedPayload
-  kind: 'text' | 'file'
-  senderDisplayName: string
-  attachment?: {
-    name: string
-    mimeType: string
-    size: number
-    url: string
-    absoluteUrl: string
-    resolvedUrl: string
-    encryptedFile?: MessengerEncryptedBinaryPayload
-    klipy?: MessengerAttachmentKlipyPayload
-  }
-}
-
-export interface MessengerConversationMessage {
-  id: string
-  body: string
-  encryptedBody?: MessengerEncryptedPayload
-  kind: 'text' | 'file'
-  createdAt: string
-  readAt?: string
-  editedAt?: string
-  deletedAt?: string
-  own: boolean
-  senderDisplayName: string
-  reactions?: MessengerMessageReactionSummary[]
-  attachment?: {
-    name: string
-    mimeType: string
-    size: number
-    url: string
-    absoluteUrl: string
-    resolvedUrl: string
-    encryptedFile?: MessengerEncryptedBinaryPayload
-    klipy?: MessengerAttachmentKlipyPayload
-  }
-  replyTo?: MessengerMessageRelationPreview
-  commentOn?: MessengerMessageRelationPreview
-  forwardedFrom?: MessengerForwardedMessagePreview
-}
+import type {
+  MessengerConversationItem,
+  MessengerConversationMessage,
+  MessengerAttachmentKlipyPayload,
+  MessengerMessageRelationPreview,
+  MessengerForwardedMessagePreview,
+} from '../../../core/api/conversations'
 
 function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: string; size: number; url: string } }>(
   config: ReturnType<typeof useRuntimeConfig>,
@@ -174,7 +89,7 @@ interface MessengerMessageSendOptions {
 }
 
 function buildNextReactionState(
-  reactions: MessengerMessageReactionSummary[] | undefined,
+  reactions: import('../../../core/api/conversations').MessengerMessageReactionSummary[] | undefined,
   emoji: string,
 ) {
   const nextReactions = (reactions || []).map(reaction => ({ ...reaction }))
@@ -374,10 +289,7 @@ export function useMessengerConversations() {
     query.value = nextQuery
 
     try {
-      const response = await auth.request<{ conversations: MessengerConversationItem[] }>('/conversations', {
-        method: 'GET',
-        query: nextQuery ? { query: nextQuery } : undefined,
-      })
+      const response = await listConversations(nextQuery || undefined)
 
       const visibleConversations = agentsEnabled.value
         ? response.conversations
@@ -421,11 +333,7 @@ export function useMessengerConversations() {
   }
 
   async function ensureDirectConversation(peerUserId: string) {
-    const response = await auth.request<{ conversation: { id: string } }>('/conversations/direct', {
-      method: 'POST',
-      body: { peerUserId },
-    })
-
+    const response = await createDirect(peerUserId)
     await refresh(query.value)
     return response.conversation.id
   }
@@ -435,20 +343,13 @@ export function useMessengerConversations() {
       throw new Error('AGENTS_DISABLED')
     }
 
-    const response = await auth.request<{ conversation: { id: string } }>(`/agents/${agentId}/conversation`, {
-      method: 'POST',
-    })
-
+    const response = await createAgentConversation(agentId)
     await refresh(query.value)
     return response.conversation.id
   }
 
   async function openSecretConversation(peerUserId: string) {
-    const response = await auth.request<{ conversation: { id: string } }>('/conversations/secret', {
-      method: 'POST',
-      body: { peerUserId },
-    })
-
+    const response = await createSecret(peerUserId)
     await refresh(query.value)
     state.openConversation(response.conversation.id)
     await loadMessages(response.conversation.id)
@@ -460,9 +361,7 @@ export function useMessengerConversations() {
       return
     }
 
-    const response = await auth.request<{ messages: MessengerConversationMessage[] }>(`/conversations/${conversationId}/messages`, {
-      method: 'GET',
-    })
+    const response = await listMessages(conversationId)
     revokeMediaObjectUrls()
     const conversation = conversations.value.find(item => item.id === conversationId)
     if (!conversation) {
@@ -487,21 +386,18 @@ export function useMessengerConversations() {
 
     messagePending.value = true
     try {
-      await auth.request(`/conversations/${conversationId}/messages`, {
-        method: 'POST',
-        body: {
-          body,
-          encryptedBody: conversation.secret
-            ? await messengerCrypto.encryptText(
-                auth.request,
-                auth.user.value.id,
-                conversationId,
-                conversation.peerUserId,
-                body,
-              )
-            : undefined,
-          ...options,
-        },
+      await apiSendMessage(conversationId, {
+        body,
+        encryptedBody: conversation.secret
+          ? await messengerCrypto.encryptText(
+              auth.request,
+              auth.user.value.id,
+              conversationId,
+              conversation.peerUserId,
+              body,
+            )
+          : undefined,
+        ...options,
       })
       await Promise.all([
         refresh(query.value),
@@ -534,35 +430,29 @@ export function useMessengerConversations() {
     messagePending.value = true
     try {
       if (sourceMessage.kind === 'text') {
-        await auth.request(`/conversations/${targetConversationId}/messages`, {
-          method: 'POST',
-          body: {
+        await apiSendMessage(targetConversationId, {
+          body: sourceMessage.body,
+          forwardedFrom: {
+            messageId: sourceMessage.id,
+            conversationId: sourceConversation.id,
+            senderUserId: sourceMessage.own ? auth.user.value!.id : sourceConversation.peerUserId,
+            senderDisplayName: sourceMessage.senderDisplayName,
             body: sourceMessage.body,
-            forwardedFrom: {
-              messageId: sourceMessage.id,
-              conversationId: sourceConversation.id,
-              senderUserId: sourceMessage.own ? auth.user.value.id : sourceConversation.peerUserId,
-              senderDisplayName: sourceMessage.senderDisplayName,
-              body: sourceMessage.body,
-              kind: sourceMessage.kind,
-              attachment: sourceMessage.attachment
-                ? {
-                    name: sourceMessage.attachment.name,
-                    mimeType: sourceMessage.attachment.mimeType,
-                    size: sourceMessage.attachment.size,
-                    url: sourceMessage.attachment.url,
-                    encryptedFile: sourceMessage.attachment.encryptedFile,
-                  }
-                : undefined,
-            },
+            kind: sourceMessage.kind,
+            attachment: sourceMessage.attachment
+              ? {
+                  name: sourceMessage.attachment.name,
+                  mimeType: sourceMessage.attachment.mimeType,
+                  size: sourceMessage.attachment.size,
+                  url: sourceMessage.attachment.url,
+                  encryptedFile: sourceMessage.attachment.encryptedFile,
+                }
+              : undefined,
           },
         })
       } else {
-        await auth.request(`/conversations/${targetConversationId}/messages`, {
-          method: 'POST',
-          body: {
-            forwardedMessageId: sourceMessage.id,
-          },
+        await apiSendMessage(targetConversationId, {
+          forwardedMessageId: sourceMessage.id,
         })
       }
 
@@ -580,9 +470,7 @@ export function useMessengerConversations() {
     pending.value = true
 
     try {
-      await auth.request(`/conversations/${conversationId}`, {
-        method: 'DELETE',
-      })
+      await apiDeleteConversation(conversationId)
 
       if (state.activeConversationId.value === conversationId) {
         state.activeConversationId.value = null
@@ -631,10 +519,7 @@ export function useMessengerConversations() {
 
     messagePending.value = true
     try {
-      await auth.request(`/conversations/${conversationId}/attachments`, {
-        method: 'POST',
-        body: formData,
-      })
+      await apiUploadAttachment(conversationId, formData)
       await Promise.all([
         refresh(query.value),
         loadMessages(conversationId),
@@ -653,20 +538,17 @@ export function useMessengerConversations() {
 
     editingMessageId.value = messageId
     try {
-      await auth.request(`/conversations/${conversationId}/messages/${messageId}`, {
-        method: 'PATCH',
-        body: {
-          body,
-          encryptedBody: conversation.secret
-            ? await messengerCrypto.encryptText(
-                auth.request,
-                auth.user.value.id,
-                conversationId,
-                conversation.peerUserId,
-                body,
-              )
-            : undefined,
-        },
+      await apiEditMessage(conversationId, messageId, {
+        body,
+        encryptedBody: conversation.secret
+          ? await messengerCrypto.encryptText(
+              auth.request,
+              auth.user.value.id,
+              conversationId,
+              conversation.peerUserId,
+              body,
+            )
+          : undefined,
       })
       await Promise.all([
         refresh(query.value),
@@ -685,9 +567,7 @@ export function useMessengerConversations() {
 
     editingMessageId.value = messageId
     try {
-      await auth.request(`/conversations/${conversationId}/messages/${messageId}`, {
-        method: 'DELETE',
-      })
+      await apiDeleteMessage(conversationId, messageId)
       await Promise.all([
         refresh(query.value),
         loadMessages(conversationId),
@@ -720,12 +600,7 @@ export function useMessengerConversations() {
     })
 
     try {
-      await auth.request(`/conversations/${conversationId}/messages/${messageId}/reactions`, {
-        method: 'POST',
-        body: {
-          emoji,
-        },
-      })
+      await apiAddReaction(conversationId, messageId, emoji)
       void loadMessages(conversationId)
     } catch (error) {
       messages.value = previousMessages
