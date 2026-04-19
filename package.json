@@ -39,7 +39,8 @@
     "lint:errors": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "lint:baseline": "node scripts/lint-ratchet.mjs update",
-    "lint:ratchet": "node scripts/lint-ratchet.mjs check"
+    "lint:ratchet": "node scripts/lint-ratchet.mjs check",
+    "bridge:smoke": "node --experimental-strip-types scripts/workrooms/__tests__/claude-stream-bridge.smoke.ts"
   },
   "dependencies": {
     "@nuxt/ui": "^3.1.0",
