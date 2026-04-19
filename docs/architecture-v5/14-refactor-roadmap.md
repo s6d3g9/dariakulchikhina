@@ -1527,6 +1527,33 @@ Wave 4 для UIDesignPanel закрыт.
 
 Результат: **Zero drift**. Макет уже соответствует целевой архитектуре. Коммит не требуется.
 
+### [done] 2026-04-19 — Wave 7 / messenger/web core/api facade layer: calls
+
+- Created `messenger/web/app/core/api/calls.ts` (45 lines) — facade for call-related API operations.
+- Extracted from `app/entities/calls/model/useMessengerCalls.ts` composable which had inline API logic.
+- Exports call-related async functions delegating to HTTP endpoints.
+- Composable now imports from facade instead of making direct $fetch calls.
+- Reduces composable responsibility; API contract centralized in facade.
+- Commit: `1825d02`
+
+### [done] 2026-04-19 — Wave 7 / messenger/web core/api facade layer: platform project actions
+
+- Created `messenger/web/app/core/api/platform-project-actions.ts` (131 lines) — facade for project action API operations.
+- Extracted from `app/entities/project/model/useMessengerProjectActions.ts` composable which had inline API logic.
+- Exports project-action async functions (CRUD, status updates, relations) delegating to HTTP endpoints.
+- Composable now routes through facade, eliminating direct $fetch calls in business logic.
+- Centralizes project action API contract.
+- Commit: `a6d9a6e`
+
+### [done] 2026-04-19 — Wave 7 / messenger/web realtime runtime extraction
+
+- Created `messenger/web/app/core/realtime/messenger-realtime.ts` (203 lines) — dedicated runtime module for WebSocket realtime mechanics.
+- Extracted from `app/core/realtime/useMessengerRealtime.ts` composable (was 201 lines of setup logic).
+- Handles connection state, message dispatch, reconnection logic, event listeners.
+- Composable now a thin wrapper calling the runtime, reducing line count to ~60 lines.
+- Decouples realtime mechanics (transport, protocol) from Vue composable lifecycle.
+- Commit: `a2c05fc`
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor`** (1695 lines): Step 2 fields+vars block (lines 64-148) and Step 3 editor (lines 149-735) still inline.

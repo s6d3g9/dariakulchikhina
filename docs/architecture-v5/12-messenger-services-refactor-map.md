@@ -145,9 +145,14 @@
 
 Эти файлы замыкают отдельный realtime-контур и позволяют рефакторить его независимо от main app.
 
-## Current Status vs Target (2026-04-17)
+## Current Status vs Target (2026-04-19)
 
-- Status source: `14-refactor-roadmap.md` и профильные messenger-документы.
-- Что уже достигнуто: отдельные runtime-контуры `messenger/core`, `messenger/web`, `services/communications-service` сохранены; базовая декомпозиция по auth/store/core закреплена; все пути в матрице нормализованы до repo-root для машинной проверки.
-- Что ещё не доведено до полного match: полный FSD-срез `messenger/web/app/{entities,features}` и финальная alignment-раскладка bounded contexts в `messenger/core/src/**`.
-- Критерий завершения этого документа: realtime-контур полностью независим от main Nuxt app и использует shared-контракты без дублирования.
+- Status source: `14-refactor-roadmap.md` и профильные messenger-документы, Wave 7 completion log.
+- Что уже достигнуто:
+  - Отдельные runtime-контуры `messenger/core`, `messenger/web`, `services/communications-service` сохранены; базовая декомпозиция по auth/store/core закреплена.
+  - Все пути в матрице нормализованы до repo-root для машинной проверки.
+  - `messenger/core/src/**` полностью разложена по bounded contexts согласно матрице 12 (68 move rows, all done, zero drift).
+  - `messenger/web/app/core/api/**` facade layer создана для calls, project-actions и другие API operations.
+  - `messenger/web/app/core/realtime/**` runtime extraction завершена; WebSocket mechanics отделены от Vue composables.
+  - `services/communications-service/src/**` layout выравнена с матрицей 12.
+- Критерий завершения этого документа: realtime-контур полностью независим от main Nuxt app и использует shared-контракты без дублирования. Достигнуто в Wave 7 (2026-04-19).

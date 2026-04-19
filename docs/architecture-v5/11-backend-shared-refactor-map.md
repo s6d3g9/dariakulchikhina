@@ -197,16 +197,18 @@
 
 Каждая зона должна иметь ровно один owner-файл. Любая попытка продублировать функцию «как удобнее» в соседней зоне считается архитектурной регрессией.
 
-## Current Status vs Target (2026-04-17)
+## Current Status vs Target (2026-04-19)
 
-- Status source: `14-refactor-roadmap.md` + `server-audit-report.md` + новые lint-данные из `eslint.config.mjs` (no-restricted-imports в `server/api/**` даёт реальный backlog).
+- Status source: `14-refactor-roadmap.md` + Wave 7 completion log + `eslint.config.mjs` architecture rules.
 - Что уже достигнуто:
   - Все `server/api/auth/*.ts` endpoints (9 файлов) сведены к thin handlers, доменная логика в `server/modules/auth/{admin,client,contractor}-auth.service.ts` + `session.service.ts` + `admin-recovery.service.ts`.
   - `server/api/admin/{search,notifications}.get.ts` — thin; логика в `server/modules/admin/`.
   - `server/db/schema.ts` распилен по 11 per-domain файлов + `relations.ts` + `index.ts`.
   - `projects/work-status` hot-path: thin-controller + prepared queries.
   - Shared system-константы и ключевые DTO вынесены.
-- Что ещё не доведено до полного match:
-  - Часть доменов `server/api/**` всё ещё импортирует `drizzle-orm` и `~/server/db/schema` напрямую (см. baseline lint, ~190 ошибок).
-  - `server/utils/**` остаётся основным домом для проектной логики — модули в `server/modules/{auth,projects,chat}` кроме newly-added остаются bridge re-exports.
-- Критерий завершения: `pnpm lint:errors` = 0, `server/api/**` чисто HTTP/validation/auth, логика в `server/modules/**`, shared-контракты — единственный source of truth.
+  - Все `server/modules/**/*.service.ts` файлы чисты от `drizzle-orm` импортов; repository layer отделен от domain logic (Wave 7 complete).
+  - `server/utils/auth.ts` свернут в `server/modules/auth/{session,password}.service.ts` (Wave 7 2026-04-19).
+  - `shared/types/agent-chat/agent-chat.ts` создана для agent-related contract types.
+  - Новые модули добавлены: `agent-registry`, `chat-agents`, `standalone-comms-relay`, `project-client-profile`, `page-content`, `page-answers`.
+  - ESLint hard error на `$fetch` вне `server/api/**` (no-restricted-imports инвариант).
+- Критерий завершения: `pnpm lint:errors` = 0, все ошибки решены, `server/api/**` чисто HTTP/validation/auth, логика в `server/modules/**`, shared-контракты — единственный source of truth.
