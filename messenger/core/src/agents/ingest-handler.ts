@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { useIngestDb, messengerAgents, messengerAgentRuns, messengerAgentRunEvents, eq, and, isNull } from './ingest-db.ts'
+import { useIngestDb, messengerAgents, messengerAgentRuns, messengerAgentRunEvents, eq, and, isNull, sql } from './ingest-db.ts'
 
 // --- event schemas ---
 
@@ -19,6 +19,7 @@ const tokensSchema = z.object({
   type: z.literal('tokens'),
   tokenIn: z.number().int().nonnegative(),
   tokenOut: z.number().int().nonnegative(),
+  costUsd: z.number().nonnegative().optional(),
 })
 const completeSchema = z.object({ ...baseEvent, type: z.literal('complete'), finalText: z.string().optional() })
 const errorSchema = z.object({ ...baseEvent, type: z.literal('error'), message: z.string(), fatal: z.boolean().optional() })
@@ -57,14 +58,31 @@ function consumeRateLimit(agentId: string): boolean {
 
 // --- persistence ---
 
+type RunSnapshot = {
+  rootRunId: string
+  parentRunId: string | null
+  status: string
+  tokenInTotal: number
+  tokenOutTotal: number
+  costUsd: string
+}
+
 async function persistEvent(
   db: ReturnType<typeof useIngestDb>,
   agentId: string,
   event: IngestEvent,
-): Promise<string> {
+): Promise<{ eventId: string; run: RunSnapshot }> {
   // Verify the run exists and belongs to this agent
   const [run] = await db
-    .select({ id: messengerAgentRuns.id, status: messengerAgentRuns.status })
+    .select({
+      id: messengerAgentRuns.id,
+      status: messengerAgentRuns.status,
+      rootRunId: messengerAgentRuns.rootRunId,
+      parentRunId: messengerAgentRuns.parentRunId,
+      tokenInTotal: messengerAgentRuns.tokenInTotal,
+      tokenOutTotal: messengerAgentRuns.tokenOutTotal,
+      costUsd: messengerAgentRuns.costUsd,
+    })
     .from(messengerAgentRuns)
     .where(
       and(
@@ -79,7 +97,7 @@ async function persistEvent(
     throw Object.assign(new Error('run not found'), { statusCode: 404 })
   }
 
-  // Update run status for lifecycle events
+  // Update run status / totals for lifecycle events
   if (event.type === 'run_start') {
     await db
       .update(messengerAgentRuns)
@@ -90,10 +108,20 @@ async function persistEvent(
       .update(messengerAgentRuns)
       .set({ status: 'completed', finishedAt: new Date(), result: event.finalText ?? null })
       .where(eq(messengerAgentRuns.id, event.runId))
-  } else if (event.type === 'error' && event.fatal) {
+  } else if (event.type === 'error') {
     await db
       .update(messengerAgentRuns)
       .set({ status: 'failed', finishedAt: new Date(), error: event.message })
+      .where(eq(messengerAgentRuns.id, event.runId))
+  } else if (event.type === 'tokens') {
+    const costIncrement = event.costUsd?.toFixed(8) ?? '0'
+    await db
+      .update(messengerAgentRuns)
+      .set({
+        tokenInTotal: sql`${messengerAgentRuns.tokenInTotal} + ${event.tokenIn}`,
+        tokenOutTotal: sql`${messengerAgentRuns.tokenOutTotal} + ${event.tokenOut}`,
+        costUsd: sql`${messengerAgentRuns.costUsd} + ${costIncrement}::numeric`,
+      })
       .where(eq(messengerAgentRuns.id, event.runId))
   }
 
@@ -129,7 +157,31 @@ async function persistEvent(
     payload: event as Record<string, unknown>,
   })
 
-  return eventId
+  // Re-fetch updated totals for broadcast payload
+  const [updated] = await db
+    .select({
+      status: messengerAgentRuns.status,
+      rootRunId: messengerAgentRuns.rootRunId,
+      parentRunId: messengerAgentRuns.parentRunId,
+      tokenInTotal: messengerAgentRuns.tokenInTotal,
+      tokenOutTotal: messengerAgentRuns.tokenOutTotal,
+      costUsd: messengerAgentRuns.costUsd,
+    })
+    .from(messengerAgentRuns)
+    .where(eq(messengerAgentRuns.id, event.runId))
+    .limit(1)
+
+  return {
+    eventId,
+    run: {
+      rootRunId: (updated?.rootRunId ?? run.rootRunId) ?? event.runId,
+      parentRunId: (updated?.parentRunId ?? run.parentRunId) ?? null,
+      status: updated?.status ?? run.status,
+      tokenInTotal: updated?.tokenInTotal ?? run.tokenInTotal,
+      tokenOutTotal: updated?.tokenOutTotal ?? run.tokenOutTotal,
+      costUsd: updated?.costUsd ?? run.costUsd ?? '0',
+    },
+  }
 }
 
 // --- route registration ---
@@ -187,8 +239,18 @@ export function registerIngestRoutes(
       }
 
       try {
-        const persistedEventId = await persistEvent(db, agentId, event)
+        const { eventId: persistedEventId, run } = await persistEvent(db, agentId, event)
         broadcastToChannel(`agent-stream:${agentId}`, { ...event, persistedEventId })
+        const substate = event.type === 'substate' ? event.substate : undefined
+        broadcastToChannel(`agent-tree:${run.rootRunId}`, {
+          runId: event.runId,
+          parentRunId: run.parentRunId,
+          status: run.status,
+          substate,
+          tokenInTotal: run.tokenInTotal,
+          tokenOutTotal: run.tokenOutTotal,
+          costUsd: run.costUsd,
+        })
         return { persistedEventId }
       } catch (err: unknown) {
         const e = err as { statusCode?: number; message?: string }
