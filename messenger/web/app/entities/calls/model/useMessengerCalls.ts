@@ -1,25 +1,19 @@
 import { normalizeMessengerProjectRoot } from '../../../utils/messenger-project-root'
 import { buildMessengerUrl } from '../../../utils/messenger-url'
+import {
+  useCallSignaling,
+  type MessengerCallMode,
+  type MessengerCallSignalKind,
+  type MessengerCallSignalEvent,
+  type MessengerCallE2EEPublicKey,
+  type MessengerCallE2EEPayload,
+  type MessengerActiveCall,
+  type MessengerIncomingCall,
+  type MessengerCallSecurityContext,
+} from './use-call-signaling'
 
-type MessengerCallMode = 'audio' | 'video'
-type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
 type MessengerMediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerPermissionTarget = 'microphone' | 'camera' | 'media'
-
-interface MessengerCallE2EEPublicKey {
-  kty: 'EC'
-  crv: 'P-256'
-  x: string
-  y: string
-  ext?: boolean
-  key_ops?: string[]
-}
-
-interface MessengerCallE2EEPayload {
-  supported: boolean
-  publicKey?: MessengerCallE2EEPublicKey
-  salt?: string
-}
 
 interface MessengerCallSecurityState {
   available: boolean
@@ -71,39 +65,6 @@ type MessengerCallViewMode = 'full' | 'split' | 'mini'
 type MessengerCallNetworkQuality = 'stable' | 'weak' | 'reconnecting' | 'lost'
 type MessengerCallCameraFacing = 'user' | 'environment'
 
-interface MessengerCallSignalEvent {
-  type: 'call.signal'
-  conversationId?: string
-  signal?: {
-    kind: MessengerCallSignalKind
-    callId: string
-    payload?: Record<string, unknown>
-  }
-  sender?: {
-    userId: string
-    displayName: string
-    login: string
-  }
-}
-
-interface MessengerIncomingCall {
-  callId: string
-  conversationId: string
-  fromUserId: string
-  fromDisplayName: string
-  mode: MessengerCallMode
-  e2ee?: MessengerCallE2EEPayload
-}
-
-interface MessengerActiveCall {
-  callId: string
-  conversationId: string
-  peerUserId: string
-  peerDisplayName: string
-  mode: MessengerCallMode
-  initiator: boolean
-}
-
 interface MessengerLiveKitTrack {
   kind?: string
   attach: (element: HTMLMediaElement) => HTMLMediaElement
@@ -140,21 +101,6 @@ const CALL_ANALYSIS_WORD_LIBRARY = {
   concern: ['сомнева', 'боюсь', 'сложно', 'не уверен', 'риск', 'дорого', 'неудоб'],
   decision: ['реши', 'подтверд', 'соглас', 'окончательно', 'берем', 'делаем'],
 } as const
-
-interface MessengerCallSecurityContext {
-  callId: string
-  role: 'initiator' | 'responder'
-  localPublicKey: MessengerCallE2EEPublicKey
-  localPrivateKey: JsonWebKey
-  remotePublicKey?: MessengerCallE2EEPublicKey
-  salt: Uint8Array
-  encryptKey?: CryptoKey
-  decryptKey?: CryptoKey
-  encryptCounterSalt?: Uint8Array
-  decryptCounterSalt?: Uint8Array
-  verificationEmojis: string[]
-  active: boolean
-}
 
 let callSecurityContext: MessengerCallSecurityContext | null = null
 
@@ -630,10 +576,6 @@ async function resolvePermissionState(kind: 'microphone' | 'camera'): Promise<Me
   } catch {
     return 'unknown'
   }
-}
-
-function resolveCallMode(value: unknown): MessengerCallMode {
-  return value === 'video' ? 'video' : 'audio'
 }
 
 function isAppleTouchAudioRouteViewport() {
@@ -2080,6 +2022,16 @@ export function useMessengerCalls() {
     }
   }
 
+  function setCallSecurityPending() {
+    security.value = {
+      available: true,
+      active: false,
+      verificationEmojis: [],
+      status: 'Входящий звонок поддерживает E2EE. После принятия появятся символы для сверки.',
+      fallbackReason: '',
+    }
+  }
+
   async function sendSignal(conversationId: string, signal: { kind: MessengerCallSignalKind; callId: string; payload?: Record<string, unknown> }) {
     await auth.request(`/conversations/${conversationId}/call-signal`, {
       method: 'POST',
@@ -2728,212 +2680,31 @@ export function useMessengerCalls() {
     }
   }
 
-  async function handleSignal(event: MessengerCallSignalEvent) {
-    if (event.type !== 'call.signal' || !event.signal || !event.sender || !event.conversationId) {
-      return
-    }
-
-    const mode = resolveCallMode(event.signal.payload?.mode)
-
-    if (event.signal.kind === 'invite') {
-      if (activeCall.value || incomingCall.value || busy.value) {
-        await sendSignal(event.conversationId, {
-          kind: 'busy',
-          callId: event.signal.callId,
-          payload: {},
-        }).catch(() => {})
-        return
-      }
-
-      incomingCall.value = {
-        callId: event.signal.callId,
-        conversationId: event.conversationId,
-        fromUserId: event.sender.userId,
-        fromDisplayName: event.sender.displayName,
-        mode,
-        e2ee: event.signal.payload?.e2ee as MessengerCallE2EEPayload | undefined,
-      }
-      const inviteE2EE = event.signal.payload?.e2ee as MessengerCallE2EEPayload | undefined
-      if (inviteE2EE?.supported && supportsInsertableCallEncryption()) {
-        security.value = {
-          available: true,
-          active: false,
-          verificationEmojis: [],
-          status: 'Входящий звонок поддерживает E2EE. После принятия появятся символы для сверки.',
-          fallbackReason: '',
-        }
-      } else if (inviteE2EE?.supported) {
-        setCallSecurityFallback('Собеседник поддерживает E2EE, но этот браузер не умеет encoded transforms.')
-      } else {
-        setCallSecurityFallback('Для этого вызова используется только штатное шифрование WebRTC.')
-      }
-      callStatusText.value = mode === 'video' ? 'Входящий видеозвонок' : 'Входящий аудиозвонок'
-      busy.value = true
-      return
-    }
-
-    if (event.signal.kind === 'ringing' && activeCall.value?.initiator) {
-      try {
-        const ringingE2EE = event.signal.payload?.e2ee as MessengerCallE2EEPayload | undefined
-        if (callSecurityContext && ringingE2EE?.supported && ringingE2EE.publicKey) {
-          await activateCallSecurityContext(ringingE2EE.publicKey)
-          setCallSecurityActive()
-        } else {
-          clearCallSecurityContext()
-          setCallSecurityFallback(ringingE2EE?.supported ? 'Собеседник не передал корректный ключ для E2EE.' : 'Собеседник не использует дополнительное E2EE для звонка.')
-        }
-        await selectConversationForCall(event.conversationId)
-        if (!localStream) {
-          await initMedia(mode)
-        }
-
-        if (!conversations.activeConversation.value?.secret) {
-          callStatusText.value = 'Подключение к медиа-серверу (LiveKit)…'
-          await connectLiveKitRoom(event.conversationId, mode)
-          return
-        }
-
-        const connection = buildPeerConnection(event.signal.callId, event.conversationId, mode)
-        if (connection.signalingState !== 'stable') {
-          return
-        }
-        const offer = await connection.createOffer()
-        await connection.setLocalDescription(offer)
-        await sendSignal(event.conversationId, {
-          kind: 'offer',
-          callId: event.signal.callId,
-          payload: {
-            sdp: offer.sdp,
-            type: offer.type,
-            mode,
-          },
-        })
-        callStatusText.value = 'Отправлен offer'
-        if (mode === 'audio') {
-          void startTranscription()
-        }
-      } catch {
-        callError.value = 'Не удалось подготовить исходящий звонок.'
-        teardownCall('')
-      }
-      return
-    }
-
-    if (event.signal.kind === 'offer') {
-      try {
-        await selectConversationForCall(event.conversationId)
-        if (!activeCall.value) {
-          activeCall.value = {
-            callId: event.signal.callId,
-            conversationId: event.conversationId,
-            peerUserId: event.sender.userId,
-            peerDisplayName: event.sender.displayName,
-            mode,
-            initiator: false,
-          }
-        } else {
-          activeCall.value = {
-            ...activeCall.value,
-            mode,
-          }
-        }
-        if (!localStream) {
-          await initMedia(mode)
-        }
-        const connection = buildPeerConnection(event.signal.callId, event.conversationId, mode)
-        const canApplyOffer = await prepareConnectionForRemoteOffer(connection)
-        if (!canApplyOffer) {
-          return
-        }
-        await connection.setRemoteDescription({
-          type: 'offer',
-          sdp: String(event.signal.payload?.sdp || ''),
-        })
-        await flushPendingIceCandidates(event.signal.callId, connection)
-        const answer = await connection.createAnswer()
-        await connection.setLocalDescription(answer)
-        await sendSignal(event.conversationId, {
-          kind: 'answer',
-          callId: event.signal.callId,
-          payload: {
-            sdp: answer.sdp,
-            type: answer.type,
-            mode,
-          },
-        })
-        callStatusText.value = 'Отправлен answer'
-        busy.value = false
-        if (mode === 'audio') {
-          void startTranscription()
-        } else {
-          stopTranscription()
-        }
-      } catch {
-        callError.value = 'Не удалось обработать входящий звонок.'
-        teardownCall('')
-      }
-      return
-    }
-
-    if (event.signal.kind === 'answer' && peerConnection) {
-      try {
-        if (activeCall.value) {
-          activeCall.value = {
-            ...activeCall.value,
-            mode,
-          }
-        }
-        await peerConnection.setRemoteDescription({
-          type: 'answer',
-          sdp: String(event.signal.payload?.sdp || ''),
-        })
-        await flushPendingIceCandidates(event.signal.callId, peerConnection)
-        callStatusText.value = 'Канал установлен'
-        busy.value = false
-        if (mode === 'audio') {
-          void startTranscription()
-        } else {
-          stopTranscription()
-        }
-      } catch {
-        callError.value = 'Не удалось завершить установку соединения.'
-        teardownCall('')
-      }
-      return
-    }
-
-    if (event.signal.kind === 'ice-candidate' && event.signal.payload?.candidate) {
-      const candidate = event.signal.payload.candidate as RTCIceCandidateInit
-      const remoteDescriptionReady = Boolean(peerConnection?.remoteDescription)
-
-      if (!peerConnection || !remoteDescriptionReady) {
-        queueIceCandidate(event.signal.callId, candidate)
-        return
-      }
-
-      await peerConnection.addIceCandidate(candidate).catch(() => {
-        queueIceCandidate(event.signal!.callId, candidate)
-      })
-      return
-    }
-
-    if (event.signal.kind === 'reject') {
-      await finalizeCallReview(activeCall.value ? { ...activeCall.value } : null)
-      teardownCall('Вызов отклонён')
-      return
-    }
-
-    if (event.signal.kind === 'busy') {
-      await finalizeCallReview(activeCall.value ? { ...activeCall.value } : null)
-      teardownCall('Собеседник уже на другом звонке')
-      return
-    }
-
-    if (event.signal.kind === 'hangup') {
-      await finalizeCallReview(activeCall.value ? { ...activeCall.value } : null)
-      teardownCall('Собеседник завершил звонок')
-    }
-  }
+  const { handleSignal } = useCallSignaling({
+    sendSignal,
+    activeCall, incomingCall, busy, callStatusText, callError,
+    getPeerConnection: () => peerConnection,
+    getCallSecurityContext: () => callSecurityContext,
+    hasLocalStream: () => Boolean(localStream),
+    activateCallSecurityContext,
+    setCallSecurityActive,
+    setCallSecurityPending,
+    clearCallSecurityContext,
+    setCallSecurityFallback,
+    selectConversationForCall,
+    initMedia,
+    getActiveConversationSecret: () => conversations.activeConversation.value?.secret,
+    buildPeerConnection,
+    prepareConnectionForRemoteOffer,
+    flushPendingIceCandidates,
+    queueIceCandidate,
+    connectLiveKitRoom,
+    startTranscription,
+    stopTranscription,
+    teardownCall,
+    finalizeCallReview,
+    supportsInsertableCallEncryption,
+  })
 
   function clearError() {
     callError.value = ''
