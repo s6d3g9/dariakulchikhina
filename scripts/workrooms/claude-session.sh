@@ -117,7 +117,7 @@ run_prompt_in_window() {
 
   # Ensure window exists; create if needed.
   if ! tmux list-windows -t "${TMUX_SESSION}" -F '#W' 2>/dev/null | grep -qxF "${window}"; then
-    tmux new-window -t "${TMUX_SESSION}" -n "${window}" -c "${cwd}"
+    tmux new-window -a -t "${TMUX_SESSION}:{end}" -n "${window}" -c "${cwd}"
   fi
 
   # Select and run
