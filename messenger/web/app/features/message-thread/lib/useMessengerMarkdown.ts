@@ -78,13 +78,7 @@ function getRenderer(): MarkdownIt {
     }
   })
 
-  const defaultFence = md.renderer.rules.fence ?? function (tokens, idx, options, env, self) {
-    return self.renderToken(tokens, idx, options)
-  }
-  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
-    const inner = defaultFence(tokens, idx, options, env, self)
-    const code = tokens[idx]?.content ?? ''
-    const lang = (tokens[idx]?.info ?? '').trim()
+  function wrapCodeBlock(code: string, lang: string, inner: string): string {
     const langLabel = lang ? escapeHtml(lang) : ''
     const encoded = encodeURIComponent(code)
     const langSpan = langLabel
@@ -102,6 +96,28 @@ function getRenderer(): MarkdownIt {
       + inner
       + '</div>'
     )
+  }
+
+  const defaultFence = md.renderer.rules.fence ?? function (tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options)
+  }
+  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+    const inner = defaultFence(tokens, idx, options, env, self)
+    const code = tokens[idx]?.content ?? ''
+    const lang = (tokens[idx]?.info ?? '').trim()
+    return wrapCodeBlock(code, lang, inner)
+  }
+
+  // Indented code blocks (4-space indent) don't go through the fence rule,
+  // so they'd render as bare <pre><code> without the Copy/Quote toolbar.
+  // Wrap them the same way for visual + functional consistency.
+  const defaultCodeBlock = md.renderer.rules.code_block ?? function (tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options)
+  }
+  md.renderer.rules.code_block = (tokens, idx, options, env, self) => {
+    const inner = defaultCodeBlock(tokens, idx, options, env, self)
+    const code = tokens[idx]?.content ?? ''
+    return wrapCodeBlock(code, '', inner)
   }
 
   md.renderer.rules.table_open = () => '<div class="md-table-wrap"><table class="md-table">'
