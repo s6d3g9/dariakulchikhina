@@ -43,6 +43,7 @@ function assert(condition: boolean, message: string): asserts condition {
 
 async function main() {
   // Initialize database connection
+  // eslint-disable-next-line no-restricted-syntax
   const dbUrl = process.env.DATABASE_URL
   if (!dbUrl) {
     throw new Error('DATABASE_URL not set')

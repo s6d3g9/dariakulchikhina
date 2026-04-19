@@ -46,6 +46,7 @@ let testContractorId: number
 // ---------------------------------------------------------------------------
 describe('ai + rag repositories', async () => {
   before(async () => {
+    // eslint-disable-next-line no-restricted-syntax
     sql = postgres(process.env.DATABASE_URL!)
 
     const [proj] = await sql`
