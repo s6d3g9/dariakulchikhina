@@ -25,6 +25,8 @@ const props = defineProps<{
   hasSelectedKlipyItem: boolean
   showProjectActionsButton?: boolean
   projectActionsOpen?: boolean
+  isAgentComposer?: boolean
+  attachmentIds?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -42,6 +44,7 @@ const emit = defineEmits<{
   'cancel-audio-draft': []
   'update:audio-trim-start': [value: number]
   'update:audio-trim-end': [value: number]
+  'run-started': [value?: Record<string, unknown>]
 }>()
 
 const fileInputEl = ref<HTMLInputElement | null>(null)
@@ -210,6 +213,20 @@ defineExpose({
           </VBtn>
 
           <VBtn
+            v-if="props.isAgentComposer"
+            type="button"
+            class="composer-btn composer-btn--inside composer-btn--primary"
+            variant="flat"
+            color="primary"
+            :disabled="!props.activeConversation || props.messagePending || !props.draft.trim()"
+            aria-label="Запустить"
+            @click="emit('run-started', {})"
+          >
+            Запустить
+          </VBtn>
+
+          <VBtn
+            v-else
             type="button"
             class="composer-btn composer-btn--inside composer-btn--primary"
             :class="{ 'composer-btn--recording': props.isRecording }"
