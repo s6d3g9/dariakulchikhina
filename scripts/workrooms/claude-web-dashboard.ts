@@ -648,11 +648,11 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .stat span{font-variant-numeric:tabular-nums}
   .bar{width:100%;height:4px;background:#222;border-radius:2px;overflow:hidden;margin-top:2px}
   .bar > i{display:block;height:100%;background:linear-gradient(90deg,#5b8ff9,#b78fff);transition:width .4s}
-  .navs{display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:var(--panel);position:relative}
+  .navs{display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:var(--panel);position:relative;padding-bottom:72px}
   #deps-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
-  #deps-svg .dep-line{fill:none;stroke-width:1.6;opacity:.55;stroke-dasharray:6 4;animation:dep-flow 1.6s linear infinite;transition:opacity .2s}
-  #deps-svg .dep-line.dim{opacity:.12}
-  #deps-svg .dep-line.highlight{opacity:1;stroke-width:2.5;filter:drop-shadow(0 0 4px currentColor)}
+  #deps-svg .dep-line{fill:none;stroke-width:1.6;opacity:.65;stroke-dasharray:6 4;animation:dep-flow 1.6s linear infinite;transition:opacity .2s;stroke-linejoin:round;stroke-linecap:round}
+  #deps-svg .dep-line.dim{opacity:.1}
+  #deps-svg .dep-line.highlight{opacity:1;stroke-width:2.5;filter:drop-shadow(0 0 5px currentColor)}
   #deps-svg .dep-arrow{fill:currentColor;opacity:.8}
   @keyframes dep-flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-20}}
   .nav-row{display:flex;gap:.3rem;padding:.4rem .6rem;overflow-x:auto;overflow-y:hidden;align-items:center;scrollbar-width:none;-ms-overflow-style:none;user-select:none;cursor:grab}
@@ -794,6 +794,9 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     } catch { state.deps = []; }
   }
 
+  // Orthogonal (Manhattan) routing with horizontal lanes beneath the nav rows.
+  // Each edge: down from source → run horizontally on an assigned lane → up to target.
+  // Lanes are 14px apart, assigned greedily to avoid overlap in the horizontal segment.
   function drawDeps() {
     const svg = document.getElementById('deps-svg');
     if (!svg) return;
@@ -805,7 +808,6 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     svg.setAttribute('width', nRect.width);
     svg.setAttribute('height', nRect.height);
 
-    // Arrow marker defs (one per unique color in use)
     const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
     const markerIds = new Set();
     svg.appendChild(defs);
@@ -815,31 +817,44 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       tabEls[el.dataset.slug] = el;
     }
 
-    const hover = state.hoveredSlug;
-    // When hovering, dim edges that don't touch the hovered node
-    const dim = (slug) => hover && slug !== hover;
-
+    // Prepare edge geometry
+    const prepared = [];
     for (const dep of state.deps) {
       const a = tabEls[dep.from], b = tabEls[dep.to];
       if (!a || !b) continue;
       const aR = a.getBoundingClientRect(), bR = b.getBoundingClientRect();
       const x1 = aR.left + aR.width / 2 - nRect.left;
-      const y1 = aR.bottom - nRect.top;
+      const y1 = aR.bottom - nRect.top + 2;        // source: just below the tab
       const x2 = bR.left + bR.width / 2 - nRect.left;
-      const y2 = bR.bottom - nRect.top;
+      const y2 = bR.top - nRect.top - 2;           // target: just above the tab
+      const xMin = Math.min(x1, x2);
+      const xMax = Math.max(x1, x2);
+      prepared.push({ dep, x1, y1, x2, y2, xMin, xMax });
+    }
 
-      // If both tabs are on the same row, dip more deeply so the curve is visible
-      const sameY = Math.abs(y1 - y2) < 4;
-      const dipDepth = sameY ? 34 : Math.max(18, Math.abs(x2 - x1) * 0.18);
-      const midY = Math.max(y1, y2) + dipDepth;
+    // Horizontal lanes live in the padding-bottom area beneath the nav rows
+    const laneBaseY = nRect.height - 60;   // first lane
+    const laneStep  = 12;                  // vertical distance between lanes
+    const lanes = [];                      // lanes[i] = [{xMin,xMax}, ...]
 
-      // Stop slightly before the target so the arrowhead sits cleanly at the tab edge
-      const arrow = 7;
-      const dx = x2 - x1, dy = y2 - y1;
-      const len = Math.hypot(dx, dy) || 1;
-      const x2s = x2 - (dx / len) * arrow;
-      const y2s = y2 - (dy / len) * arrow;
+    // Greedy lane assignment: pick the lowest-index lane whose existing
+    // segments don't overlap with this one (with a tiny buffer).
+    prepared.sort((a, b) => a.xMin - b.xMin);
+    for (const p of prepared) {
+      let lane = 0;
+      const buf = 6;
+      while (lanes[lane] && lanes[lane].some(r =>
+        !(p.xMax + buf < r.xMin || p.xMin - buf > r.xMax))) lane++;
+      (lanes[lane] ||= []).push({ xMin: p.xMin, xMax: p.xMax });
+      p.lane = lane;
+      p.laneY = laneBaseY + lane * laneStep;
+    }
 
+    const hover = state.hoveredSlug;
+    const R = 5; // corner radius
+
+    for (const p of prepared) {
+      const { dep, x1, y1, x2, y2, laneY } = p;
       const color = chainColor(dep.kind, chainOf(dep.to));
       const safeId = 'arr-' + color.replace(/[^a-z0-9]/gi, '');
       if (!markerIds.has(safeId)) {
@@ -847,11 +862,11 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
         const m = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
         m.setAttribute('id', safeId);
         m.setAttribute('viewBox', '0 0 10 10');
-        m.setAttribute('refX', '6');
+        m.setAttribute('refX', '8');
         m.setAttribute('refY', '5');
         m.setAttribute('markerWidth', '6');
         m.setAttribute('markerHeight', '6');
-        m.setAttribute('orient', 'auto-start-reverse');
+        m.setAttribute('orient', 'auto');
         const t = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         t.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
         t.setAttribute('fill', color);
@@ -859,8 +874,32 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
         defs.appendChild(m);
       }
 
-      const d = 'M ' + x1 + ' ' + y1 +
-                ' C ' + x1 + ' ' + midY + ', ' + x2 + ' ' + midY + ', ' + x2s + ' ' + y2s;
+      // Ortho path with rounded corners:
+      //   (x1,y1) ↓ → (x1, laneY-R) ↓round→ (x1+sign*R, laneY) → (x2-sign*R, laneY) ↑round→ (x2, laneY ...) ↑ to y2
+      const goRight = x2 >= x1;
+      const sign = goRight ? 1 : -1;
+      const stop = 7;                          // stop short for arrowhead
+      const y2stop = (y2 - stop);
+
+      const c1x = x1, c1y = laneY - R;
+      const c2x = x1 + sign * R, c2y = laneY;
+      const c3x = x2 - sign * R, c3y = laneY;
+      const c4x = x2, c4y = laneY - R;
+
+      // Build path
+      const d = [
+        'M', x1, y1,
+        'L', c1x, c1y,
+        // 90° corner at (x1, laneY)
+        'Q', x1, laneY, c2x, c2y,
+        // horizontal run
+        'L', c3x, c3y,
+        // 90° corner at (x2, laneY)
+        'Q', x2, laneY, c4x, c4y,
+        // up to target
+        'L', x2, y2stop,
+      ].join(' ');
+
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', d);
       path.setAttribute('stroke', color);
@@ -868,7 +907,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       path.setAttribute('marker-end', 'url(#' + safeId + ')');
       const touched = !hover || hover === dep.from || hover === dep.to;
       path.setAttribute('class', 'dep-line' + (touched ? '' : ' dim') + (hover && touched ? ' highlight' : ''));
-      if (dep.kind === 'spawned') path.setAttribute('stroke-dasharray', '3 5'); // spawn edges: tighter dashing
+      if (dep.kind === 'spawned') path.setAttribute('stroke-dasharray', '3 5');
       svg.appendChild(path);
     }
   }
