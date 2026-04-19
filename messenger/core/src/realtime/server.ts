@@ -2063,40 +2063,6 @@ export async function createMessengerServer() {
     return { conversation }
   })
 
-  app.post('/agents/:agentId/runs', async (request, reply) => {
-    const session = await resolveSession(request)
-    if (!session) {
-      return reply.code(401).send({ error: 'UNAUTHORIZED' })
-    }
-
-    const parsedParams = agentParamsSchema.safeParse(request.params)
-    if (!parsedParams.success) {
-      return reply.code(400).send({ error: 'INVALID_PARAMS' })
-    }
-
-    const agent = await findMessengerAgentById(parsedParams.data.agentId)
-    if (!agent) {
-      return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
-    }
-
-    const body = request.body as { prompt?: string; attachmentIds?: string[] } | null
-    if (!body?.prompt) {
-      return reply.code(400).send({ error: 'MISSING_PROMPT' })
-    }
-
-    const runId = `run-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    const rootRunId = runId
-
-    await appendMessengerAgentRunEvent({
-      runId,
-      agentId: agent.id,
-      phase: 'started',
-      status: 'running',
-      summary: body.prompt.slice(0, 100),
-    })
-
-    return { runId, rootRunId }
-  })
 
   app.delete('/conversations/:conversationId', async (request, reply) => {
     const session = await resolveSession(request)
