@@ -32,6 +32,7 @@ export default defineNuxtConfig({
       'widgets/*/model',
       'widgets/shell/model',
       'widgets/agent-workspace/model',
+      'core/api',
       'core/realtime',
       'core/runtime',
       'shared/composables',

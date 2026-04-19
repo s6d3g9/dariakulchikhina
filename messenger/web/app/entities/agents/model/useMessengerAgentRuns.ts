@@ -27,7 +27,7 @@ export interface MessengerAgentRun {
 }
 
 export function useMessengerAgentRuns() {
-  const auth = useMessengerAuth()
+  const api = useAgentsApi()
   const runs = useState<MessengerAgentRun[]>('messenger-agent-runs', () => [])
   const selectedRun = useState<MessengerAgentRun | null>('messenger-agent-selected-run', () => null)
   const pending = useState<boolean>('messenger-agent-runs-pending', () => false)
@@ -36,13 +36,7 @@ export function useMessengerAgentRuns() {
     pending.value = true
 
     try {
-      const response = await auth.request<{ runs: MessengerAgentRun[] }>('/agents/runs', {
-        method: 'GET',
-        query: {
-          agentId,
-          limit,
-        },
-      })
+      const response = await api.listAgentRuns(agentId, limit)
 
       runs.value = response.runs
       if (selectedRun.value) {
@@ -57,9 +51,7 @@ export function useMessengerAgentRuns() {
     pending.value = true
 
     try {
-      const response = await auth.request<{ run: MessengerAgentRun }>(`/agents/runs/${runId}`, {
-        method: 'GET',
-      })
+      const response = await api.getAgentRun(runId)
 
       selectedRun.value = response.run
       return response.run

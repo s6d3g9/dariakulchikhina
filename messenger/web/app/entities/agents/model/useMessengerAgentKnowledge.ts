@@ -42,29 +42,20 @@ export interface MessengerAgentKnowledgePreset {
 }
 
 export function useMessengerAgentKnowledge() {
-  const auth = useMessengerAuth()
+  const api = useAgentsApi()
 
   async function getKnowledge(agentId: string) {
-    const response = await auth.request<{ knowledge: MessengerAgentKnowledgeStatus }>(`/agents/${agentId}/knowledge`, {
-      method: 'GET',
-    })
-
+    const response = await api.getAgentKnowledge(agentId)
     return response.knowledge
   }
 
   async function reindexKnowledge(agentId: string) {
-    const response = await auth.request<{ knowledge: MessengerAgentKnowledgeStatus }>(`/agents/${agentId}/knowledge/reindex`, {
-      method: 'POST',
-    })
-
+    const response = await api.postAgentKnowledgeReindex(agentId)
     return response.knowledge
   }
 
   async function getPreset(agentId: string) {
-    const response = await auth.request<{ preset: MessengerAgentKnowledgePreset }>(`/agents/${agentId}/knowledge/preset`, {
-      method: 'GET',
-    })
-
+    const response = await api.getAgentKnowledgePreset(agentId)
     return response.preset
   }
 

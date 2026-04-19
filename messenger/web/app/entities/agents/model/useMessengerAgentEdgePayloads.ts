@@ -9,7 +9,7 @@ export interface MessengerAgentEdgePayload {
 }
 
 export function useMessengerAgentEdgePayloads() {
-  const auth = useMessengerAuth()
+  const api = useAgentsApi()
   const edgePayloads = useState<MessengerAgentEdgePayload[]>('messenger-agent-edge-payloads', () => [])
   const pending = useState<boolean>('messenger-agent-edge-payloads-pending', () => false)
 
@@ -17,14 +17,7 @@ export function useMessengerAgentEdgePayloads() {
     pending.value = true
 
     try {
-      const response = await auth.request<{ edgePayloads: MessengerAgentEdgePayload[] }>('/agents/edge-payloads', {
-        method: 'GET',
-        query: {
-          agentId,
-          limit,
-        },
-      })
-
+      const response = await api.listAgentEdgePayloads(agentId, limit)
       edgePayloads.value = response.edgePayloads
     } finally {
       pending.value = false

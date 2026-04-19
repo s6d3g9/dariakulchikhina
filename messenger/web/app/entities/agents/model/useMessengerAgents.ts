@@ -68,7 +68,7 @@ export interface MessengerAgentGraphNodeInput {
 }
 
 export function useMessengerAgents() {
-  const auth = useMessengerAuth()
+  const api = useAgentsApi()
   const agents = useState<MessengerAgentItem[]>('messenger-agents-list', () => [])
   const pending = useState<boolean>('messenger-agents-pending', () => false)
   const settingsPending = useState<boolean>('messenger-agents-settings-pending', () => false)
@@ -77,9 +77,7 @@ export function useMessengerAgents() {
     pending.value = true
 
     try {
-      const response = await auth.request<{ agents: MessengerAgentItem[] }>('/agents', {
-        method: 'GET',
-      })
+      const response = await api.listAgents()
       agents.value = response.agents
     } finally {
       pending.value = false
@@ -90,10 +88,7 @@ export function useMessengerAgents() {
     settingsPending.value = true
 
     try {
-      const response = await auth.request<{ settings: MessengerAgentSettings }>(`/agents/${agentId}/settings`, {
-        method: 'PUT',
-        body: payload,
-      })
+      const response = await api.putAgentSettings(agentId, payload)
 
       agents.value = agents.value.map(agent => agent.id === agentId
         ? {
@@ -112,12 +107,7 @@ export function useMessengerAgents() {
     settingsPending.value = true
 
     try {
-      const response = await auth.request<{ settings: MessengerAgentSettings[] }>('/agents/graph', {
-        method: 'PUT',
-        body: {
-          graph,
-        },
-      })
+      const response = await api.putAgentGraph(graph)
 
       const updates = response.settings
 

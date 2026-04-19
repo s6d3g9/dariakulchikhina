@@ -24,27 +24,15 @@ export interface MessengerAgentWorkspaceFilePreview {
 }
 
 export function useMessengerAgentWorkspace() {
-  const auth = useMessengerAuth()
+  const api = useAgentsApi()
 
   async function listWorkspace(agentId: string, currentPath = '') {
-    const response = await auth.request<{ workspace: MessengerAgentWorkspaceListing }>(`/agents/${agentId}/workspace`, {
-      method: 'GET',
-      query: {
-        path: currentPath,
-      },
-    })
-
+    const response = await api.getAgentWorkspace(agentId, currentPath)
     return response.workspace
   }
 
   async function readWorkspaceFile(agentId: string, filePath: string) {
-    const response = await auth.request<{ file: MessengerAgentWorkspaceFilePreview }>(`/agents/${agentId}/workspace/file`, {
-      method: 'GET',
-      query: {
-        path: filePath,
-      },
-    })
-
+    const response = await api.getAgentWorkspaceFile(agentId, filePath)
     return response.file
   }
 
