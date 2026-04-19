@@ -12,6 +12,7 @@ import type {
   ProjectActionExecutePayload,
   ProjectActionId,
 } from '../model/useMessengerProjectActions'
+import ScopeSettingsGrid from './scope-detail/ScopeSettingsGrid.vue'
 
 type ProjectOverviewPane = 'timeline' | 'sprints' | 'subjects' | 'scope-detail'
 
@@ -24,7 +25,6 @@ type SubjectFabulaPreset = {
 
 type GovernanceRoleKey = 'client' | 'manager' | 'designer' | 'lawyer' | 'contractor' | 'seller' | 'engineer' | 'consultant' | 'service' | 'other'
 type GovernanceResponsibilityKey = 'lead' | 'owner' | 'executor' | 'reviewer' | 'approver' | 'observer' | 'consultant'
-type ScopeSettingFieldKind = 'select' | 'number' | 'boolean' | 'list' | 'text'
 
 const props = defineProps<{
   open: boolean
@@ -83,7 +83,6 @@ const selectedCategory = ref<ProjectActionCategoryGroup['category'] | ''>('')
 const scopeParticipantName = ref('')
 const scopeParticipantRole = ref<GovernanceRoleKey>('manager')
 const scopeParticipantResponsibility = ref<GovernanceResponsibilityKey>('owner')
-const scopeSettingsDraft = ref<Record<string, unknown>>({})
 
 const allActions = computed(() => props.groups.flatMap(group => group.actions))
 const currentAction = computed(() => allActions.value.find(action => action.id === props.selectedActionId) || null)
@@ -279,36 +278,6 @@ const governanceResponsibilityItems = [
   { title: 'Консультирует', value: 'consultant' },
 ] as const satisfies ReadonlyArray<{ title: string; value: GovernanceResponsibilityKey }>
 
-const governanceChannelItems = [
-  { title: 'Проектный room', value: 'project-room' },
-  { title: 'Прямой тред', value: 'direct-thread' },
-  { title: 'Передача', value: 'handoff' },
-  { title: 'Согласование', value: 'approval' },
-  { title: 'Дайджест', value: 'daily-digest' },
-]
-
-const governanceSettingOrder = [
-  'communicationChannel',
-  'approvalMode',
-  'visibility',
-  'requiredResponsibilities',
-  'reviewCadenceDays',
-  'reminderCadenceDays',
-  'slaHours',
-  'escalateOnBlocked',
-] as const
-
-const governanceSettingLabels: Record<string, string> = {
-  communicationChannel: 'Канал коммуникации',
-  approvalMode: 'Режим согласования',
-  visibility: 'Видимость',
-  requiredResponsibilities: 'Обязательные роли',
-  reviewCadenceDays: 'Ревью, дней',
-  reminderCadenceDays: 'Напоминание, дней',
-  slaHours: 'SLA, часов',
-  escalateOnBlocked: 'Эскалация при блокере',
-}
-
 const governanceOriginLabels: Record<MessengerPlatformScopeParticipant['origin'], string> = {
   direct: 'контур',
   project: 'проект',
@@ -383,72 +352,6 @@ const subjectActionMenus = computed(() => {
 
 const canCreateScopeParticipant = computed(() => {
   return Boolean(props.scopeDetail && scopeParticipantName.value.trim() && !props.governanceMutationPending)
-})
-
-const editableScopeSettings = computed(() => {
-  const detail = props.scopeDetail
-  if (!detail) {
-    return [] as Array<{
-      key: string
-      label: string
-      kind: ScopeSettingFieldKind
-      value: string | number | boolean | null
-      items?: ReadonlyArray<{ title: string; value: string }>
-    }>
-  }
-
-  const labelMap = new Map(detail.settingItems.map(item => [item.key, item.label]))
-  const knownKeys = governanceSettingOrder.filter(key => key in scopeSettingsDraft.value)
-  const dynamicKeys = Object.keys(scopeSettingsDraft.value).filter(key => !knownKeys.includes(key as typeof governanceSettingOrder[number]))
-  const keys = [...knownKeys, ...dynamicKeys]
-
-  return keys.map((key) => {
-    const rawValue = scopeSettingsDraft.value[key]
-
-    if (key === 'communicationChannel') {
-      return {
-        key,
-        label: labelMap.get(key) || governanceSettingLabels[key] || key,
-        kind: 'select' as const,
-        value: typeof rawValue === 'string' ? rawValue : '',
-        items: governanceChannelItems,
-      }
-    }
-
-    if (key === 'reviewCadenceDays' || key === 'reminderCadenceDays' || key === 'slaHours') {
-      return {
-        key,
-        label: labelMap.get(key) || governanceSettingLabels[key] || key,
-        kind: 'number' as const,
-        value: typeof rawValue === 'number' ? rawValue : rawValue == null ? null : Number(rawValue),
-      }
-    }
-
-    if (key === 'escalateOnBlocked') {
-      return {
-        key,
-        label: labelMap.get(key) || governanceSettingLabels[key] || key,
-        kind: 'boolean' as const,
-        value: Boolean(rawValue),
-      }
-    }
-
-    if (key === 'requiredResponsibilities') {
-      return {
-        key,
-        label: labelMap.get(key) || governanceSettingLabels[key] || key,
-        kind: 'list' as const,
-        value: Array.isArray(rawValue) ? rawValue.join(', ') : typeof rawValue === 'string' ? rawValue : '',
-      }
-    }
-
-    return {
-      key,
-      label: labelMap.get(key) || governanceSettingLabels[key] || key,
-      kind: 'text' as const,
-      value: Array.isArray(rawValue) ? rawValue.join(', ') : typeof rawValue === 'string' ? rawValue : rawValue == null ? '' : String(rawValue),
-    }
-  })
 })
 
 const submitLabel = computed(() => {
@@ -541,41 +444,6 @@ function resetFormState() {
   rangeEnd.value = ''
   detailsText.value = ''
   formError.value = ''
-}
-
-function cloneScopeSettings(settings: Record<string, unknown>) {
-  return JSON.parse(JSON.stringify(settings || {})) as Record<string, unknown>
-}
-
-function normalizeScopeSettingValue(kind: ScopeSettingFieldKind, value: unknown) {
-  if (kind === 'boolean') {
-    return Boolean(value)
-  }
-
-  if (kind === 'number') {
-    const normalized = typeof value === 'number' ? value : Number(String(value || '').trim())
-    return Number.isFinite(normalized) ? normalized : null
-  }
-
-  if (kind === 'list') {
-    return String(value || '')
-      .split(',')
-      .map(item => item.trim())
-      .filter(Boolean)
-  }
-
-  return typeof value === 'string' ? value.trim() : value == null ? '' : String(value)
-}
-
-function updateScopeSettingDraft(key: string, kind: ScopeSettingFieldKind, value: unknown) {
-  scopeSettingsDraft.value = {
-    ...scopeSettingsDraft.value,
-    [key]: normalizeScopeSettingValue(kind, value),
-  }
-}
-
-function commitScopeSettings() {
-  emit('updateScopeSettings', { settings: cloneScopeSettings(scopeSettingsDraft.value) })
 }
 
 function submitScopeParticipant() {
@@ -976,7 +844,6 @@ watch(() => props.catalog, () => {
 watch(() => props.scopeDetail, (detail) => {
   if (detail) {
     overviewPane.value = 'scope-detail'
-    scopeSettingsDraft.value = cloneScopeSettings(detail.settings)
   }
 })
 
@@ -1298,54 +1165,12 @@ watch(selectedTask, (task) => {
               <p v-else-if="props.governanceMutationNotice" class="pa-state pa-state--muted">{{ props.governanceMutationNotice }}</p>
             </section>
 
-            <section v-if="editableScopeSettings.length" class="pa-scope-cluster">
-              <div class="pa-scope-cluster__head">
-                <span class="pa-pane__title">Настройки</span>
-                <span class="pa-pane__value">{{ formatCountLabel(editableScopeSettings.length, 'настройка', 'настройки', 'настроек') }}</span>
-              </div>
-              <div class="pa-scope-setting-grid">
-                <article v-for="field in editableScopeSettings" :key="field.key" class="pa-scope-item">
-                  <span class="pa-scope-item__title">{{ field.label }}</span>
-
-                  <VSelect
-                    v-if="field.kind === 'select'"
-                    :model-value="field.value as string"
-                    :items="field.items || []"
-                    item-title="title"
-                    item-value="value"
-                    density="comfortable"
-                    variant="outlined"
-                    hide-details
-                    :disabled="props.governanceMutationPending"
-                    @update:model-value="updateScopeSettingDraft(field.key, field.kind, $event); commitScopeSettings()"
-                  />
-
-                  <VSwitch
-                    v-else-if="field.kind === 'boolean'"
-                    :model-value="Boolean(field.value)"
-                    inset
-                    color="primary"
-                    hide-details
-                    :disabled="props.governanceMutationPending"
-                    @update:model-value="updateScopeSettingDraft(field.key, field.kind, $event); commitScopeSettings()"
-                  />
-
-                  <VTextField
-                    v-else
-                    :model-value="field.value == null ? '' : String(field.value)"
-                    :type="field.kind === 'number' ? 'number' : 'text'"
-                    variant="outlined"
-                    density="comfortable"
-                    hide-details
-                    :disabled="props.governanceMutationPending"
-                    @update:model-value="updateScopeSettingDraft(field.key, field.kind, $event)"
-                    @blur="commitScopeSettings()"
-                  />
-
-                  <span class="pa-scope-item__meta">{{ field.kind === 'list' ? 'Укажите роли через запятую' : 'Изменения отправляются сразу' }}</span>
-                </article>
-              </div>
-            </section>
+            <ScopeSettingsGrid
+              :setting-items="props.scopeDetail.settingItems"
+              :settings="props.scopeDetail.settings"
+              :mutation-pending="props.governanceMutationPending"
+              @update-settings="emit('updateScopeSettings', { settings: $event })"
+            />
 
             <section v-if="props.scopeDetail.objectItems.length" class="pa-scope-cluster">
               <div class="pa-scope-cluster__head">
