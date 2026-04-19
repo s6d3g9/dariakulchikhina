@@ -120,11 +120,12 @@ export const messengerAgentRuns = pgTable('messenger_agent_runs', {
   agentId: uuid('agent_id')
     .notNull()
     .references(() => messengerAgents.id),
+  parentRunId: uuid('parent_run_id'),
   conversationId: uuid('conversation_id')
-    .notNull()
     .references(() => messengerConversations.id),
   status: text('status').notNull().default('pending'),
   prompt: text('prompt'),
+  model: text('model'),
   result: text('result'),
   error: text('error'),
   startedAt: tstz('started_at'),
@@ -150,3 +151,21 @@ export const messengerAgentRunEvents = pgTable(
   },
   (t) => [index('messenger_agent_run_events_run_cursor_idx').on(t.runId, t.occurredAt.desc())],
 )
+
+export const messengerCliSessions = pgTable('messenger_cli_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  agentId: uuid('agent_id')
+    .notNull()
+    .references(() => messengerAgents.id),
+  runId: uuid('run_id').references(() => messengerAgentRuns.id),
+  workroomSlug: text('workroom_slug'),
+  model: text('model'),
+  tmuxWindow: text('tmux_window'),
+  claudeSessionUuid: text('claude_session_uuid'),
+  logPath: text('log_path'),
+  status: text('status').notNull().default('pending'),
+  createdAt: tstz('created_at').defaultNow().notNull(),
+  updatedAt: tstz('updated_at').defaultNow().notNull(),
+  version: integer('version').default(1).notNull(),
+  deletedAt: tstz('deleted_at'),
+})

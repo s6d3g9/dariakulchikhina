@@ -26,6 +26,7 @@ import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } fr
 import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, buildMessengerProjectSyncBrief, deleteMessengerProject, deleteMessengerProjectAgreement, deleteMessengerProjectCabinetLink, deleteMessengerProjectSubject, getMessengerProject, listMessengerProjectTemplates, listMessengerProjects, upsertMessengerProject, upsertMessengerProjectAgreement, upsertMessengerProjectCabinetLink, upsertMessengerProjectSubject } from '../project-engine/project-engine-store.ts'
 import { readMessengerConfig } from '../config.ts'
 import { registerIngestRoutes } from '../agents/ingest-handler.ts'
+import { registerOrchestrationRoutes } from '../agents/orchestration-handler.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from '../media/media-store.ts'
 import { hasMessengerTranscriptionHttpBackend, isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from '../transcription/transcription-service.ts'
 import { getMessengerUserAiSettings, updateMessengerUserAiSettings } from '../profile/user-ai-settings-store.ts'
@@ -2955,6 +2956,7 @@ export async function createMessengerServer() {
   })
 
   registerIngestRoutes(app, broadcastToChannel)
+  registerOrchestrationRoutes(app, broadcastToChannel)
 
   return app
 }
