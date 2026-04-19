@@ -12,11 +12,11 @@ import {
   type MessengerThemeMode,
   type ResolvedMessengerThemeMode,
 } from '../../../../theme/messengerColorSchemes'
+import { getAiSettings, putAiSettings } from '../../../core/api/settings'
 
 type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerStyleKey = 'liquid' | 'material'
-type MessengerAuthRequest = <T>(path: string, options?: Parameters<typeof $fetch<T>>[1]) => Promise<T>
 type MessengerInterpretationProvider = 'algorithm' | 'api'
 type MessengerTranscriptionProvider = 'server-default' | 'api'
 
@@ -610,7 +610,7 @@ export function useMessengerSettings() {
     activeSection.value = section
   }
 
-  async function hydrateAiSettings(request: MessengerAuthRequest) {
+  async function hydrateAiSettings() {
     if (aiSettingsPending.value) {
       return
     }
@@ -619,11 +619,7 @@ export function useMessengerSettings() {
     aiSettingsError.value = ''
 
     try {
-      const response = await request<{
-        settings: MessengerAiSettingsSnapshot
-        modelOptions: MessengerAiModelOptions
-        configured: MessengerAiConfiguredState
-      }>('/settings/ai')
+      const response = await getAiSettings()
 
       aiSettings.value = mergeMessengerAiSettings(response.settings)
       aiModelOptions.value = mergeMessengerAiModelOptions(response.modelOptions)
@@ -642,7 +638,7 @@ export function useMessengerSettings() {
     }
   }
 
-  async function persistAiSettings(request: MessengerAuthRequest) {
+  async function persistAiSettings() {
     if (aiSettingsPending.value) {
       return
     }
@@ -651,14 +647,7 @@ export function useMessengerSettings() {
     aiSettingsError.value = ''
 
     try {
-      const response = await request<{
-        settings: MessengerAiSettingsSnapshot
-        modelOptions: MessengerAiModelOptions
-        configured: MessengerAiConfiguredState
-      }>('/settings/ai', {
-        method: 'PUT',
-        body: mergeMessengerAiSettings(aiSettings.value),
-      })
+      const response = await putAiSettings(mergeMessengerAiSettings(aiSettings.value))
 
       aiSettings.value = mergeMessengerAiSettings(response.settings)
       aiModelOptions.value = mergeMessengerAiModelOptions(response.modelOptions)

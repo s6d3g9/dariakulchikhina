@@ -11,7 +11,7 @@ onMounted(() => {
   settingsModel.hydrate()
   settingsModel.settings.value.devices.keepSignedIn = auth.persistenceMode.value === 'local'
   if (auth.token.value) {
-    void settingsModel.hydrateAiSettings(auth.request)
+    void settingsModel.hydrateAiSettings()
   }
 })
 
@@ -21,7 +21,7 @@ watch(() => settingsModel.settings.value.devices.keepSignedIn, (enabled) => {
 
 watch(() => auth.token.value, (nextToken) => {
   if (nextToken) {
-    void settingsModel.hydrateAiSettings(auth.request)
+    void settingsModel.hydrateAiSettings()
   }
 })
 
@@ -242,7 +242,7 @@ function queueAiSettingsPersist() {
 
   aiSettingsPersistTimer = setTimeout(() => {
     aiSettingsPersistTimer = null
-    void settingsModel.persistAiSettings(auth.request)
+    void settingsModel.persistAiSettings()
   }, 450)
 }
 
