@@ -742,10 +742,54 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .nav-row{display:flex;gap:.3rem;padding:.4rem .6rem;overflow-x:auto;overflow-y:hidden;align-items:center;scrollbar-width:none;-ms-overflow-style:none;user-select:none;cursor:grab}
   .nav-row::-webkit-scrollbar{display:none;width:0;height:0}
   .nav-row.dragging{cursor:grabbing}
-  .log{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-  .log::-webkit-scrollbar{width:6px;height:6px}
-  .log::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
-  .log::-webkit-scrollbar-track{background:transparent}
+
+  /* ── M3-style scrollbars ──
+     Hidden by default. On any user interaction inside a scroll container
+     (hover/focus-within/scrolling class) we fade the thin thumb in with
+     M3 surface-tint colors. Firefox gets the limited scrollbar-width API;
+     Webkit/Chromium gets the full styled pseudo-elements. */
+  :root{
+    --sb-thumb:rgba(202,196,208,.24);     /* M3 dark on-surface variant @ 24% */
+    --sb-thumb-hover:rgba(230,225,229,.55);/* M3 on-surface @ 55% */
+    --sb-track:transparent;
+  }
+  /* Firefox: there's no "hover reveal" so we keep it hidden by default;
+     we flip scrollbar-width to thin when the element has .scrolling. */
+  .log, .side, .right-side, .content{scrollbar-width:none;scrollbar-color:var(--sb-thumb) var(--sb-track)}
+  .log.scrolling, .side.scrolling, .right-side.scrolling, .content.scrolling,
+  .log:hover, .side:hover, .right-side:hover, .content:hover,
+  .log:focus-within, .side:focus-within, .right-side:focus-within, .content:focus-within{scrollbar-width:thin}
+  /* Webkit: scrollbar is always present (so the layout doesn't jump) but
+     fully transparent; thumb fades in on hover / active scroll. */
+  .log::-webkit-scrollbar, .side::-webkit-scrollbar, .right-side::-webkit-scrollbar, .content::-webkit-scrollbar{
+    width:8px;height:8px;background:transparent
+  }
+  .log::-webkit-scrollbar-track, .side::-webkit-scrollbar-track, .right-side::-webkit-scrollbar-track, .content::-webkit-scrollbar-track{background:transparent}
+  .log::-webkit-scrollbar-thumb, .side::-webkit-scrollbar-thumb, .right-side::-webkit-scrollbar-thumb, .content::-webkit-scrollbar-thumb{
+    background:transparent;border-radius:99px;border:2px solid transparent;background-clip:padding-box;
+    transition:background-color .18s cubic-bezier(.2,0,0,1)
+  }
+  .log:hover::-webkit-scrollbar-thumb, .log.scrolling::-webkit-scrollbar-thumb,
+  .side:hover::-webkit-scrollbar-thumb, .side.scrolling::-webkit-scrollbar-thumb,
+  .right-side:hover::-webkit-scrollbar-thumb, .right-side.scrolling::-webkit-scrollbar-thumb,
+  .content:hover::-webkit-scrollbar-thumb, .content.scrolling::-webkit-scrollbar-thumb{
+    background-color:var(--sb-thumb)
+  }
+  .log::-webkit-scrollbar-thumb:hover, .side::-webkit-scrollbar-thumb:hover,
+  .right-side::-webkit-scrollbar-thumb:hover, .content::-webkit-scrollbar-thumb:hover{
+    background-color:var(--sb-thumb-hover)
+  }
+  /* Small inner scrollers (file list, task body) follow the same rule. */
+  .file-list, .task-body{scrollbar-width:none}
+  .file-list:hover, .task-body:hover{scrollbar-width:thin}
+  .file-list::-webkit-scrollbar, .task-body::-webkit-scrollbar{width:6px;height:6px;background:transparent}
+  .file-list::-webkit-scrollbar-thumb, .task-body::-webkit-scrollbar-thumb{
+    background:transparent;border-radius:99px;transition:background-color .18s cubic-bezier(.2,0,0,1)
+  }
+  .file-list:hover::-webkit-scrollbar-thumb, .task-body:hover::-webkit-scrollbar-thumb,
+  .file-list.scrolling::-webkit-scrollbar-thumb, .task-body.scrolling::-webkit-scrollbar-thumb{
+    background-color:var(--sb-thumb)
+  }
   .nav-row + .nav-row{border-top:1px solid var(--line)}
   .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0}
   .nav-row.orchestrators{background:#0f1419}
@@ -1138,6 +1182,24 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     }, { passive: false });
   }
   for (const row of document.querySelectorAll('.nav-row')) wireRowScroll(row);
+
+  // ── M3 scrollbar reveal: flip .scrolling while any scroll container is
+  //    actively being scrolled; remove the class after 900ms idle so the
+  //    thumb fades back out. Delegated on document so dynamically inserted
+  //    panes (renderContent/renderRightSide) are covered for free. ──
+  (function wireScrollReveal() {
+    const timers = new WeakMap();
+    document.addEventListener('scroll', (e) => {
+      const t = e.target;
+      if (!t || t.nodeType !== 1) return;
+      // Only style our known scrollable containers.
+      if (!t.matches('.log, .side, .right-side, .content, .file-list, .task-body')) return;
+      t.classList.add('scrolling');
+      clearTimeout(timers.get(t));
+      timers.set(t, setTimeout(() => t.classList.remove('scrolling'), 900));
+    }, true);
+  })();
+
   // archive-folder-label click is inside nav-row — make sure it still fires
   // (drag threshold is 6px, label click needs no drag so it's fine)
 
