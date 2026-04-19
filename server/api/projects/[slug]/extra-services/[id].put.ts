@@ -1,7 +1,7 @@
 import {
   updateProjectExtraService,
   UpdateExtraServiceSchema,
-} from '~/server/modules/projects/project-extra-services-api.service'
+} from '~/server/modules/projects/project-extra-services.service'
 
 /**
  * PUT /api/projects/[slug]/extra-services/[id] — role-based partial

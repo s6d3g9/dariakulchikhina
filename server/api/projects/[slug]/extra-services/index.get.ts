@@ -1,4 +1,4 @@
-import { listProjectExtraServices } from '~/server/modules/projects/project-extra-services-api.service'
+import { listProjectExtraServices } from '~/server/modules/projects/project-extra-services.service'
 
 /**
  * GET /api/projects/[slug]/extra-services — all extra-services for the

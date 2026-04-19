@@ -739,7 +739,7 @@ Commit `48e10f0` нужно позднее либо:
 10 endpoints thinned: contractors.get/post/delete + contractors/[contractorId].delete + designers.get/post/delete + sellers.get/post/delete. Файл: server/modules/projects/project-partners.service.ts (listProject*/addPartnerToProject/removePartnerFromProject для трёх ролей + auth slug & PII stripping в contractors list). Проверки: vue-tsc ok, lint-ratchet ok.
 
 ### [done] 2026-04-17 — Wave 5 / projects extra-services → modules/projects
-4 endpoints thinned. Файл: server/modules/projects/project-extra-services-api.service.ts (list/create/update/delete с admin-vs-client field whitelist). Проверки: vue-tsc ok, lint-ratchet ok.
+4 endpoints thinned. Файл: server/modules/projects/project-extra-services.service.ts (list/create/update/delete с admin-vs-client field whitelist). Проверки: vue-tsc ok, lint-ratchet ok.
 
 ### [done] 2026-04-17 — Wave 5 / projects pages (page-content + page-answers) → modules/projects
 4 endpoints thinned. Файл: server/modules/projects/project-pages.service.ts (getPageContent/upsertPageContent + getPageAnswers/upsertPageAnswers, с prototype-pollution sanitization). Проверки: vue-tsc ok, lint-ratchet ok.
@@ -824,7 +824,7 @@ server/modules/ai/ai.repository.ts (listLegalSourceCounts, findProjectBySlug, li
 - `project-communications-api.repository.ts` — findProjectBySlug, listActionCatalogData, updateProjectProfile
 
 Обновлено 14 service-файлов (все `import * as repo from './<name>.repository'`):
-- `projects.service.ts`, `project-mutations.service.ts`, `project-pages.service.ts`, `project-extra-services-api.service.ts`, `project-extra-service-documents.service.ts`, `project-partners.service.ts`, `project-relations.service.ts`, `project-work-status.service.ts`, `project-work-status-items.service.ts`, `project-comms-action-helpers.service.ts`, `project-communications-api.service.ts`, `project-governance-state.service.ts`, `project-governance-summary.service.ts`, `project-governance.service.ts`
+- `projects.service.ts`, `project-mutations.service.ts`, `project-pages.service.ts`, `project-extra-services.service.ts`, `project-extra-service-documents.service.ts`, `project-partners.service.ts`, `project-relations.service.ts`, `project-work-status.service.ts`, `project-work-status-items.service.ts`, `project-comms-action-helpers.service.ts`, `project-communications-api.service.ts`, `project-governance-state.service.ts`, `project-governance-summary.service.ts`, `project-governance.service.ts`
 
 Исключения (по правилам задания):
 - `project-work-status.service.ts` и `project-governance.service.ts` сохраняют `import { useDb } from '~/server/db'` только для `db.transaction()`.

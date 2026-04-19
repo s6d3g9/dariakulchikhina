@@ -1,4 +1,4 @@
-import { deleteProjectExtraService } from '~/server/modules/projects/project-extra-services-api.service'
+import { deleteProjectExtraService } from '~/server/modules/projects/project-extra-services.service'
 
 /**
  * DELETE /api/projects/[slug]/extra-services/[id] — client can delete

@@ -56,10 +56,10 @@
 - server/api/projects/[slug]/relations.put.ts -> server/modules/projects/project-relations.service.ts
 - server/api/projects/[slug]/work-status.get.ts -> server/modules/projects/project-work-status.service.ts
 - server/api/projects/[slug]/work-status.put.ts -> server/modules/projects/project-work-status.service.ts
-- server/api/projects/[slug]/extra-services/index.get.ts -> server/modules/projects/project-extra-services-api.service.ts
-- server/api/projects/[slug]/extra-services/index.post.ts -> server/modules/projects/project-extra-services-api.service.ts
-- server/api/projects/[slug]/extra-services/[id].put.ts -> server/modules/projects/project-extra-services-api.service.ts
-- server/api/projects/[slug]/extra-services/[id].delete.ts -> server/modules/projects/project-extra-services-api.service.ts
+- server/api/projects/[slug]/extra-services/index.get.ts -> server/modules/projects/project-extra-services.service.ts
+- server/api/projects/[slug]/extra-services/index.post.ts -> server/modules/projects/project-extra-services.service.ts
+- server/api/projects/[slug]/extra-services/[id].put.ts -> server/modules/projects/project-extra-services.service.ts
+- server/api/projects/[slug]/extra-services/[id].delete.ts -> server/modules/projects/project-extra-services.service.ts
 - server/api/projects/[slug]/communications-bootstrap.get.ts -> server/modules/communications/communications-bootstrap.service.ts
 
 ### Остальные домены
