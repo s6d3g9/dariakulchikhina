@@ -20,14 +20,18 @@
  */
 
 import { createServer } from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import {
+  appendFileSync,
   createReadStream,
   existsSync,
+  mkdirSync,
   promises as fsp,
   readdirSync,
   readFileSync,
+  renameSync,
   statSync,
+  writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -43,11 +47,9 @@ const BIN_CLAUDE_SESSION = join(HOME, 'bin/claude-session');
 
 // Ensure archive dir exists + has a registry header
 try {
-  if (!existsSync(ARCHIVE_DIR)) {
-    require('node:fs').mkdirSync(ARCHIVE_DIR, { recursive: true });
-  }
+  if (!existsSync(ARCHIVE_DIR)) mkdirSync(ARCHIVE_DIR, { recursive: true });
   if (!existsSync(ARCHIVE_REGISTRY)) {
-    require('node:fs').writeFileSync(ARCHIVE_REGISTRY, 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tarchived_at\n');
+    writeFileSync(ARCHIVE_REGISTRY, 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tarchived_at\n');
   }
 } catch {}
 
@@ -214,23 +216,22 @@ function readArchiveRegistry() {
 function archiveSession(slug) {
   const active = readRegistry().find(r => r.slug === slug);
   if (!active) return { ok: false, reason: 'not found in active registry' };
-  const { spawnSync } = require('node:child_process');
-  // Best effort: kill tmux window + session via claude-session (will ignore errors if already gone)
+  // Best effort: kill tmux window via claude-session (ignores errors if already gone)
   try { spawnSync(BIN_CLAUDE_SESSION, ['kill', slug], { timeout: 5000 }); } catch {}
-  // Move log + state json
-  const fs = require('node:fs');
-  const moveIfExists = (src, dst) => { if (existsSync(src)) try { fs.renameSync(src, dst); } catch {} };
+  const moveIfExists = (src, dst) => {
+    if (existsSync(src)) { try { renameSync(src, dst); } catch {} }
+  };
   moveIfExists(join(STATE_DIR, `${slug}.log`),  join(ARCHIVE_DIR, `${slug}.log`));
   moveIfExists(join(STATE_DIR, `${slug}.json`), join(ARCHIVE_DIR, `${slug}.json`));
   // Remove from active registry (kill already did, but be safe)
   if (existsSync(REGISTRY)) {
     const lines = readFileSync(REGISTRY, 'utf8').split('\n');
     const kept = lines.filter(l => !l.startsWith(`${slug}\t`));
-    fs.writeFileSync(REGISTRY, kept.join('\n'));
+    writeFileSync(REGISTRY, kept.join('\n'));
   }
   // Append to archive registry
   const archivedAt = new Date().toISOString();
-  fs.appendFileSync(
+  appendFileSync(
     ARCHIVE_REGISTRY,
     `${active.slug}\t${active.uuid}\t${active.window}\t${active.workroom}\t${active.model}\t${active.created}\t${archivedAt}\n`,
   );
