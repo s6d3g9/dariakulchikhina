@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-restricted-imports
 import { drizzle } from 'drizzle-orm/postgres-js'
 // eslint-disable-next-line no-restricted-imports
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, sql, gt, lt, lte, or, desc } from 'drizzle-orm'
 // eslint-disable-next-line no-restricted-imports
 import postgres from 'postgres'
 // eslint-disable-next-line no-restricted-imports
@@ -12,7 +12,7 @@ import {
 } from '../../../../server/db/schema/messenger.ts'
 import { readMessengerConfig } from '../config.ts'
 
-export { messengerAgents, messengerAgentRuns, messengerAgentRunEvents, eq, and, isNull }
+export { messengerAgents, messengerAgentRuns, messengerAgentRunEvents, eq, and, isNull, sql, gt, lt, lte, or, desc }
 
 const schema = { messengerAgents, messengerAgentRuns, messengerAgentRunEvents }
 export type IngestDb = ReturnType<typeof drizzle<typeof schema>>

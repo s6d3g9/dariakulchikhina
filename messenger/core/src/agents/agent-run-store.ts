@@ -1,3 +1,18 @@
+import { randomUUID } from 'node:crypto'
+import {
+  useIngestDb,
+  messengerAgentRuns,
+  eq,
+  isNull,
+  and,
+  sql,
+  desc,
+  lt,
+  or,
+  lte,
+} from './ingest-db.ts'
+import { encodeCursor, decodeCursor } from '../shared/cursor.ts'
+
 export interface MessengerAgentRunArtifactRecord {
   kind: 'consultation' | 'file' | 'summary'
   label: string
@@ -20,6 +35,13 @@ export interface MessengerAgentRunRecord {
   runId: string
   conversationId?: string
   agentId: string
+  parentRunId?: string
+  rootRunId?: string
+  spawnedByAgentId?: string
+  costUsd?: string
+  tokenInTotal?: number
+  tokenOutTotal?: number
+  attachmentIds?: string[]
   status: 'running' | 'completed' | 'failed'
   startedAt: string
   updatedAt: string
@@ -147,4 +169,125 @@ export async function listMessengerAgentEdgePayloads(input: {
   return edgePayloads
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     .slice(0, limit)
+}
+
+export async function createRun(input: {
+  agentId: string
+  conversationId: string
+  parentRunId?: string
+  spawnedByAgentId?: string
+  prompt?: string
+  attachmentIds?: string[]
+}): Promise<{ runId: string; rootRunId: string }> {
+  const db = useIngestDb()
+  const runId = randomUUID()
+
+  let rootRunId = runId
+  if (input.parentRunId) {
+    const [parent] = await db
+      .select({ rootRunId: messengerAgentRuns.rootRunId })
+      .from(messengerAgentRuns)
+      .where(and(eq(messengerAgentRuns.id, input.parentRunId), isNull(messengerAgentRuns.deletedAt)))
+      .limit(1)
+    if (parent?.rootRunId) {
+      rootRunId = parent.rootRunId as typeof runId
+    }
+  }
+
+  await db.insert(messengerAgentRuns).values({
+    id: runId,
+    agentId: input.agentId,
+    conversationId: input.conversationId,
+    parentRunId: input.parentRunId ?? null,
+    rootRunId,
+    spawnedByAgentId: input.spawnedByAgentId ?? null,
+    prompt: input.prompt ?? null,
+    attachmentIds: input.attachmentIds ?? [],
+    status: 'pending',
+  })
+
+  return { runId, rootRunId }
+}
+
+export async function listSubtree(
+  rootRunId: string,
+  cursor?: string | null,
+  limit = 100,
+): Promise<{ items: Array<{ runId: string; parentRunId: string | null; rootRunId: string; status: string; agentId: string; tokenInTotal: number; tokenOutTotal: number; costUsd: string; createdAt: string }>; nextCursor: string | null }> {
+  const db = useIngestDb()
+  const clampedLimit = Math.min(Math.max(limit, 1), 200)
+  const decoded = decodeCursor(cursor)
+
+  const baseConditions = [
+    eq(messengerAgentRuns.rootRunId, rootRunId),
+    isNull(messengerAgentRuns.deletedAt),
+  ]
+
+  const rows = await db
+    .select({
+      id: messengerAgentRuns.id,
+      parentRunId: messengerAgentRuns.parentRunId,
+      rootRunId: messengerAgentRuns.rootRunId,
+      status: messengerAgentRuns.status,
+      agentId: messengerAgentRuns.agentId,
+      tokenInTotal: messengerAgentRuns.tokenInTotal,
+      tokenOutTotal: messengerAgentRuns.tokenOutTotal,
+      costUsd: messengerAgentRuns.costUsd,
+      createdAt: messengerAgentRuns.createdAt,
+    })
+    .from(messengerAgentRuns)
+    .where(
+      decoded
+        ? and(
+            ...baseConditions,
+            or(
+              lt(messengerAgentRuns.createdAt, new Date(decoded.createdAt)),
+              and(
+                lte(messengerAgentRuns.createdAt, new Date(decoded.createdAt)),
+                lt(messengerAgentRuns.id, decoded.id),
+              ),
+            ),
+          )
+        : and(...baseConditions),
+    )
+    .orderBy(desc(messengerAgentRuns.createdAt), desc(messengerAgentRuns.id))
+    .limit(clampedLimit + 1)
+
+  const hasMore = rows.length > clampedLimit
+  const sliced = hasMore ? rows.slice(0, clampedLimit) : rows
+  const last = sliced[sliced.length - 1]
+  const nextCursor =
+    hasMore && last
+      ? encodeCursor({ createdAt: last.createdAt.toISOString(), id: last.id })
+      : null
+
+  return {
+    items: sliced.map((r) => ({
+      runId: r.id,
+      parentRunId: r.parentRunId ?? null,
+      rootRunId: r.rootRunId ?? rootRunId,
+      status: r.status,
+      agentId: r.agentId,
+      tokenInTotal: r.tokenInTotal,
+      tokenOutTotal: r.tokenOutTotal,
+      costUsd: r.costUsd ?? '0',
+      createdAt: r.createdAt.toISOString(),
+    })),
+    nextCursor,
+  }
+}
+
+export async function updateTotals(
+  runId: string,
+  totals: { tokenIn: number; tokenOut: number; costUsd: number },
+): Promise<void> {
+  const db = useIngestDb()
+  await db
+    .update(messengerAgentRuns)
+    .set({
+      tokenInTotal: totals.tokenIn,
+      tokenOutTotal: totals.tokenOut,
+      costUsd: totals.costUsd.toFixed(8),
+    })
+    .where(eq(messengerAgentRuns.id, runId))
 }
