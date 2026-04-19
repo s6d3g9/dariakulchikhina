@@ -74,6 +74,43 @@ Rules:
 
 `pnpm deploy:safe:*` still runs from the Windows worktree because it ships `builds/pre-deploy/*.bundle` through a different user (`stas` via Host `daria-deploy`). Remote Dev Mode does not change deploy flow — it only moves *development* to the server.
 
+## 🤖 Claude CLI Dispatcher
+
+The Claude CLI dispatcher is a control plane for running multiple Claude Code sessions in parallel on the server, each accessible via the messenger UI as an agent contact. This enables collaborative dev workflows: while one window works on a feature, another can research, debug, or run bulk operations concurrently.
+
+### Architecture
+
+```
+Windows / phone / browser
+        │  http://152.53.176.165:9090  (basic auth)
+        ▼
+claude-web-dashboard  ←──watches── ~/state/claude-sessions/*.log
+        │
+        │  claude-stream-bridge per tmux ── POST /agents/:id/stream
+        ▼
+messenger/core ingest-handler → messenger_agent_run_events (Postgres)
+                               → WS agent-stream:{agentId}
+                               → messenger/web agent workspace
+```
+
+Each tmux session is a long-running Claude Code process. The dashboard polls its logs, forwarding output events to the messenger ingest endpoint. Agents appear as live contacts; send follow-ups via CLI or the UI.
+
+### Launch a session
+
+```bash
+~/bin/claude-session create <slug> --workroom <wr> --model <m> --prompt "..."
+```
+
+This creates a tmux window, starts Claude Code with the given prompt, and streams output to the messenger dashboard.
+
+### Monitor and interact
+
+- **Dashboard:** http://152.53.176.165:9090 (credentials in `~/.claude-dashboard-auth`)
+- **CLI:** `claude-session list`, `logs`, `tail`, `attach <slug>`
+- **Send follow-up:** `claude-session send <slug> "..." ` or type in messenger UI
+
+See [docs/claude-cli-dispatcher-runbook.md](docs/claude-cli-dispatcher-runbook.md) for detailed operator steps.
+
 ## Runtimes and top-level layout
 
 - `app/` + `server/` + `shared/` — main Nuxt 4 app (SSR + REST + SSE in one Nitro process). Frontend follows FSD, backend follows DDD-lite.
