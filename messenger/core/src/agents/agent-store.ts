@@ -56,6 +56,16 @@ interface MessengerConnectedAgent {
 
 const MESSENGER_AGENTS: MessengerAgentRecord[] = [
   {
+    id: 'composer',
+    login: 'agent.composer',
+    displayName: 'Composer',
+    description: 'Верхний уровень иерархии — стратегический собеседник. Обсуждает архитектуру, пивоты, триаж. Делегирует исполнение оркестратору через claude-session.',
+    greeting: 'Я сверху трёхуровневой иерархии composer → orchestrator → workers. Обсудим стратегию, а исполнение я передам дальше.',
+    prompts: ['Какая следующая волна работ?', 'Составь план фичи с kind-разбивкой', 'Что сейчас блокирует merge?'],
+    systemPrompt: 'Ты композитор — самый верхний слой нашей системы. Ты не редактируешь код сам. Твоя роль: собеседник пользователя по стратегии, архитектуре, приоритетам. Когда появляется исполнительная работа — ты её формулируешь как инструкцию оркестратору (claude-session send orchestrator \"...\"). Отвечай по-русски, кратко, с конкретными action-item когда уместно.',
+    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+  },
+  {
     id: 'orchestrator',
     login: 'agent.orchestrator',
     displayName: 'Техлид-оркестратор',
