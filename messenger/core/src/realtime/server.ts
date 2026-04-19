@@ -1777,6 +1777,39 @@ export async function createMessengerServer() {
     }
   })
 
+  app.post('/agents/runs/:runId/cancel', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const runIdSchema = z.object({ runId: z.string().min(1) })
+    const parsedParams = runIdSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const run = await getMessengerAgentRunById(parsedParams.data.runId)
+    if (!run) {
+      return reply.code(404).send({ error: 'RUN_NOT_FOUND' })
+    }
+
+    if (run.status !== 'running') {
+      return reply.code(409).send({ error: 'RUN_NOT_RUNNING' })
+    }
+
+    await appendMessengerAgentRunEvent({
+      runId: run.runId,
+      agentId: run.agentId,
+      conversationId: run.conversationId,
+      phase: 'completed',
+      status: 'failed',
+      summary: 'Прогон отменен пользователем',
+    })
+
+    return { success: true }
+  })
+
   app.post('/contacts/invites', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -2028,6 +2061,41 @@ export async function createMessengerServer() {
       timestamp: new Date().toISOString(),
     })
     return { conversation }
+  })
+
+  app.post('/agents/:agentId/runs', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = agentParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const agent = await findMessengerAgentById(parsedParams.data.agentId)
+    if (!agent) {
+      return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
+    }
+
+    const body = request.body as { prompt?: string; attachmentIds?: string[] } | null
+    if (!body?.prompt) {
+      return reply.code(400).send({ error: 'MISSING_PROMPT' })
+    }
+
+    const runId = `run-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const rootRunId = runId
+
+    await appendMessengerAgentRunEvent({
+      runId,
+      agentId: agent.id,
+      phase: 'started',
+      status: 'running',
+      summary: body.prompt.slice(0, 100),
+    })
+
+    return { runId, rootRunId }
   })
 
   app.delete('/conversations/:conversationId', async (request, reply) => {

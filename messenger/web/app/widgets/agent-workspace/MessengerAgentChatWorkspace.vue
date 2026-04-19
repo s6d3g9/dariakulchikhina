@@ -93,6 +93,7 @@ const knowledgeStatus = ref<MessengerAgentKnowledgeStatus | null>(null)
 const knowledgePreset = ref<MessengerAgentKnowledgePreset | null>(null)
 const knowledgePresetPending = ref(false)
 const knowledgeError = ref('')
+const selectedRunCancelPending = ref(false)
 
 const sections: Array<{ key: AgentWorkspaceSectionKey; title: string }> = [
   {
@@ -727,6 +728,21 @@ async function openRunDetail(runId: string) {
   await runsModel.openRun(runId)
 }
 
+async function cancelRun(runId: string) {
+  selectedRunCancelPending.value = true
+  try {
+    await $fetch(`/agents/runs/${runId}/cancel`, {
+      method: 'POST',
+    })
+    await runsModel.refresh(resolvedAgent.value?.id, 6)
+  } catch {
+    feedbackMessage.value = 'Не удалось отменить прогон.'
+    feedbackTone.value = 'error'
+  } finally {
+    selectedRunCancelPending.value = false
+  }
+}
+
 async function loadWorkspace(nextPath = explorerListing.value?.currentPath || '') {
   if (!resolvedAgent.value) {
     return
@@ -1144,7 +1160,18 @@ async function openWorkspaceFile(path: string) {
             <p v-else-if="!treeRootId" class="agent-chat-workspace__card-text">История запусков для этого agent-чата пока пуста.</p>
             <article v-if="selectedRun" class="agent-chat-workspace__card agent-chat-workspace__card--form">
               <p class="agent-chat-workspace__card-eyebrow">Детали прогона</p>
-              <h3 class="agent-chat-workspace__card-title">{{ runStatusLabel(selectedRun.status) }} · {{ formatTimestamp(selectedRun.updatedAt) }}</h3>
+              <div class="agent-chat-workspace__card-header">
+                <h3 class="agent-chat-workspace__card-title">{{ runStatusLabel(selectedRun.status) }} · {{ formatTimestamp(selectedRun.updatedAt) }}</h3>
+                <button
+                  v-if="selectedRun.status === 'running'"
+                  type="button"
+                  class="agent-chat-workspace__ghost agent-chat-workspace__cancel-btn"
+                  :disabled="selectedRunCancelPending"
+                  @click="cancelRun(selectedRun.runId)"
+                >
+                  Отменить
+                </button>
+              </div>
               <div v-if="selectedRun.events.length" class="agent-chat-workspace__stack">
                 <div v-for="event in selectedRun.events" :key="`${selectedRun.runId}:${event.phase}:${event.timestamp}`" class="agent-chat-workspace__list-item">
                   <strong>{{ runtimePhaseLabel(event.phase) }}</strong>

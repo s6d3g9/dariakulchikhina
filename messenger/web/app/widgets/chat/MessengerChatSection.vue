@@ -2397,6 +2397,39 @@ function handleChatAreaPointerDown() {
   }
 }
 
+async function handleRunStarted() {
+  actionError.value = ''
+  if (!draft.value.trim() || !conversations.activeConversation.value) {
+    return
+  }
+
+  const text = draft.value
+  const agentId = conversations.activeConversation.value.peerUserId
+
+  composerMediaMenuOpen.value = false
+  draft.value = ''
+  activeMessageActionsId.value = null
+  activeReactionOverlayId.value = null
+  composerRelationMode.value = null
+  composerRelationMessageId.value = null
+  resetComposerInputHeight()
+  composerInputEl.value?.focus({ preventScroll: true })
+
+  try {
+    const response = await $fetch<{ runId: string; rootRunId: string }>(`/agents/${agentId}/runs`, {
+      method: 'POST',
+      body: {
+        prompt: text,
+        attachmentIds: [],
+      },
+    })
+    viewport.scheduleViewportSync()
+  } catch {
+    draft.value = text
+    actionError.value = 'Не удалось запустить прогон.'
+  }
+}
+
 watch(() => conversations.activeConversationId.value, () => {
   agentWorkspaceCollapsed.value = activeConversationAgent.value ? isMobileChatViewport() : false
 }, { immediate: true })
@@ -2701,6 +2734,8 @@ onBeforeUnmount(() => {
         :has-selected-klipy-item="Boolean(selectedKlipyItem)"
         :show-project-actions-button="Boolean(conversations.activeConversation.value) && !activeConversationAgent"
         :project-actions-open="projectActions.panelOpen.value"
+        :is-agent-composer="Boolean(activeConversationAgent)"
+        :attachment-ids="[]"
         @update:draft="draft = $event"
         @focus="expandComposer"
         @blur="collapseComposer"
@@ -2715,6 +2750,7 @@ onBeforeUnmount(() => {
         @cancel-audio-draft="cancelAudioComposerState"
         @update:audio-trim-start="updateAudioDraftTrimStart"
         @update:audio-trim-end="updateAudioDraftTrimEnd"
+        @run-started="handleRunStarted"
       >
         <template #project-actions-panel>
           <MessengerProjectActionsPanel
