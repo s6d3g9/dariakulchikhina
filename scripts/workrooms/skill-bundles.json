@@ -1,64 +1,113 @@
 {
   "$schema": "./skill-bundles.schema.json",
   "description": "Which installed plugins are appropriate for each worker-kind. Used by claude-session wrapper to build per-session --plugin-dir bundles. Keys match TASK.md frontmatter `kind:` field. Extend without fear — unknown kinds fall through to 'default'.",
-
   "composer": {
     "purpose": "User + assistant — strategy, triage, architecture discussion. Does not edit code directly.",
-    "plugins": ["code-review", "feature-dev", "plugin-dev", "example-skills", "frontend-design"]
+    "plugins": [
+      "code-review",
+      "feature-dev",
+      "plugin-dev",
+      "example-skills",
+      "frontend-design"
+    ]
   },
-
   "orchestrator": {
     "purpose": "Decomposes requests into TASK.md files, routes them to workers by kind.",
-    "plugins": ["feature-dev", "code-review", "commit-commands", "plugin-dev"]
+    "plugins": [
+      "feature-dev",
+      "code-review",
+      "commit-commands",
+      "plugin-dev"
+    ]
   },
-
   "frontend-ui": {
     "purpose": "Vue components, pages, widgets, FSD refactors.",
-    "plugins": ["frontend-design", "example-skills", "code-review", "commit-commands"]
+    "plugins": [
+      "frontend-design",
+      "example-skills",
+      "code-review",
+      "commit-commands"
+    ]
   },
-
   "frontend-research": {
     "purpose": "UX flows, user research synthesis, design handoff specs.",
-    "plugins": ["frontend-design", "example-skills", "document-skills"]
+    "plugins": [
+      "frontend-design",
+      "example-skills",
+      "document-skills"
+    ]
   },
-
   "backend-api": {
     "purpose": "Nitro API handlers, thin-controllers, shared contracts.",
-    "plugins": ["code-review", "feature-dev", "security-guidance", "commit-commands"]
+    "plugins": [
+      "code-review",
+      "feature-dev",
+      "security-guidance",
+      "commit-commands"
+    ]
   },
-
   "backend-module": {
     "purpose": "DDD-lite modules under server/modules/**, repository + service layer.",
-    "plugins": ["feature-dev", "code-review", "security-guidance", "commit-commands"]
+    "plugins": [
+      "feature-dev",
+      "code-review",
+      "security-guidance",
+      "commit-commands"
+    ]
   },
-
   "db-migration": {
     "purpose": "Drizzle schema split, server/db/schema/**, generated SQL review.",
-    "plugins": ["code-review", "security-guidance", "commit-commands"]
+    "plugins": [
+      "code-review",
+      "security-guidance",
+      "commit-commands"
+    ]
   },
-
   "messenger-realtime": {
     "purpose": "messenger/core (Fastify, WS, E2EE), services/communications-service.",
-    "plugins": ["feature-dev", "code-review", "security-guidance", "commit-commands"]
+    "plugins": [
+      "feature-dev",
+      "code-review",
+      "security-guidance",
+      "commit-commands"
+    ]
   },
-
   "tests": {
     "purpose": "Unit / integration / smoke test suites.",
-    "plugins": ["code-review", "commit-commands"]
+    "plugins": [
+      "code-review",
+      "commit-commands"
+    ]
   },
-
   "docs": {
     "purpose": "architecture-v5 docs, runbooks, READMEs.",
-    "plugins": ["document-skills", "commit-commands"]
+    "plugins": [
+      "document-skills",
+      "commit-commands"
+    ]
   },
-
   "incident": {
     "purpose": "Production triage, hot-fix, postmortem.",
-    "plugins": ["code-review", "pr-review-toolkit", "security-guidance", "commit-commands"]
+    "plugins": [
+      "code-review",
+      "pr-review-toolkit",
+      "security-guidance",
+      "commit-commands"
+    ]
   },
-
   "default": {
     "purpose": "Fallback when no kind is set in TASK.md frontmatter.",
-    "plugins": ["code-review", "commit-commands"]
+    "plugins": [
+      "code-review",
+      "commit-commands"
+    ]
+  },
+  "lint-ratchet": {
+    "purpose": "Ratchet pnpm lint:errors to zero on a given module. Touch only lint-related fixes; never refactor behavior in the same task.",
+    "plugins": [
+      "code-review",
+      "commit-commands",
+      "security-guidance"
+    ]
   }
 }
