@@ -10,6 +10,7 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import postgres from 'postgres'
+import { config } from '~/server/config'
 
 import {
   listLegalSourceCounts,
@@ -46,7 +47,7 @@ let testContractorId: number
 // ---------------------------------------------------------------------------
 describe('ai + rag repositories', async () => {
   before(async () => {
-    sql = postgres(process.env.DATABASE_URL!)
+    sql = postgres(config.DATABASE_URL)
 
     const [proj] = await sql`
       INSERT INTO projects (slug, title, status)
