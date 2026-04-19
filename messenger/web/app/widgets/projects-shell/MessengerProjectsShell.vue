@@ -5,12 +5,16 @@ const emit = defineEmits<{
 
 const projects = useMessengerProjects()
 const createDialog = useProjectCreate()
+const bootstrapOnFirstProject = useState('messenger-bootstrap-on-arrival', () => false)
 
 onMounted(() => {
   void projects.refresh()
 })
 
 async function handleCreated(slug: string) {
+  if (projects.projects.value.length === 1) {
+    bootstrapOnFirstProject.value = true
+  }
   emit('open', slug)
 }
 </script>

@@ -23,9 +23,14 @@ const extApisModel = useMessengerExternalApis(projectIdRef)
 const agentsModel = useMessengerProjectAgents(projectIdRef)
 
 const agentPickerOpen = ref(false)
+const bootstrapOnFirstProject = useState('messenger-bootstrap-on-arrival', () => false)
 
 onMounted(async () => {
   await Promise.all([mcpModel.refresh(), extApisModel.refresh(), agentsModel.refresh()])
+  if (bootstrapOnFirstProject.value && !agentsModel.agents.value.length) {
+    bootstrapOnFirstProject.value = false
+    agentPickerOpen.value = true
+  }
 })
 
 // ── MCP form ───────────────────────────────────────────────────────────────

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { AGENT_TEMPLATES, type AgentTemplate } from '../../../entities/agents/model/agentTemplates'
+
 const props = defineProps<{
   modelValue: boolean
   projectId: string
@@ -17,42 +19,9 @@ const dialogOpen = computed({
 
 const composerDialogOpen = ref(false)
 
-const agentTypes = [
-  {
-    key: 'composer' as const,
-    icon: 'mdi-robot-outline',
-    title: 'Composer',
-    description: 'Главный агент проекта. Координирует остальных, анализирует задачи, предлагает конфигурацию.',
-    color: 'primary',
-    recommended: true,
-  },
-  {
-    key: 'orchestrator' as const,
-    icon: 'mdi-graph-outline',
-    title: 'Orchestrator',
-    description: 'Управляет цепочками задач и делегирует выполнение worker-агентам.',
-    color: 'secondary',
-    recommended: false,
-  },
-  {
-    key: 'worker' as const,
-    icon: 'mdi-hammer-wrench',
-    title: 'Worker',
-    description: 'Выполняет конкретную задачу: код, текст, анализ, API-вызовы.',
-    color: 'info',
-    recommended: false,
-  },
-  {
-    key: 'custom' as const,
-    icon: 'mdi-cog-outline',
-    title: 'Custom',
-    description: 'Агент с произвольным системным промптом и конфигурацией.',
-    color: 'surface-variant',
-    recommended: false,
-  },
-]
+const agentTypes = AGENT_TEMPLATES
 
-function selectType(key: typeof agentTypes[number]['key']) {
+function selectType(key: AgentTemplate['key']) {
   dialogOpen.value = false
   if (key === 'composer') {
     composerDialogOpen.value = true
