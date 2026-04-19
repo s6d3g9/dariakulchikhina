@@ -4,13 +4,17 @@ import {
   text,
   integer,
   numeric,
+  boolean,
   jsonb,
   timestamp,
   index,
   unique,
+  uniqueIndex,
   foreignKey,
+  primaryKey,
   customType,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 const bytea = customType<{ data: Buffer }>({
   dataType() {
@@ -101,21 +105,146 @@ export const messengerMessages = pgTable(
   ],
 )
 
-export const messengerAgents = pgTable('messenger_agents', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  ownerUserId: uuid('owner_user_id')
-    .notNull()
-    .references(() => messengerUsers.id),
-  name: text('name').notNull(),
-  description: text('description'),
-  model: text('model'),
-  ingestToken: text('ingest_token').notNull().unique(),
-  config: jsonb('config').notNull().default('{}'),
-  createdAt: tstz('created_at').defaultNow().notNull(),
-  updatedAt: tstz('updated_at').defaultNow().notNull(),
-  version: integer('version').default(1).notNull(),
-  deletedAt: tstz('deleted_at'),
-})
+export const messengerProjects = pgTable(
+  'messenger_projects',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => messengerUsers.id),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+    description: text('description'),
+    icon: text('icon'),
+    color: text('color'),
+    config: jsonb('config').notNull().default('{}'),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    updatedAt: tstz('updated_at').defaultNow().notNull(),
+    version: integer('version').default(1).notNull(),
+    deletedAt: tstz('deleted_at'),
+  },
+  (t) => [
+    uniqueIndex('messenger_projects_owner_slug_unique')
+      .on(t.ownerUserId, t.slug)
+      .where(sql`deleted_at is null`),
+    index('messenger_projects_owner_idx').on(t.ownerUserId),
+  ],
+)
+
+export const messengerProjectConnectors = pgTable(
+  'messenger_project_connectors',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => messengerProjects.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+    label: text('label').notNull(),
+    config: jsonb('config').notNull().default('{}'),
+    enabled: boolean('enabled').notNull().default(true),
+    isDefault: boolean('is_default').notNull().default(false),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    updatedAt: tstz('updated_at').defaultNow().notNull(),
+    deletedAt: tstz('deleted_at'),
+  },
+  (t) => [index('messenger_project_connectors_project_idx').on(t.projectId)],
+)
+
+export const messengerProjectSkills = pgTable(
+  'messenger_project_skills',
+  {
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => messengerProjects.id, { onDelete: 'cascade' }),
+    skillId: text('skill_id').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    config: jsonb('config').notNull().default('{}'),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    updatedAt: tstz('updated_at').defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.projectId, t.skillId] })],
+)
+
+export const messengerProjectPlugins = pgTable(
+  'messenger_project_plugins',
+  {
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => messengerProjects.id, { onDelete: 'cascade' }),
+    pluginId: text('plugin_id').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    config: jsonb('config').notNull().default('{}'),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    updatedAt: tstz('updated_at').defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.projectId, t.pluginId] })],
+)
+
+export const messengerProjectMcp = pgTable(
+  'messenger_project_mcp',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => messengerProjects.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    transport: text('transport').notNull(),
+    endpoint: text('endpoint').notNull(),
+    config: jsonb('config').notNull().default('{}'),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    updatedAt: tstz('updated_at').defaultNow().notNull(),
+    deletedAt: tstz('deleted_at'),
+  },
+  (t) => [index('messenger_project_mcp_project_idx').on(t.projectId)],
+)
+
+export const messengerProjectExternalApis = pgTable(
+  'messenger_project_external_apis',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => messengerProjects.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    baseUrl: text('base_url').notNull(),
+    openapiRef: text('openapi_ref'),
+    authType: text('auth_type').notNull().default('none'),
+    config: jsonb('config').notNull().default('{}'),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    updatedAt: tstz('updated_at').defaultNow().notNull(),
+    deletedAt: tstz('deleted_at'),
+  },
+  (t) => [index('messenger_project_external_apis_project_idx').on(t.projectId)],
+)
+
+export const messengerAgents = pgTable(
+  'messenger_agents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => messengerUsers.id),
+    projectId: uuid('project_id').references(() => messengerProjects.id, {
+      onDelete: 'set null',
+    }),
+    name: text('name').notNull(),
+    description: text('description'),
+    model: text('model'),
+    ingestToken: text('ingest_token').notNull().unique(),
+    config: jsonb('config').notNull().default('{}'),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+    updatedAt: tstz('updated_at').defaultNow().notNull(),
+    version: integer('version').default(1).notNull(),
+    deletedAt: tstz('deleted_at'),
+  },
+  (t) => [
+    index('messenger_agents_project_idx')
+      .on(t.projectId)
+      .where(sql`deleted_at is null`),
+  ],
+)
 
 export const messengerAgentRuns = pgTable(
   'messenger_agent_runs',
