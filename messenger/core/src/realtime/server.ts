@@ -27,6 +27,7 @@ import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, b
 import { readMessengerConfig } from '../config.ts'
 import { registerIngestRoutes } from '../agents/ingest-handler.ts'
 import { registerOrchestrationRoutes } from '../agents/orchestration-handler.ts'
+import { registerProjectsRoutes } from '../projects/projects-handler.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from '../media/media-store.ts'
 import { hasMessengerTranscriptionHttpBackend, isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from '../transcription/transcription-service.ts'
 import { getMessengerUserAiSettings, updateMessengerUserAiSettings } from '../profile/user-ai-settings-store.ts'
@@ -2991,6 +2992,7 @@ export async function createMessengerServer() {
 
   registerIngestRoutes(app, broadcastToChannel)
   registerOrchestrationRoutes(app, broadcastToChannel)
+  registerProjectsRoutes(app, broadcastToChannel)
 
   return app
 }
