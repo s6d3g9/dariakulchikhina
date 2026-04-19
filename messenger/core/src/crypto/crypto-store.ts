@@ -1,7 +1,7 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { eq, and, isNull } from 'drizzle-orm'
 
-import { resolveMessengerDataPath } from '../media/storage-paths.ts'
+import { useMessengerDb } from '../db/client.ts'
+import { messengerDeviceKeys } from '../db/schema.ts'
 
 export interface MessengerDevicePublicKeyRecord {
   kty: 'EC'
@@ -12,62 +12,59 @@ export interface MessengerDevicePublicKeyRecord {
   key_ops?: string[]
 }
 
-interface MessengerDeviceKeysFile {
-  keys: Array<{
-    userId: string
-    publicKey: MessengerDevicePublicKeyRecord
-    updatedAt: string
-  }>
+const DEFAULT_DEVICE_ID = 'default'
+
+export async function findMessengerDevicePublicKeyByUserId(userId: string): Promise<MessengerDevicePublicKeyRecord | null> {
+  const db = useMessengerDb()
+  const row = await db
+    .select()
+    .from(messengerDeviceKeys)
+    .where(
+      and(
+        eq(messengerDeviceKeys.userId, userId),
+        eq(messengerDeviceKeys.deviceId, DEFAULT_DEVICE_ID),
+        isNull(messengerDeviceKeys.deletedAt),
+      ),
+    )
+    .limit(1)
+    .then(rows => rows[0] ?? null)
+
+  return row ? (row.publicKey as MessengerDevicePublicKeyRecord) : null
 }
 
-const STORAGE_PATH = resolveMessengerDataPath('device-keys.json')
+export async function saveMessengerDevicePublicKey(userId: string, publicKey: MessengerDevicePublicKeyRecord): Promise<MessengerDevicePublicKeyRecord> {
+  const db = useMessengerDb()
+  const existing = await db
+    .select()
+    .from(messengerDeviceKeys)
+    .where(
+      and(
+        eq(messengerDeviceKeys.userId, userId),
+        eq(messengerDeviceKeys.deviceId, DEFAULT_DEVICE_ID),
+      ),
+    )
+    .limit(1)
+    .then(rows => rows[0] ?? null)
 
-async function ensureStorage() {
-  await mkdir(dirname(STORAGE_PATH), { recursive: true })
-}
-
-async function readDeviceKeysFile(): Promise<MessengerDeviceKeysFile> {
-  await ensureStorage()
-
-  try {
-    const raw = await readFile(STORAGE_PATH, 'utf8')
-    const parsed = JSON.parse(raw) as Partial<MessengerDeviceKeysFile>
-    return {
-      keys: Array.isArray(parsed.keys) ? parsed.keys : [],
-    }
-  } catch {
-    return {
-      keys: [],
-    }
-  }
-}
-
-async function writeDeviceKeysFile(payload: MessengerDeviceKeysFile) {
-  await ensureStorage()
-  await writeFile(STORAGE_PATH, JSON.stringify(payload, null, 2) + '\n', 'utf8')
-}
-
-export async function findMessengerDevicePublicKeyByUserId(userId: string) {
-  const payload = await readDeviceKeysFile()
-  return payload.keys.find(item => item.userId === userId)?.publicKey ?? null
-}
-
-export async function saveMessengerDevicePublicKey(userId: string, publicKey: MessengerDevicePublicKeyRecord) {
-  const payload = await readDeviceKeysFile()
-  const existing = payload.keys.find(item => item.userId === userId)
-  const updatedAt = new Date().toISOString()
+  const now = new Date()
 
   if (existing) {
-    existing.publicKey = publicKey
-    existing.updatedAt = updatedAt
+    await db
+      .update(messengerDeviceKeys)
+      .set({
+        publicKey,
+        version: existing.version + 1,
+        deletedAt: null,
+      })
+      .where(eq(messengerDeviceKeys.id, existing.id))
   } else {
-    payload.keys.push({
+    await db.insert(messengerDeviceKeys).values({
       userId,
+      deviceId: DEFAULT_DEVICE_ID,
       publicKey,
-      updatedAt,
+      createdAt: now,
     })
   }
 
-  await writeDeviceKeysFile(payload)
   return publicKey
 }

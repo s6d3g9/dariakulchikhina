@@ -41,6 +41,7 @@ const envSchema = z.object({
   MESSENGER_CORE_AUTH_SECRET: z.string().default('messenger-dev-secret'),
   MESSENGER_CORE_CORS_ORIGIN: z.string().default('http://localhost,http://127.0.0.1,http://[::1]'),
   MESSENGER_CORE_DATA_DIR: z.string().default(''),
+  MESSENGER_CORE_DATABASE_URL: z.string().default(process.env.DATABASE_URL || 'postgresql://daria@localhost:5433/daria_admin_refactor'),
   MESSENGER_ENABLE_AGENTS: z.union([
     z.boolean(),
     z.enum(['true', 'false']),

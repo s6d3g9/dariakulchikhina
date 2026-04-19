@@ -307,6 +307,33 @@ export default tseslint.config(
     },
   },
 
+  // messenger/core/** — Sprint 1.1 gives the messenger core its own Drizzle layer.
+  // drizzle-orm and postgres are allowed here (messenger/core/src/db/ is the boundary).
+  // Cross-runtime imports from app/, server/, services/ remain blocked by the rule above.
+  {
+    files: ['messenger/core/**/*.{ts,js}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/app/**',
+                '**/server/**',
+                '**/services/**',
+                '~/app/**',
+                '~/server/**',
+                '~/services/**',
+              ],
+              message: CROSS_RUNTIME_MSG,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // services/communications-service/** — isolated runtime, only shared/
   {
     files: ['services/communications-service/**/*.{ts,js,mjs}'],

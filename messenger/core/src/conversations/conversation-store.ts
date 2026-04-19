@@ -1,12 +1,23 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { eq, and, isNull, sql } from 'drizzle-orm'
 
 import { findMessengerAgentById, type MessengerAgentRecord } from '../agents/agent-store.ts'
 import type { MessengerUserRecord } from '../auth/auth-store.ts'
 import { readMessengerConfig } from '../config.ts'
 import type { MessengerDevicePublicKeyRecord } from '../crypto/crypto-store.ts'
-import { resolveMessengerDataPath } from '../media/storage-paths.ts'
+import { useMessengerDb } from '../db/client.ts'
+import { messengerConversations } from '../db/schema.ts'
+import {
+  insertMessage,
+  listAllMessagesForConversation,
+  updateMessagePayload,
+  softDeleteMessage,
+  getMessageRow,
+  findMessageById,
+  updateConversationTimestamp,
+  markConversationMessagesReadByUser,
+  rowToMessengerMessageRecord,
+  getLastMessageForConversation,
+} from './message-store.ts'
 
 type MessengerConversationKind = 'direct' | 'direct-secret' | 'agent'
 type MessengerPeerType = 'user' | 'agent'
@@ -114,66 +125,6 @@ export interface MessengerMessageRecord {
   }
 }
 
-interface ConversationsFile {
-  conversations: MessengerConversationRecord[]
-  messages: MessengerMessageRecord[]
-}
-
-function buildDirectPolicy(): MessengerConversationPolicy {
-  return {
-    secret: false,
-    allowMutualDelete: false,
-    encryptedMessages: true,
-    encryptedAttachments: false,
-    encryptedVoice: false,
-    callsSecurityMode: 'webrtc-only',
-    allowForwardOut: true,
-    hideListPreview: false,
-  }
-}
-
-function buildAgentPolicy(): MessengerConversationPolicy {
-  return {
-    secret: false,
-    allowMutualDelete: false,
-    encryptedMessages: false,
-    encryptedAttachments: false,
-    encryptedVoice: false,
-    callsSecurityMode: 'webrtc-only',
-    allowForwardOut: false,
-    hideListPreview: false,
-  }
-}
-
-function buildSecretPolicy(): MessengerConversationPolicy {
-  return {
-    secret: true,
-    allowMutualDelete: true,
-    encryptedMessages: true,
-    encryptedAttachments: false,
-    encryptedVoice: false,
-    callsSecurityMode: 'webrtc-only',
-    allowForwardOut: false,
-    hideListPreview: true,
-  }
-}
-
-function getConversationPolicy(conversation: Pick<MessengerConversationRecord, 'kind' | 'policy'>): MessengerConversationPolicy {
-  if (conversation.policy) {
-    return conversation.policy
-  }
-
-  if (conversation.kind === 'direct-secret') {
-    return buildSecretPolicy()
-  }
-
-  if (conversation.kind === 'agent') {
-    return buildAgentPolicy()
-  }
-
-  return buildDirectPolicy()
-}
-
 export interface ConversationOverviewItem {
   id: string
   kind: MessengerConversationKind
@@ -223,13 +174,7 @@ export interface ConversationMessageOverviewItem {
     kind: 'text' | 'file'
     own: boolean
     senderDisplayName: string
-    attachment?: {
-      name: string
-      mimeType: string
-      size: number
-      url: string
-      encryptedFile?: MessengerEncryptedBinaryPayload
-    }
+    attachment?: { name: string; mimeType: string; size: number; url: string; encryptedFile?: MessengerEncryptedBinaryPayload }
   }
   commentOn?: {
     id: string
@@ -237,13 +182,7 @@ export interface ConversationMessageOverviewItem {
     kind: 'text' | 'file'
     own: boolean
     senderDisplayName: string
-    attachment?: {
-      name: string
-      mimeType: string
-      size: number
-      url: string
-      encryptedFile?: MessengerEncryptedBinaryPayload
-    }
+    attachment?: { name: string; mimeType: string; size: number; url: string; encryptedFile?: MessengerEncryptedBinaryPayload }
   }
   forwardedFrom?: {
     messageId: string
@@ -252,265 +191,134 @@ export interface ConversationMessageOverviewItem {
     encryptedBody?: MessengerEncryptedPayload
     kind: 'text' | 'file'
     senderDisplayName: string
-    attachment?: {
-      name: string
-      mimeType: string
-      size: number
-      url: string
-      encryptedFile?: MessengerEncryptedBinaryPayload
-    }
+    attachment?: { name: string; mimeType: string; size: number; url: string; encryptedFile?: MessengerEncryptedBinaryPayload }
   }
 }
 
-const STORAGE_PATH = resolveMessengerDataPath('conversations.json')
-
-function normalizePair(leftId: string, rightId: string) {
-  return [leftId, rightId].sort()
-}
-
-async function ensureStorage() {
-  await mkdir(dirname(STORAGE_PATH), { recursive: true })
-}
-
-async function readConversationsFile(): Promise<ConversationsFile> {
-  await ensureStorage()
-
-  try {
-    const raw = await readFile(STORAGE_PATH, 'utf8')
-    const parsed = JSON.parse(raw) as Partial<ConversationsFile>
-    return {
-      conversations: Array.isArray(parsed.conversations) ? parsed.conversations as MessengerConversationRecord[] : [],
-      messages: Array.isArray(parsed.messages) ? parsed.messages as MessengerMessageRecord[] : [],
-    }
-  } catch {
-    return {
-      conversations: [],
-      messages: [],
-    }
+type ConvPolicyRow = MessengerConversationPolicy & {
+  _agentId?: string
+  _encryption?: {
+    algorithm: 'aes-gcm-256'
+    keyPackages: Record<string, MessengerConversationKeyPackageRecord>
   }
 }
 
-async function writeConversationsFile(payload: ConversationsFile) {
-  await ensureStorage()
-  await writeFile(STORAGE_PATH, JSON.stringify(payload, null, 2) + '\n', 'utf8')
+function buildDirectPolicy(): MessengerConversationPolicy {
+  return {
+    secret: false,
+    allowMutualDelete: false,
+    encryptedMessages: true,
+    encryptedAttachments: false,
+    encryptedVoice: false,
+    callsSecurityMode: 'webrtc-only',
+    allowForwardOut: true,
+    hideListPreview: false,
+  }
 }
 
-function isParticipant(conversation: MessengerConversationRecord, userId: string) {
+function buildAgentPolicy(): MessengerConversationPolicy {
+  return {
+    secret: false,
+    allowMutualDelete: false,
+    encryptedMessages: false,
+    encryptedAttachments: false,
+    encryptedVoice: false,
+    callsSecurityMode: 'webrtc-only',
+    allowForwardOut: false,
+    hideListPreview: false,
+  }
+}
+
+function buildSecretPolicy(): MessengerConversationPolicy {
+  return {
+    secret: true,
+    allowMutualDelete: true,
+    encryptedMessages: true,
+    encryptedAttachments: false,
+    encryptedVoice: false,
+    callsSecurityMode: 'webrtc-only',
+    allowForwardOut: false,
+    hideListPreview: true,
+  }
+}
+
+function normalizePair(leftId: string, rightId: string): [string, string] {
+  const pair = [leftId, rightId].sort()
+  return [pair[0], pair[1]] as [string, string]
+}
+
+function rowToConversationRecord(row: typeof messengerConversations.$inferSelect): MessengerConversationRecord {
+  const stored = (row.policy ?? {}) as ConvPolicyRow
+  const { _agentId, _encryption, ...policyFields } = stored
+  return {
+    id: row.id,
+    kind: row.kind as MessengerConversationKind,
+    userAId: row.userAId ?? '',
+    userBId: _agentId ?? row.userBId ?? '',
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    policy: Object.keys(policyFields).length ? (policyFields as MessengerConversationPolicy) : undefined,
+    encryption: _encryption,
+  }
+}
+
+function getConversationPolicy(conversation: Pick<MessengerConversationRecord, 'kind' | 'policy'>): MessengerConversationPolicy {
+  if (conversation.policy) {
+    return conversation.policy
+  }
+  if (conversation.kind === 'direct-secret') return buildSecretPolicy()
+  if (conversation.kind === 'agent') return buildAgentPolicy()
+  return buildDirectPolicy()
+}
+
+function isParticipant(conversation: MessengerConversationRecord, userId: string): boolean {
   if (conversation.kind === 'agent') {
     return conversation.userAId === userId
   }
-
   return conversation.userAId === userId || conversation.userBId === userId
 }
 
-function getPeerId(conversation: MessengerConversationRecord, userId: string) {
-  return conversation.userAId === userId ? conversation.userBId : conversation.userAId
-}
-
-function buildMessageRelationPreview(
-  message: MessengerMessageRecord,
-  actorId: string,
-  users: MessengerUserRecord[],
-  conversation?: Pick<MessengerConversationRecord, 'kind' | 'policy'>,
-) {
-  const sender = users.find(item => item.id === message.senderUserId)
-
-  return {
-    id: message.id,
-    body: getMessageBodyPreview(message, conversation),
-    encryptedBody: message.deletedAt ? undefined : message.encryptedBody,
-    kind: message.kind,
-    own: message.senderUserId === actorId,
-    senderDisplayName: sender?.displayName || 'Unknown',
-    attachment: message.deletedAt ? undefined : message.attachment,
-  }
+function getStoredTextBody(body: string, conversation: Pick<MessengerConversationRecord, 'kind' | 'policy'>): string {
+  return getConversationPolicy(conversation).secret ? '' : body.trim()
 }
 
 function getMessageBodyPreview(
   message: Pick<MessengerMessageRecord, 'body' | 'kind' | 'attachment' | 'deletedAt' | 'encryptedBody'>,
   conversation?: Pick<MessengerConversationRecord, 'kind' | 'policy'>,
-) {
-  if (message.deletedAt) {
-    return 'Сообщение удалено'
-  }
+): string {
+  if (message.deletedAt) return 'Сообщение удалено'
 
   if (conversation?.policy?.hideListPreview || conversation?.kind === 'direct-secret') {
     if (message.kind === 'file' && message.attachment) {
-      if (message.attachment.mimeType.startsWith('audio/')) {
-        return 'Голосовое сообщение защищено'
-      }
-
+      if (message.attachment.mimeType.startsWith('audio/')) return 'Голосовое сообщение защищено'
       return 'Вложение защищено'
     }
-
     return 'Секретное сообщение'
   }
 
   if (message.kind === 'file' && message.attachment) {
-    if (message.attachment.mimeType.startsWith('audio/')) {
-      return 'Аудиосообщение'
-    }
-
-    if (message.attachment.mimeType.startsWith('image/')) {
-      return 'Фото'
-    }
-
+    if (message.attachment.mimeType.startsWith('audio/')) return 'Аудиосообщение'
+    if (message.attachment.mimeType.startsWith('image/')) return 'Фото'
     return message.attachment.name
   }
 
-  if (message.encryptedBody) {
-    return 'Защищённое сообщение'
-  }
-
+  if (message.encryptedBody) return 'Защищённое сообщение'
   return message.body
 }
 
-function getStoredTextBody(body: string, conversation: Pick<MessengerConversationRecord, 'kind' | 'policy'>) {
-  return getConversationPolicy(conversation).secret ? '' : body.trim()
-}
-
-function buildMessageReactions(
-  reactions: MessengerMessageReactionRecord[] | undefined,
-  actorId: string,
-) {
-  if (!reactions?.length) {
-    return undefined
-  }
+function buildMessageReactions(reactions: MessengerMessageReactionRecord[] | undefined, actorId: string) {
+  if (!reactions?.length) return undefined
 
   const normalized = reactions
     .map((reaction) => {
       const uniqueUserIds = Array.from(new Set(reaction.userIds.filter(Boolean)))
-      if (!reaction.emoji || !uniqueUserIds.length) {
-        return null
-      }
-
-      return {
-        emoji: reaction.emoji,
-        count: uniqueUserIds.length,
-        own: uniqueUserIds.includes(actorId),
-      }
+      if (!reaction.emoji || !uniqueUserIds.length) return null
+      return { emoji: reaction.emoji, count: uniqueUserIds.length, own: uniqueUserIds.includes(actorId) }
     })
-    .filter((reaction): reaction is NonNullable<typeof reaction> => Boolean(reaction))
+    .filter((r): r is NonNullable<typeof r> => Boolean(r))
 
-  if (!normalized.length) {
-    return undefined
-  }
-
-  return normalized.sort((left, right) => right.count - left.count || left.emoji.localeCompare(right.emoji, 'ru'))
-}
-
-function assertMessageRelation(
-  payload: ConversationsFile,
-  conversation: MessengerConversationRecord,
-  relationMessageId: string | undefined,
-  actorId: string,
-) {
-  if (!relationMessageId) {
-    return undefined
-  }
-
-  const relationMessage = payload.messages.find(item => item.id === relationMessageId && item.conversationId === conversation.id)
-  if (!relationMessage) {
-    throw new Error('MESSAGE_NOT_FOUND')
-  }
-
-  if (!isParticipant(conversation, actorId)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
-
-  return relationMessage.id
-}
-
-export async function findConversationById(conversationId: string) {
-  const payload = await readConversationsFile()
-  return payload.conversations.find(item => item.id === conversationId) ?? null
-}
-
-export async function findOrCreateDirectConversation(userId: string, peerUserId: string) {
-  const payload = await readConversationsFile()
-  const [userAId, userBId] = normalizePair(userId, peerUserId)
-  const existing = payload.conversations.find(item => item.kind === 'direct' && item.userAId === userAId && item.userBId === userBId)
-  if (existing) {
-    if (!existing.policy) {
-      existing.policy = buildDirectPolicy()
-      await writeConversationsFile(payload)
-    }
-    return existing
-  }
-
-  const now = new Date().toISOString()
-  const conversation: MessengerConversationRecord = {
-    id: randomUUID(),
-    kind: 'direct',
-    userAId,
-    userBId,
-    createdAt: now,
-    updatedAt: now,
-    policy: buildDirectPolicy(),
-  }
-
-  payload.conversations.push(conversation)
-  await writeConversationsFile(payload)
-  return conversation
-}
-
-export async function findOrCreateSecretConversation(userId: string, peerUserId: string) {
-  const payload = await readConversationsFile()
-  const [userAId, userBId] = normalizePair(userId, peerUserId)
-  const existing = payload.conversations.find(item => item.kind === 'direct-secret' && item.userAId === userAId && item.userBId === userBId)
-  if (existing) {
-    if (!existing.policy) {
-      existing.policy = buildSecretPolicy()
-      await writeConversationsFile(payload)
-    }
-    return existing
-  }
-
-  const now = new Date().toISOString()
-  const conversation: MessengerConversationRecord = {
-    id: randomUUID(),
-    kind: 'direct-secret',
-    userAId,
-    userBId,
-    createdAt: now,
-    updatedAt: now,
-    policy: buildSecretPolicy(),
-  }
-
-  payload.conversations.push(conversation)
-  await writeConversationsFile(payload)
-  return conversation
-}
-
-export async function findOrCreateAgentConversation(userId: string, agentId: string) {
-  if (!readMessengerConfig().MESSENGER_ENABLE_AGENTS) {
-    throw new Error('AGENTS_DISABLED')
-  }
-
-  const payload = await readConversationsFile()
-  const existing = payload.conversations.find(item => item.kind === 'agent' && item.userAId === userId && item.userBId === agentId)
-  if (existing) {
-    if (!existing.policy) {
-      existing.policy = buildAgentPolicy()
-      await writeConversationsFile(payload)
-    }
-    return existing
-  }
-
-  const now = new Date().toISOString()
-  const conversation: MessengerConversationRecord = {
-    id: randomUUID(),
-    kind: 'agent',
-    userAId: userId,
-    userBId: agentId,
-    createdAt: now,
-    updatedAt: now,
-    policy: buildAgentPolicy(),
-  }
-
-  payload.conversations.push(conversation)
-  await writeConversationsFile(payload)
-  return conversation
+  if (!normalized.length) return undefined
+  return normalized.sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji, 'ru'))
 }
 
 async function resolvePeer(
@@ -518,120 +326,214 @@ async function resolvePeer(
   actorId: string,
   users: MessengerUserRecord[],
 ): Promise<{ id: string; displayName: string; login: string; peerType: MessengerPeerType; description?: string } | null> {
-  const peerUserId = getPeerId(conversation, actorId)
+  const peerId = conversation.userAId === actorId ? conversation.userBId : conversation.userAId
 
   if (conversation.kind === 'agent') {
-    const agent = await findMessengerAgentById(peerUserId)
-    if (!agent) {
-      return null
-    }
-
-    return {
-      id: agent.id,
-      displayName: agent.displayName,
-      login: agent.login,
-      peerType: 'agent',
-      description: agent.description,
-    }
+    const agent = await findMessengerAgentById(peerId)
+    if (!agent) return null
+    return { id: agent.id, displayName: agent.displayName, login: agent.login, peerType: 'agent', description: agent.description }
   }
 
-  const peer = users.find(item => item.id === peerUserId)
-  if (!peer) {
-    return null
-  }
-
-  return {
-    id: peer.id,
-    displayName: peer.displayName,
-    login: peer.login,
-    peerType: 'user',
-  }
+  const peer = users.find(u => u.id === peerId)
+  if (!peer) return null
+  return { id: peer.id, displayName: peer.displayName, login: peer.login, peerType: 'user' }
 }
 
-async function resolveSenderDisplayName(senderId: string, users: MessengerUserRecord[]) {
-  const user = users.find(item => item.id === senderId)
-  if (user) {
-    return user.displayName
-  }
-
+async function resolveSenderDisplayName(senderId: string, users: MessengerUserRecord[]): Promise<string> {
+  const user = users.find(u => u.id === senderId)
+  if (user) return user.displayName
   const agent = await findMessengerAgentById(senderId)
   return agent?.displayName || 'Unknown'
 }
 
-export async function listConversationsForUser(user: MessengerUserRecord, users: MessengerUserRecord[], query: string) {
-  const payload = await readConversationsFile()
+export async function findConversationById(conversationId: string): Promise<MessengerConversationRecord | null> {
+  const db = useMessengerDb()
+  const row = await db
+    .select()
+    .from(messengerConversations)
+    .where(and(eq(messengerConversations.id, conversationId), isNull(messengerConversations.deletedAt)))
+    .limit(1)
+    .then(rows => rows[0] ?? null)
+
+  return row ? rowToConversationRecord(row) : null
+}
+
+export async function findOrCreateDirectConversation(userId: string, peerUserId: string): Promise<MessengerConversationRecord> {
+  const db = useMessengerDb()
+  const [userAId, userBId] = normalizePair(userId, peerUserId)
+
+  const existing = await db
+    .select()
+    .from(messengerConversations)
+    .where(
+      and(
+        eq(messengerConversations.kind, 'direct'),
+        eq(messengerConversations.userAId, userAId),
+        eq(messengerConversations.userBId, userBId),
+        isNull(messengerConversations.deletedAt),
+      ),
+    )
+    .limit(1)
+    .then(rows => rows[0] ?? null)
+
+  if (existing) {
+    return rowToConversationRecord(existing)
+  }
+
+  const policy = buildDirectPolicy()
+  const now = new Date()
+  const [row] = await db
+    .insert(messengerConversations)
+    .values({ kind: 'direct', userAId, userBId, policy, createdAt: now, updatedAt: now })
+    .returning()
+
+  return rowToConversationRecord(row)
+}
+
+export async function findOrCreateSecretConversation(userId: string, peerUserId: string): Promise<MessengerConversationRecord> {
+  const db = useMessengerDb()
+  const [userAId, userBId] = normalizePair(userId, peerUserId)
+
+  const existing = await db
+    .select()
+    .from(messengerConversations)
+    .where(
+      and(
+        eq(messengerConversations.kind, 'direct-secret'),
+        eq(messengerConversations.userAId, userAId),
+        eq(messengerConversations.userBId, userBId),
+        isNull(messengerConversations.deletedAt),
+      ),
+    )
+    .limit(1)
+    .then(rows => rows[0] ?? null)
+
+  if (existing) {
+    return rowToConversationRecord(existing)
+  }
+
+  const policy = buildSecretPolicy()
+  const now = new Date()
+  const [row] = await db
+    .insert(messengerConversations)
+    .values({ kind: 'direct-secret', userAId, userBId, policy, createdAt: now, updatedAt: now })
+    .returning()
+
+  return rowToConversationRecord(row)
+}
+
+export async function findOrCreateAgentConversation(userId: string, agentId: string): Promise<MessengerConversationRecord> {
+  if (!readMessengerConfig().MESSENGER_ENABLE_AGENTS) {
+    throw new Error('AGENTS_DISABLED')
+  }
+
+  const db = useMessengerDb()
+  const existing = await db
+    .select()
+    .from(messengerConversations)
+    .where(
+      and(
+        eq(messengerConversations.kind, 'agent'),
+        eq(messengerConversations.userAId, userId),
+        isNull(messengerConversations.deletedAt),
+        sql`${messengerConversations.policy}->>'_agentId' = ${agentId}`,
+      ),
+    )
+    .limit(1)
+    .then(rows => rows[0] ?? null)
+
+  if (existing) {
+    return rowToConversationRecord(existing)
+  }
+
+  const policy = { ...buildAgentPolicy(), _agentId: agentId }
+  const now = new Date()
+  const [row] = await db
+    .insert(messengerConversations)
+    .values({ kind: 'agent', userAId: userId, userBId: null, policy, createdAt: now, updatedAt: now })
+    .returning()
+
+  return rowToConversationRecord(row)
+}
+
+export async function listConversationsForUser(user: MessengerUserRecord, users: MessengerUserRecord[], query: string): Promise<ConversationOverviewItem[]> {
+  const db = useMessengerDb()
   const normalizedQuery = query.trim().toLowerCase()
   const agentsEnabled = readMessengerConfig().MESSENGER_ENABLE_AGENTS
 
-  const items = await Promise.all(payload.conversations
-    .filter(conversation => isParticipant(conversation, user.id))
-    .filter(conversation => agentsEnabled || conversation.kind !== 'agent')
-    .map(async (conversation) => {
-      const policy = getConversationPolicy(conversation)
-      const peer = await resolvePeer(conversation, user.id, users)
-      if (!peer) {
-        return null
-      }
+  const rows = await db
+    .select()
+    .from(messengerConversations)
+    .where(
+      and(
+        isNull(messengerConversations.deletedAt),
+        sql`(${messengerConversations.userAId} = ${user.id} OR ${messengerConversations.userBId} = ${user.id})`,
+      ),
+    )
 
-      if (normalizedQuery
-        && !peer.displayName.toLowerCase().includes(normalizedQuery)
-        && !peer.login.toLowerCase().includes(normalizedQuery)
-        && !peer.description?.toLowerCase().includes(normalizedQuery)) {
-        return null
-      }
+  const items = await Promise.all(
+    rows
+      .filter(row => agentsEnabled || row.kind !== 'agent')
+      .map(async (row) => {
+        const conversation = rowToConversationRecord(row)
+        const policy = getConversationPolicy(conversation)
+        const peer = await resolvePeer(conversation, user.id, users)
+        if (!peer) return null
 
-      const lastMessage = payload.messages
-        .filter(message => message.conversationId === conversation.id)
-        .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0] || null
+        if (
+          normalizedQuery
+          && !peer.displayName.toLowerCase().includes(normalizedQuery)
+          && !peer.login.toLowerCase().includes(normalizedQuery)
+          && !peer.description?.toLowerCase().includes(normalizedQuery)
+        ) {
+          return null
+        }
 
-      return {
-        id: conversation.id,
-        kind: conversation.kind,
-        secret: policy.secret,
-        peerUserId: peer.id,
-        peerDisplayName: peer.displayName,
-        peerLogin: peer.login,
-        peerType: peer.peerType,
-        peerDescription: peer.description,
-        updatedAt: lastMessage?.createdAt || conversation.updatedAt,
-        policy,
-        lastMessage: lastMessage ? {
-          id: lastMessage.id,
-          body: getMessageBodyPreview(lastMessage, conversation),
-          encryptedBody: lastMessage.deletedAt ? undefined : lastMessage.encryptedBody ?? undefined,
-          createdAt: lastMessage.createdAt,
-          own: lastMessage.senderUserId === user.id,
-        } : null,
-      }
-    }))
-  const normalizedItems = items.filter(item => item !== null)
+        const lastRow = await getLastMessageForConversation(conversation.id)
+        const lastMsgRecord = lastRow ? rowToMessengerMessageRecord(lastRow) : null
 
-  return normalizedItems
-    .map(item => item satisfies ConversationOverviewItem)
-    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+        return {
+          id: conversation.id,
+          kind: conversation.kind,
+          secret: policy.secret,
+          peerUserId: peer.id,
+          peerDisplayName: peer.displayName,
+          peerLogin: peer.login,
+          peerType: peer.peerType,
+          peerDescription: peer.description,
+          updatedAt: lastMsgRecord?.createdAt || conversation.updatedAt,
+          policy,
+          lastMessage: lastMsgRecord
+            ? {
+                id: lastMsgRecord.id,
+                body: getMessageBodyPreview(lastMsgRecord, conversation),
+                encryptedBody: lastMsgRecord.deletedAt ? undefined : lastMsgRecord.encryptedBody,
+                createdAt: lastMsgRecord.createdAt,
+                own: lastMsgRecord.senderUserId === user.id,
+              }
+            : null,
+        } satisfies ConversationOverviewItem
+      }),
+  )
+
+  return items
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 }
 
-export async function listMessagesForConversation(conversationId: string, actor: MessengerUserRecord, users: MessengerUserRecord[]) {
-  const payload = await readConversationsFile()
-  const conversation = payload.conversations.find(item => item.id === conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
+export async function listMessagesForConversation(conversationId: string, actor: MessengerUserRecord, users: MessengerUserRecord[]): Promise<ConversationMessageOverviewItem[]> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
+  const rows = await listAllMessagesForConversation(conversationId)
+  const records = rows.map(rowToMessengerMessageRecord)
+  const recordMap = new Map(records.map(r => [r.id, r]))
 
-  return await Promise.all(payload.messages
-    .filter(message => message.conversationId === conversationId)
-    .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime())
-    .map(async (message) => {
-      const replyTo = message.replyToMessageId
-        ? payload.messages.find(item => item.id === message.replyToMessageId && item.conversationId === conversationId)
-        : undefined
-      const commentOn = message.commentOnMessageId
-        ? payload.messages.find(item => item.id === message.commentOnMessageId && item.conversationId === conversationId)
-        : undefined
+  return Promise.all(
+    records.map(async (message) => {
+      const replyTo = message.replyToMessageId ? recordMap.get(message.replyToMessageId) : undefined
+      const commentOn = message.commentOnMessageId ? recordMap.get(message.commentOnMessageId) : undefined
 
       return {
         id: message.id,
@@ -646,48 +548,35 @@ export async function listMessagesForConversation(conversationId: string, actor:
         senderDisplayName: await resolveSenderDisplayName(message.senderUserId, users),
         attachment: message.deletedAt ? undefined : message.attachment,
         reactions: message.deletedAt ? undefined : buildMessageReactions(message.reactions, actor.id),
-        replyTo: replyTo ? buildMessageRelationPreview(replyTo, actor.id, users, conversation) : undefined,
-        commentOn: commentOn ? buildMessageRelationPreview(commentOn, actor.id, users, conversation) : undefined,
+        replyTo: replyTo ? {
+          id: replyTo.id,
+          body: getMessageBodyPreview(replyTo, conversation),
+          kind: replyTo.kind,
+          own: replyTo.senderUserId === actor.id,
+          senderDisplayName: await resolveSenderDisplayName(replyTo.senderUserId, users),
+          attachment: replyTo.deletedAt ? undefined : replyTo.attachment,
+        } : undefined,
+        commentOn: commentOn ? {
+          id: commentOn.id,
+          body: getMessageBodyPreview(commentOn, conversation),
+          kind: commentOn.kind,
+          own: commentOn.senderUserId === actor.id,
+          senderDisplayName: await resolveSenderDisplayName(commentOn.senderUserId, users),
+          attachment: commentOn.deletedAt ? undefined : commentOn.attachment,
+        } : undefined,
         forwardedFrom: message.forwardedFrom,
       } satisfies ConversationMessageOverviewItem
-    }))
+    }),
+  )
 }
 
-export async function markConversationReadByUser(conversationId: string, actor: MessengerUserRecord) {
-  const payload = await readConversationsFile()
-  const conversation = payload.conversations.find(item => item.id === conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
+export async function markConversationReadByUser(conversationId: string, actor: MessengerUserRecord): Promise<{ updated: boolean; conversation: MessengerConversationRecord }> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
-
-  const now = new Date().toISOString()
-  let updated = false
-
-  for (const message of payload.messages) {
-    if (message.conversationId !== conversationId) {
-      continue
-    }
-
-    if (message.senderUserId === actor.id || message.deletedAt || message.readAt) {
-      continue
-    }
-
-    message.readAt = now
-    updated = true
-  }
-
-  if (updated) {
-    await writeConversationsFile(payload)
-  }
-
-  return {
-    updated,
-    conversation,
-  }
+  const updated = await markConversationMessagesReadByUser(conversationId, actor.id)
+  return { updated, conversation }
 }
 
 export async function addMessageToConversation(
@@ -700,71 +589,56 @@ export async function addMessageToConversation(
     commentOnMessageId?: string
     forwardedFrom?: MessengerMessageRecord['forwardedFrom']
   },
-) {
-  const payload = await readConversationsFile()
-  const conversation = payload.conversations.find(item => item.id === conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
-
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
+): Promise<MessengerMessageRecord> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
   const policy = getConversationPolicy(conversation)
-  if (policy.secret && !options?.encryptedBody) {
-    throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
+  if (policy.secret && !options?.encryptedBody) throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
+
+  if (options?.replyToMessageId) {
+    const rel = await getMessageRow(options.replyToMessageId, conversationId)
+    if (!rel) throw new Error('MESSAGE_NOT_FOUND')
+  }
+  if (options?.commentOnMessageId) {
+    const rel = await getMessageRow(options.commentOnMessageId, conversationId)
+    if (!rel) throw new Error('MESSAGE_NOT_FOUND')
   }
 
-  const now = new Date().toISOString()
-  const message: MessengerMessageRecord = {
-    id: randomUUID(),
+  const storedBody = getStoredTextBody(body, conversation)
+  const row = await insertMessage({
     conversationId,
     senderUserId: actor.id,
-    body: getStoredTextBody(body, conversation),
-    encryptedBody: options?.encryptedBody,
-    kind: 'text',
-    createdAt: now,
-    replyToMessageId: assertMessageRelation(payload, conversation, options?.replyToMessageId, actor.id),
-    commentOnMessageId: assertMessageRelation(payload, conversation, options?.commentOnMessageId, actor.id),
-    forwardedFrom: options?.forwardedFrom,
-  }
-
-  payload.messages.push(message)
-  conversation.updatedAt = now
-  await writeConversationsFile(payload)
-  return message
+    payload: {
+      body: storedBody,
+      encryptedBody: options?.encryptedBody,
+      kind: 'text',
+      replyToMessageId: options?.replyToMessageId,
+      commentOnMessageId: options?.commentOnMessageId,
+      forwardedFrom: options?.forwardedFrom,
+    },
+  })
+  await updateConversationTimestamp(conversationId)
+  return rowToMessengerMessageRecord(row) as MessengerMessageRecord
 }
 
 export async function addAgentMessageToConversation(
   conversationId: string,
   agent: MessengerAgentRecord,
   body: string,
-) {
-  const payload = await readConversationsFile()
-  const conversation = payload.conversations.find(item => item.id === conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
+): Promise<MessengerMessageRecord> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (conversation.kind !== 'agent' || conversation.userBId !== agent.id) throw new Error('CONVERSATION_FORBIDDEN')
 
-  if (conversation.kind !== 'agent' || conversation.userBId !== agent.id) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
-
-  const now = new Date().toISOString()
-  const message: MessengerMessageRecord = {
-    id: randomUUID(),
+  const row = await insertMessage({
     conversationId,
-    senderUserId: agent.id,
-    body: body.trim(),
-    kind: 'text',
-    createdAt: now,
-  }
-
-  payload.messages.push(message)
-  conversation.updatedAt = now
-  await writeConversationsFile(payload)
-  return message
+    senderUserId: null,
+    payload: { body: body.trim(), kind: 'text', agentId: agent.id },
+  })
+  await updateConversationTimestamp(conversationId)
+  return rowToMessengerMessageRecord(row) as MessengerMessageRecord
 }
 
 export async function forwardMessageToConversation(
@@ -772,86 +646,64 @@ export async function forwardMessageToConversation(
   sourceMessageId: string,
   actor: MessengerUserRecord,
   users: MessengerUserRecord[],
-) {
-  const payload = await readConversationsFile()
-  const targetConversation = payload.conversations.find(item => item.id === conversationId)
-  if (!targetConversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
+): Promise<MessengerMessageRecord> {
+  const targetConversation = await findConversationById(conversationId)
+  if (!targetConversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(targetConversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
-  if (!isParticipant(targetConversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
+  const sourceMsgRow = await findMessageById(sourceMessageId)
+  if (!sourceMsgRow) throw new Error('MESSAGE_NOT_FOUND')
 
-  const sourceMessage = payload.messages.find(item => item.id === sourceMessageId)
-  if (!sourceMessage) {
-    throw new Error('MESSAGE_NOT_FOUND')
-  }
+  const sourceConversation = await findConversationById(sourceMsgRow.conversationId)
+  if (!sourceConversation) throw new Error('CONVERSATION_NOT_FOUND')
 
-  const sourceConversation = payload.conversations.find(item => item.id === sourceMessage.conversationId)
-  if (!sourceConversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
-
-  if (getConversationPolicy(targetConversation).secret || !getConversationPolicy(sourceConversation).allowForwardOut) {
+  if (
+    getConversationPolicy(targetConversation).secret
+    || !getConversationPolicy(sourceConversation).allowForwardOut
+  ) {
     throw new Error('FORWARD_FORBIDDEN_IN_SECRET_CHAT')
   }
 
-  if (!isParticipant(sourceConversation, actor.id)) {
-    throw new Error('MESSAGE_FORBIDDEN')
-  }
+  if (!isParticipant(sourceConversation, actor.id)) throw new Error('MESSAGE_FORBIDDEN')
 
-  const sender = users.find(item => item.id === sourceMessage.senderUserId)
-  if (sourceMessage.encryptedBody) {
-    throw new Error('MESSAGE_ENCRYPTED_FORWARD_REQUIRES_CLIENT_PAYLOAD')
-  }
+  const sourceMsg = rowToMessengerMessageRecord(sourceMsgRow) as MessengerMessageRecord
+  if (sourceMsg.encryptedBody) throw new Error('MESSAGE_ENCRYPTED_FORWARD_REQUIRES_CLIENT_PAYLOAD')
 
-  const now = new Date().toISOString()
-  const message: MessengerMessageRecord = {
-    id: randomUUID(),
+  const sender = users.find(u => u.id === sourceMsg.senderUserId)
+  const row = await insertMessage({
     conversationId,
     senderUserId: actor.id,
-    body: sourceMessage.deletedAt ? 'Сообщение удалено' : sourceMessage.body,
-    kind: sourceMessage.kind,
-    attachment: sourceMessage.deletedAt ? undefined : sourceMessage.attachment,
-    createdAt: now,
-    forwardedFrom: {
-      messageId: sourceMessage.id,
-      conversationId: sourceMessage.conversationId,
-      senderUserId: sourceMessage.senderUserId,
-      senderDisplayName: sender?.displayName || 'Unknown',
-      body: sourceMessage.deletedAt ? 'Сообщение удалено' : sourceMessage.body,
-      encryptedBody: sourceMessage.deletedAt ? undefined : sourceMessage.encryptedBody,
-      kind: sourceMessage.kind,
-      attachment: sourceMessage.deletedAt ? undefined : sourceMessage.attachment,
+    payload: {
+      body: sourceMsg.deletedAt ? 'Сообщение удалено' : sourceMsg.body,
+      kind: sourceMsg.kind,
+      attachment: sourceMsg.deletedAt ? undefined : sourceMsg.attachment,
+      forwardedFrom: {
+        messageId: sourceMsg.id,
+        conversationId: sourceMsgRow.conversationId,
+        senderUserId: sourceMsg.senderUserId,
+        senderDisplayName: sender?.displayName || 'Unknown',
+        body: sourceMsg.deletedAt ? 'Сообщение удалено' : sourceMsg.body,
+        encryptedBody: sourceMsg.deletedAt ? undefined : sourceMsg.encryptedBody,
+        kind: sourceMsg.kind,
+        attachment: sourceMsg.deletedAt ? undefined : sourceMsg.attachment,
+      },
     },
-  }
-
-  payload.messages.push(message)
-  targetConversation.updatedAt = now
-  await writeConversationsFile(payload)
-  return message
+  })
+  await updateConversationTimestamp(conversationId)
+  return rowToMessengerMessageRecord(row) as MessengerMessageRecord
 }
 
 export async function addAttachmentMessageToConversation(
   conversationId: string,
   actor: MessengerUserRecord,
   attachment: { name: string; mimeType: string; size: number; url: string; encryptedFile?: MessengerEncryptedBinaryPayload; klipy?: MessengerKlipyAttachmentRecord },
-) {
-  const payload = await readConversationsFile()
-  const conversation = payload.conversations.find(item => item.id === conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
-
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
+): Promise<MessengerMessageRecord> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
   const policy = getConversationPolicy(conversation)
-  if (policy.secret && !attachment.encryptedFile) {
-    throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
-  }
+  if (policy.secret && !attachment.encryptedFile) throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
 
   const attachmentLabel = attachment.mimeType.startsWith('audio/')
     ? 'Аудиосообщение'
@@ -859,21 +711,13 @@ export async function addAttachmentMessageToConversation(
       ? 'Фото'
       : attachment.name
 
-  const now = new Date().toISOString()
-  const message: MessengerMessageRecord = {
-    id: randomUUID(),
+  const row = await insertMessage({
     conversationId,
     senderUserId: actor.id,
-    body: attachmentLabel,
-    kind: 'file',
-    attachment,
-    createdAt: now,
-  }
-
-  payload.messages.push(message)
-  conversation.updatedAt = now
-  await writeConversationsFile(payload)
-  return message
+    payload: { body: attachmentLabel, kind: 'file', attachment },
+  })
+  await updateConversationTimestamp(conversationId)
+  return rowToMessengerMessageRecord(row) as MessengerMessageRecord
 }
 
 export async function editMessageInConversation(
@@ -882,79 +726,48 @@ export async function editMessageInConversation(
   actor: MessengerUserRecord,
   body: string,
   encryptedBody?: MessengerEncryptedPayload,
-) {
-  const payload = await readConversationsFile()
-  const conversation = payload.conversations.find(item => item.id === conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
+): Promise<MessengerMessageRecord> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
+  const row = await getMessageRow(messageId, conversationId)
+  if (!row) throw new Error('MESSAGE_NOT_FOUND')
 
-  const message = payload.messages.find(item => item.id === messageId && item.conversationId === conversationId)
-  if (!message) {
-    throw new Error('MESSAGE_NOT_FOUND')
-  }
-
-  if (message.senderUserId !== actor.id) {
-    throw new Error('MESSAGE_FORBIDDEN')
-  }
-
-  if (message.kind !== 'text' || message.deletedAt) {
-    throw new Error('MESSAGE_NOT_EDITABLE')
-  }
+  const message = rowToMessengerMessageRecord(row) as MessengerMessageRecord
+  if (message.senderUserId !== actor.id) throw new Error('MESSAGE_FORBIDDEN')
+  if (message.kind !== 'text' || message.deletedAt) throw new Error('MESSAGE_NOT_EDITABLE')
 
   const policy = getConversationPolicy(conversation)
-  if (policy.secret && !encryptedBody) {
-    throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
-  }
+  if (policy.secret && !encryptedBody) throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
 
-  const now = new Date().toISOString()
-  message.body = getStoredTextBody(body, conversation)
-  message.encryptedBody = encryptedBody
-  message.editedAt = now
-  conversation.updatedAt = now
-  await writeConversationsFile(payload)
-  return message
+  const payload = {
+    ...message,
+    body: getStoredTextBody(body, conversation),
+    encryptedBody,
+    editedAt: new Date().toISOString(),
+  }
+  await updateMessagePayload(messageId, payload)
+  await updateConversationTimestamp(conversationId)
+  return { ...message, body: payload.body, encryptedBody, editedAt: payload.editedAt }
 }
 
-export async function deleteMessageFromConversation(conversationId: string, messageId: string, actor: MessengerUserRecord) {
-  const payload = await readConversationsFile()
-  const conversation = payload.conversations.find(item => item.id === conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
+export async function deleteMessageFromConversation(conversationId: string, messageId: string, actor: MessengerUserRecord): Promise<MessengerMessageRecord> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
+  const row = await getMessageRow(messageId, conversationId)
+  if (!row) throw new Error('MESSAGE_NOT_FOUND')
 
-  const message = payload.messages.find(item => item.id === messageId && item.conversationId === conversationId)
-  if (!message) {
-    throw new Error('MESSAGE_NOT_FOUND')
-  }
-
+  const message = rowToMessengerMessageRecord(row) as MessengerMessageRecord
   const policy = getConversationPolicy(conversation)
-  if (message.senderUserId !== actor.id && !policy.allowMutualDelete) {
-    throw new Error('MESSAGE_FORBIDDEN')
-  }
+  if (message.senderUserId !== actor.id && !policy.allowMutualDelete) throw new Error('MESSAGE_FORBIDDEN')
+  if (message.deletedAt) return message
 
-  if (message.deletedAt) {
-    return message
-  }
-
-  const now = new Date().toISOString()
-  message.body = ''
-  message.encryptedBody = undefined
-  message.attachment = undefined
-  message.reactions = undefined
-  message.deletedAt = now
-  message.editedAt = undefined
-  conversation.updatedAt = now
-  await writeConversationsFile(payload)
-  return message
+  await softDeleteMessage(messageId)
+  await updateConversationTimestamp(conversationId)
+  return { ...message, body: '', encryptedBody: undefined, attachment: undefined, reactions: undefined, deletedAt: new Date().toISOString(), editedAt: undefined }
 }
 
 export async function toggleReactionInConversation(
@@ -962,86 +775,65 @@ export async function toggleReactionInConversation(
   messageId: string,
   actor: MessengerUserRecord,
   emoji: string,
-) {
-  const payload = await readConversationsFile()
-  const conversation = payload.conversations.find(item => item.id === conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
+): Promise<MessengerMessageRecord> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
+  const row = await getMessageRow(messageId, conversationId)
+  if (!row) throw new Error('MESSAGE_NOT_FOUND')
 
-  const message = payload.messages.find(item => item.id === messageId && item.conversationId === conversationId)
-  if (!message) {
-    throw new Error('MESSAGE_NOT_FOUND')
-  }
-
-  if (message.deletedAt) {
-    throw new Error('MESSAGE_NOT_REACTABLE')
-  }
+  const message = rowToMessengerMessageRecord(row) as MessengerMessageRecord
+  if (message.deletedAt) throw new Error('MESSAGE_NOT_REACTABLE')
 
   const normalizedEmoji = emoji.trim()
-  if (!normalizedEmoji) {
-    throw new Error('REACTION_EMOJI_REQUIRED')
-  }
+  if (!normalizedEmoji) throw new Error('REACTION_EMOJI_REQUIRED')
 
   const now = new Date().toISOString()
   const reactions = message.reactions ? [...message.reactions] : []
-  const currentReaction = reactions.find(item => item.emoji === normalizedEmoji)
+  const currentReaction = reactions.find(r => r.emoji === normalizedEmoji)
 
   if (!currentReaction) {
-    reactions.push({
-      emoji: normalizedEmoji,
-      userIds: [actor.id],
-      updatedAt: now,
-    })
+    reactions.push({ emoji: normalizedEmoji, userIds: [actor.id], updatedAt: now })
   } else if (currentReaction.userIds.includes(actor.id)) {
-    currentReaction.userIds = currentReaction.userIds.filter(userId => userId !== actor.id)
+    currentReaction.userIds = currentReaction.userIds.filter(uid => uid !== actor.id)
     currentReaction.updatedAt = now
   } else {
     currentReaction.userIds = [...currentReaction.userIds, actor.id]
     currentReaction.updatedAt = now
   }
 
-  message.reactions = reactions.filter(item => item.userIds.length)
-  if (!message.reactions.length) {
-    message.reactions = undefined
-  }
-
-  await writeConversationsFile(payload)
-  return message
+  const updatedReactions = reactions.filter(r => r.userIds.length) || undefined
+  const payload = { ...message, reactions: updatedReactions?.length ? updatedReactions : undefined }
+  await updateMessagePayload(messageId, payload)
+  return { ...message, reactions: updatedReactions }
 }
 
-export async function deleteConversationForUser(conversationId: string, actor: MessengerUserRecord) {
-  const payload = await readConversationsFile()
-  const conversationIndex = payload.conversations.findIndex(item => item.id === conversationId)
-  if (conversationIndex === -1) {
-    throw new Error('CONVERSATION_NOT_FOUND')
+export async function deleteConversationForUser(conversationId: string, actor: MessengerUserRecord): Promise<MessengerConversationRecord> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
+
+  const db = useMessengerDb()
+  const conv = await db.select().from(messengerConversations).where(eq(messengerConversations.id, conversationId)).limit(1).then(rows => rows[0])
+  if (!conv) throw new Error('CONVERSATION_NOT_FOUND')
+
+  await db.update(messengerConversations)
+    .set({ deletedAt: new Date(), version: conv.version + 1 })
+    .where(eq(messengerConversations.id, conversationId))
+
+  const msgRows = await listAllMessagesForConversation(conversationId)
+  for (const row of msgRows) {
+    if (!row.deletedAt) await softDeleteMessage(row.id)
   }
 
-  const conversation = payload.conversations[conversationIndex]
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
-
-  payload.conversations.splice(conversationIndex, 1)
-  payload.messages = payload.messages.filter(item => item.conversationId !== conversationId)
-  await writeConversationsFile(payload)
   return conversation
 }
 
-export async function getConversationKeyPackageForUser(conversationId: string, actor: MessengerUserRecord) {
+export async function getConversationKeyPackageForUser(conversationId: string, actor: MessengerUserRecord): Promise<MessengerConversationKeyPackageRecord | null> {
   const conversation = await findConversationById(conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
-
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
-
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
   return conversation.encryption?.keyPackages[actor.id] ?? null
 }
 
@@ -1049,33 +841,29 @@ export async function saveConversationKeyPackages(
   conversationId: string,
   actor: MessengerUserRecord,
   packages: MessengerConversationKeyPackageRecord[],
-) {
-  const payload = await readConversationsFile()
-  const conversation = payload.conversations.find(item => item.id === conversationId)
-  if (!conversation) {
-    throw new Error('CONVERSATION_NOT_FOUND')
-  }
+): Promise<NonNullable<MessengerConversationRecord['encryption']>> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
-  if (!isParticipant(conversation, actor.id)) {
-    throw new Error('CONVERSATION_FORBIDDEN')
-  }
+  const db = useMessengerDb()
+  const convRow = await db.select().from(messengerConversations).where(eq(messengerConversations.id, conversationId)).limit(1).then(rows => rows[0])
+  if (!convRow) throw new Error('CONVERSATION_NOT_FOUND')
 
-  const nextPackages = conversation.encryption?.keyPackages ?? {}
+  const stored = (convRow.policy ?? {}) as ConvPolicyRow
+  const nextPackages = { ...(stored._encryption?.keyPackages ?? {}) }
 
   for (const item of packages) {
-    if (!isParticipant(conversation, item.recipientUserId)) {
-      throw new Error('CONVERSATION_FORBIDDEN')
-    }
-
+    if (!isParticipant(conversation, item.recipientUserId)) throw new Error('CONVERSATION_FORBIDDEN')
     if (!nextPackages[item.recipientUserId]) {
       nextPackages[item.recipientUserId] = item
     }
   }
 
-  conversation.encryption = {
-    algorithm: 'aes-gcm-256',
-    keyPackages: nextPackages,
-  }
-  await writeConversationsFile(payload)
-  return conversation.encryption
+  const encryption = { algorithm: 'aes-gcm-256' as const, keyPackages: nextPackages }
+  await db.update(messengerConversations)
+    .set({ policy: { ...stored, _encryption: encryption }, version: convRow.version + 1 })
+    .where(eq(messengerConversations.id, conversationId))
+
+  return encryption
 }
