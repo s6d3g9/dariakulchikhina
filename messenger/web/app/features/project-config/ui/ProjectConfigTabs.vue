@@ -1,21 +1,5 @@
 <script setup lang="ts">
 import type { MessengerProject } from '../../../entities/projects/model/useMessengerProjects'
-
-defineProps<{
-  project: MessengerProject
-}>()
-
-const activeTab = ref('agents')
-
-const tabs = [
-  { key: 'agents', label: 'Агенты', icon: 'mdi-robot-outline', live: true },
-  { key: 'connectors', label: 'Коннекторы', icon: 'mdi-connection', live: false },
-  { key: 'skills', label: 'Навыки', icon: 'mdi-lightning-bolt-outline', live: false },
-  { key: 'plugins', label: 'Плагины', icon: 'mdi-puzzle-outline', live: false },
-  { key: 'mcp', label: 'MCP', icon: 'mdi-api', live: false },
-  { key: 'external-apis', label: 'Внешние API', icon: 'mdi-cloud-outline', live: false },
-  { key: 'settings', label: 'Настройки', icon: 'mdi-cog-outline', live: false },
-] as const
 import type { MessengerMcpServer } from '../../../entities/mcp/model/useMessengerMcp'
 import type { MessengerExternalApi } from '../../../entities/external-apis/model/useMessengerExternalApis'
 
@@ -192,18 +176,6 @@ async function submitExtForm() {
 
 <template>
   <div class="project-config-tabs">
-    <VTabs
-      v-model="activeTab"
-      class="project-config-tabs__nav"
-      density="compact"
-      show-arrows
-    >
-      <VTab
-        v-for="tab in tabs"
-        :key="tab.key"
-        :value="tab.key"
-        class="project-config-tabs__tab"
-      >
     <VTabs v-model="activeTab" class="project-config-tabs__nav" density="compact" show-arrows>
       <VTab v-for="tab in tabs" :key="tab.key" :value="tab.key" class="project-config-tabs__tab">
         <VIcon start size="16">{{ tab.icon }}</VIcon>
@@ -212,35 +184,6 @@ async function submitExtForm() {
     </VTabs>
 
     <VTabsWindow v-model="activeTab" class="project-config-tabs__panels">
-      <!-- Agents tab — live -->
-      <VTabsWindowItem value="agents" class="project-config-tabs__panel">
-        <div class="project-config-tabs__agents-empty">
-          <VIcon size="48" class="mb-3" color="secondary">mdi-robot-outline</VIcon>
-          <p class="project-config-tabs__empty-title">Агентов пока нет</p>
-          <p class="project-config-tabs__empty-hint">
-            Нажмите «+», чтобы добавить агента в проект.
-          </p>
-          <VBtn color="primary" variant="flat" prepend-icon="mdi-plus" class="mt-4" disabled>
-            Добавить агента
-          </VBtn>
-          <p class="project-config-tabs__coming-label mt-2">Выбор агентов — W6</p>
-        </div>
-      </VTabsWindowItem>
-
-      <!-- Stub tabs -->
-      <VTabsWindowItem
-        v-for="tab in tabs.filter(t => !t.live)"
-        :key="tab.key"
-        :value="tab.key"
-        class="project-config-tabs__panel"
-      >
-        <div class="project-config-tabs__stub">
-          <VIcon size="48" class="mb-3" color="secondary">{{ tab.icon }}</VIcon>
-          <p class="project-config-tabs__empty-title">{{ tab.label }}</p>
-          <VChip color="warning" size="small" class="mt-2">Coming in W4 / W5</VChip>
-          <p class="project-config-tabs__empty-hint mt-3">
-            Этот раздел будет доступен в следующих волнах.
-          </p>
       <!-- Agents tab stub (W6) -->
       <VTabsWindowItem value="agents" class="project-config-tabs__panel">
         <div class="project-config-tabs__stub">
@@ -432,8 +375,6 @@ async function submitExtForm() {
   padding: 24px 16px;
 }
 
-.project-config-tabs__agents-empty,
-.project-config-tabs__stub {
 .project-config-tabs__toolbar {
   display: flex;
   align-items: center;
@@ -454,7 +395,6 @@ async function submitExtForm() {
   justify-content: center;
   text-align: center;
   padding: 32px 16px;
-  min-height: 240px;
   min-height: 200px;
   color: rgb(var(--v-theme-on-surface-variant));
 }
