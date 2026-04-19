@@ -1,5 +1,11 @@
 import { normalizeMessengerProjectRoot } from '../../../utils/messenger-project-root'
 import { buildMessengerUrl } from '../../../utils/messenger-url'
+import {
+  buildCleanTranscript,
+  buildSummaryFromTranscript,
+  cleanTranscriptEntries,
+  useCallTranscription,
+} from './use-call-transcription'
 
 type MessengerCallMode = 'audio' | 'video'
 type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
@@ -33,16 +39,6 @@ interface MessengerCallControlsState {
   microphoneEnabled: boolean
   speakerEnabled: boolean
   videoEnabled: boolean
-}
-
-type MessengerTranscriptSpeaker = 'you' | 'peer'
-
-interface MessengerCallTranscriptEntry {
-  id: string
-  speaker: MessengerTranscriptSpeaker
-  text: string
-  final: boolean
-  createdAt: number
 }
 
 type MessengerCallAnalysisToolId = 'psychology' | 'business' | 'intent' | 'objections' | 'speech-risks' | 'next-steps'
@@ -133,7 +129,6 @@ const CALL_ANALYSIS_TOOLS: MessengerCallAnalysisTool[] = [
   { id: 'speech-risks', title: 'Риски коммуникации', description: 'Где формулировки были расплывчаты или конфликтны.' },
   { id: 'next-steps', title: 'Следующие шаги', description: 'План действий по итогам разговора.' },
 ]
-const TRANSCRIPT_FILLER_WORDS = ['ээ', 'эм', 'мм', 'ну', 'типа', 'короче', 'как бы', 'вот', 'ага', 'угу']
 const CALL_ANALYSIS_WORD_LIBRARY = {
   price: ['бюджет', 'стоим', 'цена', 'скидк', 'оплат', 'предоплат'],
   deadline: ['срок', 'дедлайн', 'когда', 'до ', 'этап', 'дата'],
@@ -158,82 +153,9 @@ interface MessengerCallSecurityContext {
 
 let callSecurityContext: MessengerCallSecurityContext | null = null
 
-type SpeechRecognitionEventLike = {
-  resultIndex: number
-  results: ArrayLike<{
-    isFinal: boolean
-    0?: {
-      transcript?: string
-    }
-  }>
-}
-
-type SpeechRecognitionErrorEventLike = {
-  error?: string
-}
-
 type MessengerAudioOutputElement = HTMLMediaElement & {
   sinkId?: string
   setSinkId?: (sinkId: string) => Promise<void>
-}
-
-type SpeechRecognitionCtorLike = new () => {
-  continuous: boolean
-  interimResults: boolean
-  lang: string
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null
-  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null
-  onend: (() => void) | null
-  start: () => void
-  stop: () => void
-  abort: () => void
-}
-
-let speechRecognition: InstanceType<SpeechRecognitionCtorLike> | null = null
-let speechRecognitionRestartTimer: ReturnType<typeof setTimeout> | null = null
-let speechRecognitionCurrentDraftId = ''
-let transcriptionAnalyserContext: AudioContext | null = null
-let transcriptionLocalAnalyser: AnalyserNode | null = null
-let transcriptionRemoteAnalyser: AnalyserNode | null = null
-let transcriptionLevelSampler: ReturnType<typeof setInterval> | null = null
-let transcriptionLastEnergy = { local: 0, remote: 0 }
-let transcriptionChunkRecorder: MediaRecorder | null = null
-let transcriptionChunkRecorderRestartTimer: ReturnType<typeof setTimeout> | null = null
-let transcriptionIsolatedContext: AudioContext | null = null
-let transcriptionIsolatedTracks: MediaStreamTrack[] = []
-let transcriptionChunkUploadQueue: Promise<void> = Promise.resolve()
-let transcriptionChunkSequence = 0
-let transcriptionChunkMimeType = ''
-let transcriptionServerSessionKey = ''
-let peerDataChannel: RTCDataChannel | null = null
-
-function resolveSpeechRecognitionCtor(): SpeechRecognitionCtorLike | null {
-  if (!import.meta.client) {
-    return null
-  }
-
-  const maybeCtor = (window as typeof window & {
-    SpeechRecognition?: SpeechRecognitionCtorLike
-    webkitSpeechRecognition?: SpeechRecognitionCtorLike
-  }).SpeechRecognition
-    || (window as typeof window & {
-      SpeechRecognition?: SpeechRecognitionCtorLike
-      webkitSpeechRecognition?: SpeechRecognitionCtorLike
-    }).webkitSpeechRecognition
-
-  return typeof maybeCtor === 'function' ? maybeCtor : null
-}
-
-function isMobileChromeLikeBrowser() {
-  if (!import.meta.client) {
-    return false
-  }
-
-  const userAgent = navigator.userAgent || ''
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(userAgent)
-  const isChromeLike = /Chrome\/|CriOS\/|EdgA\/|SamsungBrowser\//iu.test(userAgent)
-
-  return isMobile && isChromeLike
 }
 
 function shouldAutoOpenCallAnalysisPanel(mode: MessengerCallMode) {
@@ -244,123 +166,12 @@ function shouldAutoOpenCallAnalysisPanel(mode: MessengerCallMode) {
   return window.matchMedia('(min-width: 980px)').matches
 }
 
-function mobileChromeTranscriptionFallbackMessage() {
-  return 'Во время звонка мобильный Chrome не даёт одновременно использовать микрофон для WebRTC и Web Speech API. Нужен серверный транскриб или другой браузер.'
-}
-
 function matchesAnalysisWordLibrary(text: string, keywords: readonly string[]) {
   return keywords.some(keyword => text.includes(keyword))
 }
 
-function readAnalyserEnergy(analyser: AnalyserNode | null) {
-  if (!analyser) {
-    return 0
-  }
-
-  const buffer = new Uint8Array(analyser.fftSize)
-  analyser.getByteTimeDomainData(buffer)
-  let total = 0
-
-  for (const item of buffer) {
-    const normalized = (item - 128) / 128
-    total += normalized * normalized
-  }
-
-  return Math.sqrt(total / buffer.length)
-}
-
-function stopTranscriptionEnergySampler() {
-  if (transcriptionLevelSampler) {
-    clearInterval(transcriptionLevelSampler)
-    transcriptionLevelSampler = null
-  }
-
-  transcriptionLocalAnalyser = null
-  transcriptionRemoteAnalyser = null
-
-  if (transcriptionAnalyserContext) {
-    void transcriptionAnalyserContext.close().catch(() => {})
-    transcriptionAnalyserContext = null
-  }
-
-  transcriptionLastEnergy = { local: 0, remote: 0 }
-}
-
-function normalizeTranscriptText(raw: string) {
-  const compact = raw
-    .replace(/[\t\n\r]+/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/([а-яa-z])\1{3,}/gi, '$1$1')
-    .trim()
-
-  if (!compact) {
-    return ''
-  }
-
-  const lower = compact.toLowerCase()
-  if (TRANSCRIPT_FILLER_WORDS.includes(lower)) {
-    return ''
-  }
-
-  return compact
-}
-
 function normalizeProjectSyncSlug(value?: string | null) {
   return String(value || '').trim().replace(/^\/+|\/+$/g, '')
-}
-
-function cleanTranscriptEntries(entries: MessengerCallTranscriptEntry[]) {
-  const cleaned: MessengerCallTranscriptEntry[] = []
-
-  for (const entry of entries) {
-    const normalizedText = normalizeTranscriptText(entry.text)
-    if (!normalizedText) {
-      continue
-    }
-
-    const previous = cleaned[cleaned.length - 1]
-    if (previous && previous.speaker === entry.speaker && previous.text === normalizedText) {
-      continue
-    }
-
-    cleaned.push({
-      ...entry,
-      text: normalizedText,
-    })
-  }
-
-  return cleaned
-}
-
-function buildSummaryFromTranscript(entries: MessengerCallTranscriptEntry[]) {
-  if (!entries.length) {
-    return 'Недостаточно данных для конспекта.'
-  }
-
-  const sourceText = entries.map(entry => `${entry.speaker === 'you' ? 'Вы' : 'Клиент'}: ${entry.text}`).join('\n')
-  const lines = sourceText.split('\n').filter(Boolean)
-  const keyLines = lines.slice(0, 2).concat(lines.slice(Math.max(2, lines.length - 4)))
-  const actionPatterns = /нужно|надо|сделать|подготов|соглас|отправ|срок|дедлайн|бюджет|стоим|договор/iu
-  const actionItems = lines.filter(line => actionPatterns.test(line)).slice(0, 5)
-
-  const summaryParts = [
-    'Краткий конспект:',
-    ...keyLines.map(line => `- ${line}`),
-  ]
-
-  if (actionItems.length) {
-    summaryParts.push('')
-    summaryParts.push('Договорённости / задачи:')
-    summaryParts.push(...actionItems.map(line => `- ${line}`))
-  }
-
-  return summaryParts.join('\n')
-}
-
-function buildCleanTranscript(entries: MessengerCallTranscriptEntry[]) {
-  return entries
-    .map(entry => `${entry.speaker === 'you' ? 'Вы' : 'Собеседник'}: ${entry.text}`)
-    .join('\n')
 }
 
 function buildAnalysisInterpretation(toolId: MessengerCallAnalysisToolId, review: MessengerCallReviewState) {
@@ -844,18 +655,34 @@ export function useMessengerCalls() {
     microphone: 'unknown',
     camera: 'unknown',
   }))
-  const transcriptionSupported = useState<boolean>('messenger-call-transcription-supported', () => Boolean(supportsServerTranscriptionBackend() || resolveSpeechRecognitionCtor()))
-  const transcriptionActive = useState<boolean>('messenger-call-transcription-active', () => false)
-  const transcriptionError = useState<string>('messenger-call-transcription-error', () => '')
-  const transcriptionDraft = useState<string>('messenger-call-transcription-draft', () => '')
-  const transcriptionEntries = useState<MessengerCallTranscriptEntry[]>('messenger-call-transcription-entries', () => [])
-  const transcriptionHint = useState<string>('messenger-call-transcription-hint', () => (
-    supportsServerTranscriptionBackend()
-      ? 'По умолчанию используется серверная транскрибация звонка.'
-      : resolveSpeechRecognitionCtor()
-        ? 'Доступен браузерный fallback для транскрибации звонка.'
-        : 'Браузер не поддерживает транскрибацию звонка.'
-  ))
+  const transcription = useCallTranscription({
+    activeCall: activeCall as Ref<{ callId: string; conversationId: string; mode: 'audio' | 'video' } | null>,
+    controls: controls as Ref<{ microphoneEnabled: boolean }>,
+    authRequest: auth.request,
+    authToken: auth.token,
+    authUserId: computed(() => auth.user.value?.id || null),
+    isServerTranscriptionEnabled: () => Boolean(runtimeConfig.public.messengerServerTranscriptionEnabled),
+    getTranscriptionProvider: () => settingsModel.runtimeTranscriptionProvider.value,
+    getLocalStream: () => localStream,
+    getRemoteStream: () => remoteStream,
+    getLiveKitRoom: () => liveKitRoom,
+  })
+  const {
+    transcriptionSupported,
+    transcriptionActive,
+    transcriptionError,
+    transcriptionHint,
+    transcriptionDraft,
+    transcriptionEntries,
+    startTranscription,
+    stopTranscription,
+    clearTranscription,
+    startTranscriptionEnergySampler,
+    syncTranscriptionSupportState,
+    setupPeerDataChannel,
+    closePeerDataChannel,
+    handleIncomingDataChannelMessage,
+  } = transcription
   const callReview = useState<MessengerCallReviewState | null>('messenger-call-review', () => null)
   const analysisPanelOpen = useState<boolean>('messenger-call-analysis-panel-open', () => false)
   const analysisTools = useState<MessengerCallAnalysisTool[]>('messenger-call-analysis-tools', () => CALL_ANALYSIS_TOOLS)
@@ -873,113 +700,6 @@ export function useMessengerCalls() {
   const projectTaskSyncPending = useState<boolean>('messenger-call-project-task-sync-pending', () => false)
   const projectTaskSyncError = useState<string>('messenger-call-project-task-sync-error', () => '')
   const projectTaskSyncStatus = useState<string>('messenger-call-project-task-sync-status', () => '')
-
-  if (import.meta.client) {
-    let transcriptionSyncTimer: ReturnType<typeof setTimeout> | null = null
-    let transcriptionSyncPending = false
-
-    const sendTranscriptionSync = () => {
-      transcriptionSyncPending = false
-      if (!transcriptionActive.value) return
-      
-      const payload = JSON.stringify({
-        type: 'transcription-sync',
-        draft: transcriptionDraft.value,
-        entries: transcriptionEntries.value
-      })
-
-      if (peerDataChannel?.readyState === 'open') {
-        try {
-          peerDataChannel.send(payload)
-        } catch {}
-      }
-      
-      if (liveKitRoom) {
-        try {
-          const dataBuffer = new TextEncoder().encode(payload)
-          liveKitRoom.localParticipant.publishData(dataBuffer, { reliable: true })
-        } catch {}
-      }
-    }
-
-    watch([transcriptionDraft, transcriptionEntries], () => {
-      if (!transcriptionSyncTimer) {
-        // Send immediately on first change
-        sendTranscriptionSync()
-        // Lock sending for the next 250ms (throttle)
-        transcriptionSyncTimer = setTimeout(() => {
-          transcriptionSyncTimer = null
-          // If changes accumulated during the cooldown, flush them immediately
-          if (transcriptionSyncPending) {
-            sendTranscriptionSync()
-          }
-        }, 250)
-      } else {
-        // Just mark that we have a pending sync if within cooldown
-        transcriptionSyncPending = true
-      }
-    }, { deep: true })
-  }
-
-  function handleIncomingDataChannelMessage(data: string) {
-    try {
-      const payload = JSON.parse(data)
-      if (payload.type === 'transcription-sync') {
-        if (typeof payload.draft === 'string' && !transcriptionActive.value) {
-          transcriptionDraft.value = payload.draft
-        }
-        if (Array.isArray(payload.entries)) {
-          const transformed = payload.entries.map((e: any) => ({
-            ...e,
-            speaker: e.speaker === 'you' ? 'peer' : (e.speaker === 'peer' ? 'you' : (e.speaker === auth.user.value?.id ? 'you' : 'peer'))
-          }))
-
-          if (!transcriptionActive.value) {
-            transcriptionEntries.value = transformed
-          } else {
-            const existingMap = new Map(transcriptionEntries.value.map(x => [x.id, x]))
-            let changed = false
-            
-            for (const item of transformed) {
-              if (item.speaker === 'you' && speechRecognition) continue
-              
-              const existing = existingMap.get(item.id)
-              if (!existing) {
-                existingMap.set(item.id, item)
-                changed = true
-              } else if (existing.text !== item.text || existing.final !== item.final) {
-                existing.text = item.text
-                existing.final = item.final
-                changed = true
-              }
-            }
-            
-            if (changed) {
-              const combined = Array.from(existingMap.values()).sort((a, b) => a.createdAt - b.createdAt)
-              transcriptionEntries.value = combined.slice(Math.max(0, combined.length - 120))
-            }
-          }
-        }
-      }
-    } catch {}
-  }
-
-  function setupPeerDataChannel(channel: RTCDataChannel) {
-    channel.onmessage = (event) => {
-      handleIncomingDataChannelMessage(event.data)
-    }
-    channel.onopen = () => {
-      if (transcriptionActive.value) {
-        try {
-          channel.send(JSON.stringify({
-            type: 'transcription-sync',
-            draft: transcriptionDraft.value,
-            entries: transcriptionEntries.value
-          }))
-        } catch {}
-      }
-    }
-  }
 
   const supported = computed(() => Boolean(import.meta.client && typeof navigator.mediaDevices?.getUserMedia === 'function' && typeof RTCPeerConnection !== 'undefined'))
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
@@ -1026,96 +746,6 @@ export function useMessengerCalls() {
 
     return 'Нужно подтвердить доступ к микрофону и камере для видеозвонков.'
   })
-
-  function supportsServerTranscriptionBackend() {
-    return Boolean(
-      runtimeConfig.public.messengerServerTranscriptionEnabled
-      && import.meta.client
-      && typeof MediaRecorder !== 'undefined'
-      && auth.token.value,
-    )
-  }
-
-  function canRunServerCallTranscription() {
-    return Boolean(
-      supportsServerTranscriptionBackend()
-      && activeCall.value?.mode === 'audio'
-      && localStream?.getAudioTracks().length,
-    )
-  }
-
-  function shouldPreferServerCallTranscription() {
-    if (canRunBrowserSpeechRecognition()) return false
-    return Boolean(canRunServerCallTranscription())
-  }
-
-  function pickServerTranscriptionMimeType() {
-    if (!import.meta.client || typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
-      return ''
-    }
-
-    const preferredTypes = [
-      'audio/webm;codecs=opus',
-      'audio/webm',
-      'audio/mp4',
-      'audio/ogg;codecs=opus',
-    ]
-
-    return preferredTypes.find(type => MediaRecorder.isTypeSupported(type)) || ''
-  }
-
-  function canRunBrowserSpeechRecognition() {
-    if (!resolveSpeechRecognitionCtor()) {
-      return false
-    }
-
-    if (activeCall.value?.mode === 'audio' && isMobileChromeLikeBrowser()) {
-      return false
-    }
-
-    return true
-  }
-
-  function syncTranscriptionSupportState() {
-    if (shouldPreferServerCallTranscription()) {
-      transcriptionSupported.value = true
-      transcriptionHint.value = transcriptionActive.value
-        ? 'Серверная транскрибация активна. Распознается ваш микрофон.'
-        : 'По умолчанию для звонка будет использоваться серверная транскрибация.'
-      return
-    }
-
-    const browserSpeechAvailable = Boolean(resolveSpeechRecognitionCtor())
-
-    if (!browserSpeechAvailable) {
-      transcriptionSupported.value = false
-      transcriptionHint.value = supportsServerTranscriptionBackend()
-        ? 'Серверная транскрибация станет доступна после старта аудиозвонка.'
-        : 'Транскрибация недоступна в этом браузере.'
-      return
-    }
-
-    if (activeCall.value?.mode === 'audio' && isMobileChromeLikeBrowser()) {
-      transcriptionSupported.value = supportsServerTranscriptionBackend()
-      transcriptionHint.value = supportsServerTranscriptionBackend()
-        ? 'Во время звонка мобильный Chrome будет использовать серверную транскрибацию.'
-        : mobileChromeTranscriptionFallbackMessage()
-      return
-    }
-
-    transcriptionSupported.value = true
-    transcriptionHint.value = transcriptionActive.value
-      ? 'Браузерная транскрибация активна. Реплики обновляются в реальном времени.'
-      : supportsServerTranscriptionBackend()
-        ? 'Серверный транскриб используется по умолчанию. Браузерный fallback тоже доступен.'
-        : 'Доступен браузерный fallback для транскрибации звонка.'
-  }
-
-  function clearTranscription() {
-    transcriptionEntries.value = []
-    transcriptionDraft.value = ''
-    transcriptionError.value = ''
-  }
 
   function clearCallReview() {
     callReview.value = null
@@ -1391,462 +1021,6 @@ export function useMessengerCalls() {
     return callReview.value
   }
 
-  function appendTranscriptionEntry(text: string, options?: { id?: string; final?: boolean; speaker?: MessengerTranscriptSpeaker }) {
-    const normalized = text.trim()
-    if (!normalized) {
-      return
-    }
-
-    const genId = options?.id || (typeof crypto !== 'undefined' && crypto.randomUUID 
-      ? crypto.randomUUID() 
-      : Math.random().toString(36).substring(2, 15))
-
-    const nextEntry: MessengerCallTranscriptEntry = {
-      id: genId,
-      speaker: options?.speaker || 'you',
-      text: normalized,
-      final: options?.final ?? true,
-      createdAt: Date.now(),
-    }
-
-    const existingIdx = transcriptionEntries.value.findIndex(x => x.id === genId)
-    let nextEntries = [...transcriptionEntries.value]
-    if (existingIdx !== -1) {
-      nextEntries[existingIdx] = nextEntry
-    } else {
-      nextEntries.push(nextEntry)
-    }
-    
-    transcriptionEntries.value = nextEntries.slice(Math.max(0, nextEntries.length - 120))
-  }
-
-  function resolveTranscriptSpeaker() {
-    if (!controls.value.microphoneEnabled) {
-      return 'peer'
-    }
-
-    return transcriptionLastEnergy.remote > (transcriptionLastEnergy.local * 1.12) ? 'peer' : 'you'
-  }
-
-  function startTranscriptionEnergySampler() {
-    if (!import.meta.client || (!localStream && !remoteStream)) {
-      return
-    }
-
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(navigator.userAgent || '')
-    if (isMobile) {
-      return
-    }
-
-    stopTranscriptionEnergySampler()
-
-    const Ctor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    if (!Ctor) {
-      return
-    }
-
-    try {
-      transcriptionAnalyserContext = new Ctor()
-
-      if (localStream?.getAudioTracks().length) {
-        transcriptionLocalAnalyser = transcriptionAnalyserContext.createAnalyser()
-        transcriptionLocalAnalyser.fftSize = 1024
-        const localSource = transcriptionAnalyserContext.createMediaStreamSource(new MediaStream(localStream.getAudioTracks()))
-        localSource.connect(transcriptionLocalAnalyser)
-      }
-
-      if (remoteStream?.getAudioTracks().length) {
-        transcriptionRemoteAnalyser = transcriptionAnalyserContext.createAnalyser()
-        transcriptionRemoteAnalyser.fftSize = 1024
-        const remoteSource = transcriptionAnalyserContext.createMediaStreamSource(new MediaStream(remoteStream.getAudioTracks()))
-        remoteSource.connect(transcriptionRemoteAnalyser)
-      }
-
-      transcriptionLevelSampler = setInterval(() => {
-        transcriptionLastEnergy = {
-          local: readAnalyserEnergy(transcriptionLocalAnalyser),
-          remote: readAnalyserEnergy(transcriptionRemoteAnalyser),
-        }
-      }, 220)
-    } catch {
-      stopTranscriptionEnergySampler()
-    }
-  }
-
-  function stopTranscription() {
-    transcriptionServerSessionKey = ''
-
-    if (transcriptionChunkRecorderRestartTimer) {
-      clearTimeout(transcriptionChunkRecorderRestartTimer)
-      transcriptionChunkRecorderRestartTimer = null
-    }
-
-    if (transcriptionChunkRecorder) {
-      const recorder = transcriptionChunkRecorder
-      transcriptionChunkRecorder = null
-      recorder.ondataavailable = null
-      recorder.onerror = null
-      if (recorder.state !== 'inactive') {
-        try {
-          recorder.stop()
-        } catch {
-          // noop
-        }
-      }
-    }
-
-    if (transcriptionIsolatedContext) {
-      try {
-        transcriptionIsolatedContext.close()
-      } catch {
-        // noop
-      }
-      transcriptionIsolatedContext = null
-    }
-
-    try {
-      transcriptionIsolatedTracks.forEach(t => t.stop())
-    } catch {}
-    transcriptionIsolatedTracks = []
-
-    transcriptionChunkUploadQueue = Promise.resolve()
-    transcriptionChunkSequence = 0
-    transcriptionChunkMimeType = ''
-
-    if (speechRecognitionRestartTimer) {
-      clearTimeout(speechRecognitionRestartTimer)
-      speechRecognitionRestartTimer = null
-    }
-
-    if (speechRecognition) {
-      speechRecognition.onresult = null
-      speechRecognition.onerror = null
-      speechRecognition.onend = null
-      try {
-        speechRecognition.abort()
-      } catch {
-        // noop
-      }
-      speechRecognition = null
-    }
-
-    transcriptionActive.value = false
-    transcriptionDraft.value = ''
-    stopTranscriptionEnergySampler()
-    syncTranscriptionSupportState()
-  }
-
-  async function uploadServerTranscriptionChunk(blob: Blob, sequence: number, sessionKey: string, conversationId: string, callId: string) {
-    const buffer = new Uint8Array(await blob.arrayBuffer())
-    const response = await auth.request<{ text?: string }>(`/conversations/${conversationId}/calls/${callId}/transcription`, {
-      method: 'POST',
-      body: {
-        audioBase64: encodeCallBase64(buffer),
-        mimeType: transcriptionChunkMimeType || blob.type || 'audio/webm',
-        sequence,
-        provider: settingsModel.runtimeTranscriptionProvider.value,
-      },
-    })
-
-    if (sessionKey !== transcriptionServerSessionKey) {
-      return
-    }
-
-    const normalizedText = String(response.text || '').trim()
-    transcriptionDraft.value = ''
-    if (normalizedText) {
-      appendTranscriptionEntry(normalizedText, { speaker: 'you', final: true })
-    }
-  }
-
-  function startServerCallTranscription() {
-    if (liveKitRoom) {
-      // LiveKit uses backend STT bot attached to the SFU, no client-side chunk pushing needed
-      transcriptionActive.value = true
-      return true
-    }
-
-    if (!canRunServerCallTranscription() || !activeCall.value || !localStream) {
-      transcriptionError.value = 'Серверная транскрибация пока недоступна для этого звонка.'
-      return false
-    }
-
-    stopTranscription()
-    startTranscriptionEnergySampler()
-
-    const sessionKey = `${activeCall.value.callId}:${Date.now()}`
-    const conversationId = activeCall.value.conversationId
-    const callId = activeCall.value.callId
-    transcriptionServerSessionKey = sessionKey
-
-    const mimeType = pickServerTranscriptionMimeType()
-    const isMobileSafari = /iPhone|iPad|iPod/iu.test(navigator.userAgent || '')
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(navigator.userAgent || '')
-
-    let stream: MediaStream = localStream
-
-    if (!isMobile) {
-      transcriptionIsolatedTracks = localStream.getAudioTracks().map(t => t.clone())
-      stream = new MediaStream(transcriptionIsolatedTracks)
-      
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-      if (AudioContextClass) {
-        try {
-          transcriptionIsolatedContext = new AudioContextClass()
-          const source = transcriptionIsolatedContext.createMediaStreamSource(stream)
-          const dest = transcriptionIsolatedContext.createMediaStreamDestination()
-          source.connect(dest)
-          stream = dest.stream
-        } catch {
-          transcriptionIsolatedContext = null
-        }
-      }
-    }
-
-    transcriptionChunkSequence = 0
-    transcriptionError.value = ''
-    transcriptionDraft.value = ''
-
-    function cycleRecording() {
-      if (sessionKey !== transcriptionServerSessionKey) {
-        return
-      }
-
-      if (!stream.getAudioTracks().length) {
-        transcriptionError.value = 'Нет доступных аудиоканалов для транскрибации.'
-        return
-      }
-
-      let recorder: MediaRecorder
-      try {
-        recorder = mimeType
-          ? new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 24000 })
-          : new MediaRecorder(stream)
-      } catch {
-        try {
-          recorder = new MediaRecorder(stream)
-        } catch {
-          transcriptionServerSessionKey = ''
-          transcriptionChunkRecorder = null
-          transcriptionError.value = 'Серверная транскрибация не поддерживается вашим устройством.'
-          return
-        }
-      }
-
-      transcriptionChunkRecorder = recorder
-      transcriptionChunkMimeType = recorder.mimeType || mimeType || 'audio/webm'
-
-      recorder.ondataavailable = (event) => {
-        if (!event.data || event.data.size <= 0) {
-          return
-        }
-
-        const sequence = transcriptionChunkSequence
-        transcriptionChunkSequence += 1
-        transcriptionDraft.value = 'Сервер распознаёт вашу речь…'
-
-        transcriptionChunkUploadQueue = transcriptionChunkUploadQueue
-          .then(async () => {
-            await uploadServerTranscriptionChunk(event.data, sequence, sessionKey, conversationId, callId)
-          })
-          .catch(() => {
-            if (sessionKey !== transcriptionServerSessionKey) {
-              return
-            }
-
-            transcriptionDraft.value = ''
-            transcriptionError.value = 'Серверная транскрибация недоступна. Проверьте локальный STT backend.'
-          })
-      }
-
-      recorder.onerror = () => {
-        if (sessionKey !== transcriptionServerSessionKey) {
-          return
-        }
-
-        transcriptionError.value = 'Не удалось подготовить аудиопоток для серверной транскрибации.'
-      }
-
-      try {
-        recorder.start()
-        transcriptionActive.value = true
-        transcriptionHint.value = 'Серверная транскрибация активна. Распознается ваш микрофон.'
-      } catch {
-        transcriptionServerSessionKey = ''
-        transcriptionChunkRecorder = null
-        transcriptionDraft.value = ''
-        transcriptionError.value = 'Не удалось запустить серверную транскрибацию.'
-        return
-      }
-
-      transcriptionChunkRecorderRestartTimer = setTimeout(() => {
-        if (sessionKey === transcriptionServerSessionKey && transcriptionChunkRecorder === recorder) {
-          cycleRecording()
-          
-          setTimeout(() => {
-            try {
-              if (recorder.state !== 'inactive') {
-                recorder.stop()
-              }
-            } catch {
-              // noop
-            }
-          }, 350)
-        }
-      }, 7500)
-    }
-
-    cycleRecording()
-    return true
-  }
-
-  function startTranscription() {
-    syncTranscriptionSupportState()
-
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(navigator.userAgent || '')
-
-    if (!activeCall.value || activeCall.value.mode !== 'audio') {
-      stopTranscription()
-      return false
-    }
-
-    if (shouldPreferServerCallTranscription()) {
-      const serverStarted = startServerCallTranscription()
-      if (serverStarted) {
-        return true
-      }
-
-      if (isMobile) {
-        transcriptionError.value = 'Сервер STT недоступен, а браузерная транскрибация отключена на мобильных для защиты звонка.'
-        return false
-      }
-
-      if (!canRunBrowserSpeechRecognition()) {
-        syncTranscriptionSupportState()
-        return false
-      }
-
-      transcriptionError.value = ''
-    }
-
-    if (isMobile) {
-      transcriptionError.value = 'На мобильных устройствах без серверного STT транскрибация отключена.'
-      return false
-    }
-
-    if (!canRunBrowserSpeechRecognition()) {
-      transcriptionError.value = isMobileChromeLikeBrowser()
-        ? mobileChromeTranscriptionFallbackMessage()
-        : 'Для транскрибации нужен Chrome/Edge/Safari с поддержкой Web Speech API.'
-      return false
-    }
-
-    const Ctor = resolveSpeechRecognitionCtor()
-    if (!Ctor) {
-      transcriptionError.value = 'Web Speech API недоступен в этом браузере.'
-      return false
-    }
-
-    stopTranscription()
-    startTranscriptionEnergySampler()
-
-    transcriptionError.value = ''
-    syncTranscriptionSupportState()
-
-    speechRecognition = new Ctor()
-    speechRecognition.continuous = true
-    speechRecognition.interimResults = true
-    speechRecognition.lang = 'ru-RU'
-    speechRecognition.onresult = (event) => {
-      let interim = ''
-      let finalAdded = false
-
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const result = event.results[index]
-        if (!result) continue
-        const transcriptText = String(result[0]?.transcript || '').trim()
-
-        if (!transcriptText) {
-          continue
-        }
-
-        if (result.isFinal) {
-          const resolveId = speechRecognitionCurrentDraftId
-          appendTranscriptionEntry(transcriptText, { id: resolveId, speaker: resolveTranscriptSpeaker(), final: true })
-          finalAdded = true
-        } else {
-          interim += `${transcriptText} `
-        }
-      }
-
-      const normalizedInterim = interim.trim()
-
-      if (normalizedInterim) {
-        if (!speechRecognitionCurrentDraftId) {
-          speechRecognitionCurrentDraftId = `draft-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-        }
-        
-        const existingIdx = transcriptionEntries.value.findIndex(x => x.id === speechRecognitionCurrentDraftId)
-        if (existingIdx !== -1) {
-          transcriptionEntries.value[existingIdx]!.text = normalizedInterim
-          transcriptionEntries.value[existingIdx]!.createdAt = Date.now()
-        } else {
-          transcriptionEntries.value.push({
-            id: speechRecognitionCurrentDraftId,
-            speaker: resolveTranscriptSpeaker(),
-            text: normalizedInterim,
-            final: false,
-            createdAt: Date.now()
-          })
-        }
-      } else if (!finalAdded && speechRecognitionCurrentDraftId) {
-        transcriptionEntries.value = transcriptionEntries.value.filter(x => x.id !== speechRecognitionCurrentDraftId)
-        speechRecognitionCurrentDraftId = ''
-      }
-      
-      if (finalAdded) {
-        speechRecognitionCurrentDraftId = ''
-      }
-    }
-    speechRecognition.onerror = (event) => {
-      const errorCode = String(event.error || '')
-      if (errorCode === 'not-allowed') {
-        transcriptionError.value = 'Браузер запретил доступ к распознаванию речи. Разрешите микрофон в настройках сайта.'
-      } else if (errorCode === 'audio-capture') {
-        transcriptionError.value = isMobileChromeLikeBrowser()
-          ? mobileChromeTranscriptionFallbackMessage()
-          : 'Не удалось получить аудио для транскрибации.'
-      } else {
-        transcriptionError.value = 'Транскрибация временно недоступна. Пытаемся переподключиться.'
-      }
-    }
-    speechRecognition.onend = () => {
-      if (!activeCall.value || activeCall.value.mode !== 'audio') {
-        transcriptionActive.value = false
-        return
-      }
-
-      speechRecognitionRestartTimer = setTimeout(() => {
-        speechRecognitionRestartTimer = null
-        void startTranscription()
-      }, 280)
-    }
-
-    try {
-      speechRecognition.start()
-      transcriptionActive.value = true
-      syncTranscriptionSupportState()
-      return true
-    } catch {
-      transcriptionActive.value = false
-      transcriptionError.value = isMobileChromeLikeBrowser()
-        ? mobileChromeTranscriptionFallbackMessage()
-        : 'Не удалось запустить транскрибацию. Попробуйте ещё раз.'
-      syncTranscriptionSupportState()
-      return false
-    }
-  }
-
   function syncMicrophoneState() {
     if (!localStream) {
       return
@@ -2042,8 +1216,7 @@ export function useMessengerCalls() {
   }
 
   function resetPeerConnection() {
-    peerDataChannel?.close()
-    peerDataChannel = null
+    closePeerDataChannel()
     peerConnection?.close()
     peerConnection = null
     peerConnectionCallId = ''
@@ -2260,8 +1433,7 @@ export function useMessengerCalls() {
     assignMediaTargets()
 
     try {
-      peerDataChannel = connection.createDataChannel('transcription-sync', { negotiated: true, id: 0 })
-      setupPeerDataChannel(peerDataChannel)
+      setupPeerDataChannel(connection.createDataChannel('transcription-sync', { negotiated: true, id: 0 }))
     } catch (e) {
       console.warn('[DataChannel] Failed to create negotiated channel:', e)
     }
@@ -3192,13 +2364,6 @@ export function useMessengerCalls() {
   if (import.meta.client) {
     void refreshMediaPermissions()
   }
-
-  watch([
-    () => activeCall.value?.mode || null,
-    () => transcriptionActive.value,
-  ], () => {
-    syncTranscriptionSupportState()
-  }, { immediate: true })
 
   return {
     incomingCall,
