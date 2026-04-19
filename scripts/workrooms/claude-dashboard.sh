@@ -18,44 +18,71 @@ REFRESH_SEC="${1:-5}"
 
 fmt_bytes() { awk -v n="$1" 'BEGIN {s="B KB MB GB TB"; split(s,u," "); i=1; while(n>=1024 && i<5){n/=1024; i++}; printf "%.1f %s", n, u[i]}'; }
 
-# Heuristic: look at last 40 lines of the tmux pane to infer state.
+# Infer state from the session log (source of truth) + mtime freshness.
 infer_state() {
-  local window="$1"
-  local tail
-  tail=$(tmux capture-pane -pS -40 -t "${TMUX_SESSION}:${window}" 2>/dev/null || true)
-  if [[ -z "${tail}" ]]; then echo "dead"; return; fi
-  if grep -qiE "esc to interrupt|generating|thinking" <<<"${tail}"; then
-    echo "thinking"; return
+  local slug="$1"
+  local logf="${STATE_DIR}/${slug}.log"
+  [[ -f "${logf}" ]] || { echo "no-log"; return; }
+
+  local mtime now age
+  mtime=$(stat -c %Y "${logf}" 2>/dev/null || echo 0)
+  now=$(date +%s)
+  age=$(( now - mtime ))
+
+  # Peek last line to see if we have a terminal result/error
+  local last
+  last=$(tail -n 1 "${logf}" 2>/dev/null)
+  if grep -q '"type":"result"' <<<"${last}"; then
+    if grep -q '"is_error":true' <<<"${last}"; then echo "error"; else echo "done"; fi
+    return
   fi
-  if grep -qE "^> ?$" <<<"${tail}" || grep -qE "How can I help|Tell me what" <<<"${tail}"; then
-    echo "idle"; return
+
+  # If the log is being written very recently it is alive
+  if [[ ${age} -lt 15 ]]; then
+    # Distinguish thinking vs tool_call by the last 5 lines
+    local tail5; tail5=$(tail -n 5 "${logf}" 2>/dev/null)
+    if grep -q '"thinking_delta"' <<<"${tail5}"; then echo "thinking"; return; fi
+    if grep -q '"tool_use"' <<<"${tail5}"; then echo "tool_call"; return; fi
+    if grep -q '"text_delta"' <<<"${tail5}"; then echo "streaming"; return; fi
+    echo "running"
+  elif [[ ${age} -lt 120 ]]; then
+    echo "idle"
+  else
+    echo "stalled"
   fi
-  if grep -qiE "running|executing|tool use|running bash" <<<"${tail}"; then
-    echo "tool_call"; return
-  fi
-  if grep -qiE "waiting for.*input|please confirm|y/n" <<<"${tail}"; then
-    echo "awaiting"; return
-  fi
-  echo "active"
 }
 
-# Pick up the most recent "model/ctx" mention if claude prints one.
+# Token usage from the most recent result or stream message.
 infer_ctx() {
-  local window="$1"
-  local tail
-  tail=$(tmux capture-pane -pS -200 -t "${TMUX_SESSION}:${window}" 2>/dev/null || true)
-  # claude sometimes prints "N k tokens used" or a percent
-  local pct
-  pct=$(grep -oE "[0-9]+%\s*used" <<<"${tail}" | tail -1)
-  if [[ -n "${pct}" ]]; then echo "${pct}"; return; fi
-  local tok
-  tok=$(grep -oE "[0-9]+[kK] tokens" <<<"${tail}" | tail -1)
-  if [[ -n "${tok}" ]]; then echo "${tok}"; return; fi
+  local slug="$1"
+  local logf="${STATE_DIR}/${slug}.log"
+  [[ -f "${logf}" ]] || { echo "-"; return; }
+
+  # Prefer latest completed result (has usage total)
+  local result
+  result=$(grep -m1 '"type":"result"' <(tac "${logf}" 2>/dev/null) 2>/dev/null || true)
+  if [[ -n "${result}" ]]; then
+    local tokens
+    tokens=$(jq -r '(.usage.input_tokens + .usage.output_tokens + .usage.cache_read_input_tokens + .usage.cache_creation_input_tokens) // empty' <<<"${result}" 2>/dev/null)
+    if [[ -n "${tokens}" ]]; then
+      # Compact: 5k / 200k
+      local kt=$(( tokens / 1000 ))
+      echo "${kt}k"
+      return
+    fi
+  fi
+
+  # Otherwise look at last stream message with usage
+  local ctx
+  ctx=$(grep -o '"output_tokens":[0-9]*' "${logf}" | tail -1 | grep -oE '[0-9]+')
+  if [[ -n "${ctx}" ]]; then echo "${ctx}t"; return; fi
+
   echo "-"
 }
 
 render_once() {
-  clear
+  # ANSI clear screen — works without TERM set
+  printf '\033[H\033[2J'
   echo "═══ CLAUDE CLI DASHBOARD ═══  (refresh ${REFRESH_SEC}s, Ctrl+C to exit)"
   echo
   echo "HOST:  $(uptime | sed 's/^[ \t]*//')"
@@ -75,9 +102,9 @@ render_once() {
 
   printf '%-20s %-25s %-10s %-9s %-6s %s\n' SLUG WORKROOM MODEL STATE CTX CREATED
   printf -- '─%.0s' {1..100}; echo
-  awk -F'\t' 'NR>1 {print}' "${REGISTRY}" | while IFS=$'\t' read -r slug window workroom model created; do
-    state=$(infer_state "${window}")
-    ctx=$(infer_ctx "${window}")
+  awk -F'\t' 'NR>1 {print}' "${REGISTRY}" | while IFS=$'\t' read -r slug uuid window workroom model created; do
+    state=$(infer_state "${slug}")
+    ctx=$(infer_ctx "${slug}")
     age_short="${created:0:19}"
     printf '%-20s %-25s %-10s %-9s %-6s %s\n' "${slug}" "${workroom:--}" "${model}" "${state}" "${ctx}" "${age_short}"
   done
