@@ -1,26 +1,20 @@
-import type { MessengerAgentTraceEvent } from '../../entities/agents/model/useMessengerAgentRuntime'
+import { createMessengerRealtime } from './messenger-realtime'
+import type { MessengerRealtimeRuntime, MessengerRealtimeEvent } from './messenger-realtime'
 
-type MessengerRealtimeEvent = {
-  type: 'hello' | 'contacts.updated' | 'conversations.updated' | 'messages.updated' | 'call.signal' | 'error'
-  conversationId?: string
-  error?: string
-  signal?: {
-    kind: 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
-    callId: string
-    payload?: Record<string, unknown>
+let realtimeRuntime: MessengerRealtimeRuntime | null = null
+let runtimeListenersAttached = false
+
+function getRuntime(
+  wsBaseUrl: string,
+  getToken: () => string | null,
+  getClientId: () => string,
+  getPresencePayload: () => object,
+): MessengerRealtimeRuntime {
+  if (!realtimeRuntime) {
+    realtimeRuntime = createMessengerRealtime({ wsBaseUrl, getToken, getClientId, getPresencePayload })
   }
-  sender?: {
-    userId: string
-    displayName: string
-    login: string
-  }
-} | MessengerAgentTraceEvent
-
-import { buildMessengerWsUrl } from '../../utils/messenger-url'
-
-let messengerSocket: WebSocket | null = null
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-let presenceCleanup: (() => void) | null = null
+  return realtimeRuntime
+}
 
 export function useMessengerRealtime() {
   const config = useRuntimeConfig()
@@ -28,92 +22,31 @@ export function useMessengerRealtime() {
   const contacts = useMessengerContacts()
   const conversations = useMessengerConversations()
   const calls = useMessengerCalls()
-  const runtime = useMessengerAgentRuntime()
+  const agentRuntime = useMessengerAgentRuntime()
   const { clientId, buildPresencePayload } = useMessengerRealtimeIdentity()
   const connected = useState<boolean>('messenger-realtime-connected', () => false)
   const connecting = useState<boolean>('messenger-realtime-connecting', () => false)
 
-  function sendPresence() {
-    if (!import.meta.client || messengerSocket?.readyState !== WebSocket.OPEN) {
-      return
-    }
+  const realtime = getRuntime(
+    config.public.messengerCoreBaseUrl,
+    () => auth.token.value,
+    () => clientId.value,
+    buildPresencePayload,
+  )
 
-    try {
-      messengerSocket.send(JSON.stringify(buildPresencePayload()))
-    } catch {
-      // ignore transport-side failures in alpha stage
-    }
-  }
+  if (!runtimeListenersAttached) {
+    runtimeListenersAttached = true
 
-  function ensurePresenceBridge() {
-    if (!import.meta.client || presenceCleanup) {
-      return
-    }
+    realtime.onStatusChange((status) => {
+      connected.value = status === 'connected'
+      connecting.value = status === 'connecting'
+    })
 
-    const syncPresence = () => {
-      if (!auth.token.value) {
-        return
-      }
-
-      if (!messengerSocket && !connecting.value) {
-        void connect()
-        return
-      }
-
-      sendPresence()
-    }
-
-    const onVisibilityChange = () => {
-      if (!document.hidden) {
-        syncPresence()
-        return
-      }
-
-      sendPresence()
-    }
-
-    const onFocus = () => {
-      syncPresence()
-    }
-
-    const onBlur = () => {
-      sendPresence()
-    }
-
-    const onPageShow = () => {
-      syncPresence()
-    }
-
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    window.addEventListener('focus', onFocus)
-    window.addEventListener('blur', onBlur)
-    window.addEventListener('pageshow', onPageShow)
-
-    presenceCleanup = () => {
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-      window.removeEventListener('focus', onFocus)
-      window.removeEventListener('blur', onBlur)
-      window.removeEventListener('pageshow', onPageShow)
-      presenceCleanup = null
-    }
-  }
-
-  function clearReconnect() {
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
-  }
-
-  function scheduleReconnect() {
-    if (!import.meta.client || reconnectTimer || !auth.token.value) {
-      return
-    }
-
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null
-      void connect()
-    }, 1500)
+    realtime.onEvent((event: MessengerRealtimeEvent) => {
+      void handleEvent(event).catch(() => {
+        // ignore handler failures in alpha stage
+      })
+    })
   }
 
   async function handleEvent(event: MessengerRealtimeEvent) {
@@ -144,72 +77,18 @@ export function useMessengerRealtime() {
     }
 
     if (event.type === 'agent.trace') {
-      runtime.handleTraceEvent(event)
+      agentRuntime.handleTraceEvent(event)
     }
   }
 
   async function connect() {
-    if (!import.meta.client || !auth.token.value || messengerSocket || connecting.value) {
-      return
-    }
-
-    ensurePresenceBridge()
-    clearReconnect()
-    connecting.value = true
-
-    const wsUrl = buildMessengerWsUrl(config.public.messengerCoreBaseUrl, '/ws')
-    wsUrl.searchParams.set('token', auth.token.value)
-    wsUrl.searchParams.set('clientId', clientId.value)
-
-    const socket = new WebSocket(wsUrl.toString())
-    messengerSocket = socket
-
-    socket.addEventListener('open', () => {
-      connecting.value = false
-      connected.value = true
-      sendPresence()
-    })
-
-    socket.addEventListener('message', (message) => {
-      try {
-        const event = JSON.parse(String(message.data)) as MessengerRealtimeEvent
-        void handleEvent(event).catch(() => {
-          // ignore transport-side handler failures in alpha stage
-        })
-      } catch {
-        // ignore malformed events in alpha stage
-      }
-    })
-
-    socket.addEventListener('close', () => {
-      connected.value = false
-      connecting.value = false
-      messengerSocket = null
-      scheduleReconnect()
-    })
-
-    socket.addEventListener('error', () => {
-      connected.value = false
-      connecting.value = false
-      messengerSocket = null
-      scheduleReconnect()
-    })
+    if (!import.meta.client || !auth.token.value) return
+    await realtime.connect()
   }
 
   function disconnect() {
-    clearReconnect()
-    connected.value = false
-    connecting.value = false
-    runtime.reset()
-
-    if (presenceCleanup) {
-      presenceCleanup()
-    }
-
-    if (messengerSocket) {
-      messengerSocket.close()
-      messengerSocket = null
-    }
+    agentRuntime.reset()
+    realtime.disconnect()
   }
 
   return {
