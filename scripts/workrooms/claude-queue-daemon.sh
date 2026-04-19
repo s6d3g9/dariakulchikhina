@@ -157,6 +157,32 @@ complete_task() {
       fi
     fi
     mv "$task_file" "$QUEUE_DIR/done/"
+    # Auto-archive the session so the main dashboard shows only live work.
+    # The workroom git worktree stays (needed for merge); only the tmux
+    # window + session log are moved into archive/.
+    local session_slug="$workroom_slug"
+    if grep -q "^${session_slug}	" "$HOME/state/claude-sessions/.registry.tsv" 2>/dev/null; then
+      local arch_dir="$HOME/state/claude-sessions/archive"
+      mkdir -p "$arch_dir"
+      [ -f "$arch_dir/.registry.tsv" ] || \
+        printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tarchived_at\n' > "$arch_dir/.registry.tsv"
+      # Read session row, append to archive, drop from active registry.
+      local row
+      row=$(awk -v s="$session_slug" -F'\t' '$1==s {print; exit}' "$HOME/state/claude-sessions/.registry.tsv")
+      if [ -n "$row" ]; then
+        printf '%s\t%s\n' "$row" "$(date -Iseconds)" >> "$arch_dir/.registry.tsv"
+        awk -v s="$session_slug" -F'\t' '$1!=s' "$HOME/state/claude-sessions/.registry.tsv" \
+          > "$HOME/state/claude-sessions/.registry.tsv.tmp" \
+          && mv "$HOME/state/claude-sessions/.registry.tsv.tmp" "$HOME/state/claude-sessions/.registry.tsv"
+        # Move log + kill tmux window (session process has already exited)
+        [ -f "$HOME/state/claude-sessions/${session_slug}.log" ] && \
+          mv "$HOME/state/claude-sessions/${session_slug}.log" "$arch_dir/${session_slug}.log"
+        [ -f "$HOME/state/claude-sessions/${session_slug}.json" ] && \
+          mv "$HOME/state/claude-sessions/${session_slug}.json" "$arch_dir/${session_slug}.json"
+        tmux kill-window -t "cc:cc-${session_slug}" 2>/dev/null || true
+        log "[complete] auto-archived session $session_slug"
+      fi
+    fi
   else
     mv "$task_file" "$QUEUE_DIR/failed/"
   fi

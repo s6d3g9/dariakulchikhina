@@ -666,6 +666,11 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0}
   .nav-row.orchestrators{background:#0f1419}
   .nav-row.orchestrators .label{color:#a78bfa}
+  .nav-row.archive{background:#0a0d11;min-height:30px}
+  .nav-row.archive .label{color:#6b7280;min-width:auto}
+  .nav-row.archive.collapsed .tab{display:none}
+  .nav-row.archive .archive-toggle{cursor:pointer;user-select:none;padding:.2rem .5rem;border-radius:3px}
+  .nav-row.archive .archive-toggle:hover{background:#14171c;color:var(--ink)}
   .nav-row .tab{padding:.35rem .7rem;border-radius:4px;background:#1a1f26;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center;border:1px solid transparent}
   .nav-row .tab:hover{border-color:var(--line)}
   .nav-row .tab.active{border-color:var(--accent);color:var(--accent)}
@@ -720,9 +725,11 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   <svg id="deps-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
   <div class="nav-row orchestrators" id="nav-orchestrators"><span class="label">◆ orchestrators</span></div>
   <div class="nav-row workers" id="nav-workers"><span class="label">workers</span><span class="spacer"></span>
-    <button class="toggle-btn" id="btn-archive-all-done" title="Archive all sessions in state=done">archive done</button>
-    <button class="toggle-btn" id="btn-toggle-archive" title="Show archived sessions">show archive</button>
+    <button class="toggle-btn" id="btn-archive-all-done" title="Archive all sessions in state=done">archive all done</button>
     <button class="toggle-btn" id="btn-toggle-deps" title="Show dependency lines">deps ✓</button>
+  </div>
+  <div class="nav-row archive" id="nav-archive">
+    <span class="label archive-toggle" id="archive-folder-label" title="Click to expand/collapse">📁 archive <span id="archive-count">0</span> <span id="archive-chevron">▶</span></span>
   </div>
 </div>
 <main>
@@ -731,10 +738,11 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 </main>
 <script>
 (() => {
-  const state = { sessions: [], metrics: {}, active: null, showArchive: false, showDeps: true, hoveredSlug: null, startedAt: Date.now(),
+  const state = { sessions: [], metrics: {}, active: null, archiveExpanded: false, showDeps: true, hoveredSlug: null, startedAt: Date.now(),
                   status: { activeSessions:0, monthCostUsd:0, monthBudgetUsd:200, ctxLimit:200000 } };
   const orchRowEl = document.getElementById('nav-orchestrators');
   const workersRowEl = document.getElementById('nav-workers');
+  const archiveRowEl = document.getElementById('nav-archive');
   const sideEl = document.getElementById('side');
   const contentEl = document.getElementById('content');
 
@@ -926,36 +934,57 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   setInterval(() => { fetchDeps().then(drawDeps); }, 5000); // refresh every 5s
 
   // ── Drag + wheel scroll on nav rows (no visible scrollbar) ──
+  // Threshold-based drag so a simple click still fires on tabs/buttons:
+  //   pointerdown → record start; don't claim the event yet
+  //   pointermove > 6px → activate drag, capture, scroll
+  //   click after drag → suppress (don't fire onclick)
   function wireRowScroll(row) {
-    let dragging = false, startX = 0, startScroll = 0;
+    let pending = null;   // { x, scroll, pointerId }
+    let dragging = false;
+    const THRESHOLD = 6;
     row.addEventListener('pointerdown', (e) => {
-      // Ignore drags that start on a tab / button — let click fire
-      if (e.target.closest('.tab,button')) return;
-      dragging = true; row.classList.add('dragging');
-      startX = e.clientX; startScroll = row.scrollLeft;
-      row.setPointerCapture(e.pointerId);
+      if (e.button !== 0) return;
+      pending = { x: e.clientX, scroll: row.scrollLeft, pointerId: e.pointerId };
     });
     row.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      row.scrollLeft = startScroll - (e.clientX - startX);
+      if (!pending) return;
+      const dx = e.clientX - pending.x;
+      if (!dragging && Math.abs(dx) > THRESHOLD) {
+        dragging = true;
+        row.classList.add('dragging');
+        try { row.setPointerCapture(pending.pointerId); } catch {}
+      }
+      if (dragging) row.scrollLeft = pending.scroll - dx;
     });
-    const stop = () => { dragging = false; row.classList.remove('dragging'); };
-    row.addEventListener('pointerup', stop);
-    row.addEventListener('pointercancel', stop);
+    const end = () => {
+      if (dragging) row.classList.remove('dragging');
+      pending = null;
+      // Delay clearing so the 'click' capture handler below sees it
+      setTimeout(() => { dragging = false; }, 0);
+    };
+    row.addEventListener('pointerup', end);
+    row.addEventListener('pointercancel', end);
+    // Swallow the click that follows a drag so tabs don't switch accidentally
+    row.addEventListener('click', (e) => {
+      if (dragging) { e.stopPropagation(); e.preventDefault(); }
+    }, true);
+    // Wheel → horizontal when vertical predominates
     row.addEventListener('wheel', (e) => {
-      // Convert vertical wheel into horizontal when over a nav row
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      const absY = Math.abs(e.deltaY), absX = Math.abs(e.deltaX);
+      if (absY > absX) {
         e.preventDefault();
         row.scrollLeft += e.deltaY;
       }
     }, { passive: false });
   }
   for (const row of document.querySelectorAll('.nav-row')) wireRowScroll(row);
+  // archive-folder-label click is inside nav-row — make sure it still fires
+  // (drag threshold is 6px, label click needs no drag so it's fine)
 
   function renderTabs() {
     // Orchestrators row
     orchRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const orch = state.sessions.filter(s => s.role === 'orchestrator');
+    const orch = state.sessions.filter(s => s.role === 'orchestrator' && !s.archived);
     if (orch.length === 0) {
       const empty = document.createElement('small'); empty.className = 'tab'; empty.style.opacity = '.4';
       empty.style.cursor = 'default'; empty.textContent = '(no orchestrators)';
@@ -963,12 +992,20 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     } else {
       for (const s of orch) orchRowEl.appendChild(makeTabEl(s));
     }
-    // Workers row — remove existing tabs but keep label/spacer/buttons
+    // Workers row — active only
     workersRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const workers = state.sessions.filter(s => s.role !== 'orchestrator');
-    // Insert worker tabs before the spacer
+    const workers = state.sessions.filter(s => s.role !== 'orchestrator' && !s.archived);
     const spacer = workersRowEl.querySelector('.spacer');
     for (const s of workers) workersRowEl.insertBefore(makeTabEl(s), spacer);
+    // Archive row — archived sessions (both orchestrators & workers)
+    archiveRowEl.querySelectorAll('.tab').forEach(n => n.remove());
+    const archived = state.sessions.filter(s => s.archived);
+    document.getElementById('archive-count').textContent = archived.length;
+    document.getElementById('archive-chevron').textContent = state.archiveExpanded ? '▼' : '▶';
+    archiveRowEl.classList.toggle('collapsed', !state.archiveExpanded);
+    for (const s of archived) archiveRowEl.appendChild(makeTabEl(s));
+    // Hide the archive row entirely when there's nothing there
+    archiveRowEl.style.display = archived.length === 0 ? 'none' : 'flex';
   }
 
   function renderSide(slug) {
@@ -1125,8 +1162,8 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   }
 
   async function refresh() {
-    const url = '/api/sessions' + (state.showArchive ? '?include=archive' : '');
-    const r = await fetch(url);
+    // Always include archive now — folder collapses/hides it visually
+    const r = await fetch('/api/sessions?include=archive');
     const arr = await r.json();
     state.sessions = arr.map(x => x.session);
     arr.forEach(x => { state.metrics[x.session.slug] = x.metrics; });
@@ -1144,12 +1181,10 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     for (const k of Object.keys(renderCache)) delete renderCache[k];
     refresh();
   };
-  document.getElementById('btn-toggle-archive').onclick = (e) => {
-    state.showArchive = !state.showArchive;
-    e.target.classList.toggle('active', state.showArchive);
-    e.target.textContent = state.showArchive ? 'hide archive' : 'show archive';
-    for (const k of Object.keys(renderCache)) delete renderCache[k];
-    refresh();
+  document.getElementById('archive-folder-label').onclick = () => {
+    state.archiveExpanded = !state.archiveExpanded;
+    renderTabs();
+    requestAnimationFrame(drawDeps);
   };
   document.getElementById('btn-toggle-deps').onclick = (e) => {
     state.showDeps = !state.showDeps;
