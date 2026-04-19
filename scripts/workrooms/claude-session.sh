@@ -104,7 +104,27 @@ run_prompt_in_window() {
   local logfile="${STATE_DIR}/${slug}.log"
 
   # Prepare the command
-  local args=( --print --dangerously-skip-permissions --model "${model}" --output-format stream-json --include-partial-messages --verbose )
+  # Cost / cache optimizations:
+  # --dangerously-skip-permissions  — autonomous pool, no human approver
+  # --exclude-dynamic-system-prompt-sections — strips per-machine sections
+  #     (cwd, git status, env) from the system prompt. Major effect: the
+  #     system prompt becomes identical across parallel sessions on the
+  #     same repo, so Anthropic's prompt cache hits across sessions and we
+  #     stop paying cache_creation for shared boilerplate.
+  local args=( --print --dangerously-skip-permissions
+               --exclude-dynamic-system-prompt-sections
+               --model "${model}"
+               --output-format stream-json --include-partial-messages --verbose )
+  # Opus is scarce on Max → auto-fallback to Sonnet on overload so long-running
+  # orchestrator sessions don't hang when quota peaks.
+  if [[ "${model}" == "opus" ]]; then
+    args+=( --fallback-model sonnet )
+  fi
+  # Optional effort override (low/medium/high/xhigh/max). Use 'low' for
+  # cheap mechanical tasks (pure extractions, docs) to cut thinking tokens.
+  if [[ -n "${CLAUDE_SESSION_EFFORT_OVERRIDE:-}" ]]; then
+    args+=( --effort "${CLAUDE_SESSION_EFFORT_OVERRIDE}" )
+  fi
   if [[ "${resume}" == "yes" ]]; then
     args+=( --resume "${uuid}" )
   else
@@ -137,12 +157,13 @@ cmd_create() {
   [[ -n "${slug}" ]] || die "slug required"
   [[ "${slug}" =~ ^[a-z0-9][a-z0-9-]{1,39}$ ]] || die "slug must be [a-z0-9-]{2,40}"
 
-  local workroom="" model="sonnet" prompt=""
+  local workroom="" model="sonnet" prompt="" effort=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --workroom) workroom="$2"; shift 2;;
       --model)    model="$2"; shift 2;;
       --prompt)   prompt="$2"; shift 2;;
+      --effort)   effort="$2"; shift 2;;
       *) die "unknown flag: $1";;
     esac
   done
@@ -165,6 +186,11 @@ cmd_create() {
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" \
     >> "${REGISTRY}"
   : > "${STATE_DIR}/${slug}.log"
+
+  # Stash effort in the meta json so run_prompt_in_window can pick it up on resume too.
+  if [[ -n "${effort}" ]]; then
+    export CLAUDE_SESSION_EFFORT_OVERRIDE="${effort}"
+  fi
 
   run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${cwd}" "${prompt}" "no"
 

@@ -96,6 +96,8 @@ spawn_task() {
   task_id=$(fm_get "$task_file" id "$(basename "$task_file" .md)")
   model=$(fm_get "$task_file" model sonnet)
   base=$(fm_get "$task_file" base_branch main)
+  local effort
+  effort=$(fm_get "$task_file" effort "")
   # Derive workroom slug: sanitize task_id to match [a-z0-9-]{2,31}
   workroom_slug=$(echo "$task_id" | tr 'A-Z_' 'a-z-' | tr -cd 'a-z0-9-' | cut -c 1-31)
   [ -z "$workroom_slug" ] && { log "bad task id: $task_id"; return 1; }
@@ -121,10 +123,12 @@ spawn_task() {
   # Spawn the session
   local initial_prompt="Task: $task_id. Instructions in TASK.md in your workroom root. Read it fully and execute. Commit per logical step. Delete TASK.md before your final commit. When done, write a final report with: commit hashes, verify results, blockers if any."
 
-  "$BIN_CLAUDE_SESSION" create "$session_slug" \
-      --workroom "$workroom_slug" \
-      --model "$model" \
-      --prompt "$initial_prompt" >> "$LOG_FILE" 2>&1 || {
+  local session_args=( create "$session_slug"
+                       --workroom "$workroom_slug"
+                       --model "$model"
+                       --prompt "$initial_prompt" )
+  [ -n "$effort" ] && session_args+=( --effort "$effort" )
+  "$BIN_CLAUDE_SESSION" "${session_args[@]}" >> "$LOG_FILE" 2>&1 || {
     log "[spawn] claude-session failed for $session_slug"
     mv "$task_file" "$QUEUE_DIR/failed/"
     return 1
