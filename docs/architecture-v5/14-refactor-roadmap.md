@@ -1481,6 +1481,29 @@ Wave 4 для UIDesignPanel закрыт.
 - Updated 25 importers: `server/modules/auth/**`, `server/modules/chat/**`, `server/modules/communications/**`, 17 API handlers.
 - `pnpm lint:errors`: 0 new errors (2 pre-existing process.env errors in test files).
 - Commit: `de7871c`
+### [done] 2026-04-19 — Wave 7 / messenger/core bounded-context audit
+
+Цель: подтвердить, что все файлы messenger/core/src перемещены в целевые bounded contexts согласно матрице 12, и зафиксировать завершение этого слоя рефакторинга.
+
+Аудит:
+- `messenger/core/src/` — только 2 файла в корне (config.ts, index.ts): оба по матрице должны оставаться.
+- `messenger/core/src/server.ts` — не найден (успешно перемещен в realtime/server.ts).
+- `messenger/core/src/agent-*.ts` — плоские файлы отсутствуют; все агенты в agents/ подпапке.
+- Найдено 30 .ts файлов в целевых location'ах (agents/, auth/, calls/, contacts/, conversations/, crypto/, media/, profile/, project-engine/, realtime/, transcription/, shared/, db/).
+- Все 68 move rows матрицы 12 отмечены как done в docs:v5:verify.
+- `pnpm docs:v5:verify` pass: Architecture docs validation passed.
+
+Проверка:
+- docs:v5:verify — 68 move rows matrix 12 done, 0 pending, 0 ambiguous, 0 missing
+- Матрица базовой инфраструктуры: ✅ (server.ts → realtime/server.ts)
+- Матрица auth/crypto: ✅ (все 3 файла на месте)
+- Матрица contacts/conversations/media: ✅ (все 4 файла на месте)
+- Матрица agents: ✅ (все 8 файлов на месте, нет плоских agent-*.ts)
+- Матрица calls/transcription/project-engine: ✅ (все 4 файла на месте)
+
+Долги: нет.
+
+Статус: Wave 7 messenger/core bounded-context refactor полностью завершен, нулевой drift vs матрица.
 
 ### Остающиеся цели (требуют big-session composable work)
 
