@@ -1,7 +1,7 @@
 import {
   updateClientProfile,
   ClientProfileSchema,
-} from '~/server/modules/projects/project-mutations.service'
+} from '~/server/modules/projects/project-client-profile.service'
 
 /**
  * PUT /api/projects/[slug]/client-profile — admin or the project's
