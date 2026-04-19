@@ -3,6 +3,7 @@ import type { MessengerAttachmentKlipyPayload, MessengerConversationMessage } fr
 import type { MessengerKlipyItem } from '../../entities/messages/model/useMessengerKlipy'
 import type { MessengerConversationSecuritySummary } from '../../entities/messages/model/useMessengerCrypto'
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
+import { useKlipySearch } from './model/use-klipy-search'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -68,16 +69,9 @@ const dragDropDepth = ref(0)
 const dragDropPending = ref(false)
 const composerMediaMenuOpen = ref(false)
 const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif' | 'photo' | 'file'>('emoji')
-const klipyQuery = ref('')
 const mediaUploadPending = ref(false)
 const agentWorkspaceCollapsed = ref(false)
 const headerOverflowMenuOpen = ref(false)
-const selectedCatalogCategory = ref('')
-const selectedKlipyItem = ref<MessengerKlipyItem | null>(null)
-const klipyAudienceMode = reactive<{ stickers: 'mine' | 'shared'; gif: 'mine' | 'shared' }>({
-  stickers: 'mine',
-  gif: 'mine',
-})
 
 const composerEmojiOptions = ['😀', '😉', '😍', '🔥', '👍', '👏', '🙏', '❤️', '🎉', '🤝', '✨', '😎']
 const messageReactionOptions = ['👍', '❤️', '🔥', '😂', '👏', '😮']
@@ -95,14 +89,9 @@ let recordingAnalyserSource: MediaStreamAudioSourceNode | null = null
 let discardRecordingDraft = false
 let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
 let composerResizeObserver: ResizeObserver | null = null
-let klipySearchTimer: ReturnType<typeof setTimeout> | null = null
 let forwardSearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
-let klipyFeedLastScrollTop = 0
-let klipyFeedLoadArmed = true
-let klipyFeedLoadCooldownUntil = 0
 
-const KLIPY_RAIL_PAGE_SIZE = 24
 const AUDIO_WAVEFORM_BAR_COUNT = 64
 const AUDIO_MIN_TRIM_GAP = 0.35
 
@@ -365,67 +354,6 @@ async function sendAudioDraft() {
   }
 }
 
-function scheduleKlipyCatalogLoad() {
-  if (klipySearchTimer) {
-    clearTimeout(klipySearchTimer)
-    klipySearchTimer = null
-  }
-
-  if (!composerMediaMenuVisible.value) {
-    return
-  }
-
-  const kind = activeKlipyKind.value
-  if (!kind) {
-    return
-  }
-
-  void klipy.loadCategories(kind)
-
-  klipySearchTimer = setTimeout(() => {
-    void klipy.search(klipyQuery.value, kind, {
-      category: klipyQuery.value.trim() ? undefined : selectedCatalogCategory.value || undefined,
-    })
-    klipySearchTimer = null
-  }, 180)
-}
-
-function resetKlipyAudienceMode() {
-  klipyAudienceMode.stickers = 'mine'
-  klipyAudienceMode.gif = 'mine'
-}
-
-function resetKlipyFeedPaging() {
-  klipyFeedLastScrollTop = 0
-  klipyFeedLoadArmed = true
-  klipyFeedLoadCooldownUntil = 0
-}
-
-async function ensureKlipyFeedScrollable() {
-  if (!composerMediaMenuVisible.value || activeKlipyAudience.value !== 'mine' || !canLoadMoreKlipyItems.value) {
-    return
-  }
-
-  const feed = composerMediaMenuRef.value?.feedEl
-  if (!feed) {
-    return
-  }
-
-  let attempts = 0
-  while (attempts < 4 && canLoadMoreKlipyItems.value && !klipy.pending.value && feed.scrollHeight <= feed.clientHeight + 24) {
-    attempts += 1
-    await klipy.loadMore(KLIPY_RAIL_PAGE_SIZE)
-    await nextTick()
-  }
-}
-
-function buildLoopedFeed<T>(items: T[]) {
-  if (items.length <= 1) {
-    return items
-  }
-
-  return [...items, ...items, ...items]
-}
 
 function primeLoopedRailPosition(element: HTMLElement | null) {
   if (!element || element.dataset.loopReady === 'true') {
@@ -474,48 +402,6 @@ async function handleLoopedRailScroll(event: Event, options: { looped: boolean; 
 
   const remaining = element.scrollWidth - element.clientWidth - element.scrollLeft
   if (options.canLoadMore && remaining < 320 && options.onLoadMore) {
-    await options.onLoadMore()
-  }
-}
-
-async function handleLoopedFeedScroll(event: Event, options: { looped: boolean; canLoadMore?: boolean; onLoadMore?: () => Promise<void> | void }) {
-  const element = event.currentTarget as HTMLElement | null
-  if (!element) {
-    return
-  }
-
-  const currentScrollTop = element.scrollTop
-  const isScrollingDown = currentScrollTop >= klipyFeedLastScrollTop - 4
-  klipyFeedLastScrollTop = currentScrollTop
-
-  if (options.looped) {
-    const segmentHeight = element.scrollHeight / 3
-    if (segmentHeight > 0) {
-      if (element.scrollTop < segmentHeight * 0.35) {
-        element.scrollTop += segmentHeight
-      } else if (element.scrollTop > segmentHeight * 1.65) {
-        element.scrollTop -= segmentHeight
-      }
-    }
-  }
-
-  const remaining = element.scrollHeight - element.clientHeight - element.scrollTop
-  const loadThreshold = Math.max(120, Math.min(220, element.clientHeight * 0.38))
-
-  if (remaining > loadThreshold * 1.6) {
-    klipyFeedLoadArmed = true
-  }
-
-  if (
-    options.canLoadMore
-    && options.onLoadMore
-    && klipyFeedLoadArmed
-    && isScrollingDown
-    && remaining <= loadThreshold
-    && Date.now() >= klipyFeedLoadCooldownUntil
-  ) {
-    klipyFeedLoadArmed = false
-    klipyFeedLoadCooldownUntil = Date.now() + 280
     await options.onLoadMore()
   }
 }
@@ -994,7 +880,7 @@ const desktopDropEnabled = computed(() => Boolean(
 ))
 const desktopDropActive = computed(() => dragDropDepth.value > 0 && desktopDropEnabled.value)
 const hasComposerText = computed(() => Boolean(draft.value.trim()))
-const hasSelectedKlipyItem = computed(() => Boolean(selectedKlipyItem.value))
+const hasSelectedKlipyItem = computed(() => Boolean(klipySearch.selectedKlipyItem.value))
 const hasComposerPayload = computed(() => hasComposerText.value || hasSelectedKlipyItem.value)
 const composerPrimaryMode = computed<'record' | 'send' | 'stop-recording'>(() => {
   if (isRecording.value) {
@@ -1042,51 +928,6 @@ const activeKlipyKind = computed<'gif' | 'sticker' | null>(() => {
   }
 
   return null
-})
-const activeKlipyAudience = computed<'mine' | 'shared'>(() => {
-  if (composerMediaMenuTab.value === 'stickers') {
-    return klipyAudienceMode.stickers
-  }
-
-  if (composerMediaMenuTab.value === 'gif') {
-    return klipyAudienceMode.gif
-  }
-
-  return 'mine'
-})
-const sharedKlipyEnabled = computed(() => Boolean(
-  conversations.activeConversation.value
-  && !conversations.activeConversation.value.secret,
-))
-const currentKlipyCategories = computed(() => activeKlipyKind.value ? klipy.getCategories(activeKlipyKind.value) : [])
-const showKlipyCategories = computed(() => !klipyQuery.value.trim() && currentKlipyCategories.value.length > 0)
-const loopedKlipyCategories = computed(() => buildLoopedFeed(currentKlipyCategories.value))
-const activeCatalogCategoryLabel = computed(() => {
-  if (!selectedCatalogCategory.value) {
-    return ''
-  }
-
-  return currentKlipyCategories.value.find(item => item.query === selectedCatalogCategory.value)?.category || selectedCatalogCategory.value
-})
-const klipySearchPlaceholder = computed(() => composerMediaMenuTab.value === 'stickers' ? 'Поиск стикеров KLIPY' : 'Поиск GIF KLIPY')
-const klipyStatusText = computed(() => {
-  if (!klipy.configured.value) {
-    return 'KLIPY API не настроен.'
-  }
-
-  if (klipy.error.value) {
-    return klipy.error.value
-  }
-
-  if (klipy.pending.value && !klipy.items.value.length && !currentKlipyRecentItems.value.length) {
-    return 'Загружаем...'
-  }
-
-  if ((klipyQuery.value.trim() || selectedCatalogCategory.value) && !klipy.pending.value && !klipy.items.value.length) {
-    return 'Ничего не найдено.'
-  }
-
-  return ''
 })
 function inferKlipyKindFromAttachment(attachment: NonNullable<MessengerConversationMessage['attachment']>) {
   if (attachment.klipy?.kind) {
@@ -1190,53 +1031,15 @@ const sharedKlipyItems = computed<Record<'gif' | 'sticker', MessengerKlipyItem[]
       .slice(0, 12),
   }
 })
-const currentKlipyRecentItems = computed(() => {
-  if (!activeKlipyKind.value) {
-    return []
-  }
 
-  if (activeKlipyAudience.value === 'shared') {
-    return sharedKlipyItems.value[activeKlipyKind.value]
-  }
-
-  return klipy.getRecentItems(activeKlipyKind.value)
+const klipySearch = useKlipySearch({
+  composerMediaMenuTab,
+  composerMediaMenuOpen,
+  composerMediaMenuRef,
+  activeConversationSecret,
+  activeKlipyKind,
+  sharedKlipyItems,
 })
-const shouldUseRecentKlipyFallback = computed(() => {
-  if (activeKlipyAudience.value !== 'mine') {
-    return false
-  }
-
-  if (klipyQuery.value.trim() || selectedCatalogCategory.value) {
-    return false
-  }
-
-  return !klipy.items.value.length && (klipy.pending.value || !klipy.hasMore.value)
-})
-const primaryKlipyItems = computed(() => {
-  if (activeKlipyAudience.value === 'shared') {
-    return currentKlipyRecentItems.value
-  }
-
-  if (shouldUseRecentKlipyFallback.value && currentKlipyRecentItems.value.length) {
-    return currentKlipyRecentItems.value
-  }
-
-  return klipy.items.value
-})
-const canLoadMoreKlipyItems = computed(() => {
-  return activeKlipyAudience.value === 'mine' && klipy.hasMore.value
-})
-const showKlipySearchState = computed(() => Boolean(klipyQuery.value.trim() || selectedCatalogCategory.value))
-
-function formatKlipyCategoryTag(query: string) {
-  const normalized = query
-    .trim()
-    .replace(/^#+/g, '')
-    .replace(/\s+/g, '-')
-    .toLowerCase()
-
-  return normalized ? `#${normalized}` : '#klipy'
-}
 
 onMounted(async () => {
   lockPageScroll()
@@ -1255,10 +1058,7 @@ onBeforeUnmount(() => {
   stopRecordingVisualizer()
   stopStreamTracks()
   clearAudioDraft()
-  if (klipySearchTimer) {
-    clearTimeout(klipySearchTimer)
-    klipySearchTimer = null
-  }
+  klipySearch.cleanup()
   if (forwardSearchTimer) {
     clearTimeout(forwardSearchTimer)
     forwardSearchTimer = null
@@ -1279,7 +1079,7 @@ watch(() => conversations.activeConversationId.value, async () => {
   }
 
   detailsOpen.value = false
-  resetKlipyAudienceMode()
+  klipySearch.resetKlipyAudienceMode()
   clearAudioDraft()
   stopRecordingTimer()
   stopRecordingVisualizer()
@@ -1379,29 +1179,17 @@ watch([detailsOpen, photoFeedOpen, () => conversations.activeConversationId.valu
   composerMediaMenuOpen.value = false
 })
 
-watch([composerMediaMenuVisible, composerMediaMenuTab, klipyQuery, selectedCatalogCategory], () => {
-  resetKlipyFeedPaging()
-  scheduleKlipyCatalogLoad()
-})
-
-watch(loopedKlipyCategories, async () => {
+watch(klipySearch.loopedKlipyCategories, async () => {
   await nextTick()
-  if (showKlipyCategories.value) {
+  if (klipySearch.showKlipyCategories.value) {
     composerMediaMenuRef.value?.categoryRailEl?.removeAttribute('data-loop-ready')
     primeLoopedRailPosition(composerMediaMenuRef.value?.categoryRailEl ?? null)
   }
 })
 
-watch(primaryKlipyItems, async () => {
+watch(klipySearch.primaryKlipyItems, async () => {
   await nextTick()
   composerMediaMenuRef.value?.feedEl?.removeAttribute('data-loop-ready')
-  await ensureKlipyFeedScrollable()
-})
-
-watch(() => klipyQuery.value.trim(), (value) => {
-  if (value && selectedCatalogCategory.value) {
-    selectedCatalogCategory.value = ''
-  }
 })
 
 watch(() => forwardingMessageId.value, async (messageId) => {
@@ -1504,16 +1292,16 @@ function toggleComposerMediaMenu() {
   composerMediaMenuOpen.value = !composerMediaMenuOpen.value
 
   if (composerMediaMenuOpen.value) {
-    scheduleKlipyCatalogLoad()
+    klipySearch.scheduleKlipyCatalogLoad()
   }
 }
 
 function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif' | 'photo' | 'file') {
   const previousTab = composerMediaMenuTab.value
 
-  if (tab !== 'emoji' && tab !== 'photo' && tab !== 'file' && previousTab === tab && sharedKlipyEnabled.value) {
+  if (tab !== 'emoji' && tab !== 'photo' && tab !== 'file' && previousTab === tab && klipySearch.sharedKlipyEnabled.value) {
     const scopeKey = tab === 'stickers' ? 'stickers' : 'gif'
-    klipyAudienceMode[scopeKey] = klipyAudienceMode[scopeKey] === 'mine' ? 'shared' : 'mine'
+    klipySearch.klipyAudienceMode[scopeKey] = klipySearch.klipyAudienceMode[scopeKey] === 'mine' ? 'shared' : 'mine'
     return
   }
 
@@ -1524,34 +1312,34 @@ function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif' | 'photo' | 'fil
   }
 
   if (previousTab !== tab) {
-    klipyQuery.value = ''
-    selectedCatalogCategory.value = ''
-    selectedKlipyItem.value = null
+    klipySearch.klipyQuery.value = ''
+    klipySearch.selectedCatalogCategory.value = ''
+    klipySearch.selectedKlipyItem.value = null
     klipy.reset()
-    scheduleKlipyCatalogLoad()
+    klipySearch.scheduleKlipyCatalogLoad()
   }
 }
 
 function selectCatalogCategory(query: string) {
-  selectedCatalogCategory.value = selectedCatalogCategory.value === query ? '' : query
+  klipySearch.selectedCatalogCategory.value = klipySearch.selectedCatalogCategory.value === query ? '' : query
 }
 
 function selectKlipyItem(item: MessengerKlipyItem) {
   actionError.value = ''
-  selectedKlipyItem.value = item
+  klipySearch.selectedKlipyItem.value = item
   composerMediaMenuOpen.value = false
 }
 
 function clearSelectedKlipyItem() {
-  selectedKlipyItem.value = null
+  klipySearch.selectedKlipyItem.value = null
 }
 
 async function confirmSelectedKlipyItem() {
-  if (!selectedKlipyItem.value) {
+  if (!klipySearch.selectedKlipyItem.value) {
     return
   }
 
-  await sendKlipyItem(selectedKlipyItem.value)
+  await sendKlipyItem(klipySearch.selectedKlipyItem.value)
 }
 
 function klipyTileStyle(item: { width?: number; height?: number }) {
@@ -1599,7 +1387,7 @@ async function handleComposerPrimaryAction() {
   }
 
   if (composerPrimaryMode.value === 'send') {
-    if (selectedKlipyItem.value) {
+    if (klipySearch.selectedKlipyItem.value) {
       await confirmSelectedKlipyItem()
       return
     }
@@ -1758,9 +1546,9 @@ async function sendKlipyItem(item: MessengerKlipyItem) {
     composerMediaMenuOpen.value = false
     klipy.remember(item)
     klipy.reset()
-    klipyQuery.value = ''
-    selectedCatalogCategory.value = ''
-    selectedKlipyItem.value = null
+    klipySearch.klipyQuery.value = ''
+    klipySearch.selectedCatalogCategory.value = ''
+    klipySearch.selectedKlipyItem.value = null
   } catch {
     actionError.value = 'Не удалось отправить медиа из KLIPY.'
   } finally {
@@ -2544,8 +2332,8 @@ onBeforeUnmount(() => {
         :contacts-pending="contacts.pending.value"
         :message-pending="conversations.messagePending.value"
         :forward-submit-label="forwardSubmitLabel"
-        :show-klipy-pill="Boolean(selectedKlipyItem && (!detailsOpen || !conversations.activeConversation.value))"
-        :selected-klipy-item="selectedKlipyItem"
+        :show-klipy-pill="Boolean(klipySearch.selectedKlipyItem.value && (!detailsOpen || !conversations.activeConversation.value))"
+        :selected-klipy-item="klipySearch.selectedKlipyItem.value"
         :media-upload-pending="mediaUploadPending"
         @clear-relation="clearComposerRelation"
         @close-forward-picker="closeForwardPicker"
@@ -2640,32 +2428,32 @@ onBeforeUnmount(() => {
 
       <MessengerChatMediaMenu
         ref="composerMediaMenuRef"
-        :visible="composerMediaMenuVisible"
+        :visible="klipySearch.composerMediaMenuVisible.value"
         :tab="composerMediaMenuTab"
         :emoji-options="composerEmojiOptions"
-        :shared-stickers="klipyAudienceMode.stickers === 'shared'"
-        :shared-gif="klipyAudienceMode.gif === 'shared'"
-        :klipy-query="klipyQuery"
-        :klipy-search-placeholder="klipySearchPlaceholder"
-        :show-klipy-categories="showKlipyCategories"
-        :looped-klipy-categories="loopedKlipyCategories"
-        :selected-catalog-category="selectedCatalogCategory"
-        :primary-klipy-items="primaryKlipyItems"
+        :shared-stickers="klipySearch.klipyAudienceMode.stickers === 'shared'"
+        :shared-gif="klipySearch.klipyAudienceMode.gif === 'shared'"
+        :klipy-query="klipySearch.klipyQuery.value"
+        :klipy-search-placeholder="klipySearch.klipySearchPlaceholder.value"
+        :show-klipy-categories="klipySearch.showKlipyCategories.value"
+        :looped-klipy-categories="klipySearch.loopedKlipyCategories.value"
+        :selected-catalog-category="klipySearch.selectedCatalogCategory.value"
+        :primary-klipy-items="klipySearch.primaryKlipyItems.value"
         :active-klipy-kind="activeKlipyKind"
-        :can-load-more-klipy-items="canLoadMoreKlipyItems"
+        :can-load-more-klipy-items="klipySearch.canLoadMoreKlipyItems.value"
         :media-upload-pending="mediaUploadPending"
         :klipy-pending="klipy.pending.value"
-        :klipy-status-text="klipyStatusText"
-        :format-klipy-category-tag="formatKlipyCategoryTag"
+        :klipy-status-text="klipySearch.klipyStatusText.value"
+        :format-klipy-category-tag="klipySearch.formatKlipyCategoryTag"
         :klipy-tile-style="klipyTileStyle"
         :shared-photos="sharedContent.photos"
         :shared-documents="sharedContent.documents"
         @update:tab="openComposerMediaTab"
         @insert-emoji="insertEmojiToDraft"
-        @update:klipy-query="klipyQuery = $event"
-        @category-scroll="handleLoopedRailScroll($event, { looped: currentKlipyCategories.length > 1 })"
+        @update:klipy-query="klipySearch.klipyQuery.value = $event"
+        @category-scroll="handleLoopedRailScroll($event, { looped: klipySearch.currentKlipyCategories.value.length > 1 })"
         @select-category="selectCatalogCategory"
-        @feed-scroll="handleLoopedFeedScroll($event, { looped: false, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
+        @feed-scroll="klipySearch.handleLoopedFeedScroll($event, { looped: false, canLoadMore: klipySearch.canLoadMoreKlipyItems.value, onLoadMore: () => klipy.loadMore(24) })"
         @select-item="selectKlipyItem"
         @pick-from-device="openFilePicker($event === 'photo' ? 'image/*,video/*' : '')"
       />
@@ -2698,7 +2486,7 @@ onBeforeUnmount(() => {
         :audio-draft="audioDraft"
         :composer-primary-mode="composerPrimaryMode"
         :composer-primary-disabled="composerPrimaryDisabled"
-        :has-selected-klipy-item="Boolean(selectedKlipyItem)"
+        :has-selected-klipy-item="Boolean(klipySearch.selectedKlipyItem.value)"
         :show-project-actions-button="Boolean(conversations.activeConversation.value) && !activeConversationAgent"
         :project-actions-open="projectActions.panelOpen.value"
         @update:draft="draft = $event"
