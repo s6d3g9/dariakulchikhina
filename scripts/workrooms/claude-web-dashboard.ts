@@ -37,7 +37,24 @@ import { join } from 'node:path';
 const HOME = homedir();
 const STATE_DIR = join(HOME, 'state/claude-sessions');
 const REGISTRY = join(STATE_DIR, '.registry.tsv');
+const ARCHIVE_DIR = join(STATE_DIR, 'archive');
+const ARCHIVE_REGISTRY = join(ARCHIVE_DIR, '.registry.tsv');
 const BIN_CLAUDE_SESSION = join(HOME, 'bin/claude-session');
+
+// Ensure archive dir exists + has a registry header
+try {
+  if (!existsSync(ARCHIVE_DIR)) {
+    require('node:fs').mkdirSync(ARCHIVE_DIR, { recursive: true });
+  }
+  if (!existsSync(ARCHIVE_REGISTRY)) {
+    require('node:fs').writeFileSync(ARCHIVE_REGISTRY, 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tarchived_at\n');
+  }
+} catch {}
+
+// Heuristic: is this session an orchestrator/coordinator (shown in top row)?
+function isOrchestratorSlug(slug) {
+  return /orchestrator|coordinator|planner|manager/i.test(slug);
+}
 
 const MAX_SUBSCRIPTION_BUDGET_USD = 200; // Anthropic Max tier
 const CTX_WINDOW_LIMIT = 200_000;        // claude-sonnet-4-6 / haiku-4-5
@@ -72,8 +89,62 @@ function readRegistry() {
     .map(l => l.split('\t'))
     .filter(cols => cols.length >= 6)
     .map(([slug, uuid, window, workroom, model, created]) => ({
-      slug, uuid, window, workroom: workroom || '', model, created,
+      slug, uuid, window, workroom: workroom || '', model, created, archived: false,
     }));
+}
+
+function readArchiveRegistry() {
+  if (!existsSync(ARCHIVE_REGISTRY)) return [];
+  const lines = readFileSync(ARCHIVE_REGISTRY, 'utf8').trim().split('\n');
+  if (lines.length < 2) return [];
+  return lines
+    .slice(1)
+    .map(l => l.split('\t'))
+    .filter(cols => cols.length >= 6)
+    .map(([slug, uuid, window, workroom, model, created, archivedAt]) => ({
+      slug, uuid, window, workroom: workroom || '', model, created,
+      archivedAt: archivedAt || '', archived: true,
+    }));
+}
+
+// Archive: kill tmux window if alive, move log + state file into archive/, add to archive registry.
+function archiveSession(slug) {
+  const active = readRegistry().find(r => r.slug === slug);
+  if (!active) return { ok: false, reason: 'not found in active registry' };
+  const { spawnSync } = require('node:child_process');
+  // Best effort: kill tmux window + session via claude-session (will ignore errors if already gone)
+  try { spawnSync(BIN_CLAUDE_SESSION, ['kill', slug], { timeout: 5000 }); } catch {}
+  // Move log + state json
+  const fs = require('node:fs');
+  const moveIfExists = (src, dst) => { if (existsSync(src)) try { fs.renameSync(src, dst); } catch {} };
+  moveIfExists(join(STATE_DIR, `${slug}.log`),  join(ARCHIVE_DIR, `${slug}.log`));
+  moveIfExists(join(STATE_DIR, `${slug}.json`), join(ARCHIVE_DIR, `${slug}.json`));
+  // Remove from active registry (kill already did, but be safe)
+  if (existsSync(REGISTRY)) {
+    const lines = readFileSync(REGISTRY, 'utf8').split('\n');
+    const kept = lines.filter(l => !l.startsWith(`${slug}\t`));
+    fs.writeFileSync(REGISTRY, kept.join('\n'));
+  }
+  // Append to archive registry
+  const archivedAt = new Date().toISOString();
+  fs.appendFileSync(
+    ARCHIVE_REGISTRY,
+    `${active.slug}\t${active.uuid}\t${active.window}\t${active.workroom}\t${active.model}\t${active.created}\t${archivedAt}\n`,
+  );
+  return { ok: true };
+}
+
+// Bulk: archive every session currently in state=done
+async function archiveAllDone() {
+  const rows = readRegistry();
+  const archived = [];
+  for (const r of rows) {
+    const m = await computeMetrics(r.slug);
+    if (m.state === 'done' && !isOrchestratorSlug(r.slug)) {
+      if (archiveSession(r.slug).ok) archived.push(r.slug);
+    }
+  }
+  return archived;
 }
 
 // ──────────────── per-session derived metrics ────────────────
@@ -342,15 +413,35 @@ async function handle(req, res) {
     return;
   }
 
-  // ── sessions list ──
+  // ── sessions list (with optional archive) ──
   if (p === '/api/sessions' && req.method === 'GET') {
-    const rows = readRegistry();
-    const all = await Promise.all(rows.map(async r => ({
-      session: r,
-      metrics: await computeMetrics(r.slug),
+    const includeArchive = url.searchParams.get('include') === 'archive';
+    const active = readRegistry();
+    const archive = includeArchive ? readArchiveRegistry() : [];
+    const all = [...active, ...archive];
+    const enriched = await Promise.all(all.map(async r => ({
+      session: { ...r, role: isOrchestratorSlug(r.slug) ? 'orchestrator' : 'worker' },
+      metrics: r.archived ? zeroMetrics(r.slug) : await computeMetrics(r.slug),
     })));
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(all));
+    res.end(JSON.stringify(enriched));
+    return;
+  }
+
+  // ── archive one session ──
+  const archM = p.match(/^\/api\/sessions\/([a-z0-9-]+)\/archive$/);
+  if (archM && req.method === 'POST') {
+    const r = archiveSession(archM[1]);
+    res.writeHead(r.ok ? 200 : 404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(r));
+    return;
+  }
+
+  // ── archive all done ──
+  if (p === '/api/sessions/archive-all-done' && req.method === 'POST') {
+    const archived = await archiveAllDone();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ archived }));
     return;
   }
 
@@ -371,8 +462,12 @@ async function handle(req, res) {
   const logM = p.match(/^\/api\/sessions\/([a-z0-9-]+)\/log$/);
   if (logM && req.method === 'GET') {
     const slug = logM[1];
-    const path = sessionLogPath(slug);
-    if (!existsSync(path)) { res.writeHead(404); res.end(); return; }
+    const activePath = sessionLogPath(slug);
+    const archivePath = join(ARCHIVE_DIR, `${slug}.log`);
+    const path = existsSync(activePath) ? activePath
+               : existsSync(archivePath) ? archivePath
+               : null;
+    if (!path) { res.writeHead(404); res.end(); return; }
     res.writeHead(200, { 'Content-Type': 'application/x-ndjson' });
     createReadStream(path).pipe(res);
     return;
@@ -442,19 +537,30 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .stat span{font-variant-numeric:tabular-nums}
   .bar{width:100%;height:4px;background:#222;border-radius:2px;overflow:hidden;margin-top:2px}
   .bar > i{display:block;height:100%;background:linear-gradient(90deg,#5b8ff9,#b78fff);transition:width .4s}
-  nav{display:flex;gap:.3rem;padding:.4rem .6rem;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto}
-  nav .tab{padding:.35rem .7rem;border-radius:4px;background:#1a1f26;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center;border:1px solid transparent}
-  nav .tab:hover{border-color:var(--line)}
-  nav .tab.active{border-color:var(--accent);color:var(--accent)}
-  nav .tab .dot{width:8px;height:8px;border-radius:50%;background:var(--mute)}
-  nav .tab .dot.thinking{background:var(--warn);box-shadow:0 0 4px var(--warn)}
-  nav .tab .dot.tool_call{background:#a78bfa;box-shadow:0 0 4px #a78bfa}
-  nav .tab .dot.streaming{background:var(--accent);box-shadow:0 0 4px var(--accent)}
-  nav .tab .dot.running{background:var(--accent)}
-  nav .tab .dot.done{background:var(--ok)}
-  nav .tab .dot.error{background:var(--err)}
-  nav .tab .dot.idle{background:var(--mute)}
-  nav .tab .dot.stalled{background:#6b7280}
+  .navs{display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:var(--panel)}
+  .nav-row{display:flex;gap:.3rem;padding:.4rem .6rem;overflow-x:auto;align-items:center}
+  .nav-row + .nav-row{border-top:1px solid var(--line)}
+  .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0}
+  .nav-row.orchestrators{background:#0f1419}
+  .nav-row.orchestrators .label{color:#a78bfa}
+  .nav-row .tab{padding:.35rem .7rem;border-radius:4px;background:#1a1f26;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center;border:1px solid transparent}
+  .nav-row .tab:hover{border-color:var(--line)}
+  .nav-row .tab.active{border-color:var(--accent);color:var(--accent)}
+  .nav-row.orchestrators .tab.active{border-color:#a78bfa;color:#a78bfa}
+  .nav-row .tab .dot{width:8px;height:8px;border-radius:50%;background:var(--mute)}
+  .nav-row .tab .dot.thinking{background:var(--warn);box-shadow:0 0 4px var(--warn)}
+  .nav-row .tab .dot.tool_call{background:#a78bfa;box-shadow:0 0 4px #a78bfa}
+  .nav-row .tab .dot.streaming{background:var(--accent);box-shadow:0 0 4px var(--accent)}
+  .nav-row .tab .dot.running{background:var(--accent)}
+  .nav-row .tab .dot.done{background:var(--ok)}
+  .nav-row .tab .dot.error{background:var(--err)}
+  .nav-row .tab .dot.idle{background:var(--mute)}
+  .nav-row .tab .dot.stalled{background:#6b7280}
+  .nav-row .tab.archived{opacity:.55}
+  .nav-row .spacer{flex:1}
+  .nav-row .toggle-btn{font-size:11px;padding:.2rem .5rem;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--mute);cursor:pointer}
+  .nav-row .toggle-btn.active{color:var(--accent);border-color:var(--accent)}
+  .nav-row .toggle-btn:hover{color:var(--ink)}
   main{display:grid;grid-template-columns:minmax(240px,300px) 1fr;height:calc(100vh - 100px)}
   .side{border-right:1px solid var(--line);padding:.8rem;overflow-y:auto;background:var(--panel)}
   .side dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12px}
@@ -486,16 +592,23 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   <div style="flex:1"></div>
   <button id="btn-refresh" title="force refresh">↻</button>
 </header>
-<nav id="tabs"></nav>
+<div class="navs">
+  <div class="nav-row orchestrators" id="nav-orchestrators"><span class="label">◆ orchestrators</span></div>
+  <div class="nav-row workers" id="nav-workers"><span class="label">workers</span><span class="spacer"></span>
+    <button class="toggle-btn" id="btn-archive-all-done" title="Archive all sessions in state=done">archive done</button>
+    <button class="toggle-btn" id="btn-toggle-archive" title="Show archived sessions">show archive</button>
+  </div>
+</div>
 <main>
   <aside class="side" id="side"><div class="placeholder">pick a tab</div></aside>
   <section class="content" id="content"><div class="placeholder">no session selected</div></section>
 </main>
 <script>
 (() => {
-  const state = { sessions: [], metrics: {}, active: null, startedAt: Date.now(),
+  const state = { sessions: [], metrics: {}, active: null, showArchive: false, startedAt: Date.now(),
                   status: { activeSessions:0, monthCostUsd:0, monthBudgetUsd:200, ctxLimit:200000 } };
-  const tabsEl = document.getElementById('tabs');
+  const orchRowEl = document.getElementById('nav-orchestrators');
+  const workersRowEl = document.getElementById('nav-workers');
   const sideEl = document.getElementById('side');
   const contentEl = document.getElementById('content');
 
@@ -518,16 +631,34 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   }
   setInterval(renderHeader, 1000);
 
+  function makeTabEl(s) {
+    const m = state.metrics[s.slug] || {};
+    const st = m.state || (s.archived ? 'archived' : 'idle');
+    const t = document.createElement('div');
+    t.className = 'tab' + (state.active === s.slug ? ' active' : '') + (s.archived ? ' archived' : '');
+    t.innerHTML = '<span class="dot ' + st + '"></span><span>' + s.slug + '</span>' +
+                  '<small style="color:var(--mute)">[' + st + ']</small>';
+    t.onclick = () => selectTab(s.slug);
+    return t;
+  }
+
   function renderTabs() {
-    tabsEl.innerHTML = '';
-    for (const s of state.sessions) {
-      const st = state.metrics[s.slug]?.state || 'idle';
-      const t = document.createElement('div');
-      t.className = 'tab' + (state.active === s.slug ? ' active' : '');
-      t.innerHTML = \`<span class="dot \${st}"></span><span>\${s.slug}</span><small style="color:var(--mute)">[\${st}]</small>\`;
-      t.onclick = () => selectTab(s.slug);
-      tabsEl.appendChild(t);
+    // Orchestrators row
+    orchRowEl.querySelectorAll('.tab').forEach(n => n.remove());
+    const orch = state.sessions.filter(s => s.role === 'orchestrator');
+    if (orch.length === 0) {
+      const empty = document.createElement('small'); empty.className = 'tab'; empty.style.opacity = '.4';
+      empty.style.cursor = 'default'; empty.textContent = '(no orchestrators)';
+      orchRowEl.appendChild(empty);
+    } else {
+      for (const s of orch) orchRowEl.appendChild(makeTabEl(s));
     }
+    // Workers row — remove existing tabs but keep label/spacer/buttons
+    workersRowEl.querySelectorAll('.tab').forEach(n => n.remove());
+    const workers = state.sessions.filter(s => s.role !== 'orchestrator');
+    // Insert worker tabs before the spacer
+    const spacer = workersRowEl.querySelector('.spacer');
+    for (const s of workers) workersRowEl.insertBefore(makeTabEl(s), spacer);
   }
 
   function renderSide(slug) {
@@ -571,12 +702,21 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       </dl>
       <h3>actions</h3>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <button id="btn-kill" class="danger">kill</button>
+        \${s.archived ? '<button id="btn-kill" class="danger" disabled title="session archived">archived</button>'
+                     : '<button id="btn-kill" class="danger">kill</button>'}
+        \${(!s.archived && m.state === 'done') ? '<button id="btn-archive">archive</button>' : ''}
       </div>
     \`;
-    document.getElementById('btn-kill').onclick = () => {
+    const kBtn = document.getElementById('btn-kill');
+    if (kBtn && !s.archived) kBtn.onclick = () => {
       if (!confirm('Kill session '+slug+'?')) return;
       fetch('/api/sessions/'+slug, { method: 'DELETE' }).then(refresh);
+    };
+    const aBtn = document.getElementById('btn-archive');
+    if (aBtn) aBtn.onclick = async () => {
+      await fetch('/api/sessions/'+slug+'/archive', { method: 'POST' });
+      delete renderCache[slug];
+      refresh();
     };
   }
 
@@ -657,15 +797,35 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   }
 
   async function refresh() {
-    const r = await fetch('/api/sessions');
+    const url = '/api/sessions' + (state.showArchive ? '?include=archive' : '');
+    const r = await fetch(url);
     const arr = await r.json();
     state.sessions = arr.map(x => x.session);
     arr.forEach(x => { state.metrics[x.session.slug] = x.metrics; });
     if (!state.active && state.sessions.length) state.active = state.sessions[0].slug;
+    if (state.active && !state.sessions.find(s => s.slug === state.active)) {
+      state.active = state.sessions[0]?.slug || null;
+    }
     renderTabs();
-    if (state.active) { renderSide(state.active); if (!renderCache[state.active]) renderContent(state.active); }
+    if (state.active) { renderSide(state.active); renderContent(state.active); }
+    else { sideEl.innerHTML = '<div class="placeholder">no session selected</div>'; contentEl.innerHTML = '<div class="placeholder">no session selected</div>'; }
   }
   document.getElementById('btn-refresh').onclick = () => {
+    for (const k of Object.keys(renderCache)) delete renderCache[k];
+    refresh();
+  };
+  document.getElementById('btn-toggle-archive').onclick = (e) => {
+    state.showArchive = !state.showArchive;
+    e.target.classList.toggle('active', state.showArchive);
+    e.target.textContent = state.showArchive ? 'hide archive' : 'show archive';
+    for (const k of Object.keys(renderCache)) delete renderCache[k];
+    refresh();
+  };
+  document.getElementById('btn-archive-all-done').onclick = async () => {
+    if (!confirm('Archive all sessions in state=done? (orchestrators are skipped)')) return;
+    const r = await fetch('/api/sessions/archive-all-done', { method: 'POST' });
+    const j = await r.json();
+    alert('Archived ' + (j.archived || []).length + ' sessions: ' + (j.archived || []).join(', '));
     for (const k of Object.keys(renderCache)) delete renderCache[k];
     refresh();
   };
