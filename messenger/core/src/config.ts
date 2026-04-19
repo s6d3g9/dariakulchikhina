@@ -91,6 +91,8 @@ const envSchema = z.object({
   LIVEKIT_API_URL: z.string().trim().default('wss://dariakulchikhina.com/livekit'),
   LIVEKIT_API_KEY: z.string().trim().optional(),
   LIVEKIT_API_SECRET: z.string().trim().optional(),
+  // Claude CLI — path to claude binary for agent subprocess spawning
+  CLAUDE_BIN: z.string().optional(),
 })
 
 export function readMessengerConfig() {
