@@ -83,7 +83,7 @@ function sanitizeRecentItems(payload: unknown) {
 }
 
 export function useMessengerKlipy() {
-  const auth = useMessengerAuth()
+  const klipy = useKlipyApi()
   const items = useState<MessengerKlipyItem[]>('messenger-klipy-items', () => [])
   const recentItems = useState<MessengerKlipyItem[]>('messenger-klipy-recent-items', () => [])
   const categories = useState<Record<'gif' | 'sticker', MessengerKlipyCategory[]>>('messenger-klipy-categories', () => ({
@@ -147,14 +147,11 @@ export function useMessengerKlipy() {
     }
     try {
       if (!normalizedQuery) {
-        const response = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {
-          method: 'GET',
-          query: {
-            category: normalizedCategory || undefined,
-            kind,
-            limit: options.limit || KLIPY_PAGE_SIZE,
-            page: nextPage,
-          },
+        const response = await klipy.search({
+          category: normalizedCategory || undefined,
+          kind,
+          limit: options.limit || KLIPY_PAGE_SIZE,
+          page: nextPage,
         })
 
         if (currentRequestId !== searchRequestId.value) {
@@ -185,14 +182,11 @@ export function useMessengerKlipy() {
       let resolvedQuery = normalizedQuery
 
       for (const queryVariant of variants) {
-        const response = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {
-          method: 'GET',
-          query: {
-            query: queryVariant,
-            kind,
-            limit: options.limit || KLIPY_PAGE_SIZE,
-            page: nextPage,
-          },
+        const response = await klipy.search({
+          query: queryVariant,
+          kind,
+          limit: options.limit || KLIPY_PAGE_SIZE,
+          page: nextPage,
         })
 
         configuredFlag = response.configured
@@ -252,12 +246,7 @@ export function useMessengerKlipy() {
     categoriesPending.value = true
     error.value = ''
     try {
-      const response = await auth.request<{ configured: boolean; categories: MessengerKlipyCategory[] }>('/integrations/klipy/categories', {
-        method: 'GET',
-        query: {
-          kind,
-        },
-      })
+      const response = await klipy.getCategories(kind)
 
       configured.value = response.configured
       categories.value = {

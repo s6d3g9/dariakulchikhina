@@ -14,6 +14,7 @@ const auth = useMessengerAuth()
 const contacts = useMessengerContacts()
 const messengerCrypto = useMessengerCrypto()
 const klipy = useMessengerKlipy()
+const klipyApi = useKlipyApi()
 const viewport = useMessengerViewport()
 const navigation = useMessengerConversationState()
 const { resetKlipyFeedPaging, buildLoopedFeed, handleLoopedRailScroll, handleLoopedFeedScroll, primeLoopedRailPosition, primeLoopedFeedPosition } = useKlipyFeedPaging()
@@ -1321,13 +1322,7 @@ async function sendKlipyItem(item: MessengerKlipyItem) {
   try {
     const mediaUrl = item.originalUrl || item.previewUrl
     const blob = /^https:\/\/static\.klipy\.com\//.test(mediaUrl)
-      ? await auth.request<Blob>('/integrations/klipy/media', {
-          method: 'GET',
-          query: {
-            url: mediaUrl,
-          },
-          responseType: 'blob',
-        })
+      ? await klipyApi.getMedia(mediaUrl)
       : await fetch(mediaUrl, {
           headers: auth.token.value
             ? {
