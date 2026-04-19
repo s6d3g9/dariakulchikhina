@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { setChatSession } from '~/server/utils/auth'
+import { setChatSession } from '~/server/modules/auth/session.service'
 import { authenticateStandaloneChatUser } from '~/server/modules/chat/chat-users.service'
 
 const Schema = z.object({

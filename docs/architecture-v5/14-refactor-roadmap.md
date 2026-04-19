@@ -1469,6 +1469,19 @@ Wave 4 для UIDesignPanel закрыт.
 - `app/pages/admin/clients/index.vue`: 705 → 460 lines (−245 lines, −35%).
 - Commit: `4fb3179`
 
+### [done] 2026-04-19 — Wave 7 / collapse server/utils/auth into auth module
+
+- Moved all HMAC/cookie/session logic out of `server/utils/auth.ts` into `server/modules/auth/session.service.ts`.
+  - HMAC signing + constant-time verify, low-level Node.js cookie helpers.
+  - All session get/set/clear/require functions (admin, client, contractor, chat).
+  - `requireAdminOrContractor`, `requireAdminOrClient`.
+  - `resolveSession` and `SessionView` type (previously already in session.service).
+- Extracted `hashPassword` + `verifyPassword` into `server/modules/auth/password.service.ts`.
+- Deleted `server/utils/auth.ts` (was 260 lines).
+- Updated 25 importers: `server/modules/auth/**`, `server/modules/chat/**`, `server/modules/communications/**`, 17 API handlers.
+- `pnpm lint:errors`: 0 new errors (2 pre-existing process.env errors in test files).
+- Commit: `de7871c`
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor`** (1695 lines): Step 2 fields+vars block (lines 64-148) and Step 3 editor (lines 149-735) still inline.

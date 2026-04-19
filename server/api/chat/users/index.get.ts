@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { requireChatSession } from '~/server/utils/auth'
+import { requireChatSession } from '~/server/modules/auth/session.service'
 import { safeGetQuery } from '~/server/utils/query'
 import { searchStandaloneChatDirectory } from '~/server/modules/chat/chat-users.service'
 

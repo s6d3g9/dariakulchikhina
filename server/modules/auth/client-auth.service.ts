@@ -1,10 +1,7 @@
 import type { H3Event } from 'h3'
 import { z } from 'zod'
-import {
-  hashPassword,
-  verifyPassword,
-  setClientSession,
-} from '~/server/utils/auth'
+import { hashPassword, verifyPassword } from '~/server/modules/auth/password.service'
+import { setClientSession } from '~/server/modules/auth/session.service'
 import { generateRecoveryPhrase } from '~/server/modules/auth/recovery.service'
 import { createUniqueProjectSlug } from '~/server/modules/auth/auth-registration.service'
 import type {

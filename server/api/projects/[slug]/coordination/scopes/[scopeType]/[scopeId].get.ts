@@ -1,5 +1,5 @@
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
-import { requireAdminOrClient } from '~/server/utils/auth'
+import { requireAdminOrClient } from '~/server/modules/auth/session.service'
 import { buildProjectScopeDetail, getProjectGovernanceProject } from '~/server/modules/projects/project-governance.service'
 import { ProjectScopeTypeSchema } from '~/shared/types/project-governance'
 

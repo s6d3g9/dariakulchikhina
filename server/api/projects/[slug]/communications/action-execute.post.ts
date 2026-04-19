@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { requireAdmin } from '~/server/utils/auth'
+import { requireAdmin } from '~/server/modules/auth/session.service'
 import { readValidatedNodeBody } from '~/server/utils/body'
 import { executeProjectCommunicationAction } from '~/server/modules/projects/project-comms-actions.service'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'

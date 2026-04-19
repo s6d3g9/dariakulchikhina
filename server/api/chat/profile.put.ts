@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { requireChatSession } from '~/server/utils/auth'
+import { requireChatSession } from '~/server/modules/auth/session.service'
 import { updateStandaloneChatProfile } from '~/server/modules/chat/chat-users.service'
 
 const Schema = z.object({

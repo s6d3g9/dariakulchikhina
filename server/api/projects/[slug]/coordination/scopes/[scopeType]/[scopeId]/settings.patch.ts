@@ -1,4 +1,4 @@
-import { requireAdminOrClient } from '~/server/utils/auth'
+import { requireAdminOrClient } from '~/server/modules/auth/session.service'
 import { readValidatedNodeBody } from '~/server/utils/body'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
 import { updateProjectGovernanceScopeSettings } from '~/server/modules/projects/project-governance.service'
