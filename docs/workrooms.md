@@ -133,3 +133,15 @@ share state, only the server.
 - **Use `status` before creating a new workroom** to check load. If the
   server is already at 5+ active workrooms with dev servers running, drop
   an unused one first.
+
+## Claude CLI Dispatcher
+
+Parallel Claude Code sessions run via the dispatcher, a messenger-backed control plane that exposes each session as a live agent contact. This enables researchers, architects, and implementers to work concurrently on the same codebase without blocking each other.
+
+**Dashboard & auth:** http://152.53.176.165:9090 (basic auth, credentials in `~/.claude-dashboard-auth`)
+
+**Systemd services:**
+- `claude-web-dashboard.service` — web UI polling tmux logs
+- `claude-cf-tunnel.service` — optional Cloudflare tunnel (if URL changes, run `~/bin/claude-cf-tunnel open-tunnel` to refresh)
+
+**For detailed steps:** see [claude-cli-dispatcher-runbook.md](claude-cli-dispatcher-runbook.md) — launching sessions, streaming follow-ups, killing stuck processes, rotating auth, recovering from server reboot.
