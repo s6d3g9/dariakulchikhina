@@ -1,7 +1,7 @@
 import type { MessengerContactsOverview } from '../../auth/model/useMessengerAuth'
 
 export function useMessengerContacts() {
-  const auth = useMessengerAuth()
+  const contactsApi = useContactsApi()
   const overview = useState<MessengerContactsOverview>('messenger-contacts-overview', () => ({
     contacts: [],
     invites: [],
@@ -15,41 +15,29 @@ export function useMessengerContacts() {
     query.value = nextQuery
 
     try {
-      overview.value = await auth.request<MessengerContactsOverview>('/contacts/overview', {
-        method: 'GET',
-        query: nextQuery ? { query: nextQuery } : undefined,
-      })
+      overview.value = await contactsApi.getContactsOverview(nextQuery)
     } finally {
       pending.value = false
     }
   }
 
   async function invite(targetUserId: string) {
-    await auth.request('/contacts/invites', {
-      method: 'POST',
-      body: { targetUserId },
-    })
+    await contactsApi.inviteContact(targetUserId)
     await refresh(query.value)
   }
 
   async function accept(inviteId: string) {
-    await auth.request(`/contacts/invites/${inviteId}/accept`, {
-      method: 'POST',
-    })
+    await contactsApi.acceptInvite(inviteId)
     await refresh(query.value)
   }
 
   async function reject(inviteId: string) {
-    await auth.request(`/contacts/invites/${inviteId}/reject`, {
-      method: 'POST',
-    })
+    await contactsApi.rejectInvite(inviteId)
     await refresh(query.value)
   }
 
   async function removeContact(peerUserId: string) {
-    await auth.request(`/contacts/${peerUserId}`, {
-      method: 'DELETE',
-    })
+    await contactsApi.removeContact(peerUserId)
     await refresh(query.value)
   }
 
