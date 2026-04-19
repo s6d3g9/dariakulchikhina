@@ -21,6 +21,7 @@ try {
   }
 } catch { /* .env absent — rely on pre-set env vars */ }
 
+import { config } from '../../config.ts'
 import { eq, ilike, or, sql, and, not, inArray, lt, isNotNull } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
@@ -43,10 +44,7 @@ function assert(condition: boolean, message: string): asserts condition {
 
 async function main() {
   // Initialize database connection
-  const dbUrl = process.env.DATABASE_URL
-  if (!dbUrl) {
-    throw new Error('DATABASE_URL not set')
-  }
+  const dbUrl = config.DATABASE_URL
 
   const pgClient = postgres(dbUrl)
   const db = drizzle(pgClient, { schema })
