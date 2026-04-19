@@ -1,0 +1,8 @@
+{"event":"run_start","run_id":"{{RUN_ID}}","agent_id":"{{AGENT_ID}}","started_at":"2026-04-19T10:00:00Z","delay_ms":50}
+{"event":"substate","run_id":"{{RUN_ID}}","substate":"context","summary":"Gathering context...","delay_ms":100}
+{"event":"substate","run_id":"{{RUN_ID}}","substate":"reasoning","summary":"Analyzing request...","delay_ms":100}
+{"event":"delta","run_id":"{{RUN_ID}}","delta":"Hello ","delay_ms":75}
+{"event":"delta","run_id":"{{RUN_ID}}","delta":"from ","delay_ms":75}
+{"event":"delta","run_id":"{{RUN_ID}}","delta":"agent!","delay_ms":75}
+{"event":"tokens","run_id":"{{RUN_ID}}","token_in":45,"token_out":12,"delay_ms":50}
+{"event":"run_complete","run_id":"{{RUN_ID}}","status":"completed","result":"Hello from agent!","finished_at":"2026-04-19T10:00:01Z","delay_ms":50}
