@@ -25,6 +25,7 @@
 18. [Repository Layer — правила разделения service и persistence](./18-repository-layer.md)
 19. [Error Handling — domain errors + HTTP mapping](./19-error-handling.md)
 20. [Config + Logging — fail-fast конфигурация и structured логи](./20-config-and-logging.md)
+21. [Agent Orchestration & Claude CLI Sync — дерево runs, CLI bridge, WS tree-стрим](./21-agent-orchestration.md)
 21. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
 
 ## Операционные отчеты
