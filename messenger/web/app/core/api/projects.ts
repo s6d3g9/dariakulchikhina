@@ -1,6 +1,9 @@
 import type { MessengerProject } from '../../entities/projects/model/useMessengerProjects'
 import type { MessengerMcpServer, McpPingResult } from '../../entities/mcp/model/useMessengerMcp'
 import type { MessengerExternalApi } from '../../entities/external-apis/model/useMessengerExternalApis'
+import type { MessengerConnector } from '../../entities/connectors/model/useMessengerConnectors'
+import type { MessengerProjectSkill, SkillBundle } from '../../entities/skills/model/useMessengerSkills'
+import type { InstalledPlugin, MessengerProjectPlugin } from '../../entities/plugins/model/useMessengerPlugins'
 
 export function useProjectsApi() {
   const auth = useMessengerAuth()
@@ -76,6 +79,52 @@ export function useProjectsApi() {
     return auth.request<{ ok: true }>(`/projects/${projectId}/external-apis/${entryId}`, { method: 'DELETE' })
   }
 
+  // ── Connectors ─────────────────────────────────────────────────────────────
+
+  function listConnectors(projectId: string) {
+    return auth.request<{ connectors: MessengerConnector[] }>(`/projects/${projectId}/connectors`, { method: 'GET' })
+  }
+
+  function createConnector(projectId: string, body: { type: string; label: string; config?: Record<string, unknown>; enabled?: boolean; isDefault?: boolean }) {
+    return auth.request<{ connector: MessengerConnector }>(`/projects/${projectId}/connectors`, { method: 'POST', body })
+  }
+
+  function updateConnector(projectId: string, entryId: string, body: Partial<{ type: string; label: string; config: Record<string, unknown>; enabled: boolean; isDefault: boolean }>) {
+    return auth.request<{ connector: MessengerConnector }>(`/projects/${projectId}/connectors/${entryId}`, { method: 'PATCH', body })
+  }
+
+  function deleteConnector(projectId: string, entryId: string) {
+    return auth.request<{ ok: true }>(`/projects/${projectId}/connectors/${entryId}`, { method: 'DELETE' })
+  }
+
+  // ── Skills ─────────────────────────────────────────────────────────────────
+
+  function listSkillBundles() {
+    return auth.request<{ bundles: SkillBundle[] }>('/skill-bundles', { method: 'GET' })
+  }
+
+  function listProjectSkills(projectId: string) {
+    return auth.request<{ skills: MessengerProjectSkill[] }>(`/projects/${projectId}/skills`, { method: 'GET' })
+  }
+
+  function upsertProjectSkill(projectId: string, skillId: string, body: { enabled?: boolean; config?: Record<string, unknown> }) {
+    return auth.request<{ skill: MessengerProjectSkill }>(`/projects/${projectId}/skills`, { method: 'POST', body: { skillId, ...body } })
+  }
+
+  function deleteProjectSkill(projectId: string, skillId: string) {
+    return auth.request<{ ok: true }>(`/projects/${projectId}/skills/${skillId}`, { method: 'DELETE' })
+  }
+
+  // ── Plugins ────────────────────────────────────────────────────────────────
+
+  function listInstalledPlugins() {
+    return auth.request<{ plugins: InstalledPlugin[] }>('/plugins', { method: 'GET' })
+  }
+
+  function listProjectPlugins(projectId: string) {
+    return auth.request<{ plugins: MessengerProjectPlugin[] }>(`/projects/${projectId}/plugins`, { method: 'GET' })
+  }
+
   return {
     listProjects,
     getProject,
@@ -91,5 +140,15 @@ export function useProjectsApi() {
     createExternalApi,
     updateExternalApi,
     deleteExternalApi,
+    listConnectors,
+    createConnector,
+    updateConnector,
+    deleteConnector,
+    listSkillBundles,
+    listProjectSkills,
+    upsertProjectSkill,
+    deleteProjectSkill,
+    listInstalledPlugins,
+    listProjectPlugins,
   }
 }

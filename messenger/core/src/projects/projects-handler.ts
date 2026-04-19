@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
@@ -159,6 +160,46 @@ const applyBootstrapBody = z.object({
   proposal: proposalSchema,
 })
 
+// --- skill-bundles catalog (mirrors scripts/workrooms/skill-bundles.json) ---
+
+const SKILL_BUNDLES_CATALOG = [
+  { id: 'composer', label: 'Composer', purpose: 'Strategy, triage, architecture discussion.' },
+  { id: 'orchestrator', label: 'Orchestrator', purpose: 'Decomposes requests, routes to workers.' },
+  { id: 'frontend-ui', label: 'Frontend UI', purpose: 'Vue components, pages, widgets, FSD.' },
+  { id: 'frontend-research', label: 'Frontend Research', purpose: 'UX flows, design handoff specs.' },
+  { id: 'backend-api', label: 'Backend API', purpose: 'Nitro API handlers, shared contracts.' },
+  { id: 'backend-module', label: 'Backend Module', purpose: 'DDD-lite modules, repository + service layer.' },
+  { id: 'db-migration', label: 'DB Migration', purpose: 'Drizzle schema changes, SQL review.' },
+  { id: 'messenger-realtime', label: 'Messenger Realtime', purpose: 'Fastify WS, E2EE, communications-service.' },
+  { id: 'tests', label: 'Tests', purpose: 'Unit / integration / smoke test suites.' },
+  { id: 'docs', label: 'Docs', purpose: 'Architecture docs, runbooks, READMEs.' },
+  { id: 'incident', label: 'Incident', purpose: 'Production triage, hot-fix, postmortem.' },
+  { id: 'default', label: 'Default', purpose: 'Fallback for unset worker kinds.' },
+] as const
+
+function readInstalledPlugins(): Array<{ id: string; name: string; description: string }> {
+  try {
+    const raw = execFileSync('claude', ['plugin', 'list', '--json'], { timeout: 5000, encoding: 'utf-8' })
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map((p: Record<string, unknown>) => ({
+      id: String(p.id ?? p.name ?? ''),
+      name: String(p.name ?? p.id ?? ''),
+      description: String(p.description ?? ''),
+    }))
+  } catch {
+    // CLI not available or not JSON — fall through to text parsing
+  }
+  try {
+    const raw = execFileSync('claude', ['plugin', 'list'], { timeout: 5000, encoding: 'utf-8' })
+    return raw.trim().split('\n').filter(Boolean).map(line => {
+      const id = line.trim().split(/\s+/)[0] ?? line.trim()
+      return { id, name: id, description: '' }
+    })
+  } catch {
+    return []
+  }
+}
+
 // --- agent type defaults ---
 
 const COMPOSER_SYSTEM_PROMPT = 'You are the Composer — the top-level strategic agent. You do not edit code directly. Your role: discuss strategy, architecture, and priorities with the user. When there is execution work, formulate it as instructions for the orchestrator. Answer concisely with concrete action items when appropriate.'
@@ -208,6 +249,16 @@ export function registerProjectsRoutes(
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_PAYLOAD', details: zodErrorSummary(parsed.error) })
 
     const project = await createProject({ ownerUserId: payload.sub, ...parsed.data })
+    // Seed default claude-cli connector for every new project
+    try {
+      await createConnector(project.id, payload.sub, {
+        type: 'claude-cli',
+        label: 'Claude CLI',
+        config: {},
+        enabled: true,
+        isDefault: true,
+      })
+    } catch { /* non-fatal — project is still usable without it */ }
     return reply.code(201).send({ project })
   })
 
@@ -816,5 +867,21 @@ export function registerProjectsRoutes(
       ok: true,
       counts: { connectors: connectorCount, skills: skillCount, plugins: pluginCount, mcp: mcpCount, externalApis: externalApiCount, agents: agentCount },
     }
+  })
+
+  // --- Skill-bundles catalog ---
+
+  app.get('/skill-bundles', async (request, reply) => {
+    const payload = resolveSessionAuth(request)
+    if (!payload) return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    return { bundles: SKILL_BUNDLES_CATALOG }
+  })
+
+  // --- Installed plugins (read-only, backed by claude plugin list) ---
+
+  app.get('/plugins', async (request, reply) => {
+    const payload = resolveSessionAuth(request)
+    if (!payload) return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    return { plugins: readInstalledPlugins() }
   })
 }

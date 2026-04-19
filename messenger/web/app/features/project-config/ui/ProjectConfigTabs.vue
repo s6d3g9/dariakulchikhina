@@ -2,11 +2,12 @@
 import type { MessengerProject } from '../../../entities/projects/model/useMessengerProjects'
 import type { MessengerMcpServer } from '../../../entities/mcp/model/useMessengerMcp'
 import type { MessengerExternalApi } from '../../../entities/external-apis/model/useMessengerExternalApis'
+import type { MessengerConnector } from '../../../entities/connectors/model/useMessengerConnectors'
 
 const props = defineProps<{ project: MessengerProject }>()
 
 const projectIdRef = computed(() => props.project.id)
-const activeTab = ref('mcp')
+const activeTab = ref('connectors')
 
 const tabs = [
   { key: 'agents', label: 'Агенты', icon: 'mdi-robot-outline' },
@@ -20,9 +21,18 @@ const tabs = [
 
 const mcpModel = useMessengerMcp(projectIdRef)
 const extApisModel = useMessengerExternalApis(projectIdRef)
+const connectorsModel = useMessengerConnectors(projectIdRef)
+const skillsModel = useMessengerSkills(projectIdRef)
+const pluginsModel = useMessengerPlugins(projectIdRef)
 
 onMounted(async () => {
-  await Promise.all([mcpModel.refresh(), extApisModel.refresh()])
+  await Promise.all([
+    mcpModel.refresh(),
+    extApisModel.refresh(),
+    connectorsModel.refresh(),
+    skillsModel.refresh(),
+    pluginsModel.refresh(),
+  ])
 })
 
 // ── MCP form ───────────────────────────────────────────────────────────────
@@ -110,6 +120,77 @@ function mcpStatusLabel(serverId: string): string {
   return '—'
 }
 
+// ── Connectors form ────────────────────────────────────────────────────────
+
+const connDialogOpen = ref(false)
+const connEditTarget = ref<MessengerConnector | null>(null)
+const connFormPending = ref(false)
+const connDraft = reactive({
+  type: 'claude-cli',
+  label: '',
+  configRaw: '{}',
+  enabled: true,
+  isDefault: false,
+})
+const connConfigError = ref<string | null>(null)
+
+const connectorTypeOptions = [
+  { title: 'Claude CLI', value: 'claude-cli' },
+  { title: 'Claude API', value: 'claude-api' },
+  { title: 'OpenAI', value: 'openai' },
+  { title: 'Custom', value: 'custom' },
+]
+
+function openConnCreate() {
+  connEditTarget.value = null
+  connDraft.type = 'claude-cli'
+  connDraft.label = ''
+  connDraft.configRaw = '{}'
+  connDraft.enabled = true
+  connDraft.isDefault = false
+  connConfigError.value = null
+  connDialogOpen.value = true
+}
+
+function openConnEdit(connector: MessengerConnector) {
+  connEditTarget.value = connector
+  connDraft.type = connector.type
+  connDraft.label = connector.label
+  connDraft.configRaw = JSON.stringify(connector.config, null, 2)
+  connDraft.enabled = connector.enabled
+  connDraft.isDefault = connector.isDefault
+  connConfigError.value = null
+  connDialogOpen.value = true
+}
+
+function parseConnConfig(): Record<string, unknown> | null {
+  try {
+    return JSON.parse(connDraft.configRaw || '{}')
+  }
+  catch {
+    connConfigError.value = 'Некорректный JSON'
+    return null
+  }
+}
+
+async function submitConnForm() {
+  const config = parseConnConfig()
+  if (config === null) return
+  connFormPending.value = true
+  try {
+    if (connEditTarget.value) {
+      await connectorsModel.update(connEditTarget.value.id, { type: connDraft.type, label: connDraft.label, config, enabled: connDraft.enabled, isDefault: connDraft.isDefault })
+    }
+    else {
+      await connectorsModel.create({ type: connDraft.type, label: connDraft.label, config, enabled: connDraft.enabled, isDefault: connDraft.isDefault })
+    }
+    connDialogOpen.value = false
+  }
+  finally {
+    connFormPending.value = false
+  }
+}
+
 // ── External APIs form ─────────────────────────────────────────────────────
 
 const extDialogOpen = ref(false)
@@ -195,30 +276,136 @@ async function submitExtForm() {
         </div>
       </VTabsWindowItem>
 
-      <!-- Connectors stub (W4) -->
+      <!-- Connectors (W4 — LIVE) -->
       <VTabsWindowItem value="connectors" class="project-config-tabs__panel">
-        <div class="project-config-tabs__stub">
-          <VIcon size="48" class="mb-3" color="secondary">mdi-connection</VIcon>
-          <p class="project-config-tabs__empty-title">Коннекторы</p>
-          <VChip color="warning" size="small" class="mt-2">Coming in W4</VChip>
+        <div class="project-config-tabs__toolbar">
+          <span class="project-config-tabs__count">Коннекторы ({{ connectorsModel.connectors.value.length }})</span>
+          <VBtn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="openConnCreate">
+            Добавить
+          </VBtn>
         </div>
+
+        <VList v-if="connectorsModel.connectors.value.length" bg-color="transparent" density="comfortable">
+          <VListItem
+            v-for="conn in connectorsModel.connectors.value"
+            :key="conn.id"
+            :title="conn.label"
+            :subtitle="conn.type"
+          >
+            <template #append>
+              <VChip v-if="conn.isDefault" size="x-small" color="primary" label class="mr-1">default</VChip>
+              <VSwitch
+                :model-value="conn.enabled"
+                density="compact"
+                color="primary"
+                hide-details
+                class="mr-1"
+                @update:model-value="connectorsModel.update(conn.id, { enabled: !conn.enabled })"
+              />
+              <VBtn size="small" variant="text" icon="mdi-pencil-outline" title="Редактировать" @click="openConnEdit(conn)" />
+              <VBtn size="small" variant="text" color="error" icon="mdi-delete-outline" title="Удалить" @click="connectorsModel.remove(conn.id)" />
+            </template>
+          </VListItem>
+        </VList>
+
+        <div v-else class="project-config-tabs__empty">
+          <VIcon size="36" color="on-surface-variant">mdi-connection</VIcon>
+          <p>Нет коннекторов. Добавьте первый.</p>
+        </div>
+
+        <VDialog v-model="connDialogOpen" max-width="520">
+          <VCard>
+            <VCardTitle>{{ connEditTarget ? 'Редактировать коннектор' : 'Добавить коннектор' }}</VCardTitle>
+            <VCardText>
+              <VSelect v-model="connDraft.type" :items="connectorTypeOptions" label="Тип" density="compact" class="mb-3" />
+              <VTextField v-model="connDraft.label" label="Название" density="compact" class="mb-3" required />
+              <VTextarea
+                v-model="connDraft.configRaw"
+                label="Config (JSON)"
+                density="compact"
+                rows="4"
+                :error-messages="connConfigError ? [connConfigError] : []"
+                class="mb-3"
+                @input="connConfigError = null"
+              />
+              <VSwitch v-model="connDraft.enabled" label="Включён" density="compact" color="primary" class="mb-2" />
+              <VSwitch v-model="connDraft.isDefault" label="По умолчанию" density="compact" color="secondary" />
+            </VCardText>
+            <VCardActions>
+              <VSpacer />
+              <VBtn variant="text" @click="connDialogOpen = false">Отмена</VBtn>
+              <VBtn color="primary" variant="tonal" :loading="connFormPending" :disabled="!connDraft.label" @click="submitConnForm">
+                {{ connEditTarget ? 'Сохранить' : 'Добавить' }}
+              </VBtn>
+            </VCardActions>
+          </VCard>
+        </VDialog>
       </VTabsWindowItem>
 
-      <!-- Skills stub (W4) -->
+      <!-- Skills (W4 — LIVE) -->
       <VTabsWindowItem value="skills" class="project-config-tabs__panel">
-        <div class="project-config-tabs__stub">
-          <VIcon size="48" class="mb-3" color="secondary">mdi-lightning-bolt-outline</VIcon>
-          <p class="project-config-tabs__empty-title">Навыки</p>
-          <VChip color="warning" size="small" class="mt-2">Coming in W4</VChip>
+        <div class="project-config-tabs__toolbar">
+          <span class="project-config-tabs__count">
+            Навыки ({{ skillsModel.projectSkills.value.filter(s => s.enabled).length }} / {{ skillsModel.bundles.value.length }})
+          </span>
+        </div>
+
+        <VList v-if="skillsModel.bundles.value.length" bg-color="transparent" density="comfortable">
+          <VListItem
+            v-for="bundle in skillsModel.bundles.value"
+            :key="bundle.id"
+            :title="bundle.label"
+            :subtitle="bundle.purpose"
+          >
+            <template #append>
+              <VSwitch
+                :model-value="skillsModel.isEnabled(bundle.id)"
+                density="compact"
+                color="primary"
+                hide-details
+                @update:model-value="skillsModel.toggle(bundle.id)"
+              />
+            </template>
+          </VListItem>
+        </VList>
+
+        <div v-else-if="!skillsModel.pending.value" class="project-config-tabs__empty">
+          <VIcon size="36" color="on-surface-variant">mdi-lightning-bolt-outline</VIcon>
+          <p>Нет доступных навыков.</p>
+        </div>
+
+        <div v-if="skillsModel.pending.value" class="project-config-tabs__empty">
+          <VProgressCircular indeterminate size="32" />
         </div>
       </VTabsWindowItem>
 
-      <!-- Plugins stub (W4) -->
+      <!-- Plugins (W4 — LIVE, read-only) -->
       <VTabsWindowItem value="plugins" class="project-config-tabs__panel">
-        <div class="project-config-tabs__stub">
-          <VIcon size="48" class="mb-3" color="secondary">mdi-puzzle-outline</VIcon>
-          <p class="project-config-tabs__empty-title">Плагины</p>
-          <VChip color="warning" size="small" class="mt-2">Coming in W4</VChip>
+        <div class="project-config-tabs__toolbar">
+          <span class="project-config-tabs__count">Плагины ({{ pluginsModel.installedPlugins.value.length }})</span>
+          <VChip size="small" color="info" variant="outlined">read-only</VChip>
+        </div>
+
+        <VList v-if="pluginsModel.installedPlugins.value.length" bg-color="transparent" density="comfortable">
+          <VListItem
+            v-for="plugin in pluginsModel.installedPlugins.value"
+            :key="plugin.id"
+            :title="plugin.name"
+            :subtitle="plugin.description || plugin.id"
+          >
+            <template #prepend>
+              <VIcon color="secondary">mdi-puzzle-outline</VIcon>
+            </template>
+          </VListItem>
+        </VList>
+
+        <div v-else-if="!pluginsModel.pending.value" class="project-config-tabs__empty">
+          <VIcon size="36" color="on-surface-variant">mdi-puzzle-outline</VIcon>
+          <p>Плагины не найдены. Убедитесь, что Claude CLI доступен на сервере.</p>
+        </div>
+
+        <div v-if="pluginsModel.pending.value" class="project-config-tabs__empty">
+          <VProgressCircular indeterminate size="32" />
         </div>
       </VTabsWindowItem>
 
