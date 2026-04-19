@@ -2429,6 +2429,104 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   }
 }
 
+/* ── Agent Stream UI ─────────────────────────────────────── */
+.agent-chat-workspace__substate-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.agent-chat-workspace__substate-badge {
+  gap: 6px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.agent-chat-workspace__substate-badge--thinking {
+  border-color: rgba(245, 158, 11, 0.6);
+  color: rgb(180, 110, 0);
+}
+
+.agent-chat-workspace__substate-badge--tool {
+  border-color: rgba(139, 92, 246, 0.6);
+  color: rgb(109, 40, 217);
+}
+
+.agent-chat-workspace__substate-badge--awaiting {
+  border-color: rgba(var(--v-theme-tertiary), 0.6);
+  color: rgb(var(--v-theme-tertiary));
+}
+
+.agent-chat-workspace__substate-badge--streaming {
+  border-color: rgba(59, 130, 246, 0.6);
+  color: rgb(29, 78, 216);
+}
+
+.agent-chat-workspace__substate-badge--error {
+  border-color: rgba(var(--v-theme-error), 0.6);
+  color: rgb(var(--v-theme-error));
+}
+
+.agent-chat-workspace__token-pill {
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-chat-workspace__token-bar {
+  display: inline-block;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(var(--v-theme-outline-variant), 0.4);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.agent-chat-workspace__token-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+
+.agent-chat-workspace__cancel-btn {
+  border-color: rgba(var(--v-theme-error), 0.5);
+  color: rgb(var(--v-theme-error));
+}
+
+.agent-chat-workspace__cancel-btn:hover {
+  background: rgba(var(--v-theme-error), 0.08);
+}
+
+.agent-chat-workspace__card--full-span {
+  grid-column: 1 / -1;
+}
+
+.agent-chat-workspace__stream-bubble {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.agent-chat-workspace__stream-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: rgb(var(--v-theme-on-surface));
+  font-family: inherit;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.agent-chat-workspace__error-banner {
+  border-color: rgba(var(--v-theme-error), 0.35);
+  background: rgba(var(--v-theme-error), 0.05);
+}
+
 /* ── Chat Section Layout ─────────────────────────────────── */
 .chat-screen {
   flex: 1;
