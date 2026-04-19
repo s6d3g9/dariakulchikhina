@@ -9,6 +9,8 @@ import type {
 import type { MessengerAgentKnowledgePreset, MessengerAgentKnowledgeStatus } from '../../entities/agents/model/useMessengerAgentKnowledge'
 import type { MessengerAgentRun, MessengerAgentRunArtifact, MessengerAgentRunEvent } from '../../entities/agents/model/useMessengerAgentRuns'
 import type { MessengerAgentWorkspaceFilePreview, MessengerAgentWorkspaceListing } from './model/useMessengerAgentWorkspace'
+import { useMessengerAgentStream } from '../../entities/agents/model/useMessengerAgentStream'
+import type { AgentSubstate } from '../../entities/agents/model/useMessengerAgentStream'
 
 type AgentWorkspaceSectionKey = 'overview' | 'settings' | 'knowledge' | 'links' | 'runs' | 'graph' | 'explorer'
 
@@ -31,6 +33,31 @@ const runsModel = useMessengerAgentRuns()
 const edgePayloadsModel = useMessengerAgentEdgePayloads()
 const workspaceExplorer = useMessengerAgentWorkspace()
 const knowledgeModel = useMessengerAgentKnowledge()
+
+const agentIdRef = computed(() => props.agentId)
+const agentStream = useMessengerAgentStream(agentIdRef)
+const streamCancelActive = computed(() => (['thinking', 'tool_call', 'streaming'] as AgentSubstate[]).includes(agentStream.substate.value))
+const streamTokenLabel = computed(() => {
+  const t = agentStream.tokenCount.value
+  if (!t.total) return null
+  return `${Math.round(t.total / 1000)}k / 200k (${t.contextPct}%)`
+})
+const streamCostLabel = computed(() => {
+  if (!agentStream.costUsd.value) return null
+  return `$${agentStream.costUsd.value.toFixed(2)}`
+})
+
+function substateLabel(state: AgentSubstate) {
+  switch (state) {
+    case 'thinking': return 'Думает'
+    case 'tool_call': return 'Инструмент'
+    case 'awaiting_input': return 'Ждёт ввод'
+    case 'streaming': return 'Стримит'
+    case 'error': return 'Ошибка'
+    default: return 'Idle'
+  }
+}
+
 const activeSection = useState<AgentWorkspaceSectionKey>('messenger-agent-chat-workspace-section', () => 'overview')
 const feedbackMessage = ref('')
 const feedbackTone = ref<'info' | 'error'>('info')
@@ -774,6 +801,36 @@ async function openWorkspaceFile(path: string) {
             <p class="agent-chat-workspace__section-marker">{{ currentSection?.title }}</p>
           </div>
           <div class="agent-chat-workspace__meta">
+            <span
+              class="agent-chat-workspace__status-pill agent-chat-workspace__substate-badge"
+              :class="{
+                'agent-chat-workspace__substate-badge--thinking': agentStream.substate.value === 'thinking',
+                'agent-chat-workspace__substate-badge--tool': agentStream.substate.value === 'tool_call',
+                'agent-chat-workspace__substate-badge--awaiting': agentStream.substate.value === 'awaiting_input',
+                'agent-chat-workspace__substate-badge--streaming': agentStream.substate.value === 'streaming',
+                'agent-chat-workspace__substate-badge--error': agentStream.substate.value === 'error',
+              }"
+            >
+              <span class="agent-chat-workspace__substate-dot" aria-hidden="true" />
+              {{ substateLabel(agentStream.substate.value) }}
+            </span>
+            <span v-if="streamTokenLabel" class="agent-chat-workspace__status-pill agent-chat-workspace__token-pill">
+              <span class="agent-chat-workspace__token-bar">
+                <span class="agent-chat-workspace__token-bar-fill" :style="{ width: `${agentStream.tokenCount.value.contextPct}%` }" />
+              </span>
+              {{ streamTokenLabel }}
+            </span>
+            <span v-if="streamCostLabel" class="agent-chat-workspace__status-pill">
+              {{ streamCostLabel }}
+            </span>
+            <button
+              v-if="streamCancelActive"
+              type="button"
+              class="agent-chat-workspace__ghost agent-chat-workspace__cancel-btn"
+              @click="agentStream.cancel()"
+            >
+              Остановить
+            </button>
             <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--live': runtimeState }">
               {{ runtimeState ? runtimePhaseLabel(runtimeState.phase) : 'Idle' }}
             </span>
@@ -797,6 +854,14 @@ async function openWorkspaceFile(path: string) {
           <Transition name="screen-fade" mode="out-in">
             <div :key="activeSection" class="agent-chat-workspace__pane">
           <div v-if="activeSection === 'overview'" class="agent-chat-workspace__content agent-chat-workspace__content--grid">
+            <article v-if="agentStream.streamingDraft.value" class="agent-chat-workspace__card agent-chat-workspace__stream-bubble agent-chat-workspace__card--full-span">
+              <p class="agent-chat-workspace__card-eyebrow">Ответ агента</p>
+              <pre class="agent-chat-workspace__stream-text">{{ agentStream.streamingDraft.value }}</pre>
+            </article>
+            <article v-if="agentStream.errors.value.length" class="agent-chat-workspace__card agent-chat-workspace__error-banner agent-chat-workspace__card--full-span">
+              <p class="agent-chat-workspace__card-eyebrow">Ошибки потока</p>
+              <p v-for="(err, i) in agentStream.errors.value" :key="i" class="agent-chat-workspace__card-text">{{ err }}</p>
+            </article>
             <article class="agent-chat-workspace__card">
               <p class="agent-chat-workspace__card-eyebrow">Сейчас в чате</p>
               <h3 class="agent-chat-workspace__card-title">Текущий фокус</h3>
