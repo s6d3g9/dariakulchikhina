@@ -3,6 +3,7 @@ import type { MessengerAttachmentKlipyPayload, MessengerConversationMessage } fr
 import type { MessengerKlipyItem } from '../../entities/messages/model/useMessengerKlipy'
 import type { MessengerConversationSecuritySummary } from '../../entities/messages/model/useMessengerCrypto'
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
+import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -15,6 +16,7 @@ const messengerCrypto = useMessengerCrypto()
 const klipy = useMessengerKlipy()
 const viewport = useMessengerViewport()
 const navigation = useMessengerConversationState()
+const { resetKlipyFeedPaging, buildLoopedFeed, handleLoopedRailScroll, handleLoopedFeedScroll, primeLoopedRailPosition, primeLoopedFeedPosition } = useKlipyFeedPaging()
 const draft = ref('')
 const actionError = ref('')
 const composerMediaMenuRef = ref<{
@@ -95,9 +97,6 @@ let composerResizeObserver: ResizeObserver | null = null
 let klipySearchTimer: ReturnType<typeof setTimeout> | null = null
 let forwardSearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
-let klipyFeedLastScrollTop = 0
-let klipyFeedLoadArmed = true
-let klipyFeedLoadCooldownUntil = 0
 
 const KLIPY_RAIL_PAGE_SIZE = 24
 
@@ -136,12 +135,6 @@ function resetKlipyAudienceMode() {
   klipyAudienceMode.gif = 'mine'
 }
 
-function resetKlipyFeedPaging() {
-  klipyFeedLastScrollTop = 0
-  klipyFeedLoadArmed = true
-  klipyFeedLoadCooldownUntil = 0
-}
-
 async function ensureKlipyFeedScrollable() {
   if (!composerMediaMenuVisible.value || activeKlipyAudience.value !== 'mine' || !canLoadMoreKlipyItems.value) {
     return
@@ -157,107 +150,6 @@ async function ensureKlipyFeedScrollable() {
     attempts += 1
     await klipy.loadMore(KLIPY_RAIL_PAGE_SIZE)
     await nextTick()
-  }
-}
-
-function buildLoopedFeed<T>(items: T[]) {
-  if (items.length <= 1) {
-    return items
-  }
-
-  return [...items, ...items, ...items]
-}
-
-function primeLoopedRailPosition(element: HTMLElement | null) {
-  if (!element || element.dataset.loopReady === 'true') {
-    return
-  }
-
-  const segmentWidth = element.scrollWidth / 3
-  if (!segmentWidth) {
-    return
-  }
-
-  element.scrollLeft = segmentWidth
-  element.dataset.loopReady = 'true'
-}
-
-function primeLoopedFeedPosition(element: HTMLElement | null) {
-  if (!element || element.dataset.loopReady === 'true') {
-    return
-  }
-
-  const segmentHeight = element.scrollHeight / 3
-  if (!segmentHeight) {
-    return
-  }
-
-  element.scrollTop = segmentHeight
-  element.dataset.loopReady = 'true'
-}
-
-async function handleLoopedRailScroll(event: Event, options: { looped: boolean; canLoadMore?: boolean; onLoadMore?: () => Promise<void> | void }) {
-  const element = event.currentTarget as HTMLElement | null
-  if (!element) {
-    return
-  }
-
-  if (options.looped) {
-    const segmentWidth = element.scrollWidth / 3
-    if (segmentWidth > 0) {
-      if (element.scrollLeft < segmentWidth * 0.35) {
-        element.scrollLeft += segmentWidth
-      } else if (element.scrollLeft > segmentWidth * 1.65) {
-        element.scrollLeft -= segmentWidth
-      }
-    }
-  }
-
-  const remaining = element.scrollWidth - element.clientWidth - element.scrollLeft
-  if (options.canLoadMore && remaining < 320 && options.onLoadMore) {
-    await options.onLoadMore()
-  }
-}
-
-async function handleLoopedFeedScroll(event: Event, options: { looped: boolean; canLoadMore?: boolean; onLoadMore?: () => Promise<void> | void }) {
-  const element = event.currentTarget as HTMLElement | null
-  if (!element) {
-    return
-  }
-
-  const currentScrollTop = element.scrollTop
-  const isScrollingDown = currentScrollTop >= klipyFeedLastScrollTop - 4
-  klipyFeedLastScrollTop = currentScrollTop
-
-  if (options.looped) {
-    const segmentHeight = element.scrollHeight / 3
-    if (segmentHeight > 0) {
-      if (element.scrollTop < segmentHeight * 0.35) {
-        element.scrollTop += segmentHeight
-      } else if (element.scrollTop > segmentHeight * 1.65) {
-        element.scrollTop -= segmentHeight
-      }
-    }
-  }
-
-  const remaining = element.scrollHeight - element.clientHeight - element.scrollTop
-  const loadThreshold = Math.max(120, Math.min(220, element.clientHeight * 0.38))
-
-  if (remaining > loadThreshold * 1.6) {
-    klipyFeedLoadArmed = true
-  }
-
-  if (
-    options.canLoadMore
-    && options.onLoadMore
-    && klipyFeedLoadArmed
-    && isScrollingDown
-    && remaining <= loadThreshold
-    && Date.now() >= klipyFeedLoadCooldownUntil
-  ) {
-    klipyFeedLoadArmed = false
-    klipyFeedLoadCooldownUntil = Date.now() + 280
-    await options.onLoadMore()
   }
 }
 
