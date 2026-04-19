@@ -1,0 +1,16 @@
+[Unit]
+Description=Claude CLI task queue daemon (worker-pool scheduler)
+After=default.target
+
+[Service]
+Type=simple
+Environment="POOL_SIZE=8"
+Environment="POLL_INTERVAL=10"
+ExecStart=/bin/bash %h/bin/claude-queue-daemon
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:%h/log/queue-daemon.log
+StandardError=append:%h/log/queue-daemon.log
+
+[Install]
+WantedBy=default.target
