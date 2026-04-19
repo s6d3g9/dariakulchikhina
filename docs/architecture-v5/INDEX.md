@@ -29,6 +29,10 @@
 22. [Skill Bundles — per-kind плагины для воркеров](./22-skill-bundles.md)
 21. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
 
+## Операционные шаблоны
+
+[Task Templates](../task-templates/README.md) — canonical TASK.md templates for the composer → orchestrator → workers pipeline. Includes feature, bug, refactor, and tests templates with acceptance criteria, architectural guardrails, and v5 doc references. See [§22 Skill Bundles](./22-skill-bundles.md) for how `kind:` field routes tasks to the right worker and skill bundle.
+
 ## Операционные отчеты
 1. [Refactor tail report](./refactor-tail-report.md)
 2. [Server audit report](./server-audit-report.md)

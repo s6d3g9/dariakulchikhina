@@ -99,12 +99,23 @@ function validateIndex(allFiles) {
   }
 
   // Every link `./NN-name.md` in INDEX.md must point at an existing file.
-  const linkRe = /\.\/([^)\s]+\.md)/g
+  // Use negative lookbehind to avoid matching the second dot in `../`
+  const linkRe = /(?<!\.)\.\/([^)\s]+\.md)/g
   for (const m of content.matchAll(linkRe)) {
     const referenced = m[1]
     const abs = join(DOCS_DIR, referenced)
     if (!existsSync(abs)) {
       issues.push(`INDEX.md: broken link ./${referenced}`)
+    }
+  }
+
+  // Also check for `../` links (e.g., to sibling directories like ../task-templates/)
+  const upLinkRe = /\.\.\/?([^)\s]+\.md)/g
+  for (const m of content.matchAll(upLinkRe)) {
+    const referenced = m[1]
+    const abs = join(DOCS_DIR, '..', referenced)
+    if (!existsSync(abs)) {
+      issues.push(`INDEX.md: broken link ../${referenced}`)
     }
   }
 
