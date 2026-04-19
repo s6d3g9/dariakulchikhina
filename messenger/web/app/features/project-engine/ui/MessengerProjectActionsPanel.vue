@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionSearch from './action-search/ActionSearch.vue'
 import type {
   MessengerPlatformActionCatalog,
   MessengerPlatformProjectSummary,
@@ -77,7 +78,6 @@ const rangeStart = ref('')
 const rangeEnd = ref('')
 const detailsText = ref('')
 const formError = ref('')
-const actionSearch = ref('')
 const projectSearch = ref('')
 const selectedCategory = ref<ProjectActionCategoryGroup['category'] | ''>('')
 const scopeParticipantName = ref('')
@@ -87,7 +87,6 @@ const scopeSettingsDraft = ref<Record<string, unknown>>({})
 
 const allActions = computed(() => props.groups.flatMap(group => group.actions))
 const currentAction = computed(() => allActions.value.find(action => action.id === props.selectedActionId) || null)
-const normalizedActionSearch = computed(() => actionSearch.value.trim().toLowerCase())
 const normalizedProjectSearch = computed(() => projectSearch.value.trim().toLowerCase())
 const selectedProjectLabel = computed(() => {
   return props.catalog?.project.title
@@ -95,7 +94,6 @@ const selectedProjectLabel = computed(() => {
     || props.selectedProjectSlug
     || 'Проект'
 })
-const searchChipLabel = computed(() => actionSearch.value.trim() || 'Поиск')
 const activeProjectCatalog = computed(() => {
   if (!props.catalog || props.catalog.project.slug !== props.selectedProjectSlug) {
     return null
@@ -455,51 +453,6 @@ const submitLabel = computed(() => {
   return isDirectMutationAction.value ? 'Выполнить и добавить в чат' : 'Добавить в чат'
 })
 
-const filteredCategoryGroups = computed(() => {
-  const query = normalizedActionSearch.value
-
-  return props.groups
-    .map((group) => {
-      const categoryMatches = matchesText(group.label, query)
-      const visibleActions = (!query || categoryMatches)
-        ? group.actions
-        : group.actions.filter(action => matchesActionSearch(action, query))
-
-      if (query && !categoryMatches && !visibleActions.length) {
-        return null
-      }
-
-      return {
-        ...group,
-        visibleActions,
-        preview: visibleActions.slice(0, 2).map(action => action.label).join(' · '),
-      }
-    })
-    .filter(Boolean) as Array<ProjectActionCategoryGroup & {
-      visibleActions: ProjectActionDefinition[]
-      preview: string
-    }>
-})
-
-const selectedCategoryGroup = computed(() => {
-  return props.groups.find(group => group.category === selectedCategory.value) || null
-})
-
-const selectedCategoryActions = computed(() => {
-  const group = selectedCategoryGroup.value
-  const query = normalizedActionSearch.value
-
-  if (!group) {
-    return []
-  }
-
-  if (!query || matchesText(group.label, query)) {
-    return group.actions
-  }
-
-  return group.actions.filter(action => matchesActionSearch(action, query))
-})
-
 const canSubmit = computed(() => {
   if (!currentAction.value || !props.selectedProjectSlug || props.catalogPending || Boolean(props.pendingAction)) {
     return false
@@ -598,14 +551,6 @@ function matchesText(value: string | undefined, query: string) {
   return value?.toLowerCase().includes(query) || false
 }
 
-function matchesActionSearch(action: ProjectActionDefinition, query: string) {
-  if (!query) {
-    return true
-  }
-
-  return [action.label, action.description].some(text => matchesText(text, query))
-}
-
 function projectMatchesSearch(project: MessengerPlatformProjectSummary, query: string) {
   return [
     project.title,
@@ -700,18 +645,6 @@ function primeDefaults() {
   }
 }
 
-function handleActionClick(action: ProjectActionDefinition) {
-  activeSubjectContextId.value = ''
-  closeUtilityPanes()
-
-  const parentGroup = props.groups.find(group => group.actions.some(candidate => candidate.id === action.id))
-  if (parentGroup) {
-    selectedCategory.value = parentGroup.category
-  }
-
-  emit('selectAction', props.selectedActionId === action.id ? null : action.id)
-}
-
 function openSubjectAction(subjectId: string, action: ProjectActionDefinition) {
   activeSubjectContextId.value = subjectId
   selectedSubjectId.value = subjectId
@@ -730,15 +663,11 @@ function openSubjectAction(subjectId: string, action: ProjectActionDefinition) {
   emit('selectAction', action.id)
 }
 
-function clearCategorySelection() {
-  resetCategorySelection()
-}
-
 function selectCategory(category: ProjectActionCategoryGroup['category']) {
   closeUtilityPanes()
 
   if (selectedCategory.value === category) {
-    clearCategorySelection()
+    resetCategorySelection()
     return
   }
 
@@ -1084,7 +1013,7 @@ watch(selectedTask, (task) => {
           <p v-else-if="!filteredProjectItems.length" class="pa-empty-state">По этому запросу проекты не найдены.</p>
         </section>
 
-        <section v-if="showSearchPane" class="pa-pane pa-pane--search">
+        <section v-if="searchPanelOpen" class="pa-pane pa-pane--search">
           <VTextField
             v-model="actionSearch"
             class="pa-search-field"
@@ -1676,106 +1605,18 @@ watch(selectedTask, (task) => {
         <span class="pa-base-chip__label">{{ selectedProjectLabel }}</span>
       </button>
 
-      <button
-        type="button"
-        class="pa-base-chip"
-        :class="{ 'pa-base-chip--active': showSearchPane, 'pa-base-chip--compact': !actionSearch.trim() }"
-        @click="toggleSearchPane"
-      >
-        <VIcon icon="mdi-magnify" size="16" />
-        <span class="pa-base-chip__label">{{ searchChipLabel }}</span>
-      </button>
-
-      <div class="pa-base__rail">
-        <div class="pa-base__scroll">
-          <button
-            v-if="selectedCategoryGroup"
-            type="button"
-            class="pa-rail-chip pa-rail-chip--ghost"
-            @click="clearCategorySelection"
-          >
-            <VIcon icon="mdi-arrow-left" size="16" />
-            <span>Категории</span>
-          </button>
-
-          <template v-if="selectedCategoryGroup && selectedCategoryActions.length">
-            <button
-              v-for="action in selectedCategoryActions"
-              :key="action.id"
-              type="button"
-              class="pa-rail-chip"
-              :class="{
-                'pa-rail-chip--active': props.selectedActionId === action.id,
-                'pa-rail-chip--pending': props.pendingAction === action.id,
-              }"
-              :disabled="Boolean(props.pendingAction)"
-              @click="handleActionClick(action)"
-            >
-              <VIcon :icon="action.icon" size="16" />
-              <span>{{ action.label }}</span>
-            </button>
-          </template>
-
-          <template v-else-if="!selectedCategoryGroup">
-            <button
-              v-if="canShowProjectOverview"
-              type="button"
-              class="pa-rail-chip"
-              :class="{ 'pa-rail-chip--active': showTimelinePane }"
-              :disabled="!canUseCatalogFeatures"
-              @click="toggleOverviewPane('timeline')"
-            >
-              <VIcon icon="mdi-chart-timeline-variant" size="16" />
-              <span>Таймлайн</span>
-              <span class="pa-rail-chip__count">{{ timelineChipCount }}</span>
-            </button>
-
-            <button
-              v-if="canShowProjectOverview"
-              type="button"
-              class="pa-rail-chip"
-              :class="{ 'pa-rail-chip--active': showSprintsPane }"
-              :disabled="!canUseCatalogFeatures"
-              @click="toggleOverviewPane('sprints')"
-            >
-              <VIcon icon="mdi-flag-outline" size="16" />
-              <span>Спринты</span>
-              <span class="pa-rail-chip__count">{{ sprintChipCount }}</span>
-            </button>
-
-            <button
-              v-if="canShowProjectOverview && subjectChipCount"
-              type="button"
-              class="pa-rail-chip"
-              :class="{ 'pa-rail-chip--active': showSubjectsPane }"
-              :disabled="!canUseCatalogFeatures"
-              @click="toggleOverviewPane('subjects')"
-            >
-              <VIcon icon="mdi-account-group-outline" size="16" />
-              <span>Субъекты</span>
-              <span class="pa-rail-chip__count">{{ subjectChipCount }}</span>
-            </button>
-
-            <button
-              v-for="group in filteredCategoryGroups"
-              :key="group.category"
-              type="button"
-              class="pa-rail-chip"
-              :class="{ 'pa-rail-chip--active': selectedCategory === group.category }"
-              :disabled="Boolean(props.pendingAction) || !canUseCatalogFeatures"
-              @click="selectCategory(group.category)"
-            >
-              <VIcon :icon="group.icon" size="16" />
-              <span>{{ group.label }}</span>
-              <span class="pa-rail-chip__count">{{ group.visibleActions.length }}</span>
-            </button>
-          </template>
-
-          <span v-else class="pa-base__empty">
-            {{ selectedCategoryGroup ? 'Нет действий' : 'Ничего не найдено' }}
-          </span>
-        </div>
-      </div>
+      <ActionSearch
+        :groups="props.groups"
+        :selected-action-id="props.selectedActionId"
+        :pending-action="props.pendingAction"
+        :show-search-pane="searchPanelOpen"
+        :selected-category="selectedCategory"
+        :can-use-catalog-features="canUseCatalogFeatures"
+        @toggle-search-pane="toggleSearchPane"
+        @select-category="selectCategory"
+        @clear-category-selection="resetCategorySelection"
+        @select-action="emit('selectAction', $event)"
+      />
 
       <button type="button" class="pa-base-icon" aria-label="Закрыть" @click="emit('close')">
         <VIcon icon="mdi-close" size="18" />
