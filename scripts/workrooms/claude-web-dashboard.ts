@@ -60,6 +60,7 @@ function isOrchestratorSlug(slug) {
 
 const QUEUE_DIRS = ['pending', 'running', 'done', 'failed'];
 const QUEUE_ROOT = join(HOME, 'state/queue');
+const WORKROOMS_ROOT = join(HOME, 'workrooms');
 
 // Returns the body of a TASK.md (strips YAML frontmatter) and a frontmatter dict.
 function parseTaskFile(file) {
@@ -163,6 +164,79 @@ async function computeDependencyEdges() {
 
 const MAX_SUBSCRIPTION_BUDGET_USD = 200; // Anthropic Max tier
 const CTX_WINDOW_LIMIT = 200_000;        // claude-sonnet-4-6 / haiku-4-5
+
+// Find the TASK.md associated with a session slug. Checked in priority order:
+// 1) live workroom  2) queue/{running,pending,done,failed}/<slug>.md
+function findTaskFile(slug) {
+  const live = join(WORKROOMS_ROOT, slug, 'TASK.md');
+  if (existsSync(live)) return { path: live, location: 'workroom' };
+  for (const dir of QUEUE_DIRS) {
+    const f = join(QUEUE_ROOT, dir, `${slug}.md`);
+    if (existsSync(f)) return { path: f, location: `queue/${dir}` };
+  }
+  return null;
+}
+
+// Extract file-touch events from a session log. We look for tool_use entries
+// with Edit/Write/Read/MultiEdit inputs and aggregate per path.
+function collectSessionFiles(logPath, limit = 80) {
+  if (!existsSync(logPath)) return [];
+  let content;
+  try { content = readFileSync(logPath, 'utf8'); } catch { return []; }
+  const files = new Map(); // path → { path, ops, count, lastAt }
+  const lines = content.split('\n');
+  let turnIdx = 0;
+  for (const ln of lines) {
+    if (!ln) continue;
+    let e;
+    try { e = JSON.parse(ln); } catch { continue; }
+    if (e.type === 'assistant' && Array.isArray(e.message?.content)) {
+      for (const c of e.message.content) {
+        if (c.type !== 'tool_use') continue;
+        const name = c.name || '';
+        const input = c.input || {};
+        let fp = input.file_path || input.path || input.notebook_path || null;
+        if (!fp && name === 'Bash' && typeof input.command === 'string') {
+          // mine likely file args from Bash commands (best-effort)
+          const m = input.command.match(/(?:^|\s)([\w./-]+\.(?:ts|tsx|js|vue|md|json|sql|sh|py|yml|yaml))/);
+          if (m) fp = m[1];
+        }
+        if (!fp) continue;
+        const ops = files.get(fp) || { path: fp, ops: {}, count: 0, lastAt: turnIdx };
+        ops.ops[name] = (ops.ops[name] || 0) + 1;
+        ops.count += 1;
+        ops.lastAt = turnIdx;
+        files.set(fp, ops);
+      }
+    }
+    turnIdx++;
+  }
+  const arr = [...files.values()];
+  // Sort by recency desc, keep the latest N.
+  arr.sort((a, b) => b.lastAt - a.lastAt);
+  return arr.slice(0, limit);
+}
+
+function collectSessionContext(slug) {
+  const taskFile = findTaskFile(slug);
+  let task = null;
+  if (taskFile) {
+    const parsed = parseTaskFile(taskFile.path);
+    task = {
+      id: parsed.fm.id || slug,
+      model: parsed.fm.model || '',
+      priority: parsed.fm.priority || '',
+      depends_on: parsed.fm.depends_on || '',
+      body: (parsed.body || '').slice(0, 4000),
+      location: taskFile.location,
+    };
+  }
+  const activeLog = sessionLogPath(slug);
+  const archiveLog = join(ARCHIVE_DIR, `${slug}.log`);
+  const lp = existsSync(activeLog) ? activeLog : archiveLog;
+  const files = collectSessionFiles(lp);
+  return { task, files };
+}
 
 const PORT = Number(process.argv.includes('--port') ? process.argv[process.argv.indexOf('--port') + 1] : 9090);
 const BASIC_USER = process.env.DASHBOARD_USER || '';
@@ -585,6 +659,15 @@ async function handle(req, res) {
     return;
   }
 
+  // ── session context (TASK.md + files touched) ──
+  const ctxM = p.match(/^\/api\/sessions\/([a-z0-9-]+)\/context$/);
+  if (ctxM && req.method === 'GET') {
+    const slug = ctxM[1];
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(collectSessionContext(slug)));
+    return;
+  }
+
   // ── SSE stream (all sessions on one connection; client filters) ──
   if (p === '/api/stream' && req.method === 'GET') {
     res.writeHead(200, {
@@ -691,12 +774,39 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .nav-row .toggle-btn{font-size:11px;padding:.2rem .5rem;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--mute);cursor:pointer}
   .nav-row .toggle-btn.active{color:var(--accent);border-color:var(--accent)}
   .nav-row .toggle-btn:hover{color:var(--ink)}
-  main{display:grid;grid-template-columns:minmax(240px,300px) 1fr;height:calc(100vh - 100px)}
+  main{display:grid;grid-template-columns:minmax(240px,300px) 1fr minmax(240px,320px);height:calc(100vh - 100px)}
   .side{border-right:1px solid var(--line);padding:.8rem;overflow-y:auto;background:var(--panel)}
-  .side dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12px}
-  .side dt{color:var(--mute)}
-  .side dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
-  .side h3{margin:1rem 0 .3rem;font-size:11px;color:var(--mute);letter-spacing:.5px;text-transform:uppercase}
+  .right-side{border-left:1px solid var(--line);padding:.8rem;overflow-y:auto;background:var(--panel)}
+  .side dl, .right-side dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12px}
+  .side dt, .right-side dt{color:var(--mute)}
+  .side dd, .right-side dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+  .side h3, .right-side h3{margin:1rem 0 .3rem;font-size:11px;color:var(--mute);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+  .model-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;border:1px solid currentColor;background:rgba(255,255,255,0.03)}
+  .model-pill.opus{color:#c4b5fd}
+  .model-pill.sonnet{color:#7cc4ff}
+  .model-pill.haiku{color:#4ade80}
+  .model-pill .glyph{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 4px currentColor}
+  .plan-card{background:#0f1419;border:1px solid var(--line);border-radius:6px;padding:.6rem .8rem;margin-bottom:.8rem}
+  .plan-card h4{margin:0 0 .4rem;font-size:10px;color:var(--mute);letter-spacing:.5px;text-transform:uppercase;font-weight:normal}
+  .plan-row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-top:.3rem}
+  .plan-row .k{color:var(--mute)}
+  .plan-row .v{font-variant-numeric:tabular-nums}
+  .plan-bar{width:100%;height:3px;background:#1a1f26;border-radius:2px;overflow:hidden;margin-top:2px}
+  .plan-bar > i{display:block;height:100%;background:var(--accent);transition:width .4s}
+  .plan-bar > i.warn{background:var(--warn)}
+  .plan-bar > i.err{background:var(--err)}
+  .file-list{margin-top:.3rem;display:flex;flex-direction:column;gap:2px;font-size:11px;max-height:40vh;overflow-y:auto}
+  .file-row{display:flex;align-items:center;gap:6px;padding:2px 4px;border-radius:3px;white-space:nowrap}
+  .file-row:hover{background:#1a1f26}
+  .file-row .ops{display:flex;gap:2px;flex-shrink:0}
+  .file-row .op{display:inline-block;width:14px;text-align:center;border-radius:2px;font-size:9px;font-weight:600}
+  .file-row .op.R{background:#1e3a5f;color:#7cc4ff}
+  .file-row .op.W{background:#3a1e1e;color:#f87171}
+  .file-row .op.E{background:#3a2f1e;color:#fbbf24}
+  .file-row .op.M{background:#3a1e3a;color:#c4b5fd}
+  .file-row .op.B{background:#2a2a2a;color:var(--mute)}
+  .file-row .path{overflow:hidden;text-overflow:ellipsis;flex:1;color:var(--ink);font-family:ui-monospace,monospace}
+  .task-body{font-size:11px;color:var(--mute);line-height:1.45;white-space:pre-wrap;max-height:28vh;overflow-y:auto;background:#0a0d11;padding:.5rem;border-radius:4px;border:1px solid var(--line);font-family:ui-monospace,monospace}
   .content{padding:.6rem 1rem;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem}
   .log{flex:1;background:#06080a;border:1px solid var(--line);border-radius:4px;padding:.5rem;overflow-y:auto;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5}
   .log .assistant{color:#e5e7eb}
@@ -736,6 +846,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 <main>
   <aside class="side" id="side"><div class="placeholder">pick a tab</div></aside>
   <section class="content" id="content"><div class="placeholder">no session selected</div></section>
+  <aside class="right-side" id="right-side"><div class="placeholder">select a session</div></aside>
 </main>
 <script>
 (() => {
@@ -746,6 +857,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   const archiveRowEl = document.getElementById('nav-archive');
   const sideEl = document.getElementById('side');
   const contentEl = document.getElementById('content');
+  const rightSideEl = document.getElementById('right-side');
 
   const fmt = (n, d=0) => Number(n||0).toLocaleString(undefined,{maximumFractionDigits:d});
   const fmtUsd = n => '$' + Number(n||0).toFixed(2);
@@ -774,13 +886,29 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     return m.state || (s.archived ? 'archived' : 'idle');
   }
 
+  function modelClass(model) {
+    const m = String(model || '').toLowerCase();
+    if (m.includes('opus')) return 'opus';
+    if (m.includes('haiku')) return 'haiku';
+    return 'sonnet';
+  }
+  function modelShort(model) {
+    const m = String(model || '').toLowerCase();
+    if (m.includes('opus')) return 'opus';
+    if (m.includes('haiku')) return 'haiku';
+    if (m.includes('sonnet')) return 'sonnet';
+    return model || '?';
+  }
   function makeTabEl(s) {
     const m = state.metrics[s.slug] || {};
     const st = displayState(s, m);
     const t = document.createElement('div');
     t.className = 'tab' + (state.active === s.slug ? ' active' : '') + (s.archived ? ' archived' : '');
     t.dataset.slug = s.slug;
-    t.innerHTML = '<span class="dot ' + st + '"></span><span>' + s.slug + '</span>' +
+    const mc = modelClass(s.model);
+    t.innerHTML = '<span class="dot ' + st + '"></span>' +
+                  '<span>' + s.slug + '</span>' +
+                  '<span class="model-pill ' + mc + '" style="padding:1px 6px;font-size:9px"><span class="glyph"></span>' + modelShort(s.model) + '</span>' +
                   '<small style="color:var(--mute)">[' + st + ']</small>';
     t.onclick = () => selectTab(s.slug);
     t.onmouseenter = () => { state.hoveredSlug = s.slug; drawDeps(); };
@@ -875,6 +1003,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       const { dep, x1, y1, x2, y2, laneY } = p;
       const color = chainColor(dep.kind, chainOf(dep.to));
       const safeId = 'arr-' + color.replace(/[^a-z0-9]/gi, '');
+      const safeIdStart = 'arrS-' + color.replace(/[^a-z0-9]/gi, '');
       if (!markerIds.has(safeId)) {
         markerIds.add(safeId);
         const m = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
@@ -890,6 +1019,21 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
         t.setAttribute('fill', color);
         m.appendChild(t);
         defs.appendChild(m);
+        // Reverse-facing marker for bidirectional (spawned) edges:
+        // parent dispatched the task AND the child returns results.
+        const mS = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        mS.setAttribute('id', safeIdStart);
+        mS.setAttribute('viewBox', '0 0 10 10');
+        mS.setAttribute('refX', '2');
+        mS.setAttribute('refY', '5');
+        mS.setAttribute('markerWidth', '6');
+        mS.setAttribute('markerHeight', '6');
+        mS.setAttribute('orient', 'auto-start-reverse');
+        const tS = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        tS.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+        tS.setAttribute('fill', color);
+        mS.appendChild(tS);
+        defs.appendChild(mS);
       }
 
       // Ortho path with rounded corners:
@@ -898,6 +1042,9 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       const sign = goRight ? 1 : -1;
       const stop = 7;                          // stop short for arrowhead
       const y2stop = (y2 - stop);
+      // For bidirectional (spawned) edges, also stop short at the source
+      // so the reverse arrowhead doesn't overlap the tab.
+      const y1start = dep.kind === 'spawned' ? y1 + stop : y1;
 
       const c1x = x1, c1y = laneY - R;
       const c2x = x1 + sign * R, c2y = laneY;
@@ -906,7 +1053,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 
       // Build path
       const d = [
-        'M', x1, y1,
+        'M', x1, y1start,
         'L', c1x, c1y,
         // 90° corner at (x1, laneY)
         'Q', x1, laneY, c2x, c2y,
@@ -923,6 +1070,10 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       path.setAttribute('stroke', color);
       path.setAttribute('style', 'color:' + color);
       path.setAttribute('marker-end', 'url(#' + safeId + ')');
+      // For orchestrator→worker (spawned) edges, also draw a reverse arrow at
+      // the source. Visualizes the bidirectional relationship — parent
+      // dispatches the task, child will return its result back.
+      if (dep.kind === 'spawned') path.setAttribute('marker-start', 'url(#' + safeIdStart + ')');
       const touched = !hover || hover === dep.from || hover === dep.to;
       path.setAttribute('class', 'dep-line' + (touched ? '' : ' dim') + (hover && touched ? ' highlight' : ''));
       if (dep.kind === 'spawned') path.setAttribute('stroke-dasharray', '3 5');
@@ -1016,11 +1167,25 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     const ctxPct = Math.min(100, (m.lastTurnContextUsed / state.status.ctxLimit) * 100);
     const ctxPctRaw = (m.lastTurnContextUsed / state.status.ctxLimit) * 100;
     const pctColor = ctxPctRaw > 85 ? 'var(--err)' : ctxPctRaw > 60 ? 'var(--warn)' : 'var(--accent)';
+    const ctxBarClass = ctxPctRaw > 85 ? 'err' : ctxPctRaw > 60 ? 'warn' : '';
+    const mc = modelClass(s.model);
+    const monthPct = Math.min(100, (state.status.monthCostUsd / state.status.monthBudgetUsd) * 100);
+    const monthBarClass = monthPct > 85 ? 'err' : monthPct > 60 ? 'warn' : '';
     sideEl.innerHTML = \`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem">
+        <span class="model-pill \${mc}"><span class="glyph"></span>\${s.model || '?'}</span>
+        <span style="color:var(--mute);font-size:11px">\${m.state}</span>
+      </div>
+      <div class="plan-card">
+        <h4>plan usage</h4>
+        <div class="plan-row"><span class="k">context window</span><span class="v">\${fmt(m.lastTurnContextUsed)} / \${fmt(state.status.ctxLimit)} (\${ctxPct.toFixed(0)}%)</span></div>
+        <div class="plan-bar"><i class="\${ctxBarClass}" style="width:\${ctxPct}%"></i></div>
+        <div class="plan-row"><span class="k">cost · this month</span><span class="v">\${fmtUsd(state.status.monthCostUsd)} / \${fmtUsd(state.status.monthBudgetUsd)} (\${monthPct.toFixed(0)}%)</span></div>
+        <div class="plan-bar"><i class="\${monthBarClass}" style="width:\${monthPct}%"></i></div>
+        <div class="plan-row"><span class="k">session cost</span><span class="v">\${fmtUsd(m.totalCostUsd)} · \${m.turns || 0} turns</span></div>
+      </div>
       <dl>
         <dt>slug</dt><dd>\${s.slug}</dd>
-        <dt>state</dt><dd>\${m.state}</dd>
-        <dt>model</dt><dd>\${s.model}</dd>
         <dt>workroom</dt><dd>\${s.workroom || '–'}</dd>
         <dt>uuid</dt><dd style="font-size:10px;color:var(--mute)">\${s.uuid.slice(0,8)}…</dd>
         <dt>created</dt><dd style="font-size:11px">\${s.created.slice(0,19).replace('T',' ')}</dd>
@@ -1084,6 +1249,43 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       delete renderCache[slug];
       refresh();
     };
+  }
+
+  async function renderRightSide(slug) {
+    if (!slug) { rightSideEl.innerHTML = '<div class="placeholder">select a session</div>'; return; }
+    try {
+      const r = await fetch('/api/sessions/'+slug+'/context');
+      const ctx = await r.json();
+      const esc = s => String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+      const taskHtml = ctx.task ? \`
+        <h3>task <span style="color:var(--mute);font-weight:normal">· \${esc(ctx.task.location)}</span></h3>
+        <dl>
+          <dt>id</dt><dd>\${esc(ctx.task.id)}</dd>
+          \${ctx.task.model ? '<dt>model</dt><dd>'+esc(ctx.task.model)+'</dd>' : ''}
+          \${ctx.task.priority ? '<dt>priority</dt><dd>'+esc(ctx.task.priority)+'</dd>' : ''}
+          \${ctx.task.depends_on ? '<dt>depends_on</dt><dd style="font-size:11px">'+esc(ctx.task.depends_on)+'</dd>' : ''}
+        </dl>
+        <div class="task-body" style="margin-top:.4rem">\${esc(ctx.task.body)}</div>
+      \` : '<h3>task</h3><div style="color:var(--mute);font-size:11px">no TASK.md found (workroom cleaned / not a queue task)</div>';
+      const opBadge = (name, count) => {
+        const short = { Read:'R', Write:'W', Edit:'E', MultiEdit:'M', NotebookEdit:'M', Bash:'B' }[name] || name[0];
+        return '<span class="op '+short+'" title="'+esc(name)+' ×'+count+'">'+short+'</span>';
+      };
+      const filesHtml = (ctx.files && ctx.files.length) ? \`
+        <h3>files touched <span style="color:var(--mute);font-weight:normal">\${ctx.files.length}</span></h3>
+        <div class="file-list">
+          \${ctx.files.map(f => \`
+            <div class="file-row" title="\${esc(f.path)} · \${f.count} ops">
+              <span class="ops">\${Object.entries(f.ops).map(([n,c]) => opBadge(n,c)).join('')}</span>
+              <span class="path">\${esc(f.path)}</span>
+            </div>
+          \`).join('')}
+        </div>
+      \` : '<h3>files touched</h3><div style="color:var(--mute);font-size:11px">none yet</div>';
+      rightSideEl.innerHTML = taskHtml + filesHtml;
+    } catch (e) {
+      rightSideEl.innerHTML = '<div class="placeholder">failed to load context</div>';
+    }
   }
 
   const renderCache = {};
@@ -1158,6 +1360,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     state.active = slug;
     renderTabs();
     renderSide(slug);
+    renderRightSide(slug);
     delete renderCache[slug]; // force reload log on tab click
     renderContent(slug);
   }
@@ -1173,8 +1376,8 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       state.active = state.sessions[0]?.slug || null;
     }
     renderTabs();
-    if (state.active) { renderSide(state.active); renderContent(state.active); }
-    else { sideEl.innerHTML = '<div class="placeholder">no session selected</div>'; contentEl.innerHTML = '<div class="placeholder">no session selected</div>'; }
+    if (state.active) { renderSide(state.active); renderContent(state.active); renderRightSide(state.active); }
+    else { sideEl.innerHTML = '<div class="placeholder">no session selected</div>'; contentEl.innerHTML = '<div class="placeholder">no session selected</div>'; rightSideEl.innerHTML = '<div class="placeholder">no session selected</div>'; }
     await fetchDeps();
     requestAnimationFrame(drawDeps);
   }
@@ -1246,6 +1449,9 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     }
     if (wasAtBottom) logBox.scrollTop = logBox.scrollHeight;
   }
+
+  // Periodic right-side refresh (tool_use events trickle in over time).
+  setInterval(() => { if (state.active) renderRightSide(state.active); }, 5000);
 
   // SSE
   const sse = new EventSource('/api/stream');
