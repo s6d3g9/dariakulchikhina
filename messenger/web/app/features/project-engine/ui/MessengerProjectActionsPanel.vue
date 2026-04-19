@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RangeSelector from './builder/RangeSelector.vue'
 import type {
   MessengerPlatformActionCatalog,
   MessengerPlatformProjectSummary,
@@ -1628,24 +1629,13 @@ watch(selectedTask, (task) => {
               hide-details
             />
 
-            <div v-if="usesRangeSelection" class="pa-range-row pa-field-block--full">
-              <VTextField
-                v-model="rangeStart"
-                type="date"
-                variant="outlined"
-                density="comfortable"
-                label="Начало"
-                hide-details
-              />
-              <VTextField
-                v-model="rangeEnd"
-                type="date"
-                variant="outlined"
-                density="comfortable"
-                label="Конец"
-                hide-details
-              />
-            </div>
+            <RangeSelector
+              v-if="usesRangeSelection"
+              :model-start-value="rangeStart"
+              :model-end-value="rangeEnd"
+              @update:start-value="rangeStart = $event"
+              @update:end-value="rangeEnd = $event"
+            />
 
             <VTextarea
               v-model="detailsText"
@@ -1989,10 +1979,6 @@ watch(selectedTask, (task) => {
   white-space: nowrap;
 }
 
-.pa-range-row {
-  display: grid;
-  gap: 10px;
-}
 
 .pa-sprint-list {
   display: grid;
@@ -2362,8 +2348,7 @@ watch(selectedTask, (task) => {
     width: 40px;
   }
 
-  .pa-form-grid,
-  .pa-range-row {
+  .pa-form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2395,11 +2380,6 @@ watch(selectedTask, (task) => {
 
   .pa-base-chip {
     max-width: 176px;
-  }
-
-  .pa-range-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
   }
 }
 
