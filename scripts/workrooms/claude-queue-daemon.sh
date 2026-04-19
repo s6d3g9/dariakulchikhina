@@ -162,8 +162,9 @@ complete_task() {
     fi
     mv "$task_file" "$QUEUE_DIR/done/"
     # Auto-archive the session so the main dashboard shows only live work.
-    # The workroom git worktree stays (needed for merge); only the tmux
-    # window + session log are moved into archive/.
+    # Tmux window + session log are moved into archive/. The workroom
+    # git worktree is removed now that the branch is safely on origin —
+    # slots are finite (50 max) and leaking them stalls the pipeline.
     local session_slug="$workroom_slug"
     if grep -q "^${session_slug}	" "$HOME/state/claude-sessions/.registry.tsv" 2>/dev/null; then
       local arch_dir="$HOME/state/claude-sessions/archive"
@@ -185,6 +186,15 @@ complete_task() {
           mv "$HOME/state/claude-sessions/${session_slug}.json" "$arch_dir/${session_slug}.json"
         tmux kill-window -t "cc:cc-${session_slug}" 2>/dev/null || true
         log "[complete] auto-archived session $session_slug"
+      fi
+    fi
+    # Release the workroom slot: remove worktree + branch ref. Safe because
+    # the branch is pushed to origin by the push step above.
+    if [ -d "$workroom_path" ]; then
+      if "$HOME/bin/workroom" remove "$workroom_slug" >> "$LOG_FILE" 2>&1; then
+        log "[complete] removed workroom $workroom_slug"
+      else
+        log "[complete] workroom remove failed for $workroom_slug (slot may leak)"
       fi
     fi
   else
