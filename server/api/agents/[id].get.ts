@@ -1,4 +1,4 @@
-import { requireAdmin } from '~/server/utils/auth'
+import { requireAdmin } from '~/server/modules/auth/session.service'
 import { getAgent } from '~/server/modules/agent-registry/agent-registry.service'
 
 export default defineEventHandler(async (event) => {

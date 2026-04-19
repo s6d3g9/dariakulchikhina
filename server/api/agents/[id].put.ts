@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { requireAdmin } from '~/server/utils/auth'
+import { requireAdmin } from '~/server/modules/auth/session.service'
 import { updateAgentById } from '~/server/modules/agent-registry/agent-registry.service'
 
 const UpdateAgentSchema = z.object({
