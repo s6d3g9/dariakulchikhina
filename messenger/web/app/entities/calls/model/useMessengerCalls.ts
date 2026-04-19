@@ -1,10 +1,8 @@
 import { normalizeMessengerProjectRoot } from '../../../utils/messenger-project-root'
 import { buildMessengerUrl } from '../../../utils/messenger-url'
+import { type MessengerCallMode, useCallMediaAccess } from './use-call-media-access'
 
-type MessengerCallMode = 'audio' | 'video'
 type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
-type MessengerMediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
-type MessengerPermissionTarget = 'microphone' | 'camera' | 'media'
 
 interface MessengerCallE2EEPublicKey {
   kty: 'EC'
@@ -615,23 +613,6 @@ function clearCallSecurityContext() {
   callSecurityContext = null
 }
 
-async function resolvePermissionState(kind: 'microphone' | 'camera'): Promise<MessengerMediaPermissionState> {
-  if (!import.meta.client) {
-    return 'unknown'
-  }
-
-  if (!navigator.permissions?.query) {
-    return 'unknown'
-  }
-
-  try {
-    const status = await navigator.permissions.query({ name: kind as PermissionName })
-    return status.state
-  } catch {
-    return 'unknown'
-  }
-}
-
 function resolveCallMode(value: unknown): MessengerCallMode {
   return value === 'video' ? 'video' : 'audio'
 }
@@ -817,8 +798,6 @@ export function useMessengerCalls() {
   const callStatusText = useState<string>('messenger-call-status', () => '')
   const callError = useState<string>('messenger-call-error', () => '')
   const busy = useState<boolean>('messenger-call-busy', () => false)
-  const requestingPermissions = useState<boolean>('messenger-call-requesting-permissions', () => false)
-  const permissionHelp = useState<string>('messenger-call-permission-help', () => '')
   const controls = useState<MessengerCallControlsState>('messenger-call-controls', () => ({
     microphoneEnabled: true,
     speakerEnabled: true,
@@ -827,7 +806,6 @@ export function useMessengerCalls() {
   const viewMode = useState<MessengerCallViewMode>('messenger-call-view-mode', () => 'full')
   const cameraFacing = useState<MessengerCallCameraFacing>('messenger-call-camera-facing', () => 'user')
   const activeCameraId = useState<string>('messenger-call-camera-id', () => '')
-  const availableVideoInputIds = useState<string[]>('messenger-call-video-inputs', () => [])
   const networkQuality = useState<MessengerCallNetworkQuality>('messenger-call-network-quality', () => 'stable')
   const networkHint = useState<string>('messenger-call-network-hint', () => '')
   const renegotiating = useState<boolean>('messenger-call-renegotiating', () => false)
@@ -840,10 +818,33 @@ export function useMessengerCalls() {
       : 'Браузер использует только штатное шифрование WebRTC.',
     fallbackReason: supportsInsertableCallEncryption() ? '' : 'Нет поддержки encoded insertable streams.',
   }))
-  const mediaPermissionState = useState<Record<'microphone' | 'camera', MessengerMediaPermissionState>>('messenger-call-media-permissions', () => ({
-    microphone: 'unknown',
-    camera: 'unknown',
-  }))
+
+  const mediaAccess = useCallMediaAccess({
+    getLocalStream: () => localStream,
+    onStreamAcquired(stream) {
+      localStream = stream
+      assignMediaTargets()
+      syncMicrophoneState()
+      syncVideoState()
+      startTranscriptionEnergySampler()
+    },
+    onSyncVideoTrackState(track) {
+      syncVideoTrackState(track)
+    },
+  })
+
+  const {
+    requestingPermissions,
+    permissionHelp,
+    mediaPermissionState,
+    availableVideoInputIds,
+    supported,
+    refreshMediaPermissions,
+    refreshVideoInputs,
+    openSitePermissions,
+    initMedia,
+    ensureMediaAccess,
+  } = mediaAccess
   const transcriptionSupported = useState<boolean>('messenger-call-transcription-supported', () => Boolean(supportsServerTranscriptionBackend() || resolveSpeechRecognitionCtor()))
   const transcriptionActive = useState<boolean>('messenger-call-transcription-active', () => false)
   const transcriptionError = useState<string>('messenger-call-transcription-error', () => '')
@@ -981,7 +982,6 @@ export function useMessengerCalls() {
     }
   }
 
-  const supported = computed(() => Boolean(import.meta.client && typeof navigator.mediaDevices?.getUserMedia === 'function' && typeof RTCPeerConnection !== 'undefined'))
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
   const canStartAudioCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied')
   const canStartVideoCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied' && mediaPermissionState.value.camera !== 'denied')
@@ -2008,25 +2008,6 @@ export function useMessengerCalls() {
     }
   }
 
-  async function refreshVideoInputs() {
-    if (!import.meta.client || !navigator.mediaDevices?.enumerateDevices) {
-      availableVideoInputIds.value = []
-      return []
-    }
-
-    try {
-      const videoInputs = (await navigator.mediaDevices.enumerateDevices())
-        .filter(device => device.kind === 'videoinput')
-      availableVideoInputIds.value = videoInputs
-        .map(device => device.deviceId)
-        .filter((deviceId): deviceId is string => Boolean(deviceId))
-      return videoInputs
-    } catch {
-      availableVideoInputIds.value = []
-      return []
-    }
-  }
-
   function stopLocalStream() {
     if (!localStream) {
       return
@@ -2088,149 +2069,6 @@ export function useMessengerCalls() {
         clientId: clientId.value,
       },
     })
-  }
-
-  async function initMedia(mode: MessengerCallMode) {
-    if (localStream) {
-      await refreshVideoInputs()
-      syncVideoTrackState(localStream.getVideoTracks()[0] || null)
-      return localStream
-    }
-
-    localStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        channelCount: 1,
-        sampleRate: 48000,
-        sampleSize: 16,
-      } satisfies MediaTrackConstraints as MediaTrackConstraints & { latency?: number },
-      video: mode === 'video',
-    })
-
-    for (const track of localStream.getAudioTracks()) {
-      track.contentHint = 'speech'
-    }
-
-    assignMediaTargets()
-    syncMicrophoneState()
-    syncVideoState()
-    await refreshVideoInputs()
-    syncVideoTrackState(localStream.getVideoTracks()[0] || null)
-    startTranscriptionEnergySampler()
-    return localStream
-  }
-
-  async function refreshMediaPermissions() {
-    mediaPermissionState.value = {
-      microphone: await resolvePermissionState('microphone'),
-      camera: await resolvePermissionState('camera'),
-    }
-  }
-
-  function getSitePermissionsUrl(target: MessengerPermissionTarget) {
-    if (!import.meta.client) {
-      return null
-    }
-
-    const site = encodeURIComponent(window.location.origin)
-    const ua = navigator.userAgent
-
-    if (ua.includes('Edg/')) {
-      return `edge://settings/content/siteDetails?site=${site}`
-    }
-
-    if (ua.includes('Chrome')) {
-      return `chrome://settings/content/siteDetails?site=${site}`
-    }
-
-    if (ua.includes('Firefox')) {
-      return 'about:preferences#privacy'
-    }
-
-    if (ua.includes('Safari')) {
-      return target === 'camera'
-        ? 'x-apple.systempreferences:com.apple.preference.security?Privacy_Camera'
-        : 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'
-    }
-
-    return null
-  }
-
-  function openSitePermissions(target: MessengerPermissionTarget) {
-    if (!import.meta.client) {
-      return false
-    }
-
-    const nextUrl = getSitePermissionsUrl(target)
-    if (!nextUrl) {
-      permissionHelp.value = 'Автопереход в site permissions не поддерживается этим браузером. Откройте настройки сайта вручную.'
-      return false
-    }
-
-    permissionHelp.value = ''
-
-    const popup = window.open(nextUrl, '_blank', 'noopener,noreferrer')
-    if (popup) {
-      return true
-    }
-
-    window.location.href = nextUrl
-    return true
-  }
-
-  function describePermissionError(mode: MessengerCallMode) {
-    const microphoneDenied = mediaPermissionState.value.microphone === 'denied'
-    const cameraDenied = mediaPermissionState.value.camera === 'denied'
-
-    if (mode === 'video' && (microphoneDenied || cameraDenied)) {
-      return 'Браузер заблокировал микрофон или камеру. Разрешите доступ для этого сайта и повторите видеозвонок.'
-    }
-
-    if (mode === 'audio' && microphoneDenied) {
-      return 'Браузер заблокировал микрофон. Разрешите доступ для этого сайта и повторите аудиозвонок.'
-    }
-
-    return mode === 'video'
-      ? 'Нужен доступ к микрофону и камере, чтобы использовать видеозвонки.'
-      : 'Нужен доступ к микрофону, чтобы использовать аудиозвонки.'
-  }
-
-  async function ensureMediaAccess(mode: MessengerCallMode) {
-    callError.value = ''
-    permissionHelp.value = ''
-
-    if (!supported.value) {
-      callError.value = 'Звонки недоступны в этом браузере.'
-      return false
-    }
-
-    requestingPermissions.value = true
-
-    try {
-      await initMedia(mode)
-      await refreshMediaPermissions()
-      return true
-    } catch {
-      await refreshMediaPermissions()
-      callError.value = describePermissionError(mode)
-
-      const shouldOpenPermissions = mode === 'video'
-        ? mediaPermissionState.value.microphone === 'denied' || mediaPermissionState.value.camera === 'denied'
-        : mediaPermissionState.value.microphone === 'denied'
-
-      if (shouldOpenPermissions) {
-        const opened = openSitePermissions(mode === 'video' ? 'media' : 'microphone')
-        if (!opened && !permissionHelp.value) {
-          permissionHelp.value = 'Откройте настройки сайта в браузере и разрешите доступ к микрофону и камере.'
-        }
-      }
-
-      return false
-    } finally {
-      requestingPermissions.value = false
-    }
   }
 
   async function ensureMicrophoneAccess() {
