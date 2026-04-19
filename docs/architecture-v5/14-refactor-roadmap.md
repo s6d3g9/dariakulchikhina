@@ -1480,7 +1480,7 @@ Wave 4 для UIDesignPanel закрыт.
 - Deleted `server/utils/auth.ts` (was 260 lines).
 - Updated 25 importers: `server/modules/auth/**`, `server/modules/chat/**`, `server/modules/communications/**`, 17 API handlers.
 - `pnpm lint:errors`: 0 new errors (2 pre-existing process.env errors in test files).
-- Commit: TBD
+- Commit: `de7871c`
 
 ### Остающиеся цели (требуют big-session composable work)
 
