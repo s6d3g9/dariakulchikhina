@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import TimelinePane from './overview/TimelinePane.vue'
 import type {
   MessengerPlatformActionCatalog,
   MessengerPlatformProjectSummary,
@@ -1100,41 +1101,7 @@ watch(selectedTask, (task) => {
           />
         </section>
 
-        <section v-if="showTimelinePane" class="pa-pane pa-pane--timeline">
-          <div class="pa-pane__head">
-            <span class="pa-pane__title">Таймлайн</span>
-            <div class="pa-pane__head-actions">
-              <span class="pa-pane__value">{{ selectedProjectLabel }}</span>
-              <VBtn
-                v-if="props.selectedProjectSlug"
-                color="primary"
-                variant="tonal"
-                size="small"
-                @click="openScopeDetail('project', props.selectedProjectSlug)"
-              >
-                Контур проекта
-              </VBtn>
-            </div>
-          </div>
-
-          <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
-            Сначала выберите проект.
-          </div>
-
-          <div v-else-if="props.catalogPending" class="pa-empty-state">
-            Загружаю таймлайн проекта…
-          </div>
-
-          <div v-else-if="catalogUnavailableMessage" class="pa-state pa-state--error">
-            {{ catalogUnavailableMessage }}
-          </div>
-
-          <MessengerProjectMiniTimeline v-else-if="miniTimelineCatalog" :catalog="miniTimelineCatalog" @select-phase="openScopeDetail('phase', $event)" />
-
-          <div v-else class="pa-empty-state">
-            В проекте пока нет фаз для таймлайна.
-          </div>
-        </section>
+        <TimelinePane v-if="showTimelinePane" :catalog="activeProjectCatalog" :selected-phase-key="selectedPhaseKey" :pending="props.catalogPending" @select-phase="openScopeDetail('phase', $event)" />
 
         <section v-if="showSubjectsPane" class="pa-pane pa-pane--subjects">
           <div class="pa-pane__head">
