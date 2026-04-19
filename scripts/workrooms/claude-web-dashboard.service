@@ -1,0 +1,15 @@
+[Unit]
+Description=Claude CLI sessions web dashboard
+After=default.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.claude-dashboard-auth
+ExecStart=/usr/bin/node %h/bin/claude-web-dashboard --port 9090
+Restart=on-failure
+RestartSec=3
+StandardOutput=append:%h/log/dashboard.log
+StandardError=append:%h/log/dashboard.log
+
+[Install]
+WantedBy=default.target

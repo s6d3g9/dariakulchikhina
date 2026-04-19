@@ -1,0 +1,15 @@
+[Unit]
+Description=Cloudflare quick tunnel for Claude dashboard
+After=claude-web-dashboard.service network-online.target
+Requires=claude-web-dashboard.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared tunnel --url http://localhost:9090 --no-autoupdate
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:%h/log/cf-tunnel.log
+StandardError=append:%h/log/cf-tunnel.log
+
+[Install]
+WantedBy=default.target
