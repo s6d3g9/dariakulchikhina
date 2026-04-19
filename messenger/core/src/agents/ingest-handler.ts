@@ -8,6 +8,7 @@ import { useIngestDb, messengerAgents, messengerAgentRuns, messengerAgentRunEven
 const baseEvent = {
   runId: z.string().uuid(),
   ts: z.string().optional(),
+  eventId: z.string().uuid().optional(),
 }
 
 const runStartSchema = z.object({ ...baseEvent, type: z.literal('run_start'), prompt: z.string().optional() })
@@ -62,6 +63,18 @@ async function persistEvent(
   agentId: string,
   event: IngestEvent,
 ): Promise<string> {
+  const eventId = event.eventId ?? randomUUID()
+
+  // Replay detection: client-supplied eventId already persisted → idempotent skip
+  if (event.eventId) {
+    const [existing] = await db
+      .select({ id: messengerAgentRunEvents.id })
+      .from(messengerAgentRunEvents)
+      .where(eq(messengerAgentRunEvents.id, event.eventId))
+      .limit(1)
+    if (existing) return existing.id
+  }
+
   // Verify the run exists and belongs to this agent
   const [run] = await db
     .select({ id: messengerAgentRuns.id, status: messengerAgentRuns.status })
@@ -98,7 +111,6 @@ async function persistEvent(
   }
 
   // Insert event row
-  const eventId = randomUUID()
   let substate: string | null = null
   let tokenIn: number | null = null
   let tokenOut: number | null = null
