@@ -56,6 +56,109 @@ function isOrchestratorSlug(slug) {
   return /orchestrator|coordinator|planner|manager/i.test(slug);
 }
 
+const QUEUE_DIRS = ['pending', 'running', 'done', 'failed'];
+const QUEUE_ROOT = join(HOME, 'state/queue');
+
+// Returns the body of a TASK.md (strips YAML frontmatter) and a frontmatter dict.
+function parseTaskFile(file) {
+  try {
+    const txt = readFileSync(file, 'utf8');
+    const fm = { };
+    let body = txt;
+    if (txt.startsWith('---')) {
+      const end = txt.indexOf('\n---', 3);
+      if (end > 0) {
+        const header = txt.slice(3, end);
+        body = txt.slice(end + 4);
+        for (const ln of header.split('\n')) {
+          const m = /^([a-zA-Z_][a-zA-Z0-9_]*):\s*(.*)$/.exec(ln.trim());
+          if (m) fm[m[1]] = m[2];
+        }
+      }
+    }
+    return { fm, body };
+  } catch { return { fm: {}, body: '' }; }
+}
+
+// Extract dependency hints from a task body. We scan for a dependency "verb"
+// (depends/wait/after/blocks), then collect any known slug mentioned in the
+// 5-line window around it (the author may phrase the verb and the slug on
+// different lines within a sentence).
+function extractBodyDeps(body, allSlugs) {
+  const deps = new Set();
+  const lines = body.split('\n');
+  const verb = /\b(depends?\s*on|wait\s*for|run\s*after|blocks?\s*on|after[^.\n]*merge|prerequisite)\b/i;
+  for (let i = 0; i < lines.length; i++) {
+    if (!verb.test(lines[i])) continue;
+    // Window: [i-1 .. i+4] (verb line + next 4 lines, plus previous for backlinks)
+    const from = Math.max(0, i - 1);
+    const to = Math.min(lines.length, i + 5);
+    const window = lines.slice(from, to).join('\n');
+    for (const s of allSlugs) {
+      if (window.includes(s)) deps.add(s);
+    }
+  }
+  return [...deps];
+}
+
+async function computeDependencyEdges() {
+  const edges = [];
+  const active = readRegistry();
+  const archive = readArchiveRegistry();
+  const known = [...active, ...archive];
+  const knownSlugs = known.map(r => r.slug);
+
+  // (A) declared deps from TASK.md frontmatter/body in queue dirs
+  for (const dir of QUEUE_DIRS) {
+    const full = join(QUEUE_ROOT, dir);
+    if (!existsSync(full)) continue;
+    for (const name of readdirSync(full)) {
+      if (!name.endsWith('.md')) continue;
+      const id = name.replace(/\.md$/, '');
+      // Map task id → session slug (id === slug in our current naming)
+      const { fm, body } = parseTaskFile(join(full, name));
+      // Frontmatter: depends_on can be inline "[a, b]" or list
+      let declared = [];
+      if (fm.depends_on) {
+        declared = fm.depends_on
+          .replace(/[\[\]]/g, '')
+          .split(/[\s,]+/)
+          .map(s => s.trim())
+          .filter(Boolean);
+      }
+      // Body hints
+      const hinted = extractBodyDeps(body, knownSlugs);
+      const all = [...new Set([...declared, ...hinted])].filter(d => d !== id);
+      for (const dep of all) {
+        if (!knownSlugs.includes(dep)) continue;
+        edges.push({ from: dep, to: id, kind: 'declared' });
+      }
+    }
+  }
+
+  // (B) orchestrator → worker: any worker whose `created` > orchestrator.created
+  const orchs = known.filter(r => isOrchestratorSlug(r.slug));
+  const workers = known.filter(r => !isOrchestratorSlug(r.slug));
+  for (const o of orchs) {
+    for (const w of workers) {
+      if ((w.created || '') > (o.created || '')) {
+        edges.push({ from: o.slug, to: w.slug, kind: 'spawned' });
+      }
+    }
+  }
+
+  // Deduplicate (declared + spawned can overlap for same pair)
+  const seen = new Set();
+  const unique = [];
+  for (const e of edges) {
+    const k = e.from + '→' + e.to;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    unique.push(e);
+  }
+  return unique;
+}
+
 const MAX_SUBSCRIPTION_BUDGET_USD = 200; // Anthropic Max tier
 const CTX_WINDOW_LIMIT = 200_000;        // claude-sonnet-4-6 / haiku-4-5
 
@@ -445,6 +548,14 @@ async function handle(req, res) {
     return;
   }
 
+  // ── dependency graph (real, parsed from TASK.md and session timing) ──
+  if (p === '/api/deps' && req.method === 'GET') {
+    const edges = await computeDependencyEdges();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(edges));
+    return;
+  }
+
   // ── overall status ──
   if (p === '/api/status' && req.method === 'GET') {
     const cost = await monthCostSoFar();
@@ -539,11 +650,18 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .bar > i{display:block;height:100%;background:linear-gradient(90deg,#5b8ff9,#b78fff);transition:width .4s}
   .navs{display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:var(--panel);position:relative}
   #deps-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
-  #deps-svg .dep-line{fill:none;stroke-width:1.6;opacity:.55;stroke-dasharray:6 4;animation:dep-flow 1.6s linear infinite}
+  #deps-svg .dep-line{fill:none;stroke-width:1.6;opacity:.55;stroke-dasharray:6 4;animation:dep-flow 1.6s linear infinite;transition:opacity .2s}
+  #deps-svg .dep-line.dim{opacity:.12}
   #deps-svg .dep-line.highlight{opacity:1;stroke-width:2.5;filter:drop-shadow(0 0 4px currentColor)}
   #deps-svg .dep-arrow{fill:currentColor;opacity:.8}
   @keyframes dep-flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-20}}
-  .nav-row{display:flex;gap:.3rem;padding:.4rem .6rem;overflow-x:auto;align-items:center}
+  .nav-row{display:flex;gap:.3rem;padding:.4rem .6rem;overflow-x:auto;overflow-y:hidden;align-items:center;scrollbar-width:none;-ms-overflow-style:none;user-select:none;cursor:grab}
+  .nav-row::-webkit-scrollbar{display:none;width:0;height:0}
+  .nav-row.dragging{cursor:grabbing}
+  .log{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+  .log::-webkit-scrollbar{width:6px;height:6px}
+  .log::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+  .log::-webkit-scrollbar-track{background:transparent}
   .nav-row + .nav-row{border-top:1px solid var(--line)}
   .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0}
   .nav-row.orchestrators{background:#0f1419}
@@ -655,52 +773,25 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   // ── Dependency graph ──
 
   // Stable hue from a chain prefix → distinct color per chain
-  function chainColor(prefix) {
-    if (prefix === 'orchestrator') return '#a78bfa'; // violet
+  function chainColor(kind, prefix) {
+    if (kind === 'spawned') return '#a78bfa'; // orchestrator-spawned edges: violet
     let h = 0;
     for (let i = 0; i < prefix.length; i++) h = (h * 31 + prefix.charCodeAt(i)) >>> 0;
     return 'hsl(' + (h % 360) + ', 70%, 62%)';
   }
 
-  // Group slug into a "chain" key — shared prefix family
   function chainOf(slug) {
-    // wave3-calls-XXX   → wave3-calls
-    // wave3-actions-XXX → wave3-actions
-    // wave3-chat-XXX    → wave3-chat
-    // wm/ other         → first segment
     const parts = slug.split('-');
     if (parts.length >= 2) return parts[0] + '-' + parts[1];
     return parts[0];
   }
 
-  // Derive edges from current state:
-  //  • within each chain, order by created timestamp → linear dependency
-  //  • orchestrator → every worker session created after it
-  function inferDeps() {
-    const deps = [];
-    const byChain = {};
-    for (const s of state.sessions) {
-      if (s.role === 'orchestrator') continue;
-      const c = chainOf(s.slug);
-      (byChain[c] ||= []).push(s);
-    }
-    for (const [chain, items] of Object.entries(byChain)) {
-      if (items.length < 2) continue;
-      items.sort((a, b) => (a.created || '').localeCompare(b.created || ''));
-      for (let i = 1; i < items.length; i++) {
-        deps.push({ from: items[i-1].slug, to: items[i].slug, chain, color: chainColor(chain) });
-      }
-    }
-    // Orchestrator edges
-    const orch = state.sessions.filter(s => s.role === 'orchestrator');
-    for (const o of orch) {
-      for (const s of state.sessions) {
-        if (s.role !== 'orchestrator' && (s.created || '') > (o.created || '')) {
-          deps.push({ from: o.slug, to: s.slug, chain: 'orchestrator', color: chainColor('orchestrator'), orchestrator: true });
-        }
-      }
-    }
-    return deps;
+  state.deps = [];
+  async function fetchDeps() {
+    try {
+      const r = await fetch('/api/deps');
+      state.deps = await r.json();
+    } catch { state.deps = []; }
   }
 
   function drawDeps() {
@@ -714,14 +805,21 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     svg.setAttribute('width', nRect.width);
     svg.setAttribute('height', nRect.height);
 
+    // Arrow marker defs (one per unique color in use)
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const markerIds = new Set();
+    svg.appendChild(defs);
+
     const tabEls = {};
     for (const el of document.querySelectorAll('.navs .tab[data-slug]')) {
       tabEls[el.dataset.slug] = el;
     }
 
-    const deps = inferDeps();
     const hover = state.hoveredSlug;
-    for (const dep of deps) {
+    // When hovering, dim edges that don't touch the hovered node
+    const dim = (slug) => hover && slug !== hover;
+
+    for (const dep of state.deps) {
       const a = tabEls[dep.from], b = tabEls[dep.to];
       if (!a || !b) continue;
       const aR = a.getBoundingClientRect(), bR = b.getBoundingClientRect();
@@ -729,24 +827,82 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       const y1 = aR.bottom - nRect.top;
       const x2 = bR.left + bR.width / 2 - nRect.left;
       const y2 = bR.bottom - nRect.top;
-      // Bezier that dips below the tab row
-      const midY = Math.max(y1, y2) + Math.max(20, Math.abs(x2 - x1) * 0.18);
+
+      // If both tabs are on the same row, dip more deeply so the curve is visible
+      const sameY = Math.abs(y1 - y2) < 4;
+      const dipDepth = sameY ? 34 : Math.max(18, Math.abs(x2 - x1) * 0.18);
+      const midY = Math.max(y1, y2) + dipDepth;
+
+      // Stop slightly before the target so the arrowhead sits cleanly at the tab edge
+      const arrow = 7;
+      const dx = x2 - x1, dy = y2 - y1;
+      const len = Math.hypot(dx, dy) || 1;
+      const x2s = x2 - (dx / len) * arrow;
+      const y2s = y2 - (dy / len) * arrow;
+
+      const color = chainColor(dep.kind, chainOf(dep.to));
+      const safeId = 'arr-' + color.replace(/[^a-z0-9]/gi, '');
+      if (!markerIds.has(safeId)) {
+        markerIds.add(safeId);
+        const m = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        m.setAttribute('id', safeId);
+        m.setAttribute('viewBox', '0 0 10 10');
+        m.setAttribute('refX', '6');
+        m.setAttribute('refY', '5');
+        m.setAttribute('markerWidth', '6');
+        m.setAttribute('markerHeight', '6');
+        m.setAttribute('orient', 'auto-start-reverse');
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        t.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+        t.setAttribute('fill', color);
+        m.appendChild(t);
+        defs.appendChild(m);
+      }
+
       const d = 'M ' + x1 + ' ' + y1 +
-                ' C ' + x1 + ' ' + midY + ', ' + x2 + ' ' + midY + ', ' + x2 + ' ' + y2;
+                ' C ' + x1 + ' ' + midY + ', ' + x2 + ' ' + midY + ', ' + x2s + ' ' + y2s;
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', d);
-      path.setAttribute('stroke', dep.color);
-      path.setAttribute('style', 'color:' + dep.color);
-      const isHl = hover === dep.from || hover === dep.to;
-      path.setAttribute('class', 'dep-line' + (isHl ? ' highlight' : ''));
+      path.setAttribute('stroke', color);
+      path.setAttribute('style', 'color:' + color);
+      path.setAttribute('marker-end', 'url(#' + safeId + ')');
+      const touched = !hover || hover === dep.from || hover === dep.to;
+      path.setAttribute('class', 'dep-line' + (touched ? '' : ' dim') + (hover && touched ? ' highlight' : ''));
+      if (dep.kind === 'spawned') path.setAttribute('stroke-dasharray', '3 5'); // spawn edges: tighter dashing
       svg.appendChild(path);
     }
   }
   window.addEventListener('resize', drawDeps);
   document.addEventListener('scroll', drawDeps, true);
-  // Also redraw when nav rows scroll horizontally
   for (const row of document.querySelectorAll('.nav-row')) row.addEventListener('scroll', drawDeps);
-  setInterval(drawDeps, 2000); // periodic re-layout guard
+  setInterval(() => { fetchDeps().then(drawDeps); }, 5000); // refresh every 5s
+
+  // ── Drag + wheel scroll on nav rows (no visible scrollbar) ──
+  function wireRowScroll(row) {
+    let dragging = false, startX = 0, startScroll = 0;
+    row.addEventListener('pointerdown', (e) => {
+      // Ignore drags that start on a tab / button — let click fire
+      if (e.target.closest('.tab,button')) return;
+      dragging = true; row.classList.add('dragging');
+      startX = e.clientX; startScroll = row.scrollLeft;
+      row.setPointerCapture(e.pointerId);
+    });
+    row.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      row.scrollLeft = startScroll - (e.clientX - startX);
+    });
+    const stop = () => { dragging = false; row.classList.remove('dragging'); };
+    row.addEventListener('pointerup', stop);
+    row.addEventListener('pointercancel', stop);
+    row.addEventListener('wheel', (e) => {
+      // Convert vertical wheel into horizontal when over a nav row
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        row.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  }
+  for (const row of document.querySelectorAll('.nav-row')) wireRowScroll(row);
 
   function renderTabs() {
     // Orchestrators row
@@ -915,6 +1071,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     renderTabs();
     if (state.active) { renderSide(state.active); renderContent(state.active); }
     else { sideEl.innerHTML = '<div class="placeholder">no session selected</div>'; contentEl.innerHTML = '<div class="placeholder">no session selected</div>'; }
+    await fetchDeps();
     requestAnimationFrame(drawDeps);
   }
   document.getElementById('btn-refresh').onclick = () => {
