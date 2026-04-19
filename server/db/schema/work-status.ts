@@ -1,6 +1,6 @@
 import { pgTable, serial, text, integer, timestamp } from 'drizzle-orm/pg-core'
-import { projects } from './projects'
-import { contractors } from './contractors'
+import { projects } from './projects.ts'
+import { contractors } from './contractors.ts'
 
 export const workStatusItems = pgTable('work_status_items', {
   id: serial('id').primaryKey(),

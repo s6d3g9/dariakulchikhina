@@ -7,10 +7,10 @@ import {
   jsonb,
   unique,
 } from 'drizzle-orm/pg-core'
-import { users } from './users'
-import { projects } from './projects'
-import { clients } from './clients'
-import { contractors } from './contractors'
+import { users } from './users.ts'
+import { projects } from './projects.ts'
+import { clients } from './clients.ts'
+import { contractors } from './contractors.ts'
 
 export const designers = pgTable('designers', {
   id: serial('id').primaryKey(),

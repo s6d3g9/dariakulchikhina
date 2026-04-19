@@ -8,7 +8,7 @@ import {
   jsonb,
   unique,
 } from 'drizzle-orm/pg-core'
-import { users } from './users'
+import { users } from './users.ts'
 
 export const projects = pgTable('projects', {
   id: serial('id').primaryKey(),
