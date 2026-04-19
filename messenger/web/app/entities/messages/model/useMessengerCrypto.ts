@@ -1,5 +1,3 @@
-type MessengerRequest = <T>(path: string, options?: Parameters<typeof $fetch<T>>[1]) => Promise<T>
-
 export interface MessengerDevicePublicKey {
   kty: 'EC'
   crv: 'P-256'
@@ -107,6 +105,7 @@ async function deriveWrappingKey(privateKey: JsonWebKey, publicKey: MessengerDev
 }
 
 export function useMessengerCrypto() {
+  const cryptoApi = useCryptoApi()
   const deviceKeys = useState<Record<string, MessengerStoredDeviceKeyPair>>('messenger-device-keys', () => ({}))
   const conversationKeys = useState<Record<string, string>>('messenger-conversation-keys', () => ({}))
   const registeredUserIds = useState<Record<string, string>>('messenger-crypto-registered-users', () => ({}))
@@ -173,7 +172,7 @@ export function useMessengerCrypto() {
     }
   }
 
-  async function ensureDeviceIdentity(request: MessengerRequest, userId: string) {
+  async function ensureDeviceIdentity(userId: string) {
     if (!import.meta.client) {
       throw new Error('CRYPTO_CLIENT_ONLY')
     }
@@ -187,12 +186,7 @@ export function useMessengerCrypto() {
     deviceKeys.value[userId] = stored
 
     if (registeredUserIds.value[userId] !== stored.publicKey.x) {
-      await request('/crypto/device-key', {
-        method: 'PUT',
-        body: {
-          publicKey: stored.publicKey,
-        },
-      })
+      await cryptoApi.putDeviceKey(stored.publicKey)
       registeredUserIds.value[userId] = stored.publicKey.x
     }
 
@@ -234,7 +228,6 @@ export function useMessengerCrypto() {
   }
 
   async function ensureConversationKey(
-    request: MessengerRequest,
     userId: string,
     conversationId: string,
     peerUserId: string,
@@ -250,10 +243,8 @@ export function useMessengerCrypto() {
       return await importConversationKey(decodeBase64(storedRawKey))
     }
 
-    const deviceIdentity = await ensureDeviceIdentity(request, userId)
-    const encryptionState = await request<{ keyPackage: MessengerConversationKeyPackage | null }>(`/conversations/${conversationId}/encryption`, {
-      method: 'GET',
-    })
+    const deviceIdentity = await ensureDeviceIdentity(userId)
+    const encryptionState = await cryptoApi.getConversationEncryption(conversationId)
 
     if (encryptionState.keyPackage) {
       const rawConversationKey = await unwrapConversationKey(encryptionState.keyPackage, deviceIdentity.privateKey)
@@ -263,9 +254,7 @@ export function useMessengerCrypto() {
       return await importConversationKey(rawConversationKey)
     }
 
-    const peerKeyResponse = await request<{ publicKey: MessengerDevicePublicKey | null }>(`/users/${peerUserId}/device-key`, {
-      method: 'GET',
-    })
+    const peerKeyResponse = await cryptoApi.getUserDeviceKey(peerUserId)
 
     if (!peerKeyResponse.publicKey) {
       throw new Error('PEER_DEVICE_KEY_MISSING')
@@ -278,26 +267,21 @@ export function useMessengerCrypto() {
     conversationKeys.value[cacheKey] = encodedRawConversationKey
     writeStoredConversationKey(userId, conversationId, encodedRawConversationKey)
 
-    await request(`/conversations/${conversationId}/encryption`, {
-      method: 'POST',
-      body: {
-        packages: [
-          await wrapConversationKeyForPeer(
-            rawConversationKey,
-            deviceIdentity.privateKey,
-            deviceIdentity.publicKey,
-            peerKeyResponse.publicKey,
-            peerUserId,
-          ),
-        ],
-      },
-    })
+    await cryptoApi.postConversationEncryption(conversationId, [
+      await wrapConversationKeyForPeer(
+        rawConversationKey,
+        deviceIdentity.privateKey,
+        deviceIdentity.publicKey,
+        peerKeyResponse.publicKey,
+        peerUserId,
+      ),
+    ])
 
     return conversationKey
   }
 
-  async function encryptText(request: MessengerRequest, userId: string, conversationId: string, peerUserId: string, body: string) {
-    const conversationKey = await ensureConversationKey(request, userId, conversationId, peerUserId)
+  async function encryptText(userId: string, conversationId: string, peerUserId: string, body: string) {
+    const conversationKey = await ensureConversationKey(userId, conversationId, peerUserId)
     const iv = crypto.getRandomValues(new Uint8Array(12))
     const encodedBody = new TextEncoder().encode(body)
     const ciphertext = await crypto.subtle.encrypt(
@@ -314,13 +298,12 @@ export function useMessengerCrypto() {
   }
 
   async function decryptText(
-    request: MessengerRequest,
     userId: string,
     conversationId: string,
     peerUserId: string,
     encryptedBody: MessengerEncryptedPayload,
   ) {
-    const conversationKey = await ensureConversationKey(request, userId, conversationId, peerUserId)
+    const conversationKey = await ensureConversationKey(userId, conversationId, peerUserId)
     const plaintext = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv: decodeBase64(encryptedBody.iv) },
       conversationKey,
@@ -331,13 +314,12 @@ export function useMessengerCrypto() {
   }
 
   async function encryptBinary(
-    request: MessengerRequest,
     userId: string,
     conversationId: string,
     peerUserId: string,
     input: ArrayBuffer,
   ) {
-    const conversationKey = await ensureConversationKey(request, userId, conversationId, peerUserId)
+    const conversationKey = await ensureConversationKey(userId, conversationId, peerUserId)
     const iv = crypto.getRandomValues(new Uint8Array(12))
     const ciphertext = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv },
@@ -355,14 +337,13 @@ export function useMessengerCrypto() {
   }
 
   async function decryptBinary(
-    request: MessengerRequest,
     userId: string,
     conversationId: string,
     peerUserId: string,
     encryptedFile: MessengerEncryptedBinaryPayload,
     input: ArrayBuffer,
   ) {
-    const conversationKey = await ensureConversationKey(request, userId, conversationId, peerUserId)
+    const conversationKey = await ensureConversationKey(userId, conversationId, peerUserId)
     return await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv: decodeBase64(encryptedFile.iv) },
       conversationKey,
@@ -371,19 +352,14 @@ export function useMessengerCrypto() {
   }
 
   async function getConversationSecuritySummary(
-    request: MessengerRequest,
     userId: string,
     conversationId: string,
     peerUserId: string,
   ): Promise<MessengerConversationSecuritySummary> {
     const storedDeviceKey = deviceKeys.value[userId] || readStoredDeviceKey(userId)
     const storedConversationKey = conversationKeys.value[`${userId}:${conversationId}`] || readStoredConversationKey(userId, conversationId)
-    const keyPackageResponse = await request<{ keyPackage: MessengerConversationKeyPackage | null }>(`/conversations/${conversationId}/encryption`, {
-      method: 'GET',
-    })
-    const peerKeyResponse = await request<{ publicKey: MessengerDevicePublicKey | null }>(`/users/${peerUserId}/device-key`, {
-      method: 'GET',
-    })
+    const keyPackageResponse = await cryptoApi.getConversationEncryption(conversationId)
+    const peerKeyResponse = await cryptoApi.getUserDeviceKey(peerUserId)
 
     return {
       protocolLabel: 'E2EE активно',

@@ -57,7 +57,6 @@ function isUnauthorizedError(error: unknown) {
 
 export function useMessengerAuth() {
   const config = useRuntimeConfig()
-  const messengerCrypto = useMessengerCrypto()
   const token = useState<string | null>('messenger-auth-token', () => null)
   const user = useState<MessengerAuthUser | null>('messenger-auth-user', () => null)
   const ready = useState<boolean>('messenger-auth-ready', () => false)
@@ -153,7 +152,7 @@ export function useMessengerAuth() {
     try {
       const response = await request<{ user: MessengerAuthUser }>('/auth/me')
       user.value = response.user
-      await messengerCrypto.ensureDeviceIdentity(request, response.user.id)
+      await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
       writeStoredAuth({ token: token.value, user: user.value }, persistenceMode.value)
     } catch (error) {
       if (isUnauthorizedError(error)) {
@@ -187,7 +186,7 @@ export function useMessengerAuth() {
       body: payload,
     })
     acceptAuth(response)
-    await messengerCrypto.ensureDeviceIdentity(request, response.user.id)
+    await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
   }
 
   async function register(payload: { login: string; password: string; displayName: string }) {
@@ -196,7 +195,7 @@ export function useMessengerAuth() {
       body: payload,
     })
     acceptAuth(response)
-    await messengerCrypto.ensureDeviceIdentity(request, response.user.id)
+    await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
   }
 
   function logout() {
