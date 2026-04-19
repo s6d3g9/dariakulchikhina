@@ -3,6 +3,7 @@ import type { MessengerAttachmentKlipyPayload, MessengerConversationMessage } fr
 import type { MessengerKlipyItem } from '../../entities/messages/model/useMessengerKlipy'
 import type { MessengerConversationSecuritySummary } from '../../entities/messages/model/useMessengerCrypto'
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
+import { useComposerMetrics } from './model/use-composer-metrics'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -41,6 +42,13 @@ const messageListEl = ref<HTMLElement | null>(null)
 const mediaPickerInputEl = ref<HTMLInputElement | null>(null)
 const composerInputEl = computed(() => composerDockRef.value?.composerInputEl ?? null)
 const composerBarEl = computed(() => composerDockRef.value?.composerBarEl ?? null)
+const {
+  composerHeight,
+  updateComposerHeight,
+  syncComposerInputHeight,
+  resetComposerInputHeight,
+  scheduleComposerMetricsSync,
+} = useComposerMetrics(composerBarEl, composerInputEl)
 const detailsOpen = ref(false)
 const copiedLabel = ref('')
 const secretIntroSeen = useState<Record<string, boolean>>('messenger-secret-intro-seen', () => ({}))
@@ -56,7 +64,6 @@ const editingMessageId = ref<string | null>(null)
 const editingDraft = ref('')
 const activeMessageActionsId = ref<string | null>(null)
 const activeReactionOverlayId = ref<string | null>(null)
-const composerHeight = ref(76)
 const composerRelationMode = ref<'reply' | 'comment' | null>(null)
 const composerRelationMessageId = ref<string | null>(null)
 const forwardingMessageId = ref<string | null>(null)
@@ -93,8 +100,6 @@ let recordingAudioContext: AudioContext | null = null
 let recordingAnalyser: AnalyserNode | null = null
 let recordingAnalyserSource: MediaStreamAudioSourceNode | null = null
 let discardRecordingDraft = false
-let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
-let composerResizeObserver: ResizeObserver | null = null
 let klipySearchTimer: ReturnType<typeof setTimeout> | null = null
 let forwardSearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
@@ -1263,12 +1268,6 @@ onBeforeUnmount(() => {
     clearTimeout(forwardSearchTimer)
     forwardSearchTimer = null
   }
-  if (composerAlignTimer) {
-    clearTimeout(composerAlignTimer)
-    composerAlignTimer = null
-  }
-  composerResizeObserver?.disconnect()
-  composerResizeObserver = null
   mediaRecorder = null
 })
 
@@ -2067,63 +2066,6 @@ async function refreshSecuritySummary() {
   }
 }
 
-function updateComposerHeight() {
-  const nextHeight = composerBarEl.value?.offsetHeight ?? 76
-  composerHeight.value = nextHeight
-}
-
-function syncComposerInputHeight() {
-  if (!import.meta.client) {
-    return
-  }
-
-  const input = composerInputEl.value
-  if (!input) {
-    return
-  }
-
-  const maxHeight = window.matchMedia('(max-width: 767px)').matches ? 104 : 144
-
-  input.style.height = '0px'
-  const nextHeight = Math.min(Math.max(input.scrollHeight, 48), maxHeight)
-  input.style.height = `${nextHeight}px`
-  input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden'
-  updateComposerHeight()
-}
-
-function resetComposerInputHeight() {
-  const input = composerInputEl.value
-  if (!input) {
-    return
-  }
-
-  input.style.height = '48px'
-  input.style.overflowY = 'hidden'
-  updateComposerHeight()
-}
-
-function scheduleComposerMetricsSync() {
-  if (!import.meta.client) {
-    return
-  }
-
-  const syncComposer = async () => {
-    await nextTick()
-    syncComposerInputHeight()
-  }
-
-  void syncComposer()
-
-  if (composerAlignTimer) {
-    clearTimeout(composerAlignTimer)
-  }
-
-  composerAlignTimer = setTimeout(() => {
-    void syncComposer()
-    composerAlignTimer = null
-  }, 260)
-}
-
 function expandComposer() {
   viewport.scheduleViewportSync()
   scheduleComposerMetricsSync()
@@ -2442,17 +2384,6 @@ function relationPreviewText(message: { body: string; kind: 'text' | 'file'; att
 
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown)
-
-  nextTick(() => {
-    resetComposerInputHeight()
-
-    if (composerBarEl.value && typeof ResizeObserver !== 'undefined') {
-      composerResizeObserver = new ResizeObserver(() => {
-        updateComposerHeight()
-      })
-      composerResizeObserver.observe(composerBarEl.value)
-    }
-  })
 })
 
 onBeforeUnmount(() => {
