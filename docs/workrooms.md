@@ -145,3 +145,58 @@ Parallel Claude Code sessions run via the dispatcher, a messenger-backed control
 - `claude-cf-tunnel.service` — optional Cloudflare tunnel (if URL changes, run `~/bin/claude-cf-tunnel open-tunnel` to refresh)
 
 **For detailed steps:** see [claude-cli-dispatcher-runbook.md](claude-cli-dispatcher-runbook.md) — launching sessions, streaming follow-ups, killing stuck processes, rotating auth, recovering from server reboot.
+
+## Messenger ingest integration
+
+When `--agent-id` is passed to `claude-session create`, the session is
+registered in messenger core and its stream-json output is forwarded to the
+messenger ingest endpoint via `claude-stream-bridge`. This makes the session
+appear as a live agent contact in the messenger UI.
+
+### New flags for `claude-session create`
+
+| Flag | Env default | Required? | Description |
+|------|-------------|-----------|-------------|
+| `--agent-id <uuid>` | — | triggers bridge mode | The agent UUID from messenger (contact / agent row). Without this flag, legacy behavior (no bridge, no registration). |
+| `--run-id <uuid>` | — | optional | Associates the session with an orchestration run. |
+| `--parent-run <uuid>` | — | optional | Parent run for nested orchestration. |
+| `--messenger-core-url <url>` | `$MESSENGER_CORE_URL` | yes (with `--agent-id`) | Base URL of the messenger core ingest endpoint (e.g. `http://localhost:4100`). |
+| `--ingest-token <token>` | `$MESSENGER_INGEST_TOKEN` | yes (with `--agent-id`) | Bearer token for the messenger ingest API. |
+
+### Usage example
+
+```bash
+export MESSENGER_CORE_URL=http://localhost:4100
+export MESSENGER_INGEST_TOKEN=<token>
+
+claude-session create my-agent \
+  --workroom agent-wave-5 \
+  --model sonnet \
+  --agent-id 550e8400-e29b-41d4-a716-446655440000 \
+  --run-id   6ba7b810-9dad-11d1-80b4-00c04fd430c8 \
+  --prompt "Audit the server/api handlers for Drizzle imports."
+```
+
+When `--agent-id` is omitted, behavior is identical to before — no
+registration, no bridge, no messenger forwarding.
+
+### `claude-session doctor`
+
+Checks all `running` cli-sessions in messenger core against live tmux windows.
+Any session whose tmux window no longer exists is PATCHed to `status=error`.
+
+```bash
+claude-session doctor
+# or with explicit credentials:
+claude-session doctor --messenger-core-url http://localhost:4100 --ingest-token <token>
+```
+
+### Installation
+
+`scripts/workrooms/install-bridge.sh` now symlinks **both**
+`claude-stream-bridge` and `claude-session` into `~/bin`. Re-run it after
+pulling to pick up the updated wrapper:
+
+```bash
+bash scripts/workrooms/install-bridge.sh
+```

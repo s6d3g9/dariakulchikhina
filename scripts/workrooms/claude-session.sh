@@ -15,8 +15,14 @@
 #
 # Commands:
 #   create <slug> [--workroom <wr>] [--model <name>] --prompt "<initial>"
+#                            [--agent-id <uuid>] [--run-id <uuid>]
+#                            [--parent-run <uuid>]
+#                            [--messenger-core-url <url>]
+#                            [--ingest-token <token>]
 #                            create a new session (assigns UUID, runs first
-#                            prompt in background tmux window)
+#                            prompt in background tmux window; if --agent-id
+#                            is given, registers a cli-session and pipes
+#                            output through claude-stream-bridge)
 #   list                      table of active sessions
 #   send <slug> "<prompt>"    resume session with a follow-up prompt (streams
 #                             in the same tmux window)
@@ -26,6 +32,7 @@
 #   kill <slug>               kill tmux window + cleanup local state
 #                             (Claude-side session history is kept in ~/.claude)
 #   state <slug>              print registry row for a session
+#   doctor                    check running cli-sessions vs tmux; PATCH dead ones
 #
 # Registry: ~/state/claude-sessions/.registry.tsv
 #   columns: slug, uuid, window, workroom, model, created
@@ -37,6 +44,11 @@ TMUX_SESSION="cc"
 STATE_DIR="${HOME}/state/claude-sessions"
 REGISTRY="${STATE_DIR}/.registry.tsv"
 CLAUDE_BIN="${HOME}/.local/bin/claude"
+BRIDGE_BIN="${HOME}/bin/claude-stream-bridge"
+
+# Messenger ingest defaults — can be overridden per-call with flags
+MESSENGER_CORE_URL="${MESSENGER_CORE_URL:-}"
+MESSENGER_INGEST_TOKEN="${MESSENGER_INGEST_TOKEN:-}"
 
 mkdir -p "${STATE_DIR}"
 [ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\n' > "${REGISTRY}"
@@ -47,7 +59,6 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 
 gen_uuid() {
   if command -v uuidgen >/dev/null 2>&1; then uuidgen; return; fi
-  # Fallback: /proc/sys/kernel/random/uuid
   cat /proc/sys/kernel/random/uuid
 }
 
@@ -97,31 +108,63 @@ format_stream() {
   fi
 }
 
+# Register a new cli-session in messenger core.
+# Prints the created cli_session id on stdout, or dies on error.
+register_cli_session() {
+  local agent_id="$1" slug="$2" model="$3" window="$4" uuid="$5" logpath="$6"
+  local run_id="${7:-}" url="${8}" token="${9}"
+
+  local body
+  body=$(printf '{"agentId":%s,"workroomSlug":%s,"model":%s,"tmuxWindow":%s,"claudeSessionUuid":%s,"runId":%s}' \
+    "$(printf '%s' "${agent_id}" | jq -Rs .)" \
+    "$(printf '%s' "${slug}"     | jq -Rs .)" \
+    "$(printf '%s' "${model}"    | jq -Rs .)" \
+    "$(printf '%s' "${window}"   | jq -Rs .)" \
+    "$(printf '%s' "${uuid}"     | jq -Rs .)" \
+    "$(if [[ -n "${run_id}" ]]; then printf '%s' "${run_id}" | jq -Rs .; else echo 'null'; fi)")
+
+  local http_resp
+  http_resp=$(curl -sS -w '\n%{http_code}' \
+    -X POST "${url}/cli-sessions" \
+    -H "Authorization: Bearer ${token}" \
+    -H "Content-Type: application/json" \
+    -d "${body}") || die "curl failed calling ${url}/cli-sessions"
+
+  local http_body http_code
+  http_body=$(echo "${http_resp}" | head -n -1)
+  http_code=$(echo "${http_resp}" | tail -n 1)
+
+  [[ "${http_code}" =~ ^2 ]] || die "POST /cli-sessions returned HTTP ${http_code}: ${http_body}"
+
+  echo "${http_body}" | jq -r '.id' || die "could not parse .id from: ${http_body}"
+}
+
+# PATCH a cli-session status via messenger core.
+patch_cli_session_status() {
+  local cli_session_id="$1" status="$2" url="$3" token="$4"
+  curl -sS -o /dev/null \
+    -X PATCH "${url}/cli-sessions/${cli_session_id}" \
+    -H "Authorization: Bearer ${token}" \
+    -H "Content-Type: application/json" \
+    -d "{\"status\":\"${status}\"}"
+}
+
 # Launch a non-interactive claude --print run inside a tmux window, streaming
 # output to stdout (viewable in tmux pane) and teed into the session log.
+# When agent_id is non-empty, pipe through claude-stream-bridge.
 run_prompt_in_window() {
   local slug="$1" window="$2" uuid="$3" model="$4" cwd="$5" prompt="$6" resume="$7"
+  local agent_id="${8:-}" run_id="${9:-}" cli_session_id="${10:-}"
+  local messenger_url="${11:-}" ingest_token="${12:-}"
   local logfile="${STATE_DIR}/${slug}.log"
 
-  # Prepare the command
-  # Cost / cache optimizations:
-  # --dangerously-skip-permissions  — autonomous pool, no human approver
-  # --exclude-dynamic-system-prompt-sections — strips per-machine sections
-  #     (cwd, git status, env) from the system prompt. Major effect: the
-  #     system prompt becomes identical across parallel sessions on the
-  #     same repo, so Anthropic's prompt cache hits across sessions and we
-  #     stop paying cache_creation for shared boilerplate.
   local args=( --print --dangerously-skip-permissions
                --exclude-dynamic-system-prompt-sections
                --model "${model}"
                --output-format stream-json --include-partial-messages --verbose )
-  # Opus is scarce on Max → auto-fallback to Sonnet on overload so long-running
-  # orchestrator sessions don't hang when quota peaks.
   if [[ "${model}" == "opus" ]]; then
     args+=( --fallback-model sonnet )
   fi
-  # Optional effort override (low/medium/high/xhigh/max). Use 'low' for
-  # cheap mechanical tasks (pure extractions, docs) to cut thinking tokens.
   if [[ -n "${CLAUDE_SESSION_EFFORT_OVERRIDE:-}" ]]; then
     args+=( --effort "${CLAUDE_SESSION_EFFORT_OVERRIDE}" )
   fi
@@ -131,23 +174,29 @@ run_prompt_in_window() {
     args+=( --session-id "${uuid}" )
   fi
 
-  # Write the prompt to a temp file to avoid shell quoting.
   local pfile; pfile="${STATE_DIR}/${slug}.prompt.$$"
   printf '%s' "${prompt}" > "${pfile}"
 
-  # Ensure window exists; create if needed.
   if ! tmux list-windows -t "${TMUX_SESSION}" -F '#W' 2>/dev/null | grep -qxF "${window}"; then
     tmux new-window -a -t "${TMUX_SESSION}:{end}" -n "${window}" -c "${cwd}"
   fi
 
-  # Select and run
   tmux select-window -t "${TMUX_SESSION}:${window}"
-  # Clear previous output for readability on follow-ups
   tmux send-keys -t "${TMUX_SESSION}:${window}" "clear" C-m
 
-  # Build one-liner command. Use a helper bash -c so we can tee + format.
   local cmdline
-  cmdline="cd ${cwd@Q} && cat ${pfile@Q} | ${CLAUDE_BIN} ${args[*]@Q} --input-format text 2>&1 | tee -a ${logfile@Q} | jq -r --unbuffered '. as \$m | try (if .type == \"assistant\" then (.message.content // [] | map(select(.type==\"text\").text // \"\") | add // \"\") elif .type == \"system\" and .subtype == \"init\" then \"── session=\(.session_id) model=\(.model)\" elif .type == \"result\" then \"── done tokens=\(.usage.total_tokens // \"?\") ms=\(.duration_ms // \"?\")\" else empty end) catch empty' && rm -f ${pfile@Q}"
+  if [[ -n "${agent_id}" ]]; then
+    # Bridge mode: pipe stream-json through claude-stream-bridge before display
+    local bridge_args=( --agent-id "${agent_id}" )
+    [[ -n "${run_id}" ]]         && bridge_args+=( --run-id "${run_id}" )
+    [[ -n "${cli_session_id}" ]] && bridge_args+=( --cli-session-id "${cli_session_id}" )
+    bridge_args+=( --messenger-core-url "${messenger_url}" --ingest-token "${ingest_token}" )
+
+    cmdline="cd ${cwd@Q} && cat ${pfile@Q} | ${CLAUDE_BIN} ${args[*]@Q} --input-format text 2>&1 | tee -a ${logfile@Q} | ${BRIDGE_BIN} ${bridge_args[*]@Q} && rm -f ${pfile@Q}"
+  else
+    # Legacy mode: no bridge
+    cmdline="cd ${cwd@Q} && cat ${pfile@Q} | ${CLAUDE_BIN} ${args[*]@Q} --input-format text 2>&1 | tee -a ${logfile@Q} | jq -r --unbuffered '. as \$m | try (if .type == \"assistant\" then (.message.content // [] | map(select(.type==\"text\").text // \"\") | add // \"\") elif .type == \"system\" and .subtype == \"init\" then \"── session=\(.session_id) model=\(.model)\" elif .type == \"result\" then \"── done tokens=\(.usage.total_tokens // \"?\") ms=\(.duration_ms // \"?\")\" else empty end) catch empty' && rm -f ${pfile@Q}"
+  fi
   tmux send-keys -t "${TMUX_SESSION}:${window}" "${cmdline}" C-m
 }
 
@@ -158,18 +207,34 @@ cmd_create() {
   [[ "${slug}" =~ ^[a-z0-9][a-z0-9-]{1,39}$ ]] || die "slug must be [a-z0-9-]{2,40}"
 
   local workroom="" model="sonnet" prompt="" effort=""
+  local agent_id="" run_id="" parent_run=""
+  local messenger_url="${MESSENGER_CORE_URL}" ingest_token="${MESSENGER_INGEST_TOKEN}"
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --workroom) workroom="$2"; shift 2;;
-      --model)    model="$2"; shift 2;;
-      --prompt)   prompt="$2"; shift 2;;
-      --effort)   effort="$2"; shift 2;;
+      --workroom)          workroom="$2"; shift 2;;
+      --model)             model="$2"; shift 2;;
+      --prompt)            prompt="$2"; shift 2;;
+      --effort)            effort="$2"; shift 2;;
+      --agent-id)          agent_id="$2"; shift 2;;
+      --run-id)            run_id="$2"; shift 2;;
+      --parent-run)        parent_run="$2"; shift 2;;
+      --messenger-core-url) messenger_url="$2"; shift 2;;
+      --ingest-token)      ingest_token="$2"; shift 2;;
       *) die "unknown flag: $1";;
     esac
   done
 
   [[ -n "${prompt}" ]] || die "--prompt required for first message"
   registry_has "${slug}" && die "session '${slug}' already exists"
+
+  # Validate messenger flags when agent-id is provided
+  if [[ -n "${agent_id}" ]]; then
+    [[ -n "${messenger_url}" ]]  || die "--messenger-core-url (or \$MESSENGER_CORE_URL) required with --agent-id"
+    [[ -n "${ingest_token}" ]]   || die "--ingest-token (or \$MESSENGER_INGEST_TOKEN) required with --agent-id"
+    command -v "${BRIDGE_BIN}" >/dev/null 2>&1 || [[ -x "${BRIDGE_BIN}" ]] \
+      || die "claude-stream-bridge not found at ${BRIDGE_BIN} — run scripts/workrooms/install-bridge.sh"
+  fi
 
   local cwd="${HOME}"
   if [[ -n "${workroom}" ]]; then
@@ -179,20 +244,28 @@ cmd_create() {
 
   local uuid; uuid=$(gen_uuid)
   local window="cc-${slug}"
+  local logfile="${STATE_DIR}/${slug}.log"
 
   ensure_tmux_session
 
-  # Register first so listing is correct even if the run fails.
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" \
     >> "${REGISTRY}"
-  : > "${STATE_DIR}/${slug}.log"
+  : > "${logfile}"
 
-  # Stash effort in the meta json so run_prompt_in_window can pick it up on resume too.
   if [[ -n "${effort}" ]]; then
     export CLAUDE_SESSION_EFFORT_OVERRIDE="${effort}"
   fi
 
-  run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${cwd}" "${prompt}" "no"
+  local cli_session_id=""
+  if [[ -n "${agent_id}" ]]; then
+    cli_session_id=$(register_cli_session \
+      "${agent_id}" "${slug}" "${model}" "${window}" "${uuid}" "${logfile}" \
+      "${run_id}" "${messenger_url}" "${ingest_token}")
+    echo "[create] registered cli-session id=${cli_session_id}"
+  fi
+
+  run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${cwd}" "${prompt}" "no" \
+    "${agent_id}" "${run_id}" "${cli_session_id}" "${messenger_url}" "${ingest_token}"
 
   echo "[create] slug=${slug} uuid=${uuid} window=${window} model=${model} workroom=${workroom:-<none>}"
   echo "[create] Attach: ssh -t daria-dev 'tmux attach -t ${TMUX_SESSION} \\; select-window -t :${window}'"
@@ -215,6 +288,7 @@ cmd_send() {
   [[ -n "${workroom}" ]] && cwd="${HOME}/workrooms/${workroom}"
 
   ensure_tmux_session
+  # send does not re-register; bridge flags not threaded through send (follow-up is CLI-only)
   run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${cwd}" "${prompt}" "yes"
   echo "[send] queued follow-up in ${window}"
 }
@@ -274,8 +348,72 @@ cmd_state() {
   printf 'logfile  = %s\n' "${STATE_DIR}/${slug}.log"
 }
 
+# --- doctor ---
+# Queries messenger core for running cli-sessions, checks whether their tmux
+# windows still exist, and PATCHes status=error for any that are dead.
+# Requires MESSENGER_CORE_URL and MESSENGER_INGEST_TOKEN to be set.
+cmd_doctor() {
+  local messenger_url="${MESSENGER_CORE_URL:-}"
+  local ingest_token="${MESSENGER_INGEST_TOKEN:-}"
+
+  # Allow overrides via flags
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --messenger-core-url) messenger_url="$2"; shift 2;;
+      --ingest-token)       ingest_token="$2"; shift 2;;
+      *) die "unknown flag: $1";;
+    esac
+  done
+
+  [[ -n "${messenger_url}" ]] || die "MESSENGER_CORE_URL not set (or pass --messenger-core-url)"
+  [[ -n "${ingest_token}" ]]  || die "MESSENGER_INGEST_TOKEN not set (or pass --ingest-token)"
+
+  local http_resp http_body http_code
+  http_resp=$(curl -sS -w '\n%{http_code}' \
+    -H "Authorization: Bearer ${ingest_token}" \
+    "${messenger_url}/cli-sessions?status=running") \
+    || die "curl failed fetching running cli-sessions"
+
+  http_body=$(echo "${http_resp}" | head -n -1)
+  http_code=$(echo "${http_resp}" | tail -n 1)
+  [[ "${http_code}" =~ ^2 ]] || die "GET /cli-sessions returned HTTP ${http_code}: ${http_body}"
+
+  local rows; rows=$(echo "${http_body}" | jq -c '.[] // empty') || die "could not parse cli-sessions JSON"
+
+  if [[ -z "${rows}" ]]; then
+    echo "[doctor] no running cli-sessions found"
+    return 0
+  fi
+
+  echo "[doctor] checking running cli-sessions..."
+  printf '%-36s %-24s %-16s %s\n' ID SLUG WINDOW STATUS
+
+  while IFS= read -r row; do
+    local id slug window
+    id=$(echo "${row}"     | jq -r '.id')
+    slug=$(echo "${row}"   | jq -r '.workroomSlug // ""')
+    window=$(echo "${row}" | jq -r '.tmuxWindow // ""')
+
+    local tmux_ok=false
+    if [[ -n "${window}" ]] && tmux has-session -t "${TMUX_SESSION}" 2>/dev/null; then
+      if tmux list-windows -t "${TMUX_SESSION}" -F '#W' 2>/dev/null | grep -qxF "${window}"; then
+        tmux_ok=true
+      fi
+    fi
+
+    if "${tmux_ok}"; then
+      printf '%-36s %-24s %-16s alive\n' "${id}" "${slug}" "${window}"
+    else
+      printf '%-36s %-24s %-16s DEAD — patching status=error\n' "${id}" "${slug}" "${window}"
+      patch_cli_session_status "${id}" "error" "${messenger_url}" "${ingest_token}"
+    fi
+  done <<< "${rows}"
+
+  echo "[doctor] done"
+}
+
 # --- help ---
-cmd_help() { sed -n '2,32p' "$0"; }
+cmd_help() { sed -n '2,42p' "$0"; }
 
 # --- dispatch ---
 cmd="${1:-help}"; shift || true
@@ -288,6 +426,7 @@ case "${cmd}" in
   tail)   cmd_tail "$@";;
   kill)   cmd_kill "$@";;
   state)  cmd_state "$@";;
+  doctor) cmd_doctor "$@";;
   help|-h|--help) cmd_help;;
   *) die "unknown command: ${cmd}. See --help";;
 esac
