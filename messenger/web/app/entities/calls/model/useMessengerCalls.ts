@@ -1,7 +1,8 @@
 import { normalizeMessengerProjectRoot } from '../../../utils/messenger-project-root'
 import { buildMessengerUrl } from '../../../utils/messenger-url'
+import type { MessengerCallMode, MessengerIncomingCall, MessengerActiveCall, MessengerCallCameraFacing } from './use-call-ui'
+import { useCallUi } from './use-call-ui'
 
-type MessengerCallMode = 'audio' | 'video'
 type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
 type MessengerMediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerPermissionTarget = 'microphone' | 'camera' | 'media'
@@ -27,12 +28,6 @@ interface MessengerCallSecurityState {
   verificationEmojis: string[]
   status: string
   fallbackReason: string
-}
-
-interface MessengerCallControlsState {
-  microphoneEnabled: boolean
-  speakerEnabled: boolean
-  videoEnabled: boolean
 }
 
 type MessengerTranscriptSpeaker = 'you' | 'peer'
@@ -67,10 +62,6 @@ interface MessengerCallReviewState {
   syncedAt?: number
 }
 
-type MessengerCallViewMode = 'full' | 'split' | 'mini'
-type MessengerCallNetworkQuality = 'stable' | 'weak' | 'reconnecting' | 'lost'
-type MessengerCallCameraFacing = 'user' | 'environment'
-
 interface MessengerCallSignalEvent {
   type: 'call.signal'
   conversationId?: string
@@ -84,24 +75,6 @@ interface MessengerCallSignalEvent {
     displayName: string
     login: string
   }
-}
-
-interface MessengerIncomingCall {
-  callId: string
-  conversationId: string
-  fromUserId: string
-  fromDisplayName: string
-  mode: MessengerCallMode
-  e2ee?: MessengerCallE2EEPayload
-}
-
-interface MessengerActiveCall {
-  callId: string
-  conversationId: string
-  peerUserId: string
-  peerDisplayName: string
-  mode: MessengerCallMode
-  initiator: boolean
 }
 
 interface MessengerLiveKitTrack {
@@ -123,7 +96,6 @@ const liveKitRemoteTracks = new Set<MessengerLiveKitTrack>()
 const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
 const transformedSenders = new WeakSet<object>()
 const transformedReceivers = new WeakSet<object>()
-const CALL_VIEW_MODE_ORDER: MessengerCallViewMode[] = ['split', 'full', 'mini']
 const CALL_VERIFICATION_EMOJIS = ['🔒', '🎧', '🎤', '🛡️', '🎼', '🌿', '🔥', '⚡', '🌊', '🪐', '🍀', '🧩', '🛰️', '🎯', '🌙', '🫧', '🎹', '🦋', '☀️', '🧭', '💎', '🪶', '🎛️', '🧠', '🐚', '🕊️', '🧿', '🪙', '🌈', '❄️', '🍃', '🔑']
 const CALL_ANALYSIS_TOOLS: MessengerCallAnalysisTool[] = [
   { id: 'psychology', title: 'Психология клиента', description: 'Эмоции, доверие, скрытые триггеры и тревожность.' },
@@ -812,6 +784,7 @@ export function useMessengerCalls() {
   const { clientId } = useMessengerRealtimeIdentity()
   const conversations = useMessengerConversations()
   const navigation = useMessengerConversationState()
+  const { controls, viewMode, cameraFacing, activeCameraId, availableVideoInputIds, networkQuality, networkHint, setCallViewMode, cycleCallViewMode, setNetworkState, syncVideoTrackState, refreshVideoInputs } = useCallUi()
   const incomingCall = useState<MessengerIncomingCall | null>('messenger-incoming-call', () => null)
   const activeCall = useState<MessengerActiveCall | null>('messenger-active-call', () => null)
   const callStatusText = useState<string>('messenger-call-status', () => '')
@@ -819,17 +792,6 @@ export function useMessengerCalls() {
   const busy = useState<boolean>('messenger-call-busy', () => false)
   const requestingPermissions = useState<boolean>('messenger-call-requesting-permissions', () => false)
   const permissionHelp = useState<string>('messenger-call-permission-help', () => '')
-  const controls = useState<MessengerCallControlsState>('messenger-call-controls', () => ({
-    microphoneEnabled: true,
-    speakerEnabled: true,
-    videoEnabled: false,
-  }))
-  const viewMode = useState<MessengerCallViewMode>('messenger-call-view-mode', () => 'full')
-  const cameraFacing = useState<MessengerCallCameraFacing>('messenger-call-camera-facing', () => 'user')
-  const activeCameraId = useState<string>('messenger-call-camera-id', () => '')
-  const availableVideoInputIds = useState<string[]>('messenger-call-video-inputs', () => [])
-  const networkQuality = useState<MessengerCallNetworkQuality>('messenger-call-network-quality', () => 'stable')
-  const networkHint = useState<string>('messenger-call-network-hint', () => '')
   const renegotiating = useState<boolean>('messenger-call-renegotiating', () => false)
   const security = useState<MessengerCallSecurityState>('messenger-call-security', () => ({
     available: supportsInsertableCallEncryption(),
@@ -1943,21 +1905,6 @@ export function useMessengerCalls() {
     setSpeakerEnabled(!controls.value.speakerEnabled)
   }
 
-  function setCallViewMode(nextMode: MessengerCallViewMode) {
-    viewMode.value = nextMode
-  }
-
-  function cycleCallViewMode() {
-    const currentIndex = CALL_VIEW_MODE_ORDER.indexOf(viewMode.value)
-    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % CALL_VIEW_MODE_ORDER.length
-    viewMode.value = CALL_VIEW_MODE_ORDER[nextIndex] ?? 'split'
-  }
-
-  function setNetworkState(nextQuality: MessengerCallNetworkQuality, nextHint: string) {
-    networkQuality.value = nextQuality
-    networkHint.value = nextHint
-  }
-
   function attachElements(elements: {
     localVideo?: HTMLVideoElement | null
     remoteVideo?: HTMLVideoElement | null
@@ -1990,41 +1937,6 @@ export function useMessengerCalls() {
     remoteVideoEl = null
     remoteSpeakerVideoEl = null
     remoteAudioEl = null
-  }
-
-  function syncVideoTrackState(track?: MediaStreamTrack | null) {
-    if (!track) {
-      activeCameraId.value = ''
-      return
-    }
-
-    const settings = track.getSettings?.()
-    if (typeof settings?.deviceId === 'string' && settings.deviceId) {
-      activeCameraId.value = settings.deviceId
-    }
-
-    if (settings?.facingMode === 'environment' || settings?.facingMode === 'user') {
-      cameraFacing.value = settings.facingMode
-    }
-  }
-
-  async function refreshVideoInputs() {
-    if (!import.meta.client || !navigator.mediaDevices?.enumerateDevices) {
-      availableVideoInputIds.value = []
-      return []
-    }
-
-    try {
-      const videoInputs = (await navigator.mediaDevices.enumerateDevices())
-        .filter(device => device.kind === 'videoinput')
-      availableVideoInputIds.value = videoInputs
-        .map(device => device.deviceId)
-        .filter((deviceId): deviceId is string => Boolean(deviceId))
-      return videoInputs
-    } catch {
-      availableVideoInputIds.value = []
-      return []
-    }
   }
 
   function stopLocalStream() {
