@@ -197,16 +197,21 @@
 
 Каждая зона должна иметь ровно один owner-файл. Любая попытка продублировать функцию «как удобнее» в соседней зоне считается архитектурной регрессией.
 
-## Current Status vs Target (2026-04-17)
+## Current Status vs Target (2026-04-20)
 
-- Status source: `14-refactor-roadmap.md` + `server-audit-report.md` + новые lint-данные из `eslint.config.mjs` (no-restricted-imports в `server/api/**` даёт реальный backlog).
+- Status source: `14-refactor-roadmap.md` + Wave 9 (first batch) completed work.
 - Что уже достигнуто:
   - Все `server/api/auth/*.ts` endpoints (9 файлов) сведены к thin handlers, доменная логика в `server/modules/auth/{admin,client,contractor}-auth.service.ts` + `session.service.ts` + `admin-recovery.service.ts`.
-  - `server/api/admin/{search,notifications}.get.ts` — thin; логика в `server/modules/admin/`.
+  - `server/api/admin/**` endpoints (search, notifications, app-blueprints, design-modules, element-alignment, element-visibility) — thin; логика в `server/modules/admin/` и `server/modules/admin-settings/`.
+  - `server/api/projects/**` и `server/api/projects/[slug]/**` endpoints — all thin-wrapped, логика в `server/modules/projects/{projects,project-mutations,project-pages,project-relations,project-work-status,project-extra-services}.service.ts`.
+  - `server/api/{clients,contractors,designers,sellers,managers}/**` endpoints — fully delegated to `server/modules/` peer modules.
+  - `server/api/documents/**` и `server/api/gallery/**` endpoints — delegated to `server/modules/{documents,gallery}/`.
+  - `server/api/chat/**` endpoints — delegated to `server/modules/chat/`.
   - `server/db/schema.ts` распилен по 11 per-domain файлов + `relations.ts` + `index.ts`.
-  - `projects/work-status` hot-path: thin-controller + prepared queries.
+  - `server/utils/**` дренирован; только infrastructure helpers (body, errors, logger, messenger-cors, query, request-context, security-headers) остаются.
   - Shared system-константы и ключевые DTO вынесены.
 - Что ещё не доведено до полного match:
-  - Часть доменов `server/api/**` всё ещё импортирует `drizzle-orm` и `~/server/db/schema` напрямую (см. baseline lint, ~190 ошибок).
-  - `server/utils/**` остаётся основным домом для проектной логики — модули в `server/modules/{auth,projects,chat}` кроме newly-added остаются bridge re-exports.
-- Критерий завершения: `pnpm lint:errors` = 0, `server/api/**` чисто HTTP/validation/auth, логика в `server/modules/**`, shared-контракты — единственный source of truth.
+  - Lint baseline: 3 ошибки (все рациональные цели lint-ratchet process-env-retry). Нулевых нарушений архитектуры нет.
+  - 2 ошибки в `server/modules/__tests__/{admin,ai}.repositories.test.ts` — process.env в тестах, target для lint-ratchet (see docs/architecture-v5/20-config-and-logging.md §1).
+  - 1 ошибка в `messenger/core/src/agents/claude-cli-reply.ts` — out-of-scope (messenger runtime isolation).
+- Критерий завершения: `pnpm lint:errors` = 3 (целевой baseline после lint-ratchet process-env-retry), `server/api/**` чисто HTTP/validation/auth, логика в `server/modules/**`, shared-контракты — единственный source of truth для inter-module contracts.

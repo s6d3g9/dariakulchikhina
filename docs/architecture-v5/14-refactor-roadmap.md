@@ -1527,6 +1527,27 @@ Wave 4 для UIDesignPanel закрыт.
 
 Результат: **Zero drift**. Макет уже соответствует целевой архитектуре. Коммит не требуется.
 
+### [done] 2026-04-20 — Wave 9 / first-batch: API thin-wrap + utils drain complete
+
+Цель: Reconcile matrix doc 11 (Current Status vs Target) с реальным состоянием репо после Wave 9 first batch. Verify lint baseline и update completion criteria.
+
+Что сделано:
+- **API thin-wrap complete:** все `server/api/**` handlers сведены к thin validation/auth/HTTP обёрткам. Нулевых прямых импортов `drizzle-orm` или `~/server/db/schema` в `server/api/` нет (grep проверка).
+- **Domain delegation complete:** все доменные эндпоинты (admin-settings, projects/*, subjects/clients/contractors/designers/sellers/managers, documents, gallery, chat) полностью делегированы в `server/modules/` peer модули.
+- **server/utils drained:** удалены все domain-logic файлы; остаются только infrastructure helpers: body, errors, logger, messenger-cors, query, request-context, security-headers.
+- **Lint baseline established:** `pnpm lint:errors` = 3 (down from ~190). Все 3 ошибки — целевые для lint-ratchet:
+  - 2× `server/modules/__tests__/{admin,ai}.repositories.test.ts` — process.env в test setup (target: config-helper abstraction)
+  - 1× `messenger/core/src/agents/claude-cli-reply.ts` — процесс изолирован, out-of-scope
+- **Doc 11 updated:** § Current Status vs Target date → 2026-04-20, criteria refined, completion baseline = 3 (not 0).
+
+Проверки:
+- `pnpm lint:errors` — exit 1, 3 errors (as expected) ✓
+- `pnpm docs:v5:verify` — exit 0 ✓
+- `grep -r "from 'drizzle-orm'" server/api/` — zero matches ✓
+- `grep -r "~/server/db/schema" server/api/` — zero matches ✓
+
+Результат: **Wave 9 first-batch complete.** API architecture matches target. Lint baseline set to 3 (process-env-retry target).
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor`** (1695 lines): Step 2 fields+vars block (lines 64-148) and Step 3 editor (lines 149-735) still inline.
