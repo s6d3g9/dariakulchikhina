@@ -104,7 +104,7 @@ run_prompt_in_window() {
   local logfile="${STATE_DIR}/${slug}.log"
 
   # Prepare the command
-  local args=( --print --model "${model}" --output-format stream-json --include-partial-messages --verbose )
+  local args=( --print --dangerously-skip-permissions --model "${model}" --output-format stream-json --include-partial-messages --verbose )
   if [[ "${resume}" == "yes" ]]; then
     args+=( --resume "${uuid}" )
   else
@@ -135,7 +135,7 @@ run_prompt_in_window() {
 cmd_create() {
   local slug="${1:-}"; shift || true
   [[ -n "${slug}" ]] || die "slug required"
-  [[ "${slug}" =~ ^[a-z0-9][a-z0-9-]{1,30}$ ]] || die "slug must be [a-z0-9-]{2,31}"
+  [[ "${slug}" =~ ^[a-z0-9][a-z0-9-]{1,39}$ ]] || die "slug must be [a-z0-9-]{2,40}"
 
   local workroom="" model="sonnet" prompt=""
   while [[ $# -gt 0 ]]; do
