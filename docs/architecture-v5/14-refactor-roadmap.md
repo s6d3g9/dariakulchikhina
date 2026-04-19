@@ -1534,3 +1534,21 @@ Wave 4 для UIDesignPanel закрыт.
 - **`AdminDocumentsSection` registry**: search/sort/filter state composable + card grid.
 - **`app/layouts/admin.vue`**: header utility bar (search/notifications/edit mode) → `AdminHeaderUtilities.vue`, hamburger panel — separate work.
 - **`Wipe2Renderer.vue`** (517 строк): conditional content render'ы; вынести bullet block renderers.
+
+### [verified] 2026-04-20 — Wave 9 / subjects domain modules audit (clients, contractors, designers, sellers, managers)
+
+Цель: подтвердить соответствие 5 subject-доменов требованиям DDD-lite: тонкие handlers в `server/api/<domain>/**`, вся domain logic в `server/modules/<domain>/**.service.ts` + `**.repository.ts`.
+
+Аудит:
+- `server/api/clients/` (9 handlers) — 0 drizzle/schema imports. Сервис: clients.service.ts (269 строк) + clients.repository.ts (174 строк). ✓
+- `server/api/contractors/` (19 handlers) — 0 drizzle/schema imports. Сервисы: contractors.service.ts, contractor-documents.service.ts, contractor-work-items.service.ts + соотв. repositories. ✓
+- `server/api/designers/` (14 handlers) — 0 drizzle/schema imports. Сервисы: designers.service.ts (512 строк) + designer-documents.service.ts + repositories. ✓
+- `server/api/sellers/` (6 handlers) — 0 drizzle/schema imports. Сервис: sellers.service.ts + sellers.repository.ts. ✓
+- `server/api/managers/` (6 handlers) — 0 drizzle/schema imports. Сервис: managers.service.ts + managers.repository.ts. ✓
+
+Проверка:
+- `pnpm lint:errors` — 0 no-restricted-imports errors в 5 API subdirs ✓ (3 pre-existing errors в messenger и тестах, не связаны с задачей)
+- `pnpm exec vue-tsc --noEmit` — 0 новых ошибок (pre-existing errors только в tmp_*_backup.ts файлах) ✓
+- OCC version-semantics на PATCH/PUT endpoints: handlers делегируют в service, которые возвращают null на 404 (→ 409 logically reserved for version mismatch via OCC in repository) ✓
+
+Результат: **Zero drift**. Все 5 доменов уже мигрированы в Wave 5 (2026-04-17). Коммит не требуется.
