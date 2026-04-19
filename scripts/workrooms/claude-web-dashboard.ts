@@ -732,7 +732,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   .stat span{font-variant-numeric:tabular-nums}
   .bar{width:100%;height:4px;background:#222;border-radius:2px;overflow:hidden;margin-top:2px}
   .bar > i{display:block;height:100%;background:linear-gradient(90deg,#5b8ff9,#b78fff);transition:width .4s}
-  .navs{display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:var(--panel);position:relative;padding-bottom:72px}
+  .navs{display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:var(--panel);position:relative;padding-bottom:120px}
   #deps-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
   #deps-svg .dep-line{fill:none;stroke-width:1.6;opacity:.65;stroke-dasharray:6 4;animation:dep-flow 1.6s linear infinite;transition:opacity .2s;stroke-linejoin:round;stroke-linecap:round}
   #deps-svg .dep-line.dim{opacity:.1}
@@ -918,18 +918,20 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 
   // ── Dependency graph ──
 
-  // Stable hue from a chain prefix → distinct color per chain
-  function chainColor(kind, prefix) {
-    if (kind === 'spawned') return '#a78bfa'; // orchestrator-spawned edges: violet
+  // Each edge gets its own color — stable (hash-based, not rand()) but
+  // distinct per (from, to) pair. Spawned edges stay in the violet range
+  // (so you can still tell "orchestrator sent this" at a glance), declared
+  // edges drift across the full hue wheel.
+  function edgeColor(dep) {
+    const key = dep.from + '→' + dep.to;
     let h = 0;
-    for (let i = 0; i < prefix.length; i++) h = (h * 31 + prefix.charCodeAt(i)) >>> 0;
-    return 'hsl(' + (h % 360) + ', 70%, 62%)';
-  }
-
-  function chainOf(slug) {
-    const parts = slug.split('-');
-    if (parts.length >= 2) return parts[0] + '-' + parts[1];
-    return parts[0];
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    if (dep.kind === 'spawned') {
+      // violet base 270°, jitter ±25°, medium saturation
+      const hue = 245 + (h % 50);
+      return 'hsl(' + hue + ', 65%, 68%)';
+    }
+    return 'hsl(' + (h % 360) + ', 68%, 62%)';
   }
 
   state.deps = [];
@@ -972,15 +974,18 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       const x1 = aR.left + aR.width / 2 - nRect.left;
       const y1 = aR.bottom - nRect.top + 2;        // source: just below the tab
       const x2 = bR.left + bR.width / 2 - nRect.left;
-      const y2 = bR.top - nRect.top - 2;           // target: just above the tab
+      const y2 = bR.bottom - nRect.top + 2;        // target: just below the tab (anchor to card bottom so the line never crosses the card body)
       const xMin = Math.min(x1, x2);
       const xMax = Math.max(x1, x2);
       prepared.push({ dep, x1, y1, x2, y2, xMin, xMax });
     }
 
-    // Horizontal lanes live in the padding-bottom area beneath the nav rows
-    const laneBaseY = nRect.height - 60;   // first lane
-    const laneStep  = 12;                  // vertical distance between lanes
+    // Horizontal lanes live in the padding-bottom area beneath the nav rows.
+    // padding-bottom was increased to 120px to give more room for lanes; we
+    // start the first lane 100px from the bottom and space lanes 9px apart
+    // (tighter than before) to fit more concurrent edges cleanly.
+    const laneBaseY = nRect.height - 100;  // first lane
+    const laneStep  = 9;                   // vertical distance between lanes
     const lanes = [];                      // lanes[i] = [{xMin,xMax}, ...]
 
     // Greedy lane assignment: pick the lowest-index lane whose existing
@@ -1001,7 +1006,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 
     for (const p of prepared) {
       const { dep, x1, y1, x2, y2, laneY } = p;
-      const color = chainColor(dep.kind, chainOf(dep.to));
+      const color = edgeColor(dep);
       const safeId = 'arr-' + color.replace(/[^a-z0-9]/gi, '');
       const safeIdStart = 'arrS-' + color.replace(/[^a-z0-9]/gi, '');
       if (!markerIds.has(safeId)) {
@@ -1041,9 +1046,12 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
       const goRight = x2 >= x1;
       const sign = goRight ? 1 : -1;
       const stop = 7;                          // stop short for arrowhead
-      const y2stop = (y2 - stop);
-      // For bidirectional (spawned) edges, also stop short at the source
-      // so the reverse arrowhead doesn't overlap the tab.
+      // Both source and target are anchored to the card's BOTTOM edge now
+      // (y1 = source.bottom+2, y2 = target.bottom+2). The path descends
+      // from y1 to the lane, runs horizontally, then ascends back UP to y2.
+      // So when stopping short of the target we go BELOW y2 (higher y
+      // value); same for bidirectional reverse at source.
+      const y2stop = y2 + stop;
       const y1start = dep.kind === 'spawned' ? y1 + stop : y1;
 
       const c1x = x1, c1y = laneY - R;
