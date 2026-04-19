@@ -9,12 +9,13 @@ import {
   messengerAgents,
   messengerAgentRuns,
   messengerAgentRunEvents,
+  messengerCliSessions,
 } from '../../../../server/db/schema/messenger.ts'
 import { readMessengerConfig } from '../config.ts'
 
-export { messengerAgents, messengerAgentRuns, messengerAgentRunEvents, eq, and, isNull, sql, gt, lt, lte, or, desc }
+export { messengerAgents, messengerAgentRuns, messengerAgentRunEvents, messengerCliSessions, eq, and, isNull, sql, gt, lt, lte, or, desc }
 
-const schema = { messengerAgents, messengerAgentRuns, messengerAgentRunEvents }
+const schema = { messengerAgents, messengerAgentRuns, messengerAgentRunEvents, messengerCliSessions }
 export type IngestDb = ReturnType<typeof drizzle<typeof schema>>
 
 let _db: IngestDb | null = null

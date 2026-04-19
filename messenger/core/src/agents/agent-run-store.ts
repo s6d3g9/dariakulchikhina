@@ -2,13 +2,15 @@ import { randomUUID } from 'node:crypto'
 import {
   useIngestDb,
   messengerAgentRuns,
+  messengerAgentRunEvents,
   eq,
   isNull,
   and,
   sql,
-  desc,
   lt,
+  gt,
   or,
+  desc,
   lte,
 } from './ingest-db.ts'
 import { encodeCursor, decodeCursor } from '../shared/cursor.ts'
@@ -33,6 +35,7 @@ export interface MessengerAgentRunEventRecord {
 
 export interface MessengerAgentRunRecord {
   runId: string
+  parentRunId?: string
   conversationId?: string
   agentId: string
   parentRunId?: string
@@ -129,6 +132,96 @@ export async function listMessengerAgentRuns(input: {
 
 export async function getMessengerAgentRunById(runId: string) {
   return _runs.find(run => run.runId === runId) ?? null
+}
+
+export async function createMessengerAgentRun(input: {
+  agentId: string
+  parentRunId?: string
+  prompt?: string
+  model?: string
+}): Promise<string> {
+  const db = useIngestDb()
+  const runId = randomUUID()
+  await db.insert(messengerAgentRuns).values({
+    id: runId,
+    agentId: input.agentId,
+    parentRunId: input.parentRunId ?? null,
+    status: 'pending',
+    prompt: input.prompt ?? null,
+    model: input.model ?? null,
+  })
+  return runId
+}
+
+export async function updateMessengerAgentRunStatus(
+  runId: string,
+  status: string,
+): Promise<void> {
+  const db = useIngestDb()
+  await db
+    .update(messengerAgentRuns)
+    .set({ status })
+    .where(eq(messengerAgentRuns.id, runId))
+}
+
+export async function listMessengerAgentRunSubtree(input: {
+  agentId: string
+  rootRunId: string
+  cursor?: string
+  limit?: number
+}): Promise<{ items: Array<typeof messengerAgentRuns.$inferSelect>; nextCursor: string | null }> {
+  const db = useIngestDb()
+  const limit = Math.min(Math.max(input.limit || 20, 1), 100)
+
+  const conditions = [
+    eq(messengerAgentRuns.agentId, input.agentId),
+    isNull(messengerAgentRuns.deletedAt),
+    or(
+      eq(messengerAgentRuns.id, input.rootRunId),
+      eq(messengerAgentRuns.parentRunId, input.rootRunId),
+    ),
+  ]
+  if (input.cursor) {
+    conditions.push(lt(messengerAgentRuns.createdAt, new Date(input.cursor)))
+  }
+
+  const rows = await db
+    .select()
+    .from(messengerAgentRuns)
+    .where(and(...conditions))
+    .orderBy(desc(messengerAgentRuns.createdAt))
+    .limit(limit + 1)
+
+  const hasMore = rows.length > limit
+  const items = hasMore ? rows.slice(0, limit) : rows
+  const nextCursor = hasMore ? items[items.length - 1].createdAt?.toISOString() ?? null : null
+  return { items, nextCursor }
+}
+
+export async function listMessengerAgentRunEventsPaginated(input: {
+  runId: string
+  cursor?: string
+  limit?: number
+}): Promise<{ items: Array<typeof messengerAgentRunEvents.$inferSelect>; nextCursor: string | null }> {
+  const db = useIngestDb()
+  const limit = Math.min(Math.max(input.limit || 50, 1), 200)
+
+  const conditions = [eq(messengerAgentRunEvents.runId, input.runId)]
+  if (input.cursor) {
+    conditions.push(gt(messengerAgentRunEvents.occurredAt, new Date(input.cursor)))
+  }
+
+  const rows = await db
+    .select()
+    .from(messengerAgentRunEvents)
+    .where(and(...conditions))
+    .orderBy(asc(messengerAgentRunEvents.occurredAt))
+    .limit(limit + 1)
+
+  const hasMore = rows.length > limit
+  const items = hasMore ? rows.slice(0, limit) : rows
+  const nextCursor = hasMore ? items[items.length - 1].occurredAt.toISOString() : null
+  return { items, nextCursor }
 }
 
 export async function listMessengerAgentEdgePayloads(input: {
