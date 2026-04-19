@@ -58,6 +58,13 @@ function isOrchestratorSlug(slug) {
   return /orchestrator|coordinator|planner|manager/i.test(slug);
 }
 
+// Composer is the top layer of the hierarchy: user + assistant discuss
+// strategy, triage, architecture. Composer instructs the orchestrator,
+// orchestrator spawns workers. There is typically exactly one composer.
+function isComposerSlug(slug) {
+  return /^composer(-.*)?$/i.test(slug);
+}
+
 const QUEUE_DIRS = ['pending', 'running', 'done', 'failed'];
 const QUEUE_ROOT = join(HOME, 'state/queue');
 const WORKROOMS_ROOT = join(HOME, 'workrooms');
@@ -690,7 +697,7 @@ async function handle(req, res) {
     const archive = includeArchive ? readArchiveRegistry() : [];
     const all = [...active, ...archive];
     const enriched = await Promise.all(all.map(async r => ({
-      session: { ...r, role: isOrchestratorSlug(r.slug) ? 'orchestrator' : 'worker' },
+      session: { ...r, role: isComposerSlug(r.slug) ? 'composer' : isOrchestratorSlug(r.slug) ? 'orchestrator' : 'worker' },
       metrics: r.archived ? zeroMetrics(r.slug) : await computeMetrics(r.slug),
     })));
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -914,6 +921,11 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   }
   .nav-row + .nav-row{border-top:1px solid var(--line)}
   .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0}
+  .nav-row.composers{background:#14130b;border-bottom:1px solid var(--line)}
+  .nav-row.composers .label{color:#fbbf24;font-weight:600}
+  .nav-row.composers .tab{background:#1f1b0c;border:1px solid #3a2f12}
+  .nav-row.composers .tab.active{border-color:#fbbf24;color:#fbbf24;box-shadow:inset 0 0 0 1px #fbbf24}
+  .nav-row.composers .tab .dot.standby{background:#fbbf24;box-shadow:0 0 6px #fbbf24}
   .nav-row.orchestrators{background:#0f1419}
   .nav-row.orchestrators .label{color:#a78bfa}
   .nav-row.archive{background:#0a0d11;min-height:30px}
@@ -1030,6 +1042,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 </section>
 <div class="navs">
   <svg id="deps-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+  <div class="nav-row composers" id="nav-composers"><span class="label">★ composer</span></div>
   <div class="nav-row orchestrators" id="nav-orchestrators"><span class="label">◆ orchestrators</span></div>
   <div class="nav-row workers" id="nav-workers"><span class="label">workers</span><span class="spacer"></span>
     <button class="toggle-btn" id="btn-archive-all-done" title="Archive all sessions in state=done">archive all done</button>
@@ -1048,6 +1061,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 (() => {
   const state = { sessions: [], metrics: {}, active: null, archiveExpanded: false, showDeps: true, hoveredSlug: null, startedAt: Date.now(),
                   status: { activeSessions:0, monthCostUsd:0, monthBudgetUsd:200, ctxLimit:200000 } };
+  const composerRowEl = document.getElementById('nav-composers');
   const orchRowEl = document.getElementById('nav-orchestrators');
   const workersRowEl = document.getElementById('nav-workers');
   const archiveRowEl = document.getElementById('nav-archive');
@@ -1144,7 +1158,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     // Orchestrators don't die on --print completion — their conversation
     // state is resumable. Show "done" for them as "standby" so it's clear
     // they're available for another poke.
-    if (s.role === 'orchestrator' && m.state === 'done') return 'standby';
+    if ((s.role === 'orchestrator' || s.role === 'composer') && m.state === 'done') return 'standby';
     return m.state || (s.archived ? 'archived' : 'idle');
   }
 
@@ -1422,9 +1436,19 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   // (drag threshold is 6px, label click needs no drag so it's fine)
 
   function renderTabs() {
+    // Composer row — always pinned at the top. Typically one session.
+    composerRowEl.querySelectorAll('.tab').forEach(n => n.remove());
+    const composers = state.sessions.filter(s => s.role === 'composer' && !s.archived);
+    if (composers.length === 0) {
+      const empty = document.createElement('small'); empty.className = 'tab'; empty.style.opacity = '.4';
+      empty.style.cursor = 'default'; empty.textContent = '(no composer — run: claude-session create composer --model sonnet)';
+      composerRowEl.appendChild(empty);
+    } else {
+      for (const s of composers) composerRowEl.appendChild(makeTabEl(s));
+    }
     // Orchestrators row
     orchRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const orch = state.sessions.filter(s => s.role === 'orchestrator' && !s.archived);
+    const orch = state.sessions.filter(s => (s.role === 'orchestrator' || s.role === 'composer') && !s.archived);
     if (orch.length === 0) {
       const empty = document.createElement('small'); empty.className = 'tab'; empty.style.opacity = '.4';
       empty.style.cursor = 'default'; empty.textContent = '(no orchestrators)';
@@ -1432,9 +1456,9 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     } else {
       for (const s of orch) orchRowEl.appendChild(makeTabEl(s));
     }
-    // Workers row — active only
+    // Workers row — active only, composer + orchestrator excluded
     workersRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const workers = state.sessions.filter(s => s.role !== 'orchestrator' && !s.archived);
+    const workers = state.sessions.filter(s => s.role !== 'orchestrator' && s.role !== 'composer' && !s.archived);
     const spacer = workersRowEl.querySelector('.spacer');
     for (const s of workers) workersRowEl.insertBefore(makeTabEl(s), spacer);
     // Archive row — archived sessions (both orchestrators & workers)
@@ -1506,9 +1530,9 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
         \${s.archived ? '<button id="btn-kill" class="danger" disabled title="session archived">archived</button>'
                      : '<button id="btn-kill" class="danger">kill</button>'}
         \${(!s.archived && m.state === 'done' && s.role !== 'orchestrator') ? '<button id="btn-archive">archive</button>' : ''}
-        \${(!s.archived && s.role === 'orchestrator') ? '<button id="btn-poke" title="Resume session with a new instruction">poke (resume)</button>' : ''}
+        \${(!s.archived && (s.role === 'orchestrator' || s.role === 'composer')) ? '<button id="btn-poke" title="Resume session with a new instruction">poke (resume)</button>' : ''}
       </div>
-      \${(!s.archived && s.role === 'orchestrator') ? \`
+      \${(!s.archived && (s.role === 'orchestrator' || s.role === 'composer')) ? \`
       <h3>why 'standby'?</h3>
       <div style="font-size:11px;color:var(--mute);line-height:1.4">
         claude --print one-shot completed and session is resumable by UUID.
@@ -1659,7 +1683,11 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     const arr = await r.json();
     state.sessions = arr.map(x => x.session);
     arr.forEach(x => { state.metrics[x.session.slug] = x.metrics; });
-    if (!state.active && state.sessions.length) state.active = state.sessions[0].slug;
+    if (!state.active && state.sessions.length) {
+      // Default to composer if it exists, else first session.
+      const comp = state.sessions.find(s => s.role === 'composer' && !s.archived);
+      state.active = (comp ? comp.slug : state.sessions[0].slug);
+    }
     if (state.active && !state.sessions.find(s => s.slug === state.active)) {
       state.active = state.sessions[0]?.slug || null;
     }
