@@ -29,7 +29,7 @@ export interface MessengerConversationItem {
   } | null
 }
 
-import { buildMessengerUrl } from '../../../utils/messenger-url'
+import { resolveAttachmentUrl } from '../../../core/api/conversations'
 import type { MessengerEncryptedBinaryPayload, MessengerEncryptedPayload } from '../../messages/model/useMessengerCrypto'
 
 export interface MessengerAttachmentKlipyPayload {
@@ -128,8 +128,8 @@ function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: st
     ...item,
     attachment: {
       ...item.attachment,
-      absoluteUrl: buildMessengerUrl(config.public.messengerCoreBaseUrl, item.attachment.url),
-      resolvedUrl: buildMessengerUrl(config.public.messengerCoreBaseUrl, item.attachment.url),
+      absoluteUrl: resolveAttachmentUrl(config.public.messengerCoreBaseUrl, item.attachment.url),
+      resolvedUrl: resolveAttachmentUrl(config.public.messengerCoreBaseUrl, item.attachment.url),
     },
   }
 }
