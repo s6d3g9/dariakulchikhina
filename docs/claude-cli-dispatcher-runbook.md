@@ -55,7 +55,32 @@ Both feed the same session; output updates live on the dashboard and in the UI.
 3. Verify the dashboard endpoint: `curl -s http://152.53.176.165:9090 -w "\nStatus: %{http_code}\n"` (should be 200)
 4. Any tmux sessions from before the reboot are lost — recreate them with `claude-session create`
 
-## 7. Data locations
+## 7. End-to-end verification
+
+Use the smoke script to verify the full agent orchestration path — SQL seed → stream bridge → ingest endpoint → DB assertions — without touching CI:
+
+```bash
+# From repo root on daria-dev (messenger/core must be running on :3033)
+bash scripts/smoke/agent-orchestration.sh
+```
+
+The script:
+1. Seeds a transient agent and run via SQL (no admin API exists yet for this).
+2. Invokes `claude-stream-bridge` with prompt `"Reply with exactly: hello"` and model `haiku`.
+3. Polls `messenger_agent_runs.status` until `completed` (120 s timeout).
+4. Asserts: ≥1 `delta` event, `token_in + token_out > 0` (cost_usd derived from Haiku pricing), `status = completed`.
+5. Prints a summary report and cleans up seeded rows.
+
+**This is a manual verification step** — do not add it to CI, as it requires live infrastructure (PostgreSQL, messenger/core, Claude CLI auth).
+
+Pass `--no-cleanup` to leave DB rows for post-mortem inspection:
+```bash
+bash scripts/smoke/agent-orchestration.sh --no-cleanup
+```
+
+See [`scripts/smoke/agent-orchestration.sh`](../scripts/smoke/agent-orchestration.sh) for full source.
+
+## 8. Data locations
 
 | What | Where | Notes |
 |------|-------|-------|

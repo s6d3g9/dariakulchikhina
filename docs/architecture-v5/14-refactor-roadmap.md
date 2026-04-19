@@ -1469,6 +1469,19 @@ Wave 4 для UIDesignPanel закрыт.
 - `app/pages/admin/clients/index.vue`: 705 → 460 lines (−245 lines, −35%).
 - Commit: `4fb3179`
 
+### [done] 2026-04-19 — Agent orchestration batches 1–7: CLI bridge wired end-to-end
+
+Seven-batch series delivering the full agent orchestration pipeline:
+
+- **Batch 1–3** — DB schema: `messenger_agents`, `messenger_agent_runs`, `messenger_agent_run_events` tables with OCC (`version`), soft-delete (`deleted_at`), cursor index on `(run_id, occurred_at)`.
+- **Batch 4** — `messenger/core/src/agents/ingest-handler.ts`: Fastify route `POST /agents/:id/stream`, token-bucket rate limiter (50 events/s per agent), event persistence (run_start / substate / delta / tool_use / tokens / complete / error), run status machine (`pending → running → completed/failed`).
+- **Batch 5** — `scripts/workrooms/claude-stream-bridge.ts`: adapts Claude CLI `--output-format stream-json` events to the ingest endpoint. Flags: `--agent-id`, `--conversation-id`, `--run-id`, `--model`, `--prompt`, `--token`, `--messenger-url`.
+- **Batch 6** — `messenger/core/src/agents/__tests__/ingest-handler.smoke.ts`: in-process smoke for the ingest route (seed → 4 events → assert status + broadcasts).
+- **Batch 7** — E2E smoke + docs finalize:
+  - `scripts/smoke/agent-orchestration.sh`: full E2E verifier (SQL seed → bridge → ingest → DB assertions: ≥1 delta event, tokens > 0, cost_usd derived, status=completed).
+  - Runbook section "End-to-end verification" added to `docs/claude-cli-dispatcher-runbook.md`.
+  - Architecture audit updated: Agent orchestration → Aligned.
+
 ### Остающиеся цели (требуют big-session composable work)
 
 - **`AdminDocumentEditor`** (1695 lines): Step 2 fields+vars block (lines 64-148) and Step 3 editor (lines 149-735) still inline.

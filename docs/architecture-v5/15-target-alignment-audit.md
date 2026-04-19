@@ -106,6 +106,25 @@ Status: Aligned
 Что важно:
 - это основной документ для контроля фактического состояния программы рефакторинга.
 
+## 15. Agent orchestration
+
+Status: Aligned
+
+Что совпадает:
+- `messenger_agents`, `messenger_agent_runs`, `messenger_agent_run_events` — схема в БД;
+- `messenger/core/src/agents/ingest-handler.ts` — Fastify-роут `POST /agents/:id/stream` с rate-limiting, персистенцией событий, машиной состояний (pending → running → completed/failed);
+- `scripts/workrooms/claude-stream-bridge.ts` — адаптер Claude CLI stream-json → ingest endpoint;
+- `scripts/smoke/agent-orchestration.sh` — E2E верификатор (SQL seed → bridge → DB assertions);
+- Runbook `docs/claude-cli-dispatcher-runbook.md` содержит секцию "End-to-end verification".
+
+Что остаётся как forward-looking:
+- Convenience-обёртка `claude-session create --agent-id --run-id` (сейчас bridge вызывается напрямую из smoke-скрипта);
+- Admin API для управления агентами (сейчас агенты сидируются через SQL).
+
+Вывод:
+- pipeline полностью реализован и верифицирован smoke-тестом;
+- структурные файлы лежат в ожидаемых местах по архитектурной карте.
+
 ## Приоритетные structural gaps
 
 1. Создать и реально наполнить `app/shared/**` и `app/features/**` как primary-layer.
