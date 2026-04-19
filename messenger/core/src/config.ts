@@ -84,6 +84,9 @@ const envSchema = z.object({
   GEMMA_URL: z.string().trim().optional(),
   OLLAMA_BASE_URL: z.string().trim().default('http://localhost:11434'),
   MESSENGER_EMBED_MODEL: z.string().trim().default('nomic-embed-text'),
+  // PostgreSQL — used by ingest endpoint; falls back to DATABASE_URL if not set
+  MESSENGER_DB_URL: z.string().optional(),
+  DATABASE_URL: z.string().optional(),
   // LiveKit — used by realtime server for call token generation
   LIVEKIT_API_URL: z.string().trim().default('wss://dariakulchikhina.com/livekit'),
   LIVEKIT_API_KEY: z.string().trim().optional(),

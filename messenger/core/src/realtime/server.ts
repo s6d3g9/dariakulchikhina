@@ -25,6 +25,7 @@ import { buildContactsOverview, createInvite, deleteContactForUser, respondToInv
 import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } from '../crypto/crypto-store.ts'
 import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, buildMessengerProjectSyncBrief, deleteMessengerProject, deleteMessengerProjectAgreement, deleteMessengerProjectCabinetLink, deleteMessengerProjectSubject, getMessengerProject, listMessengerProjectTemplates, listMessengerProjects, upsertMessengerProject, upsertMessengerProjectAgreement, upsertMessengerProjectCabinetLink, upsertMessengerProjectSubject } from '../project-engine/project-engine-store.ts'
 import { readMessengerConfig } from '../config.ts'
+import { registerIngestRoutes } from '../agents/ingest-handler.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from '../media/media-store.ts'
 import { hasMessengerTranscriptionHttpBackend, isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from '../transcription/transcription-service.ts'
 import { getMessengerUserAiSettings, updateMessengerUserAiSettings } from '../profile/user-ai-settings-store.ts'
@@ -133,6 +134,19 @@ export async function createMessengerServer() {
 
   const clients = new Map<string, MessengerRealtimeClient>()
   const callRoutes = new Map<string, MessengerCallRoute>()
+  const channelSubscriptions = new Map<string, Set<string>>() // channel → Set<connectionId>
+
+  function broadcastToChannel(channel: string, event: Record<string, unknown>) {
+    const subscribers = channelSubscriptions.get(channel)
+    if (!subscribers) return
+    const payload = JSON.stringify(event)
+    for (const connectionId of subscribers) {
+      const client = clients.get(connectionId)
+      if (client?.socket.readyState === 1) {
+        client.socket.send(payload)
+      }
+    }
+  }
 
   function emitToUsers(userIds: string[], event: Record<string, unknown>) {
     const uniqueUserIds = new Set(userIds)
@@ -2892,6 +2906,18 @@ export async function createMessengerServer() {
             return
           }
           
+          if (data.type === 'subscribe' && typeof data.channel === 'string') {
+            const ch = data.channel as string
+            if (!channelSubscriptions.has(ch)) channelSubscriptions.set(ch, new Set())
+            channelSubscriptions.get(ch)!.add(connectionId)
+            return
+          }
+
+          if (data.type === 'unsubscribe' && typeof data.channel === 'string') {
+            channelSubscriptions.get(data.channel as string)?.delete(connectionId)
+            return
+          }
+
           if (data.type === 'call.audio-chunk') {
             const conversation = await findConversationById(data.conversationId)
             if (conversation && conversation.kind !== 'direct-secret' && (conversation.userAId === user.id || conversation.userBId === user.id)) {
@@ -2922,8 +2948,13 @@ export async function createMessengerServer() {
 
     socket.on('close', () => {
       clients.delete(connectionId)
+      for (const subscribers of channelSubscriptions.values()) {
+        subscribers.delete(connectionId)
+      }
     })
   })
+
+  registerIngestRoutes(app, broadcastToChannel)
 
   return app
 }
