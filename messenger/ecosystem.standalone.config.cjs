@@ -83,6 +83,11 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         MESSENGER_CORE_HOST: '0.0.0.0',
+        // DB — prefer explicit MESSENGER_CORE_DATABASE_URL, fall back to
+        // DATABASE_URL. Config.ts reads both; messenger-core failed to
+        // connect without these being passed through by PM2.
+        DATABASE_URL: runtimeEnv.DATABASE_URL || '',
+        MESSENGER_CORE_DATABASE_URL: runtimeEnv.MESSENGER_CORE_DATABASE_URL || runtimeEnv.DATABASE_URL || '',
         MESSENGER_CORE_PORT: runtimeEnv.MESSENGER_CORE_PORT || '4300',
         MESSENGER_CORE_LOG_LEVEL: runtimeEnv.MESSENGER_CORE_LOG_LEVEL || 'info',
         MESSENGER_CORE_AUTH_SECRET: runtimeEnv.MESSENGER_CORE_AUTH_SECRET || 'change-me-before-production',
