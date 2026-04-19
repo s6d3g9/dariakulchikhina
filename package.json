@@ -14,7 +14,7 @@
     "messenger:core:build": "pnpm -C messenger/core build",
     "messenger:core:start": "pnpm -C messenger/core start",
     "ingest:smoke": "node --experimental-strip-types messenger/core/src/agents/__tests__/ingest-handler.smoke.ts",
-    "test:server:admin": "node --experimental-strip-types server/modules/__tests__/admin.repositories.test.ts",
+    "test:server:admin": "node --env-file=.env --experimental-strip-types server/modules/__tests__/admin.repositories.test.ts",
     "messenger:export:standalone": "bash scripts/export-messenger-standalone.sh",
     "comm:dev": "cd services/communications-service && node --watch --experimental-strip-types src/index.ts",
     "comm:start": "cd services/communications-service && node --experimental-strip-types src/index.ts",

@@ -19,6 +19,7 @@ import {
   findContractorById,
 } from '../ai.repository.ts'
 import { searchLegalChunksByEmbedding, countLegalChunks } from '../rag.repository.ts'
+import { config } from '~/server/config'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -46,7 +47,7 @@ let testContractorId: number
 // ---------------------------------------------------------------------------
 describe('ai + rag repositories', async () => {
   before(async () => {
-    sql = postgres(process.env.DATABASE_URL!)
+    sql = postgres(config.DATABASE_URL)
 
     const [proj] = await sql`
       INSERT INTO projects (slug, title, status)
