@@ -1,10 +1,14 @@
-interface MessengerAuthUser {
-  id: string
-  login: string
-  displayName: string
-}
+import {
+  login as authLogin,
+  register as authRegister,
+  getMe,
+  setAuthTokenProvider,
+  messengerAuthRequest,
+  type MessengerAuthUser,
+  type MessengerAuthResponse,
+} from '../../../core/api/auth'
 
-import { buildMessengerUrl } from '../../../utils/messenger-url'
+export type { MessengerAuthUser, MessengerAuthResponse }
 
 export interface MessengerContactsOverview {
   contacts: Array<{
@@ -34,11 +38,6 @@ export interface MessengerContactsOverview {
   }>
 }
 
-interface MessengerAuthResponse {
-  token: string
-  user: MessengerAuthUser
-}
-
 type MessengerAuthPersistenceMode = 'local' | 'session'
 
 const LOCAL_STORAGE_KEY = 'daria-messenger-token'
@@ -56,11 +55,13 @@ function isUnauthorizedError(error: unknown) {
 }
 
 export function useMessengerAuth() {
-  const config = useRuntimeConfig()
+  const messengerCrypto = useMessengerCrypto()
   const token = useState<string | null>('messenger-auth-token', () => null)
   const user = useState<MessengerAuthUser | null>('messenger-auth-user', () => null)
   const ready = useState<boolean>('messenger-auth-ready', () => false)
   const persistenceMode = useState<MessengerAuthPersistenceMode>('messenger-auth-persistence-mode', () => 'local')
+
+  setAuthTokenProvider(() => token.value)
 
   function readStoredToken() {
     if (!import.meta.client) {
@@ -122,17 +123,7 @@ export function useMessengerAuth() {
     }
   }
 
-  async function request<T>(path: string, options: Parameters<typeof $fetch<T>>[1] = {}) {
-    const headers = new Headers(options.headers as HeadersInit | undefined)
-    if (token.value) {
-      headers.set('Authorization', `Bearer ${token.value}`)
-    }
-
-    return await $fetch<T>(buildMessengerUrl(config.public.messengerCoreBaseUrl, path), {
-      ...options,
-      headers,
-    })
-  }
+  const request = messengerAuthRequest
 
   async function hydrate() {
     if (ready.value) {
@@ -150,7 +141,7 @@ export function useMessengerAuth() {
     }
 
     try {
-      const response = await request<{ user: MessengerAuthUser }>('/auth/me')
+      const response = await getMe()
       user.value = response.user
       await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
       writeStoredAuth({ token: token.value, user: user.value }, persistenceMode.value)
@@ -181,19 +172,13 @@ export function useMessengerAuth() {
   }
 
   async function login(payload: { login: string; password: string }) {
-    const response = await request<MessengerAuthResponse>('/auth/login', {
-      method: 'POST',
-      body: payload,
-    })
+    const response = await authLogin(payload)
     acceptAuth(response)
     await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
   }
 
   async function register(payload: { login: string; password: string; displayName: string }) {
-    const response = await request<MessengerAuthResponse>('/auth/register', {
-      method: 'POST',
-      body: payload,
-    })
+    const response = await authRegister(payload)
     acceptAuth(response)
     await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
   }
