@@ -993,7 +993,7 @@ export function useMessengerCalls() {
 
   watch(() => auth.token.value, (nextToken) => {
     if (nextToken && !settingsModel.aiSettingsReady.value && !settingsModel.aiSettingsPending.value) {
-      void settingsModel.hydrateAiSettings(auth.request)
+      void settingsModel.hydrateAiSettings()
     }
   }, { immediate: true })
   const audioReadiness = computed(() => {

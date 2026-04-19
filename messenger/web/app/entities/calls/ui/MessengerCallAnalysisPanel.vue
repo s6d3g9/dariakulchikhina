@@ -47,7 +47,7 @@ watch([calls.transcriptionEntries, calls.transcriptionDraft], () => {
 
 onMounted(() => {
   if (auth.token.value && !settingsModel.aiSettingsReady.value) {
-    void settingsModel.hydrateAiSettings(auth.request)
+    void settingsModel.hydrateAiSettings()
   }
 
   if (auth.token.value && !projectEngine.projects.value.length && !projectEngine.pending.value) {
@@ -58,7 +58,7 @@ onMounted(() => {
 async function updateAiAnalyticsEnabled(value: boolean) {
   settingsModel.aiSettings.value.interpretationProvider = value ? 'api' : 'algorithm'
   if (auth.token.value) {
-    await settingsModel.persistAiSettings(auth.request)
+    await settingsModel.persistAiSettings()
   }
 }
 
