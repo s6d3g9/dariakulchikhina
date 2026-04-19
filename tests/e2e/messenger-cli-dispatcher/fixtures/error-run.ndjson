@@ -1,0 +1,3 @@
+{"event":"run_start","run_id":"{{RUN_ID}}","agent_id":"{{AGENT_ID}}","started_at":"2026-04-19T10:00:00Z","delay_ms":50}
+{"event":"substate","run_id":"{{RUN_ID}}","substate":"context","summary":"Gathering context...","delay_ms":100}
+{"event":"run_error","run_id":"{{RUN_ID}}","error":"Fatal error: model unavailable","fatal":true,"finished_at":"2026-04-19T10:00:01Z","delay_ms":50}
