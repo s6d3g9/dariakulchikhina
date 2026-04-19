@@ -11,6 +11,7 @@ import type { MessengerAgentRun, MessengerAgentRunArtifact, MessengerAgentRunEve
 import type { MessengerAgentWorkspaceFilePreview, MessengerAgentWorkspaceListing } from './model/useMessengerAgentWorkspace'
 import { useMessengerAgentStream } from '../../entities/agents/model/useMessengerAgentStream'
 import type { AgentSubstate } from '../../entities/agents/model/useMessengerAgentStream'
+import AgentRunTree from '../../features/agent-run-tree/ui/AgentRunTree.vue'
 
 type AgentWorkspaceSectionKey = 'overview' | 'settings' | 'knowledge' | 'links' | 'runs' | 'graph' | 'explorer'
 
@@ -189,6 +190,11 @@ const recentRuns = computed(() => {
     .filter(run => run.agentId === agent.id)
     .filter(run => !props.conversationId || !run.conversationId || run.conversationId === props.conversationId)
     .slice(0, 5)
+})
+const treeRootId = computed(() => {
+  const fromSelected = selectedRun.value?.rootRunId
+  if (fromSelected) return fromSelected
+  return recentRuns.value.find(r => r.rootRunId)?.rootRunId ?? null
 })
 const recentPayloads = computed(() => {
   const agent = resolvedAgent.value
@@ -1116,6 +1122,12 @@ async function openWorkspaceFile(path: string) {
               <h3 class="agent-chat-workspace__card-title">{{ runtimeState ? runtimePhaseLabel(runtimeState.phase) : 'Ожидает новое сообщение' }}</h3>
               <p class="agent-chat-workspace__card-text">{{ runtimeState?.summary || 'После следующего сообщения здесь появится live trace текущего прогона.' }}</p>
             </article>
+            <AgentRunTree
+              v-if="treeRootId"
+              :root-run-id="treeRootId"
+              :agent-id="agentId"
+              @open-run="openRunDetail($event)"
+            />
             <div v-if="recentRuns.length" class="agent-chat-workspace__list">
               <button
                 v-for="run in recentRuns"
@@ -1129,7 +1141,7 @@ async function openWorkspaceFile(path: string) {
                 <span>{{ formatTimestamp(run.updatedAt) }}</span>
               </button>
             </div>
-            <p v-else class="agent-chat-workspace__card-text">История запусков для этого agent-чата пока пуста.</p>
+            <p v-else-if="!treeRootId" class="agent-chat-workspace__card-text">История запусков для этого agent-чата пока пуста.</p>
             <article v-if="selectedRun" class="agent-chat-workspace__card agent-chat-workspace__card--form">
               <p class="agent-chat-workspace__card-eyebrow">Детали прогона</p>
               <h3 class="agent-chat-workspace__card-title">{{ runStatusLabel(selectedRun.status) }} · {{ formatTimestamp(selectedRun.updatedAt) }}</h3>

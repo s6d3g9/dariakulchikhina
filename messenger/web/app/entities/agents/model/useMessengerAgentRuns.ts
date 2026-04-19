@@ -21,6 +21,13 @@ export interface MessengerAgentRun {
   conversationId?: string
   agentId: string
   status: 'running' | 'completed' | 'failed'
+  parentRunId?: string
+  rootRunId?: string
+  costUsd?: number
+  tokenInTotal?: number
+  tokenOutTotal?: number
+  model?: string
+  substate?: string
   startedAt: string
   updatedAt: string
   events: MessengerAgentRunEvent[]
