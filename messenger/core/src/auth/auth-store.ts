@@ -1,8 +1,9 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
-import { randomUUID, scryptSync, timingSafeEqual, randomBytes } from 'node:crypto'
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 
-import { resolveMessengerDataPath } from '../media/storage-paths.ts'
+import { eq, isNull } from 'drizzle-orm'
+
+import { useMessengerDb } from '../db/client.ts'
+import { messengerUsers } from '../db/schema.ts'
 
 export interface MessengerUserRecord {
   id: string
@@ -12,17 +13,11 @@ export interface MessengerUserRecord {
   createdAt: string
 }
 
-interface MessengerUsersFile {
-  users: MessengerUserRecord[]
-}
-
 export interface RegisterMessengerUserInput {
   login: string
   password: string
   displayName: string
 }
-
-const STORAGE_PATH = resolveMessengerDataPath('users.json')
 
 function normalizeLogin(value: string) {
   return value.trim().toLowerCase()
@@ -45,67 +40,84 @@ function verifyPasswordHash(password: string, storedHash: string) {
   return expected.length === derived.length && timingSafeEqual(expected, derived)
 }
 
-async function ensureStorage() {
-  await mkdir(dirname(STORAGE_PATH), { recursive: true })
-}
-
-async function readUsersFile(): Promise<MessengerUsersFile> {
-  await ensureStorage()
-
-  try {
-    const raw = await readFile(STORAGE_PATH, 'utf8')
-    const parsed = JSON.parse(raw) as Partial<MessengerUsersFile>
-    return {
-      users: Array.isArray(parsed.users) ? parsed.users as MessengerUserRecord[] : [],
-    }
-  } catch {
-    return { users: [] }
+function rowToRecord(row: typeof messengerUsers.$inferSelect): MessengerUserRecord {
+  const pk = row.publicKey as Record<string, unknown> | null
+  return {
+    id: row.id,
+    login: row.login,
+    displayName: row.displayName ?? '',
+    passwordHash: typeof pk?._pwHash === 'string' ? pk._pwHash : '',
+    createdAt: row.createdAt.toISOString(),
   }
 }
 
-async function writeUsersFile(payload: MessengerUsersFile) {
-  await ensureStorage()
-  await writeFile(STORAGE_PATH, JSON.stringify(payload, null, 2) + '\n', 'utf8')
+export async function listMessengerUsers(): Promise<MessengerUserRecord[]> {
+  const db = useMessengerDb()
+  const rows = await db
+    .select()
+    .from(messengerUsers)
+    .where(isNull(messengerUsers.deletedAt))
+  return rows.map(rowToRecord)
 }
 
-export async function listMessengerUsers() {
-  const payload = await readUsersFile()
-  return payload.users
-}
-
-export async function findMessengerUserByLogin(login: string) {
+export async function findMessengerUserByLogin(login: string): Promise<MessengerUserRecord | null> {
   const normalized = normalizeLogin(login)
-  const users = await listMessengerUsers()
-  return users.find(user => user.login === normalized) ?? null
+  const db = useMessengerDb()
+  const row = await db
+    .select()
+    .from(messengerUsers)
+    .where(eq(messengerUsers.login, normalized))
+    .limit(1)
+    .then(rows => rows[0] ?? null)
+
+  if (!row || row.deletedAt) {
+    return null
+  }
+
+  return rowToRecord(row)
 }
 
-export async function findMessengerUserById(id: string) {
-  const users = await listMessengerUsers()
-  return users.find(user => user.id === id) ?? null
+export async function findMessengerUserById(id: string): Promise<MessengerUserRecord | null> {
+  const db = useMessengerDb()
+  const row = await db
+    .select()
+    .from(messengerUsers)
+    .where(eq(messengerUsers.id, id))
+    .limit(1)
+    .then(rows => rows[0] ?? null)
+
+  if (!row || row.deletedAt) {
+    return null
+  }
+
+  return rowToRecord(row)
 }
 
-export async function registerMessengerUser(input: RegisterMessengerUserInput) {
-  const payload = await readUsersFile()
+export async function registerMessengerUser(input: RegisterMessengerUserInput): Promise<MessengerUserRecord> {
   const login = normalizeLogin(input.login)
-  const existing = payload.users.find(user => user.login === login)
+  const db = useMessengerDb()
+  const existing = await findMessengerUserByLogin(login)
   if (existing) {
     throw new Error('USER_EXISTS')
   }
 
-  const user: MessengerUserRecord = {
-    id: randomUUID(),
-    login,
-    displayName: input.displayName.trim(),
-    passwordHash: createPasswordHash(input.password),
-    createdAt: new Date().toISOString(),
-  }
+  const passwordHash = createPasswordHash(input.password)
+  const now = new Date()
+  const [row] = await db
+    .insert(messengerUsers)
+    .values({
+      login,
+      displayName: input.displayName.trim(),
+      publicKey: { _pwHash: passwordHash },
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning()
 
-  payload.users.push(user)
-  await writeUsersFile(payload)
-  return user
+  return rowToRecord(row)
 }
 
-export async function authenticateMessengerUser(login: string, password: string) {
+export async function authenticateMessengerUser(login: string, password: string): Promise<MessengerUserRecord | null> {
   const user = await findMessengerUserByLogin(login)
   if (!user) {
     return null
