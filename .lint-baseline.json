@@ -1,5 +1,9 @@
 {
-  "generatedAt": "2026-04-18T10:39:14.766Z",
-  "totalErrors": 0,
-  "perFile": {}
+  "generatedAt": "2026-04-19T20:35:34.265Z",
+  "totalErrors": 3,
+  "perFile": {
+    "messenger/core/src/agents/claude-cli-reply.ts": 1,
+    "server/modules/__tests__/admin.repositories.test.ts": 1,
+    "server/modules/ai/__tests__/ai.repositories.test.ts": 1
+  }
 }
