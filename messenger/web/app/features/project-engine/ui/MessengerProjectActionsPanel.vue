@@ -12,6 +12,7 @@ import type {
   ProjectActionExecutePayload,
   ProjectActionId,
 } from '../model/useMessengerProjectActions'
+import ActionBuilder from './builder/ActionBuilder.vue'
 
 type ProjectOverviewPane = 'timeline' | 'sprints' | 'subjects' | 'scope-detail'
 
@@ -63,20 +64,6 @@ const projectPickerOpen = ref(false)
 const searchPanelOpen = ref(false)
 const overviewPane = ref<ProjectOverviewPane | ''>('')
 const activeSubjectContextId = ref('')
-const taskMode = ref<'existing' | 'new'>('new')
-const selectedTaskId = ref('')
-const taskTitle = ref('')
-const selectedTaskStatus = ref('')
-const selectedPhaseKey = ref('')
-const selectedSprintId = ref('')
-const selectedSubjectId = ref('')
-const selectedObjectId = ref('')
-const selectedDocumentId = ref('')
-const selectedServiceId = ref('')
-const rangeStart = ref('')
-const rangeEnd = ref('')
-const detailsText = ref('')
-const formError = ref('')
 const actionSearch = ref('')
 const projectSearch = ref('')
 const selectedCategory = ref<ProjectActionCategoryGroup['category'] | ''>('')
@@ -128,7 +115,7 @@ const sprintOverviewItems = computed(() => {
 })
 const timelineChipCount = computed(() => activeProjectCatalog.value?.phases.length || 0)
 const sprintChipCount = computed(() => activeProjectCatalog.value?.sprints.length || 0)
-const subjectChipCount = computed(() => subjectItems.value.length)
+const subjectChipCount = computed(() => (props.catalog?.subjects || []).length)
 const showExpansion = computed(() => {
   return showProjectPane.value
     || showSearchPane.value
@@ -137,7 +124,6 @@ const showExpansion = computed(() => {
     || showSubjectsPane.value
     || showScopeDetailPane.value
     || Boolean(currentAction.value)
-    || Boolean(formError.value)
 })
 
 const filteredProjectItems = computed(() => {
@@ -157,51 +143,6 @@ const filteredProjectItems = computed(() => {
   })
 })
 
-const taskItems = computed(() => {
-  const catalogTasks = props.catalog?.tasks || []
-
-  return catalogTasks.filter((task) => {
-    if (selectedSprintId.value) {
-      return task.sprintId === selectedSprintId.value || !task.sprintId
-    }
-
-    if (selectedPhaseKey.value) {
-      return !task.phaseKey || task.phaseKey === selectedPhaseKey.value
-    }
-
-    return true
-  })
-})
-
-const phaseItems = computed(() => props.catalog?.phases || [])
-const sprintItems = computed(() => {
-  const catalogSprints = props.catalog?.sprints || []
-  if (!selectedPhaseKey.value) {
-    return catalogSprints
-  }
-
-  return catalogSprints.filter(sprint => !sprint.linkedPhaseKey || sprint.linkedPhaseKey === selectedPhaseKey.value)
-})
-const subjectItems = computed(() => props.catalog?.subjects || [])
-const objectItems = computed(() => props.catalog?.objects || [])
-const documentItems = computed(() => props.catalog?.documents || [])
-const serviceItems = computed(() => {
-  const catalogServices = props.catalog?.extraServices || []
-  if (currentAction.value?.id === 'create_invoice') {
-    return catalogServices.filter(service => ['quoted', 'approved'].includes(service.status))
-  }
-
-  return catalogServices
-})
-
-const selectedTask = computed(() => taskItems.value.find(task => task.id === selectedTaskId.value) || null)
-const selectedPhase = computed(() => phaseItems.value.find(phase => phase.phaseKey === selectedPhaseKey.value) || null)
-const selectedSprint = computed(() => sprintItems.value.find(sprint => sprint.id === selectedSprintId.value) || null)
-const selectedSubject = computed(() => subjectItems.value.find(subject => subject.id === selectedSubjectId.value) || null)
-const selectedObject = computed(() => objectItems.value.find(object => object.id === selectedObjectId.value) || null)
-const selectedDocument = computed(() => documentItems.value.find(document => document.id === selectedDocumentId.value) || null)
-const selectedService = computed(() => serviceItems.value.find(service => service.id === selectedServiceId.value) || null)
-
 const sprintStatusLabels: Record<MessengerPlatformSprintOption['status'], string> = {
   planned: 'Запланирован',
   active: 'Активен',
@@ -210,51 +151,6 @@ const sprintStatusLabels: Record<MessengerPlatformSprintOption['status'], string
 }
 
 const catalogRecommendations = computed(() => props.catalog?.coordination.recommendations?.slice(0, 3) || [])
-
-const workTaskStatusItems = [
-  { title: 'Запланировано', value: 'planned' },
-  { title: 'Ожидание', value: 'pending' },
-  { title: 'В работе', value: 'in_progress' },
-  { title: 'На паузе', value: 'paused' },
-  { title: 'Выполнено', value: 'done' },
-  { title: 'Отменено', value: 'cancelled' },
-  { title: 'Пропущено', value: 'skipped' },
-]
-
-const hybridTaskStatusItems = [
-  { title: 'К выполнению', value: 'todo' },
-  { title: 'В работе', value: 'doing' },
-  { title: 'На проверке', value: 'review' },
-  { title: 'Выполнено', value: 'done' },
-]
-
-const taskActionIds = new Set<ProjectActionId>(['assign_task', 'create_task', 'update_work_status'])
-const stageActionIds = new Set<ProjectActionId>(['accept_stage', 'change_phase', 'approve_selection', 'report_completion'])
-const documentActionIds = new Set<ProjectActionId>(['send_corrections', 'approve_act', 'upload_photo_report', 'share_file'])
-const financeActionIds = new Set<ProjectActionId>(['create_invoice', 'order_extra_service'])
-const subjectActionIds = new Set<ProjectActionId>(['assign_task', 'create_task', 'request_report', 'ask_designer', 'request_clarification', 'request_response'])
-const objectActionIds = new Set<ProjectActionId>(['assign_task', 'create_task', 'send_corrections', 'create_invoice', 'order_extra_service', 'request_variants'])
-const directMutationActionIds = new Set<ProjectActionId>(['assign_task', 'accept_stage', 'change_phase', 'create_invoice', 'create_task', 'order_extra_service', 'update_work_status'])
-
-const usesTaskSelection = computed(() => Boolean(currentAction.value && taskActionIds.has(currentAction.value.id)))
-const usesStageSelection = computed(() => Boolean(currentAction.value && stageActionIds.has(currentAction.value.id)))
-const usesDocumentSelection = computed(() => Boolean(currentAction.value && documentActionIds.has(currentAction.value.id)))
-const usesFinanceSelection = computed(() => Boolean(currentAction.value && financeActionIds.has(currentAction.value.id)))
-const usesSubjectSelection = computed(() => Boolean(currentAction.value && subjectActionIds.has(currentAction.value.id)))
-const usesObjectSelection = computed(() => Boolean(currentAction.value && objectActionIds.has(currentAction.value.id)))
-const usesRangeSelection = computed(() => Boolean(currentAction.value && (taskActionIds.has(currentAction.value.id) || stageActionIds.has(currentAction.value.id))))
-const usesTaskStatusSelection = computed(() => currentAction.value?.id === 'update_work_status')
-const isDirectMutationAction = computed(() => Boolean(currentAction.value && directMutationActionIds.has(currentAction.value.id)))
-
-const selectedTaskStatusItems = computed(() => {
-  return selectedTask.value?.source === 'hybrid'
-    ? hybridTaskStatusItems
-    : workTaskStatusItems
-})
-
-const selectedTaskStatusLabel = computed(() => {
-  return selectedTaskStatusItems.value.find(option => option.value === selectedTaskStatus.value)?.title || ''
-})
 
 const governanceRoleItems = [
   { title: 'Клиент', value: 'client' },
@@ -357,11 +253,11 @@ const subjectFabulaPresets: Record<MessengerPlatformSubjectOption['kind'], Subje
 const fallbackSubjectActionCategoryOrder = ['communication', 'documents', 'tasks', 'finance', 'stages'] as const
 
 const activeSubjectContext = computed(() => {
-  return subjectItems.value.find(subject => subject.id === activeSubjectContextId.value) || null
+  return (props.catalog?.subjects || []).find(s => s.id === activeSubjectContextId.value) || null
 })
 
 const subjectActionMenus = computed(() => {
-  return subjectItems.value.map((subject) => {
+  return (props.catalog?.subjects || []).map((subject) => {
     const preset = subjectFabulaPresets[subject.kind] || subjectFabulaPresets.custom
     const preferredActions = preset.actionIds
       .map(actionId => allActions.value.find(action => action.id === actionId) || null)
@@ -451,10 +347,6 @@ const editableScopeSettings = computed(() => {
   })
 })
 
-const submitLabel = computed(() => {
-  return isDirectMutationAction.value ? 'Выполнить и добавить в чат' : 'Добавить в чат'
-})
-
 const filteredCategoryGroups = computed(() => {
   const query = normalizedActionSearch.value
 
@@ -499,49 +391,6 @@ const selectedCategoryActions = computed(() => {
 
   return group.actions.filter(action => matchesActionSearch(action, query))
 })
-
-const canSubmit = computed(() => {
-  if (!currentAction.value || !props.selectedProjectSlug || props.catalogPending || Boolean(props.pendingAction)) {
-    return false
-  }
-
-  if (usesTaskSelection.value) {
-    if (taskMode.value === 'new') {
-      return taskTitle.value.trim().length > 0
-    }
-
-    return usesTaskStatusSelection.value
-      ? Boolean(selectedTaskId.value && selectedTaskStatus.value)
-      : Boolean(selectedTaskId.value)
-  }
-
-  if (usesStageSelection.value) {
-    return Boolean(selectedPhaseKey.value || selectedSprintId.value)
-  }
-
-  if (currentAction.value?.id === 'create_invoice') {
-    return serviceItems.value.some(service => service.id === selectedServiceId.value)
-  }
-
-  return true
-})
-
-function resetFormState() {
-  taskMode.value = 'new'
-  selectedTaskId.value = ''
-  taskTitle.value = ''
-  selectedTaskStatus.value = ''
-  selectedPhaseKey.value = ''
-  selectedSprintId.value = ''
-  selectedSubjectId.value = ''
-  selectedObjectId.value = ''
-  selectedDocumentId.value = ''
-  selectedServiceId.value = ''
-  rangeStart.value = ''
-  rangeEnd.value = ''
-  detailsText.value = ''
-  formError.value = ''
-}
 
 function cloneScopeSettings(settings: Record<string, unknown>) {
   return JSON.parse(JSON.stringify(settings || {})) as Record<string, unknown>
@@ -667,7 +516,6 @@ function formatRangeLabel(startDate?: string, endDate?: string) {
 
 function resetCategorySelection() {
   selectedCategory.value = ''
-  formError.value = ''
   emit('selectAction', null)
 }
 
@@ -676,28 +524,6 @@ function closeUtilityPanes() {
   projectSearch.value = ''
   searchPanelOpen.value = false
   overviewPane.value = ''
-}
-
-function primeDefaults() {
-  if (!props.catalog) {
-    return
-  }
-
-  if (!selectedPhaseKey.value && props.catalog.project.activePhaseKey) {
-    selectedPhaseKey.value = props.catalog.project.activePhaseKey
-  }
-
-  if (!selectedSprintId.value && props.catalog.project.activeSprintId) {
-    selectedSprintId.value = props.catalog.project.activeSprintId
-  }
-
-  if (currentAction.value?.id === 'update_work_status') {
-    taskMode.value = 'existing'
-  }
-
-  if (currentAction.value?.id === 'create_invoice' && !selectedServiceId.value && serviceItems.value.length) {
-    selectedServiceId.value = serviceItems.value[0]?.id || ''
-  }
 }
 
 function handleActionClick(action: ProjectActionDefinition) {
@@ -714,8 +540,6 @@ function handleActionClick(action: ProjectActionDefinition) {
 
 function openSubjectAction(subjectId: string, action: ProjectActionDefinition) {
   activeSubjectContextId.value = subjectId
-  selectedSubjectId.value = subjectId
-  formError.value = ''
   closeUtilityPanes()
 
   const parentGroup = props.groups.find(group => group.actions.some(candidate => candidate.id === action.id))
@@ -743,7 +567,6 @@ function selectCategory(category: ProjectActionCategoryGroup['category']) {
   }
 
   selectedCategory.value = category
-  formError.value = ''
 
   const nextGroup = props.groups.find(group => group.category === category)
   if (props.selectedActionId && nextGroup && !nextGroup.actions.some(action => action.id === props.selectedActionId)) {
@@ -805,124 +628,9 @@ function openScopeDetail(scopeType: MessengerPlatformScopeType, scopeId: string)
   emit('openScopeDetail', { scopeType, scopeId })
 }
 
-function buildExecutePayload(): ProjectActionExecutePayload {
-  const effectiveTaskTitle = taskMode.value === 'existing'
-    ? selectedTask.value?.title || ''
-    : taskTitle.value.trim()
-
-  const effectiveRangeStart = rangeStart.value || selectedTask.value?.rangeStart || selectedSprint.value?.startDate || selectedPhase.value?.startDate || ''
-  const effectiveRangeEnd = rangeEnd.value || selectedTask.value?.rangeEnd || selectedSprint.value?.endDate || selectedPhase.value?.endDate || ''
-
-  return {
-    text: detailsText.value.trim() || undefined,
-    note: detailsText.value.trim() || undefined,
-    projectSlug: props.selectedProjectSlug,
-    projectTitle: props.catalog?.project.title || props.projects.find(project => project.slug === props.selectedProjectSlug)?.title || props.selectedProjectSlug,
-    taskMode: taskMode.value,
-    taskId: selectedTask.value?.id,
-    taskTitle: effectiveTaskTitle || undefined,
-    taskStatus: selectedTaskStatus.value || undefined,
-    taskStatusLabel: selectedTaskStatusLabel.value || undefined,
-    phaseKey: selectedPhase.value?.phaseKey || undefined,
-    phaseTitle: selectedPhase.value?.title || undefined,
-    sprintId: selectedSprint.value?.id || undefined,
-    sprintName: selectedSprint.value?.name || undefined,
-    subjectId: selectedSubject.value?.id || undefined,
-    subjectLabel: selectedSubject.value?.label || undefined,
-    objectId: selectedObject.value?.id || undefined,
-    objectLabel: selectedObject.value?.label || undefined,
-    rangeStart: effectiveRangeStart || undefined,
-    rangeEnd: effectiveRangeEnd || undefined,
-    documentId: selectedDocument.value?.id || undefined,
-    documentTitle: selectedDocument.value?.title || undefined,
-    serviceId: selectedService.value?.id || undefined,
-    serviceTitle: selectedService.value?.title || undefined,
-    useFilePicker: usesDocumentSelection.value && !selectedDocument.value,
-  }
-}
-
-function submitAction() {
-  formError.value = ''
-
-  if (!currentAction.value) {
-    formError.value = 'Выберите действие.'
-    return
-  }
-
-  if (!props.selectedProjectSlug.trim()) {
-    formError.value = 'Сначала выберите проект.'
-    return
-  }
-
-  if (usesTaskSelection.value) {
-    if (taskMode.value === 'new' && !taskTitle.value.trim()) {
-      formError.value = 'Укажите название новой задачи.'
-      return
-    }
-
-    if (taskMode.value === 'existing' && !selectedTaskId.value) {
-      formError.value = 'Выберите задачу из списка.'
-      return
-    }
-  }
-
-  if (usesTaskStatusSelection.value && !selectedTaskStatus.value) {
-    formError.value = 'Выберите новый статус задачи.'
-    return
-  }
-
-  if (usesStageSelection.value && !selectedPhaseKey.value && !selectedSprintId.value) {
-    formError.value = 'Выберите этап или спринт.'
-    return
-  }
-
-  if (currentAction.value.id === 'create_invoice' && !selectedServiceId.value) {
-    formError.value = 'Выберите доп. услугу для счёта.'
-    return
-  }
-
-  emit('execute', currentAction.value.id, buildExecutePayload())
-}
-
-function resolveNextTaskStatus() {
-  if (!selectedTask.value) {
-    return ''
-  }
-
-  if (selectedTask.value.source === 'hybrid') {
-    switch (selectedTask.value.status) {
-      case 'todo':
-        return 'doing'
-      case 'doing':
-        return 'review'
-      case 'review':
-        return 'done'
-      default:
-        return 'done'
-    }
-  }
-
-  switch (selectedTask.value.status) {
-    case 'planned':
-    case 'pending':
-      return 'in_progress'
-    case 'paused':
-      return 'in_progress'
-    case 'in_progress':
-      return 'done'
-    default:
-      return 'done'
-  }
-}
-
 watch(() => props.selectedProjectSlug, (value, previousValue) => {
-  resetFormState()
   activeSubjectContextId.value = ''
-  primeDefaults()
-
-  if (value !== previousValue) {
-    closeUtilityPanes()
-  }
+  if (value !== previousValue) closeUtilityPanes()
 })
 
 const platformSessionNotice = computed(() => {
@@ -942,7 +650,6 @@ const catalogUnavailableMessage = computed(() => {
 })
 
 watch(currentAction, (action) => {
-  resetFormState()
   if (!action) {
     return
   }
@@ -953,24 +660,12 @@ watch(currentAction, (action) => {
   if (parentGroup) {
     selectedCategory.value = parentGroup.category
   }
-
-  if (action.id === 'update_work_status') {
-    taskMode.value = 'existing'
-  }
-
-  if (activeSubjectContextId.value && subjectItems.value.some(subject => subject.id === activeSubjectContextId.value)) {
-    selectedSubjectId.value = activeSubjectContextId.value
-  }
-
-  primeDefaults()
 }, { immediate: true })
 
 watch(() => props.catalog, () => {
-  if (activeSubjectContextId.value && !subjectItems.value.some(subject => subject.id === activeSubjectContextId.value)) {
+  if (activeSubjectContextId.value && !(props.catalog?.subjects || []).some(s => s.id === activeSubjectContextId.value)) {
     activeSubjectContextId.value = ''
   }
-
-  primeDefaults()
 }, { immediate: true })
 
 watch(() => props.scopeDetail, (detail) => {
@@ -992,45 +687,9 @@ watch(() => props.open, (open) => {
   }
 })
 
-watch(serviceItems, (items) => {
-  if (selectedServiceId.value && !items.some(service => service.id === selectedServiceId.value)) {
-    selectedServiceId.value = ''
-  }
-
-  if (currentAction.value?.id === 'create_invoice' && !selectedServiceId.value && items.length) {
-    selectedServiceId.value = items[0]?.id || ''
-  }
-}, { immediate: true })
-
 watch(() => props.governanceMutationNotice, (value) => {
   if (value.includes('Участник добавлен')) {
     scopeParticipantName.value = ''
-  }
-})
-
-watch(selectedTask, (task) => {
-  if (!task || taskMode.value !== 'existing') {
-    return
-  }
-
-  if (!selectedPhaseKey.value && task.phaseKey) {
-    selectedPhaseKey.value = task.phaseKey
-  }
-
-  if (!selectedSprintId.value && task.sprintId) {
-    selectedSprintId.value = task.sprintId
-  }
-
-  if (!rangeStart.value && task.rangeStart) {
-    rangeStart.value = task.rangeStart
-  }
-
-  if (!rangeEnd.value && task.rangeEnd) {
-    rangeEnd.value = task.rangeEnd
-  }
-
-  if (usesTaskStatusSelection.value) {
-    selectedTaskStatus.value = resolveNextTaskStatus()
   }
 })
 </script>
@@ -1476,197 +1135,20 @@ watch(selectedTask, (task) => {
           </div>
         </section>
 
-        <section v-if="currentAction" class="pa-pane pa-pane--builder">
-          <div class="pa-pane__head">
-            <span class="pa-pane__title">{{ currentAction.label }}</span>
-            <span class="pa-pane__value">{{ currentAction.description }}</span>
-          </div>
-
-          <div v-if="activeSubjectContext" class="pa-subject-context">
-            <div class="pa-subject-context__head">
-              <span class="pa-subject-context__title">{{ activeSubjectContext.label }}</span>
-              <span class="pa-subject-context__badge">Субъектный контур</span>
-            </div>
-            <span class="pa-subject-context__meta">{{ activeSubjectContext.secondary || 'Действие будет собрано в контексте этого субъекта.' }}</span>
-          </div>
-
-          <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
-            Сначала выберите проект.
-          </div>
-
-          <div v-else-if="props.catalogPending" class="pa-empty-state">
-            Подготавливаю каталог проекта…
-          </div>
-
-          <div v-else-if="catalogUnavailableMessage" class="pa-state pa-state--error">
-            {{ catalogUnavailableMessage }}
-          </div>
-
-          <div v-else-if="props.catalog" class="pa-form-grid">
-            <div v-if="usesTaskSelection" class="pa-field-block pa-field-block--full">
-              <div class="pa-field-block__head">
-                <span class="pa-field-block__title">Задача</span>
-                <span class="pa-field-block__hint">Новая или из существующего списка.</span>
-              </div>
-
-              <div class="pa-mode-row">
-                <button type="button" class="pa-mode-chip" :class="{ 'pa-mode-chip--active': taskMode === 'new' }" @click="taskMode = 'new'">Новая</button>
-                <button type="button" class="pa-mode-chip" :class="{ 'pa-mode-chip--active': taskMode === 'existing' }" @click="taskMode = 'existing'">Из списка</button>
-              </div>
-
-              <VAutocomplete
-                v-if="taskMode === 'existing'"
-                v-model="selectedTaskId"
-                :items="taskItems"
-                item-title="title"
-                item-value="id"
-                variant="outlined"
-                density="comfortable"
-                label="Задача"
-                clearable
-                hide-details
-              />
-
-              <VTextField
-                v-else
-                v-model="taskTitle"
-                variant="outlined"
-                density="comfortable"
-                label="Название задачи"
-                placeholder="Например: Согласовать акт"
-                hide-details
-              />
-
-              <VSelect
-                v-if="usesTaskStatusSelection"
-                v-model="selectedTaskStatus"
-                :items="selectedTaskStatusItems"
-                item-title="title"
-                item-value="value"
-                variant="outlined"
-                density="comfortable"
-                label="Статус"
-                hide-details
-              />
-            </div>
-
-            <VSelect
-              v-if="usesStageSelection || usesTaskSelection"
-              v-model="selectedPhaseKey"
-              :items="phaseItems"
-              item-title="title"
-              item-value="phaseKey"
-              variant="outlined"
-              density="comfortable"
-              label="Этап"
-              clearable
-              hide-details
-            />
-
-            <VSelect
-              v-if="usesStageSelection || usesTaskSelection"
-              v-model="selectedSprintId"
-              :items="sprintItems"
-              item-title="name"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Спринт"
-              clearable
-              hide-details
-            />
-
-            <VSelect
-              v-if="usesSubjectSelection"
-              v-model="selectedSubjectId"
-              :items="subjectItems"
-              item-title="label"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Субъект"
-              clearable
-              hide-details
-            />
-
-            <VSelect
-              v-if="usesObjectSelection"
-              v-model="selectedObjectId"
-              :items="objectItems"
-              item-title="label"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Объект"
-              clearable
-              hide-details
-            />
-
-            <VSelect
-              v-if="usesDocumentSelection"
-              v-model="selectedDocumentId"
-              :items="documentItems"
-              item-title="title"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Документ"
-              clearable
-              hide-details
-            />
-
-            <VSelect
-              v-if="usesFinanceSelection"
-              v-model="selectedServiceId"
-              :items="serviceItems"
-              item-title="title"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Услуга"
-              clearable
-              hide-details
-            />
-
-            <div v-if="usesRangeSelection" class="pa-range-row pa-field-block--full">
-              <VTextField
-                v-model="rangeStart"
-                type="date"
-                variant="outlined"
-                density="comfortable"
-                label="Начало"
-                hide-details
-              />
-              <VTextField
-                v-model="rangeEnd"
-                type="date"
-                variant="outlined"
-                density="comfortable"
-                label="Конец"
-                hide-details
-              />
-            </div>
-
-            <VTextarea
-              v-model="detailsText"
-              class="pa-field-block--full"
-              variant="outlined"
-              density="comfortable"
-              rows="3"
-              auto-grow
-              label="Комментарий"
-              placeholder="Уточнение для отправки или выполнения"
-              hide-details
-            />
-          </div>
-        </section>
-
-        <p v-if="formError" class="pa-state pa-state--error">{{ formError }}</p>
-
-        <div v-if="currentAction" class="pa-expand__footer">
-          <VBtn variant="text" @click="emit('close')">Закрыть</VBtn>
-          <VBtn color="primary" variant="flat" :disabled="!canSubmit" @click="submitAction">{{ submitLabel }}</VBtn>
-        </div>
+        <ActionBuilder
+          v-if="currentAction"
+          :current-action="currentAction"
+          :active-subject-context="activeSubjectContext"
+          :selected-project-slug="props.selectedProjectSlug"
+          :catalog-pending="props.catalogPending"
+          :catalog-unavailable-message="catalogUnavailableMessage"
+          :catalog="props.catalog"
+          :pending-action="props.pendingAction"
+          :projects="props.projects"
+          :initial-subject-id="activeSubjectContextId"
+          @close="emit('close')"
+          @submit="(actionId, payload) => emit('execute', actionId, payload)"
+        />
       </div>
     </Transition>
 
