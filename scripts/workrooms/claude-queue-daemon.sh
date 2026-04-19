@@ -93,6 +93,13 @@ spawn_task() {
   local task_file="$1"
   local task_id task_slug model base workroom_slug
 
+  # Defense-in-depth: task_file MUST be a regular .md file in QUEUE_DIR/pending.
+  # If a caller somehow passes a bare name / directory / non-md path, bail.
+  if [ ! -f "$task_file" ] || [[ "$task_file" != "$QUEUE_DIR/pending/"*.md ]]; then
+    log "[spawn] refuse: not a pending .md file: $task_file"
+    return 1
+  fi
+
   task_id=$(fm_get "$task_file" id "$(basename "$task_file" .md)")
   model=$(fm_get "$task_file" model sonnet)
   base=$(fm_get "$task_file" base_branch main)
@@ -227,11 +234,16 @@ while :; do
   running_count=${#running_files[@]}
   free=$(( POOL_SIZE - running_count ))
   if [ "$free" -gt 0 ]; then
-    # Sort pending by filename (priority-prefix in name acts as ordering)
-    while IFS= read -r task_file; do
-      [ -n "$task_file" ] || continue
+    # Sort pending by priority (frontmatter-prefix in name acts as ordering).
+    # Nullglob-safe array expansion: if no *.md exists the array is empty —
+    # we do NOT fall back to ls/find without args, which would surface CWD
+    # entries and cause spawn_task to try to move unrelated dirs like ~/bin,
+    # ~/daria, ~/workrooms into state/queue/running,failed (the disaster of
+    # 2026-04-19 13:38). See also the defense-in-depth guard in spawn_task.
+    pending_files=( "$QUEUE_DIR"/pending/*.md )
+    for task_file in "${pending_files[@]:0:$free}"; do
       spawn_task "$task_file" || true
-    done < <(find "$QUEUE_DIR/pending" -maxdepth 1 -name '*.md' 2>/dev/null | sort | head -n "$free")
+    done
   fi
 
   sleep "$POLL_INTERVAL"
