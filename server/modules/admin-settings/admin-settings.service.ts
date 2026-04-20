@@ -1,3 +1,5 @@
+// Admin-settings module: generic upsert facade owning all 8 admin-settings endpoints (4 domains × get+put).
+// Sibling admin-settings.repository.ts owns all DB queries; this service owns the upsert orchestration.
 import * as repo from './admin-settings.repository'
 
 export async function getAdminSetting<T>(key: string) {
