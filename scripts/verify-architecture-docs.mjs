@@ -127,7 +127,7 @@ function validateIndex(allFiles) {
 function parseMatrix(filePath) {
   const content = readFileSync(filePath, 'utf8')
   const rows = []
-  const lineRe = /^-\s+`?([^`\s]+)`?\s+->\s+`?([^`\s]+)`?\s*$/
+  const lineRe = /^-\s+`?([^`\s]+)`?\s+->\s+`?([^`\s]+)`?\s*(?:\s+[✓⚠].*)?$/
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim()
     const m = line.match(lineRe)
