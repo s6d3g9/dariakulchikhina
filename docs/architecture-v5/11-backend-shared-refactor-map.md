@@ -68,7 +68,13 @@
 - server/api/designers/ -> server/modules/designers/
 - server/api/sellers/ -> server/modules/sellers/
 - server/api/managers/ -> server/modules/managers/
-- server/api/documents/ -> server/modules/documents/
+- server/api/documents/index.get.ts -> server/modules/documents/documents.service.ts ✓ done 2026-04-20
+- server/api/documents/index.post.ts -> server/modules/documents/documents.service.ts ✓ done 2026-04-20
+- server/api/documents/[id].get.ts -> server/modules/documents/documents.service.ts ✓ done 2026-04-20
+- server/api/documents/[id].put.ts -> server/modules/documents/documents.service.ts ✓ done 2026-04-20
+- server/api/documents/[id].delete.ts -> server/modules/documents/documents.service.ts ✓ done 2026-04-20
+- server/api/documents/context.get.ts -> server/modules/documents/documents.service.ts ✓ done 2026-04-20
+- server/api/documents/export-docx.post.ts -> server/modules/documents/documents.service.ts ✓ done 2026-04-20
 - server/api/gallery/ -> server/modules/gallery/
 - server/api/upload.post.ts -> server/api/upload.post.ts  (no DB, multipart-only, stays)
 - server/api/suggest/address.get.ts -> server/api/suggest/address.get.ts  (external Yandex proxy, no DB, stays)
