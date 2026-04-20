@@ -69,7 +69,7 @@
 - server/api/sellers/ -> server/modules/sellers/
 - server/api/managers/ -> server/modules/managers/
 - server/api/documents/ -> server/modules/documents/
-- server/api/gallery/ -> server/modules/gallery/
+- server/api/gallery/ -> server/modules/gallery/ ✓ done 2026-04-20
 - server/api/upload.post.ts -> server/api/upload.post.ts  (no DB, multipart-only, stays)
 - server/api/suggest/address.get.ts -> server/api/suggest/address.get.ts  (external Yandex proxy, no DB, stays)
 - server/api/chat/ -> server/modules/chat/
