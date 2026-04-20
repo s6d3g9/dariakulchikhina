@@ -1,8 +1,11 @@
-import { requireAdmin } from '~/server/modules/auth/session.service'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
 import { listAgents } from '~/server/modules/agent-registry/agent-registry.service'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const agents = await listAgents()
-  return { agents }
+export default defineEndpoint({
+  auth: 'required',
+  async handler({ session }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    return { agents: await listAgents() }
+  },
 })

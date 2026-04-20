@@ -1,18 +1,12 @@
-import { z } from 'zod'
-import { requireAdmin } from '~/server/modules/auth/session.service'
-import { createAgent } from '~/server/modules/agent-registry/agent-registry.service'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
+import { createAgent, CreateAgentSchema } from '~/server/modules/agent-registry/agent-registry.service'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-const CreateAgentSchema = z.object({
-  ownerUserId: z.string().uuid(),
-  name: z.string().min(1),
-  description: z.string().optional(),
-  model: z.string().optional(),
-  config: z.record(z.unknown()).optional(),
-})
-
-export default defineEventHandler(async (event) => {
-  const session = requireAdmin(event)
-  const body = await readValidatedNodeBody(event, CreateAgentSchema.parse)
-  const agent = await createAgent(body, session.userId)
-  return { agent }
+export default defineEndpoint({
+  auth: 'required',
+  input: CreateAgentSchema,
+  async handler({ session, input }) {
+    if (!session || session.role !== 'admin') throw new UnauthorizedError()
+    return { agent: await createAgent(input, session.id) }
+  },
 })

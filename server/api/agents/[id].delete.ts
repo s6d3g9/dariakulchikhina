@@ -1,15 +1,15 @@
 import { z } from 'zod'
-import { requireAdmin } from '~/server/modules/auth/session.service'
-import { deleteAgent } from '~/server/modules/agent-registry/agent-registry.service'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
+import { deleteAgent, DeleteAgentSchema } from '~/server/modules/agent-registry/agent-registry.service'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-const DeleteAgentSchema = z.object({
-  version: z.number().int().min(1),
-})
-
-export default defineEventHandler(async (event) => {
-  const session = requireAdmin(event)
-  const id = getRouterParam(event, 'id')!
-  const body = await readValidatedNodeBody(event, DeleteAgentSchema.parse)
-  await deleteAgent(id, body.version, session.userId)
-  return { ok: true }
+export default defineEndpoint({
+  auth: 'required',
+  params: z.object({ id: z.string() }),
+  input: DeleteAgentSchema,
+  async handler({ session, params, input }) {
+    if (!session || session.role !== 'admin') throw new UnauthorizedError()
+    await deleteAgent(params.id, input.version, session.id)
+    return { ok: true }
+  },
 })

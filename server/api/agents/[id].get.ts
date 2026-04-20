@@ -1,9 +1,13 @@
-import { requireAdmin } from '~/server/modules/auth/session.service'
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
 import { getAgent } from '~/server/modules/agent-registry/agent-registry.service'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const id = getRouterParam(event, 'id')!
-  const agent = await getAgent(id)
-  return { agent }
+export default defineEndpoint({
+  auth: 'required',
+  params: z.object({ id: z.string() }),
+  async handler({ session, params }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    return { agent: await getAgent(params.id) }
+  },
 })
