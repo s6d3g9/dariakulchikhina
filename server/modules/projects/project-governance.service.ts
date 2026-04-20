@@ -16,6 +16,8 @@ import type {
 } from '~/shared/types/project-governance'
 import {
   getProjectParticipantRoleLabel,
+  filterProjectScopeSettingsForEditor,
+  getProjectScopeEditableSettingKeys,
 } from '~/shared/utils/project-governance'
 import { ensureHybridControl } from '~/shared/utils/project-control'
 import {
@@ -657,4 +659,29 @@ export async function updateProjectGovernanceScopeSettings(
 
     throw error
   }
+}
+
+export async function updateScopeSettingsWithRoleCheck(
+  projectSlug: string,
+  scopeType: ProjectScopeType,
+  scopeId: string,
+  body: UpdateProjectScopeSettings,
+  role: 'admin' | 'client',
+) {
+  if (role !== 'client') {
+    return updateProjectGovernanceScopeSettings(projectSlug, scopeType, scopeId, body)
+  }
+  const sanitized: UpdateProjectScopeSettings = {
+    settings: filterProjectScopeSettingsForEditor(scopeType, body.settings, 'client') as Record<string, string | number | boolean | null>,
+  }
+  if (!Object.keys(sanitized.settings).length) {
+    const allowedKeys = getProjectScopeEditableSettingKeys(scopeType, 'client')
+    throw createError({
+      statusCode: 403,
+      statusMessage: allowedKeys.length
+        ? `Клиент может менять только: ${allowedKeys.join(', ')}`
+        : 'Клиент не может менять настройки этого контура',
+    })
+  }
+  return updateProjectGovernanceScopeSettings(projectSlug, scopeType, scopeId, sanitized, { merge: true })
 }
