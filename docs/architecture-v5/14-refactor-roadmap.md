@@ -1635,3 +1635,14 @@ Commit:
 - agent-registry.service.ts содержит pre-existing TS2345 на ConflictError ('Agent', id) — id:string vs context:Record; не входило в scope wave 28-4
 
 Результат: **Zero drift**. Все 5 доменов уже мигрированы в Wave 5 (2026-04-17). Коммит не требуется.
+
+### [done] 2026-04-20 — Wave 10 / final lint sweep
+
+Цель: подтвердить, что `pnpm lint:errors` возвращает 0 по всему репозиторию после завершения волн 5-9.
+
+Проверка:
+- `pnpm lint:errors` — exit 0 ✓ (zero architectural invariant violations)
+- `pnpm exec vue-tsc --noEmit` — baseline errors in .nuxt (not generated in clean state); no new errors from touched files ✓
+- No lint-fix changes needed: repo already clean from wave 9.
+
+Результат: **lint:errors zero across repo**. Все архитектурные инварианты v5.3 успешно enforced через ESLint. Волна завершена.
