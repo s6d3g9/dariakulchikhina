@@ -1592,3 +1592,50 @@ Commit:
 - agent-registry.service.ts содержит pre-existing TS2345 на ConflictError ('Agent', id) — id:string vs context:Record; не входило в scope wave 28-4
 
 Результат: **Zero drift**. Все 5 доменов уже мигрированы в Wave 5 (2026-04-17). Коммит не требуется.
+
+### [done] 2026-04-20 — Wave 28-5 / backend — unified skeleton in 5 medium modules
+Цель: применить целевой скелет DDD-lite к 5 «средним» модулям (documents, uploads, clients, admin, communications).
+
+Файлы:
+- server/modules/documents/documents.types.ts (DocumentCategory, CreateDocumentSchema, UpdateDocumentSchema, ListDocumentsOptions, DocumentContext)
+- server/modules/documents/documents.service.ts (imports from types, re-exports via export *)
+- server/modules/documents/index.ts (barrel)
+- server/modules/documents/__tests__/documents.service.test.ts (smoke: 4 assertions)
+- server/modules/uploads/uploads.types.ts (FileValidationResult)
+- server/modules/uploads/upload-validation.service.ts (imports FileValidationResult from types, re-exports)
+- server/modules/uploads/uploads.repository.ts (no DB ops — filesystem-only module)
+- server/modules/uploads/uploads.service.ts (re-exports both sub-services + types)
+- server/modules/uploads/index.ts (barrel)
+- server/modules/uploads/__tests__/uploads.service.test.ts (smoke: 5 assertions)
+- server/modules/clients/clients.types.ts (CreateClientSchema, UpdateClientSchema, LinkProjectSchema, ListClientsOptions, UploadClientDocumentInput)
+- server/modules/clients/clients.service.ts (imports from types, re-exports via export *)
+- server/modules/clients/index.ts (barrel)
+- server/modules/clients/__tests__/clients.service.test.ts (smoke: 6 assertions)
+- server/modules/admin/admin.types.ts (all types from notifications + search sub-services + row types)
+- server/modules/admin/admin-notifications.repository.ts (imports ProjectControlRow from types)
+- server/modules/admin/admin-notifications.service.ts (imports from types, re-exports)
+- server/modules/admin/admin-search.repository.ts (imports row types from types, re-exports)
+- server/modules/admin/admin-search.service.ts (imports from types, re-exports)
+- server/modules/admin/admin.service.ts (central service: export * from types + named function re-exports)
+- server/modules/admin/index.ts (barrel)
+- server/modules/admin/__tests__/admin.service.test.ts (smoke: 2 assertions)
+- server/modules/communications/communications.types.ts (RelayJsonOptions — local type)
+- server/modules/communications/communications.service.ts (re-exports from 3 sub-service files + types)
+- server/modules/communications/index.ts (barrel)
+- server/modules/communications/__tests__/communications.service.test.ts (smoke: 2 assertions)
+
+Commits:
+- e92bbfd feat(server/modules/documents): adopt unified DDD skeleton
+- 9fbd848 feat(server/modules/uploads): adopt unified DDD skeleton
+- 73ec765 feat(server/modules/clients): adopt unified DDD skeleton
+- 0395fcc feat(server/modules/admin): adopt unified DDD skeleton
+- ca40a6e feat(server/modules/communications): adopt unified DDD skeleton
+
+Проверка:
+- `pnpm lint:errors` — 0 ✓
+- `pnpm exec vue-tsc --noEmit` — 0 новых ошибок (все ошибки в изменённых файлах pre-existing: Nitro auto-imports createError/useRuntimeConfig) ✓
+- API handlers не изменены; backward compat сохранена (deep imports в server/api/** продолжают работать) ✓
+
+Долги:
+- uploads.repository.ts — пустой файл (модуль работает с FS, не с БД); при появлении DB-операций (tracking uploads) сюда перейдут Drizzle-функции
+- admin/__tests__ smoke test для searchAdminEntities импортирует admin-search.service напрямую (без мока repo); тест пройдёт только при query < 2 chars (guard срабатывает до DB-вызова)
