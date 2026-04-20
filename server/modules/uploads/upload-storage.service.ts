@@ -1,3 +1,5 @@
+// Uploads module: filesystem helpers (dir resolution, mkdir, public URL).
+// Used cross-module by gallery, documents, and contractors — keep the import path stable.
 import { promises as fs } from 'fs'
 import path from 'path'
 import { config } from '~/server/config'
