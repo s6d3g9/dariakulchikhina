@@ -1552,3 +1552,26 @@ Wave 4 для UIDesignPanel закрыт.
 - OCC version-semantics на PATCH/PUT endpoints: handlers делегируют в service, которые возвращают null на 404 (→ 409 logically reserved for version mismatch via OCC in repository) ✓
 
 Результат: **Zero drift**. Все 5 доменов уже мигрированы в Wave 5 (2026-04-17). Коммит не требуется.
+
+## Wave 5 — API facade (2026-04-20) [done]
+
+Цель: завершить Wave 5 (API facade refactor). Подтвердить, что все `server/api/**` handlers — thin-controllers без прямых Drizzle или schema-imports. Вся domain logic должна быть в `server/modules/**`.
+
+Проверка (reality-check):
+- `grep -rl "drizzle-orm" server/api/` → пусто ✓
+- `grep -rl "~/server/db/schema" server/api/` → пусто ✓
+
+Статус: **[done]**
+
+Охват:
+- Все `server/api/**` handlers thin-wrapped: auth, admin-settings, projects/*, clients, contractors, designers, sellers, managers, documents, gallery, chat.
+- 0 direct `drizzle-orm` imports в `server/api/**`.
+- 0 direct `~/server/db/schema` imports в `server/api/**`.
+- Вся domain logic резидирует в `server/modules/**` согласно матрице 11-backend-shared-refactor-map.md.
+
+Исключения (по дизайну):
+- `server/api/auth/csrf.get.ts` (CSRF token endpoint, stateless)
+- `server/api/upload.post.ts` (файловый обработчик, требует runtime context)
+- `server/api/suggest/address.get.ts` (простой pass-through → external service)
+
+Итог: Wave 5 завершена. Все endpoints миграны с соблюдением DDD-lite инварианта.
