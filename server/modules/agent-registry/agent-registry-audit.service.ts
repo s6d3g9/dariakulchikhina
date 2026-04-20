@@ -1,3 +1,5 @@
+// Agent-registry module: structured audit-log helper for CRUD mutations.
+// Only caller is agent-registry.service.ts; no DB writes here.
 import { log } from '~/server/utils/logger'
 
 export type AgentAuditAction = 'create' | 'update' | 'delete'
