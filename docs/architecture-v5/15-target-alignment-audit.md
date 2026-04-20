@@ -1,6 +1,6 @@
 # 15. Target Alignment Audit
 
-Date: 2026-04-19
+Date: 2026-04-20
 Scope: сверка документов 09-14 с фактической структурой репозитория после завершенных batch-рефакторингов (Wave 0-6 в основном закрыты, Wave 5 API-facade в активной работе).
 
 ## Как читать этот аудит
@@ -40,15 +40,15 @@ Status: Aligned (47/47 move rows done по verify-architecture-docs.mjs).
 
 ## 11. Backend + Shared refactor map
 
-Status: Partially aligned (16/66 move rows done, 50 ambiguous в bridge-stage).
+Status: Fully aligned, see doc 11 §Current Status vs Target (2026-04-20).
 
 Что совпадает:
 - `shared/constants/**`, `shared/types/**`, `shared/utils/**` выровнены под target-taxonomy;
 - `server/modules/**` покрывает все целевые домены;
-- `server/db/schema/**` split выполнен + `relations.ts`.
+- `server/db/schema/**` split выполнен + `relations.ts`;
+- `server/api/**` содержит 0 handlers импортирующих `drizzle-orm` или `~/server/db/schema` (thin-wrap complete).
 
 Что остаётся:
-- ~207 fat API-handlers в `server/api/**` всё ещё импортируют `drizzle-orm` напрямую (текущая волна Wave 5 facade переводит их на thin-controller + module service);
 - остаточная доменная логика в `server/utils/**`.
 
 ## 12. Messenger + Services refactor map
@@ -76,9 +76,9 @@ Roadmap log содержит 80+ завершённых batch-этапов и о
 
 ## Остающиеся structural gaps
 
-1. Wave 5 API-facade — ~207 handlers перевести на thin-controller + module service (в текущей очереди).
-2. `server/utils/**` — добить остаточный перенос доменной логики в `server/modules/**`.
-3. Unit-test coverage в `messenger/core/src/**` и `services/communications-service/src/**` (опционально, по аналогии с server wave4-tests).
+1. `server/utils/**` — clean, содержит только infrastructure helpers (body, errors, logger, messenger-cors, query, request-context, security-headers).
+2. Wave 8 W7 legacy sweep — pending (tracked как `wave8-w7-agent-seeds` для messenger agent seeds и future legacy-agents UI removal).
+3. Messenger `process.env` lint — 1 остаточная ошибка в `messenger/core/src/agents/claude-cli-reply.ts:29`, deferred на messenger-specific wave.
 
 ## Итоговый verdict
 
