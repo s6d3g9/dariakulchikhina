@@ -1,15 +1,15 @@
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
 import { deleteDocument } from '~/server/modules/documents/documents.service'
+import { UnauthorizedError, NotFoundError } from '~/server/utils/errors'
 
-/**
- * DELETE /api/documents/[id] — remove the row and clean up the attached
- * file from the upload directory.
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id) throw createError({ statusCode: 400 })
-
-  const deleted = await deleteDocument(id)
-  if (!deleted) throw createError({ statusCode: 404 })
-  return { ok: true }
+export default defineEndpoint({
+  auth: 'required',
+  params: z.object({ id: z.string().regex(/^\d+$/) }),
+  async handler({ session, params }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    const deleted = await deleteDocument(Number(params.id))
+    if (!deleted) throw new NotFoundError('Document', params.id)
+    return { ok: true }
+  },
 })

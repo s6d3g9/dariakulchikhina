@@ -1,14 +1,19 @@
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
 import { listDocuments } from '~/server/modules/documents/documents.service'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-/**
- * GET /api/documents?category=<cat>&projectSlug=<slug>
- * Admin list of documents. Optional filters: category and projectSlug.
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const query = safeGetQuery(event)
-  return await listDocuments({
-    category: (query.category as string) || undefined,
-    projectSlug: (query.projectSlug as string) || undefined,
-  })
+export default defineEndpoint({
+  auth: 'required',
+  query: z.object({
+    category: z.string().optional(),
+    projectSlug: z.string().optional(),
+  }),
+  async handler({ session, query }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    return listDocuments({
+      category: (query.category as string) || undefined,
+      projectSlug: (query.projectSlug as string) || undefined,
+    })
+  },
 })

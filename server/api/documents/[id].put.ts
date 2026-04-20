@@ -1,19 +1,16 @@
-import {
-  updateDocument,
-  UpdateDocumentSchema,
-} from '~/server/modules/documents/documents.service'
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
+import { updateDocument, UpdateDocumentSchema } from '~/server/modules/documents/documents.service'
+import { UnauthorizedError, NotFoundError } from '~/server/utils/errors'
 
-/**
- * PUT /api/documents/[id] — partial update. Only fields present in the
- * body are changed.
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id) throw createError({ statusCode: 400 })
-
-  const body = await readValidatedNodeBody(event, UpdateDocumentSchema)
-  const doc = await updateDocument(id, body)
-  if (!doc) throw createError({ statusCode: 404 })
-  return doc
+export default defineEndpoint({
+  auth: 'required',
+  params: z.object({ id: z.string().regex(/^\d+$/) }),
+  input: UpdateDocumentSchema,
+  async handler({ session, params, input }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    const doc = await updateDocument(Number(params.id), input)
+    if (!doc) throw new NotFoundError('Document', params.id)
+    return doc
+  },
 })

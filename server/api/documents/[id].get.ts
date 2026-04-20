@@ -1,23 +1,17 @@
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
 import { getDocument } from '~/server/modules/documents/documents.service'
+import { UnauthorizedError, NotFoundError } from '~/server/utils/errors'
 
-/**
- * GET /api/documents/[id]
- * Returns the document by id. Admin or an authenticated client session
- * can access it.
- */
-export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
-  if (!Number.isFinite(id)) {
-    throw createError({ statusCode: 400, message: 'Invalid id' })
-  }
-
-  const admin = getAdminSession(event)
-  const client = getClientSession(event)
-  if (!admin && !client) {
-    throw createError({ statusCode: 401, message: 'Unauthorized' })
-  }
-
-  const doc = await getDocument(id)
-  if (!doc) throw createError({ statusCode: 404, message: 'Document not found' })
-  return doc
+export default defineEndpoint({
+  auth: 'optional',
+  params: z.object({ id: z.string().regex(/^\d+$/) }),
+  async handler({ session, params }) {
+    if (!session || (session.role !== 'admin' && session.role !== 'client')) {
+      throw new UnauthorizedError()
+    }
+    const doc = await getDocument(Number(params.id))
+    if (!doc) throw new NotFoundError('Document', params.id)
+    return doc
+  },
 })

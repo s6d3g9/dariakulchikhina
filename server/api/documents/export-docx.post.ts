@@ -10,176 +10,71 @@ import {
   convertMillimetersToTwip, LineRuleType,
 } from 'docx'
 import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-// Распознавание типа строки
 type LineType = 'title' | 'heading1' | 'heading2' | 'blank' | 'body'
 
 function detectLineType(line: string, lineIndex: number): LineType {
   if (!line.trim()) return 'blank'
-
   const t = line.trim()
-
-  // Главный заголовок: первые строки полностью в верхнем регистре / типичные слова
-  if (lineIndex < 4 && /^[А-ЯЁ «»\-–—№]/u.test(t) && t === t.toUpperCase() && t.length < 80) {
-    return 'title'
-  }
-
-  // Раздел 1., 2., 3. (основные разделы)
+  if (lineIndex < 4 && /^[А-ЯЁ «»\-–—№]/u.test(t) && t === t.toUpperCase() && t.length < 80) return 'title'
   if (/^\d{1,2}\.\s{1,4}[А-ЯЁA-Z]/u.test(t)) return 'heading1'
-
-  // Подраздел 1.1., 1.2. и т.д.
   if (/^\d{1,2}\.\d{1,2}\.?\s/.test(t)) return 'heading2'
-
-  // Строка полностью в верхнем регистре (заголовок секции)
-  if (t.length > 3 && t.length < 80 && t === t.toUpperCase() && /[А-ЯЁ]/u.test(t)) {
-    return 'heading1'
-  }
-
+  if (t.length > 3 && t.length < 80 && t === t.toUpperCase() && /[А-ЯЁ]/u.test(t)) return 'heading1'
   return 'body'
 }
 
 function makeSpacing(before = 0, after = 0) {
-  return {
-    before,
-    after,
-    line: 360, // 1.5 межстрочный (240 = одинарный)
-    lineRule: LineRuleType.AUTO,
-  }
+  return { before, after, line: 360, lineRule: LineRuleType.AUTO }
 }
 
 function textToParagraphs(text: string): Paragraph[] {
-  const lines = text.split('\n')
-  const paragraphs: Paragraph[] = []
-
-  // Шрифты
   const FONT = 'Times New Roman'
-  const SIZE = 28 // half-points: 28 = 14pt
-  const SIZE_TITLE = 32 // 16pt для главного названия
-
-  for (const [i, raw] of lines.entries()) {
+  const SIZE = 28
+  const SIZE_TITLE = 32
+  return text.split('\n').map((raw, i) => {
     const line = raw.trimEnd()
     const type = detectLineType(line, i)
-
-    if (type === 'blank') {
-      paragraphs.push(new Paragraph({
-        spacing: { before: 0, after: 100 },
-      }))
-      continue
-    }
-
+    if (type === 'blank') return new Paragraph({ spacing: { before: 0, after: 100 } })
     const trimmed = line.trim()
-
-    if (type === 'title') {
-      paragraphs.push(new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: makeSpacing(200, 200),
-        children: [new TextRun({
-          text: trimmed,
-          bold: true,
-          font: FONT,
-          size: SIZE_TITLE,
-        })],
-      }))
-      continue
-    }
-
-    if (type === 'heading1') {
-      paragraphs.push(new Paragraph({
-        alignment: AlignmentType.LEFT,
-        spacing: makeSpacing(280, 100),
-        children: [new TextRun({
-          text: trimmed,
-          bold: true,
-          font: FONT,
-          size: SIZE,
-        })],
-      }))
-      continue
-    }
-
-    if (type === 'heading2') {
-      paragraphs.push(new Paragraph({
-        alignment: AlignmentType.LEFT,
-        spacing: makeSpacing(160, 60),
-        indent: { left: convertMillimetersToTwip(5) },
-        children: [new TextRun({
-          text: trimmed,
-          bold: true,
-          font: FONT,
-          size: SIZE,
-        })],
-      }))
-      continue
-    }
-
-    // Обычный абзац: выравнивание по ширине, красная строка 1.25 см
-    paragraphs.push(new Paragraph({
-      alignment: AlignmentType.JUSTIFIED,
-      spacing: makeSpacing(0, 80),
-      indent: { firstLine: convertMillimetersToTwip(12.5) },
-      children: [new TextRun({
-        text: trimmed,
-        font: FONT,
-        size: SIZE,
-      })],
-    }))
-  }
-
-  return paragraphs
+    if (type === 'title') return new Paragraph({ alignment: AlignmentType.CENTER, spacing: makeSpacing(200, 200), children: [new TextRun({ text: trimmed, bold: true, font: FONT, size: SIZE_TITLE })] })
+    if (type === 'heading1') return new Paragraph({ alignment: AlignmentType.LEFT, spacing: makeSpacing(280, 100), children: [new TextRun({ text: trimmed, bold: true, font: FONT, size: SIZE })] })
+    if (type === 'heading2') return new Paragraph({ alignment: AlignmentType.LEFT, spacing: makeSpacing(160, 60), indent: { left: convertMillimetersToTwip(5) }, children: [new TextRun({ text: trimmed, bold: true, font: FONT, size: SIZE })] })
+    return new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: makeSpacing(0, 80), indent: { firstLine: convertMillimetersToTwip(12.5) }, children: [new TextRun({ text: trimmed, font: FONT, size: SIZE })] })
+  })
 }
 
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-
-  const body = await readValidatedNodeBody(event, z.object({
-    text: z.string().max(500_000),
-    title: z.string().max(500).optional(),
-  }))
-  const text = body.text || ''
-  const docTitle = body.title || 'Документ'
-
-  // Поля страницы: левое 2.5см, остальные 2см (стандарт РФ для юр. документов)
-  const marginLeft  = convertMillimetersToTwip(25)
-  const marginRight = convertMillimetersToTwip(20)
-  const marginTop   = convertMillimetersToTwip(25)
-  const marginBot   = convertMillimetersToTwip(20)
-
-  const doc = new Document({
+function buildDocxDocument(text: string, docTitle: string): Document {
+  return new Document({
     creator: 'Daria Kulchikhina CRM',
     title: docTitle,
     description: 'Сгенерировано в системе управления проектами',
-    styles: {
-      default: {
-        document: {
-          run: {
-            font: 'Times New Roman',
-            size: 28,
-          },
-        },
-      },
-    },
+    styles: { default: { document: { run: { font: 'Times New Roman', size: 28 } } } },
     sections: [{
-      properties: {
-        page: {
-          margin: {
-            left:   marginLeft,
-            right:  marginRight,
-            top:    marginTop,
-            bottom: marginBot,
-          },
-        },
-      },
+      properties: { page: { margin: { left: convertMillimetersToTwip(25), right: convertMillimetersToTwip(20), top: convertMillimetersToTwip(25), bottom: convertMillimetersToTwip(20) } } },
       children: textToParagraphs(text),
     }],
   })
+}
 
-  const buffer = await Packer.toBuffer(doc)
+const ExportDocxSchema = z.object({
+  text: z.string().max(500_000),
+  title: z.string().max(500).optional(),
+})
 
-  const res = event.node!.res as ServerResponse
-  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(docTitle)}.docx`)
-  res.setHeader('Content-Length', buffer.length)
-  res.end(buffer)
-
-  return null
+export default defineEndpoint({
+  auth: 'required',
+  input: ExportDocxSchema,
+  async handler({ session, input, event }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    const docTitle = input.title || 'Документ'
+    const buffer = await Packer.toBuffer(buildDocxDocument(input.text || '', docTitle))
+    const res = event.node!.res as ServerResponse
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(docTitle)}.docx`)
+    res.setHeader('Content-Length', buffer.length)
+    res.end(buffer)
+    return null
+  },
 })
