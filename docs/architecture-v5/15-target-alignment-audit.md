@@ -40,16 +40,17 @@ Status: Aligned (47/47 move rows done по verify-architecture-docs.mjs).
 
 ## 11. Backend + Shared refactor map
 
-Status: Fully aligned, see doc 11 §Current Status vs Target (2026-04-20).
+Status: Aligned, see doc 11 §Current Status vs Target (2026-04-20).
 
 Что совпадает:
+- **Matrix rows:** 60/63 refactored paths marked ✓ done, 3 architectural stays (csrf, upload, suggest).
 - `shared/constants/**`, `shared/types/**`, `shared/utils/**` выровнены под target-taxonomy;
 - `server/modules/**` покрывает все целевые домены;
 - `server/db/schema/**` split выполнен + `relations.ts`;
-- `server/api/**` содержит 0 handlers импортирующих `drizzle-orm` или `~/server/db/schema` (thin-wrap complete).
+- `server/api/**` содержит 0 handlers импортирующих `drizzle-orm` или `~/server/db/schema` (thin-wrap verified by grep).
 
 Что остаётся:
-- остаточная доменная логика в `server/utils/**`.
+- остаточная доменная логика в `server/utils/**` (только infrastructure helpers: body, errors, logger, query, request-context, security-headers).
 
 ## 12. Messenger + Services refactor map
 
@@ -84,4 +85,4 @@ Roadmap log содержит 80+ завершённых batch-этапов и о
 
 - Структурно v5.3 достигнут на ~90%: все целевые каталоги созданы и наполнены, legacy-слои `app/components/**` и `messenger/web/app/components/messenger/**` пусты.
 - Основной remaining backlog — facade-миграция API (не структурный, а поведенческий долг).
-- Документы 09, 10, 12, 13, 14 теперь описывают фактическое состояние; документ 11 остаётся partially aligned до закрытия Wave 5.
+- Документы 09, 10, 11, 12, 13, 14 теперь описывают фактическое состояние. Doc 11 matrix полностью закрыт (Wave 10).
