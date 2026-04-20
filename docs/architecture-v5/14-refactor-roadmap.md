@@ -1592,3 +1592,37 @@ Commit:
 - agent-registry.service.ts содержит pre-existing TS2345 на ConflictError ('Agent', id) — id:string vs context:Record; не входило в scope wave 28-4
 
 Результат: **Zero drift**. Все 5 доменов уже мигрированы в Wave 5 (2026-04-17). Коммит не требуется.
+
+### [done] 2026-04-20 — Wave 28-9 / mass-migrate API handlers to defineEndpoint
+
+Цель: перевести все CRUD-хэндлеры в 5 поддеревьях `server/api/**` на `defineEndpoint`.
+
+Предварительно: добавлены Zod-схемы в `server/modules/agent-registry/agent-registry.types.ts`
+(CreateAgentSchema, UpdateAgentSchema, DeleteAgentSchema) — для соответствия паттерну «схемы живут в types.ts».
+
+Файлы:
+- server/modules/agent-registry/agent-registry.types.ts (добавлены Zod-схемы)
+- server/api/sellers/index.post.ts, [id].get.ts, [id].put.ts, [id].delete.ts, [id]/projects.get.ts
+- server/api/managers/index.get.ts, [id].get.ts, [id].put.ts, [id].delete.ts, [id]/projects.get.ts
+- server/api/gallery/index.post.ts, [id].delete.ts, reorder.patch.ts
+- server/api/documents/index.get.ts, index.post.ts, [id].get.ts, [id].put.ts, [id].delete.ts, context.get.ts, export-docx.post.ts
+- server/api/agents/index.get.ts, index.post.ts, [id].get.ts, [id].put.ts, [id].delete.ts
+
+Особые случаи:
+- `documents/[id].get.ts`: auth:'optional' с ручной проверкой (admin | client)
+- `documents/export-docx.post.ts`: бинарный ответ; DOCX-хелперы вынесены на уровень модуля, handler ≤12 LOC
+- `agents/**`: UUID-params без digit-regex; session.id передаётся как actorUserId
+
+Коммиты:
+- 043ca34 feat(server/modules/agent-registry): add Zod schemas to types module
+- 18b4c4f refactor(server/api/sellers): migrate handlers to defineEndpoint
+- da2b82f refactor(server/api/managers): migrate handlers to defineEndpoint
+- a5a297f refactor(server/api/gallery): migrate handlers to defineEndpoint
+- 0a06623 refactor(server/api/documents): migrate handlers to defineEndpoint
+- 221f0ea refactor(server/api/agents): migrate handlers to defineEndpoint
+
+Проверка:
+- `pnpm lint:errors` — 0 новых ошибок ✓
+- `pnpm exec vue-tsc --noEmit` — 0 новых ошибок (pre-existing: regex-/u-flag в export-docx, ConflictError в agent service, managers/index.post.ts Zod inference — все унаследованы от w28-4/w28-8) ✓
+- Все HTTP-контракты сохранены; тонкие хэндлеры ≤15 LOC ✓
+- server/api/admin-settings/** и server/api/uploads/** — директории не существуют; scope не применим ✓
