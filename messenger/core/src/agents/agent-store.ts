@@ -1,7 +1,10 @@
+import { randomUUID } from 'node:crypto'
+
 import { getMessengerAgentSettings, resolveMessengerAgentActiveRepository, resolveMessengerAgentWorkspacePath, type MessengerAgentConnectionMode } from './agent-settings-store.ts'
 import { retrieveMessengerAgentKnowledge, type MessengerAgentKnowledgeRetrieval } from './agent-knowledge-store.ts'
 import { callMessengerAgentModel, isMessengerAgentLlmConfigured, type MessengerAgentLlmMessage } from './agent-llm.ts'
 import { callClaudeSessionReply } from './claude-cli-reply.ts'
+import { useIngestDb, messengerAgents, sql, isNull } from './ingest-db.ts'
 
 export interface MessengerAgentRecord {
   id: string
@@ -64,6 +67,9 @@ interface MessengerConnectedAgent {
   mode: MessengerAgentConnectionMode
 }
 
+/**
+ * @deprecated W7: replaced by DB seeds. Remove after 2026-05-01.
+ */
 const MESSENGER_AGENTS: MessengerAgentRecord[] = [
   {
     id: 'composer',
@@ -348,7 +354,44 @@ function buildReplyByTopic(agent: MessengerAgentRecord, message: string) {
   return `${agent.greeting} Вижу запрос: "${message.trim()}". Могу ответить кратко, списком действий или в формате чек-листа.`
 }
 
+export async function seedAgentsIfEmpty(): Promise<void> {
+  try {
+    const db = useIngestDb()
+    const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(messengerAgents).where(isNull(messengerAgents.deletedAt))
+    if ((row?.count ?? 0) > 0) return
+    await db.insert(messengerAgents).values(
+      MESSENGER_AGENTS.map(agent => ({
+        id: randomUUID(),
+        ownerUserId: '00000000-0000-0000-0000-000000000000',
+        name: agent.displayName,
+        description: agent.description,
+        model: agent.modelOptions?.[0] ?? null,
+        ingestToken: randomUUID(),
+        config: {
+          agentId: agent.id,
+          login: agent.login,
+          greeting: agent.greeting,
+          prompts: agent.prompts,
+          systemPrompt: agent.systemPrompt,
+          ...(agent.claudeSessionSlug && { claudeSessionSlug: agent.claudeSessionSlug }),
+        },
+      })),
+    )
+    console.log(`[agents] seeded ${MESSENGER_AGENTS.length} agents from MESSENGER_AGENTS`)
+  } catch (err) {
+    console.error('[agents] seedAgentsIfEmpty failed:', err instanceof Error ? err.message : err)
+  }
+}
+
 export async function listMessengerAgents() {
+  try {
+    const db = useIngestDb()
+    const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(messengerAgents).where(isNull(messengerAgents.deletedAt))
+    if ((row?.count ?? 0) > 0) return MESSENGER_AGENTS
+  } catch {
+    // fall through to warn
+  }
+  console.warn('[agents] DB empty or unreachable — falling back to hardcoded MESSENGER_AGENTS')
   return MESSENGER_AGENTS
 }
 
@@ -648,3 +691,6 @@ export async function buildMessengerAgentReply(
 
   return buildReplyByTopic(agent, message)
 }
+
+// Seed agents into DB on messenger-core boot (fire-and-forget, non-blocking).
+seedAgentsIfEmpty().catch(err => console.error('[agents] boot seed error:', err instanceof Error ? err.message : err))
