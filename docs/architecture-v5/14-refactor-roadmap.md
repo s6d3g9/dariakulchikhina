@@ -1551,4 +1551,44 @@ Wave 4 для UIDesignPanel закрыт.
 - `pnpm exec vue-tsc --noEmit` — 0 новых ошибок (pre-existing errors только в tmp_*_backup.ts файлах) ✓
 - OCC version-semantics на PATCH/PUT endpoints: handlers делегируют в service, которые возвращают null на 404 (→ 409 logically reserved for version mismatch via OCC in repository) ✓
 
+### [done] 2026-04-20 — Wave 28-4 / backend — unified skeleton in 5 smallest modules
+Цель: применить целевой скелет DDD-lite (`index.ts` + `.types.ts` + `.service.ts` + `.repository.ts` + `__tests__/*.service.test.ts`) к 5 наименьшим модулям.
+
+Файлы:
+- server/modules/sellers/sellers.types.ts (extracted CreateSellerSchema, UpdateSellerSchema, ListSellersOptions)
+- server/modules/sellers/sellers.service.ts (re-exports from types, removes inline schema defs)
+- server/modules/sellers/index.ts (barrel)
+- server/modules/sellers/__tests__/sellers.service.test.ts (smoke: schema parse)
+- server/modules/managers/managers.types.ts
+- server/modules/managers/managers.service.ts
+- server/modules/managers/index.ts
+- server/modules/managers/__tests__/managers.service.test.ts
+- server/modules/gallery/gallery.types.ts
+- server/modules/gallery/gallery.service.ts
+- server/modules/gallery/index.ts
+- server/modules/gallery/__tests__/gallery.service.test.ts
+- server/modules/admin-settings/admin-settings.types.ts (minimal — generic service, no Zod schemas)
+- server/modules/admin-settings/index.ts
+- server/modules/admin-settings/__tests__/admin-settings.service.test.ts
+- server/modules/agent-registry/agent-registry.types.ts (CreateAgentInput, UpdateAgentInput)
+- server/modules/agent-registry/agent-registry.service.ts (re-exports types, AgentRow stays in repository)
+- server/modules/agent-registry/index.ts
+- server/modules/agent-registry/__tests__/agent-registry.service.test.ts
+
+Commit:
+- bf7cdaf feat(server/modules/sellers): adopt unified DDD skeleton
+- f8a5acb feat(server/modules/managers): adopt unified DDD skeleton
+- 15b9d8e feat(server/modules/gallery): adopt unified DDD skeleton
+- 7506d95 feat(server/modules/admin-settings): adopt unified DDD skeleton
+- 3f407b9 feat(server/modules/agent-registry): adopt unified DDD skeleton
+
+Проверка:
+- `pnpm lint:errors` — 0 ✓
+- все 5 test suites: 10/10 assertions pass (`node --experimental-strip-types --test`) ✓
+- API handlers не изменены; backward compat сохранена через `export * from './sellers.types'` паттерн ✓
+
+Долги:
+- admin-settings.types.ts содержит только интерфейс-заглушку; полноценные типы нужны когда domain-specific setting schemas будут формализованы
+- agent-registry.service.ts содержит pre-existing TS2345 на ConflictError ('Agent', id) — id:string vs context:Record; не входило в scope wave 28-4
+
 Результат: **Zero drift**. Все 5 доменов уже мигрированы в Wave 5 (2026-04-17). Коммит не требуется.
