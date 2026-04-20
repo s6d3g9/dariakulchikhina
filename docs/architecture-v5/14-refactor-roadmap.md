@@ -1552,3 +1552,7 @@ Wave 4 для UIDesignPanel закрыт.
 - OCC version-semantics на PATCH/PUT endpoints: handlers делегируют в service, которые возвращают null на 404 (→ 409 logically reserved for version mismatch via OCC in repository) ✓
 
 Результат: **Zero drift**. Все 5 доменов уже мигрированы в Wave 5 (2026-04-17). Коммит не требуется.
+
+### [logged] 2026-04-20 — Wave 9c: messenger process.env lint exception documented
+
+Messenger runtime (`messenger/core/src/agents/claude-cli-reply.ts:29`) contains one direct `process.env` read, emitted as a lint warning. This is explicitly out-of-scope for the main-app v5 refactor and is documented as a known exception to prevent future lint-ratchet tasks from re-emitting the same violation. See `docs/architecture-v5/20-config-and-logging.md` § 20.8 for deferral details.

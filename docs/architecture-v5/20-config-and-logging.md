@@ -288,6 +288,18 @@ Pre-commit hook: если `server/config.ts` изменился — требуе
 
 ---
 
+## 20.8. Known exceptions
+
+### `messenger/core/src/agents/claude-cli-reply.ts:29` — direct `process.env` read
+
+**Status:** Deferred to future messenger-specific configuration wave.
+
+**Reason:** `messenger/core` is a separate runtime outside the main-app v5 refactor scope. The process.env read at line 29 falls under messenger's own internal configuration strategy and is not part of the centralized config consolidation effort in the main Nuxt application.
+
+**Tracked for:** A dedicated messenger + services configuration consolidation wave (no date pinned).
+
+---
+
 ## 20.7. Порядок внедрения
 
 1. **Config** (день 1): ConfigSchema + миграция `process.env` → `config.X`. Единственный commit, обратимый.
