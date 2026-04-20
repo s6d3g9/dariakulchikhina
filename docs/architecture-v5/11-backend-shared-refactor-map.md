@@ -63,7 +63,7 @@
 - server/api/projects/[slug]/communications-bootstrap.get.ts -> server/modules/communications/communications-bootstrap.service.ts
 
 ### Остальные домены
-- server/api/clients/ -> server/modules/clients/
+- server/api/clients/ -> server/modules/clients/ ✓ done 2026-04-20
 - server/api/contractors/ -> server/modules/contractors/
 - server/api/designers/ -> server/modules/designers/
 - server/api/sellers/ -> server/modules/sellers/
