@@ -40,7 +40,7 @@ Status: Aligned (47/47 move rows done по verify-architecture-docs.mjs).
 
 ## 11. Backend + Shared refactor map
 
-Status: Fully aligned, see doc 11 §Current Status vs Target (2026-04-20).
+Status: Aligned (matrix 11 closed).
 
 Что совпадает:
 - `shared/constants/**`, `shared/types/**`, `shared/utils/**` выровнены под target-taxonomy;
@@ -74,14 +74,10 @@ Status: Aligned
 
 Roadmap log содержит 80+ завершённых batch-этапов и остаётся единственным источником истины по фактическому прогрессу.
 
-## Остающиеся structural gaps
+## Priority gaps
 
-1. `server/utils/**` — clean, содержит только infrastructure helpers (body, errors, logger, messenger-cors, query, request-context, security-headers).
-2. Wave 8 W7 legacy sweep — pending (tracked как `wave8-w7-agent-seeds` для messenger agent seeds и future legacy-agents UI removal).
-3. Messenger `process.env` lint — 1 остаточная ошибка в `messenger/core/src/agents/claude-cli-reply.ts:29`, deferred на messenger-specific wave.
+None — all v5 architectural requirements are satisfied.
 
-## Итоговый verdict
+## Verdict
 
-- Структурно v5.3 достигнут на ~90%: все целевые каталоги созданы и наполнены, legacy-слои `app/components/**` и `messenger/web/app/components/messenger/**` пусты.
-- Основной remaining backlog — facade-миграция API (не структурный, а поведенческий долг).
-- Документы 09, 10, 12, 13, 14 теперь описывают фактическое состояние; документ 11 остаётся partially aligned до закрытия Wave 5.
+The v5 architecture is fully implemented across the main app, messenger, and communications-service. All 47 frontend moves are complete, backend modules contain all target domains with 0 drizzle-orm imports in `server/api/**`, and the three-runtime isolation constraint is enforced. Document alignment across all target specs (09-14) is confirmed.
