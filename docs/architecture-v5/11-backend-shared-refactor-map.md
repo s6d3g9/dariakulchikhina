@@ -60,7 +60,8 @@
 - server/api/projects/[slug]/extra-services/index.post.ts -> server/modules/projects/project-extra-services.service.ts
 - server/api/projects/[slug]/extra-services/[id].put.ts -> server/modules/projects/project-extra-services.service.ts
 - server/api/projects/[slug]/extra-services/[id].delete.ts -> server/modules/projects/project-extra-services.service.ts
-- server/api/projects/[slug]/communications-bootstrap.get.ts -> server/modules/communications/communications-bootstrap.service.ts
+- server/api/projects/[slug]/communications-bootstrap.get.ts -> server/modules/communications/communications-bootstrap.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/communications/** (bootstrap.get, dispatch.post, action-catalog.get, action-execute.post, call-insights/*, rooms/**) — thin handlers, delegate to modules/communications/ ✓ done 2026-04-20
 
 ### Остальные домены
 - server/api/clients/ -> server/modules/clients/
@@ -82,8 +83,8 @@
 - server/utils/query.ts -> server/utils/query.ts  (infrastructure helper, stays)
 - server/utils/storage.ts -> server/modules/uploads/upload-storage.service.ts
 - server/utils/upload-validation.ts -> server/modules/uploads/upload-validation.service.ts
-- server/utils/communications.ts -> server/modules/communications/communications-bootstrap.service.ts
-- server/utils/project-communications-relay.ts -> server/modules/communications/project-communications-relay.service.ts
+- server/utils/communications.ts -> server/modules/communications/communications-bootstrap.service.ts ✓ done 2026-04-20
+- server/utils/project-communications-relay.ts -> server/modules/communications/project-communications-relay.service.ts ✓ done 2026-04-20
 - server/utils/standalone-chat-communications.ts -> server/modules/chat/chat-communications.service.ts
 - server/utils/standalone-chat-users.ts -> server/modules/chat/chat-users.service.ts
 - server/utils/projects.ts -> server/modules/projects/projects.service.ts
