@@ -39,7 +39,7 @@ import { join } from 'node:path';
 // ────────────────────────── config ──────────────────────────
 
 const HOME = homedir();
-const STATE_DIR = join(HOME, 'state/claude-sessions');
+const STATE_DIR = process.env.DASHBOARD_STATE_DIR || join(HOME, 'state/claude-sessions');
 const REGISTRY = join(STATE_DIR, '.registry.tsv');
 const ARCHIVE_DIR = join(STATE_DIR, 'archive');
 const ARCHIVE_REGISTRY = join(ARCHIVE_DIR, '.registry.tsv');
@@ -66,8 +66,8 @@ function isComposerSlug(slug) {
 }
 
 const QUEUE_DIRS = ['pending', 'running', 'done', 'failed'];
-const QUEUE_ROOT = join(HOME, 'state/queue');
-const WORKROOMS_ROOT = join(HOME, 'workrooms');
+const QUEUE_ROOT = process.env.DASHBOARD_QUEUE_DIR || join(HOME, 'state/queue');
+const WORKROOMS_ROOT = process.env.DASHBOARD_WORKROOMS_DIR || join(HOME, 'workrooms');
 
 // Returns the body of a TASK.md (strips YAML frontmatter) and a frontmatter dict.
 function parseTaskFile(file) {
@@ -931,15 +931,15 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     background-color:var(--sb-thumb)
   }
   .nav-row + .nav-row{border-top:1px solid var(--line)}
-  .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0}
-  .nav-row.composers{background:#14130b;border-bottom:1px solid var(--line)}
+  .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0;position:sticky;left:0;z-index:3;background:var(--panel);padding:.15rem .5rem .15rem 0;box-shadow:4px 0 6px -4px rgba(0,0,0,.6)}
+  .nav-row.composers{background:#14130b;border-bottom:1px solid var(--line)} .nav-row.composers .label{background:#14130b}
   .nav-row.composers .label{color:#fbbf24;font-weight:600}
   .nav-row.composers .tab{background:#1f1b0c;border:1px solid #3a2f12}
   .nav-row.composers .tab.active{border-color:#fbbf24;color:#fbbf24;box-shadow:inset 0 0 0 1px #fbbf24}
   .nav-row.composers .tab .dot.standby{background:#fbbf24;box-shadow:0 0 6px #fbbf24}
-  .nav-row.orchestrators{background:#0f1419}
+  .nav-row.orchestrators{background:#0f1419} .nav-row.orchestrators .label{background:#0f1419}
   .nav-row.orchestrators .label{color:#a78bfa}
-  .nav-row.archive{background:#0a0d11;min-height:30px}
+  .nav-row.archive{background:#0a0d11;min-height:30px} .nav-row.archive .label{background:#0a0d11}
   .nav-row.archive .label{color:#6b7280;min-width:auto}
   .nav-row.archive.collapsed .tab{display:none}
   .nav-row.archive .archive-toggle{cursor:pointer;user-select:none;padding:.2rem .5rem;border-radius:3px}
@@ -1488,9 +1488,19 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     } else {
       for (const s of orch) orchRowEl.appendChild(makeTabEl(s));
     }
-    // Workers row — active only, composer + orchestrator excluded
+    // Workers row — active only, composer + orchestrator excluded.
+    // If a composer tab is selected, filter workers to those created after
+    // that composer (approximates "spawned during this composer's tenure"
+    // since the registry has no parent-run column yet).
     workersRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const workers = state.sessions.filter(s => s.role !== 'orchestrator' && s.role !== 'composer' && !s.archived);
+    let workers = state.sessions.filter(s => s.role !== 'orchestrator' && s.role !== 'composer' && !s.archived);
+    const activeComp = state.active && (state.sessions.find(x => x.slug === state.active)?.role === 'composer') ? state.active : null;
+    if (activeComp) {
+      const comp = state.sessions.find(x => x.slug === activeComp);
+      if (comp) workers = workers.filter(w => w.created >= comp.created);
+    }
+    const lbl = workersRowEl.querySelector('.label');
+    if (lbl) lbl.textContent = activeComp ? `workers · ${workers.length} (${activeComp})` : `workers · ${workers.length}`;
     const spacer = workersRowEl.querySelector('.spacer');
     for (const s of workers) workersRowEl.insertBefore(makeTabEl(s), spacer);
     // Archive row — archived sessions (both orchestrators & workers)
