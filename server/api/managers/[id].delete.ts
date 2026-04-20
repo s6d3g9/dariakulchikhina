@@ -1,14 +1,14 @@
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
 import { deleteManager } from '~/server/modules/managers/managers.service'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-/**
- * DELETE /api/managers/[id]
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id || !Number.isFinite(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid manager id' })
-  }
-  await deleteManager(id)
-  return { ok: true }
+export default defineEndpoint({
+  auth: 'required',
+  params: z.object({ id: z.string().regex(/^\d+$/) }),
+  async handler({ session, params }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    await deleteManager(Number(params.id))
+    return { ok: true }
+  },
 })
