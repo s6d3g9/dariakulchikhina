@@ -28,6 +28,7 @@
 21. [Agent Orchestration & Claude CLI Sync — дерево runs, CLI bridge, WS tree-стрим](./21-agent-orchestration.md)
 22. [Skill Bundles — per-kind плагины для воркеров](./22-skill-bundles.md)
 23. [Project-Centric Messenger — проекты, коннекторы, скилы, MCP, bootstrap composer](./23-project-centric-messenger.md)
+24. [Аудит слоя shared (структура, инварианты, дубликаты)](./26-shared-audit.md)
 21. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
 
 ## Операционные шаблоны
