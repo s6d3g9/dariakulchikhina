@@ -1,6 +1,6 @@
 import {
   updateClientProfile,
-  ClientProfileSchema,
+  ClientProfileInputSchema,
 } from '~/server/modules/projects/project-client-profile.service'
 
 /**
@@ -10,7 +10,7 @@ import {
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
   requireAdminOrClient(event, slug)
-  const body = await readValidatedNodeBody(event, ClientProfileSchema)
+  const body = await readValidatedNodeBody(event, ClientProfileInputSchema)
   const result = await updateClientProfile(slug, body)
   if (!result) throw createError({ statusCode: 404, message: 'Project not found' })
   return result
