@@ -659,6 +659,15 @@ Commit:
 Долги:
 - Next: sellers (5-10 endpoints), managers (~5 endpoints), projects/** (20+ endpoints со связями).
 
+### [done] 2026-04-20 — Wave 9 / designers thin-wrap verification
+Цель: подтвердить что 14 endpoint'ов `server/api/designers/` уже являются thin handlers и модуль `server/modules/designers/` полностью реализован. Никаких code-changes не потребовалось — домен был завершён в волне 5 (2026-04-17). Обновлена матрица 11.
+
+Проверка:
+- `grep -rln "from 'drizzle-orm'\|~/server/db/schema" server/api/designers/` — 0 файлов ✓
+- `pnpm lint:errors` — 1 pre-existing error в messenger/core (не связан с designers) ✓
+- `pnpm exec vue-tsc --noEmit` — pre-existing errors только в tmp_*_backup.ts файлах, не в designers ✓
+- Matrix 11 row `server/api/designers/ -> server/modules/designers/` помечена `✓ done 2026-04-20` ✓
+
 ### [done] 2026-04-18 — Wave 7 / messenger/core bounded-context subdirectory split
 Цель: переложить 19 файлов из плоского `messenger/core/src/` в bounded-context поддиректории согласно матрице `12-messenger-services-refactor-map.md`. Matrix 12: 0 → 19 done.
 

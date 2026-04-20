@@ -66,7 +66,7 @@
 ### Остальные домены
 - server/api/clients/ -> server/modules/clients/ ✓ done 2026-04-20
 - server/api/contractors/ -> server/modules/contractors/
-- server/api/designers/ -> server/modules/designers/
+- server/api/designers/ -> server/modules/designers/  — ✓ done 2026-04-20
 - server/api/sellers/ -> server/modules/sellers/
 - server/api/managers/ -> server/modules/managers/
 - server/api/documents/index.get.ts -> server/modules/documents/documents.service.ts ✓ done 2026-04-20
