@@ -517,6 +517,39 @@ export default tseslint.config(
     },
   },
 
+  // server/utils/** — infrastructure-only utilities (body, errors, logger, etc.)
+  // Must not import the DB layer or domain modules. If you need domain logic,
+  // put it in server/modules/<domain>/ and call it from there.
+  {
+    files: ['server/utils/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'drizzle-orm',
+                'drizzle-orm/*',
+                'postgres',
+                '~/server/db/schema',
+                '~/server/db/schema/**',
+                '~/server/db/schema/*',
+                '**/server/db/schema',
+                '**/server/db/schema/**',
+                '~/server/modules/**',
+                '~/server/modules/*',
+                '**/server/modules/**',
+              ],
+              message:
+                '`server/utils/` is infrastructure-only (body parsing, error helpers, logger, etc.). It must not depend on the DB layer or domain modules. Move domain logic into `server/modules/<domain>/`.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // server/modules/**/*.service.ts — business logic. The DB layer
   // (drizzle-orm, schema tables, postgres client) is forbidden here;
   // it belongs in the paired *.repository.ts. See
