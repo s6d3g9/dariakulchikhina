@@ -197,16 +197,13 @@
 
 Каждая зона должна иметь ровно один owner-файл. Любая попытка продублировать функцию «как удобнее» в соседней зоне считается архитектурной регрессией.
 
-## Current Status vs Target (2026-04-17)
+## Current Status vs Target (2026-04-20)
 
 - Status source: `14-refactor-roadmap.md` + `server-audit-report.md` + новые lint-данные из `eslint.config.mjs` (no-restricted-imports в `server/api/**` даёт реальный backlog).
 - Что уже достигнуто:
-  - Все `server/api/auth/*.ts` endpoints (9 файлов) сведены к thin handlers, доменная логика в `server/modules/auth/{admin,client,contractor}-auth.service.ts` + `session.service.ts` + `admin-recovery.service.ts`.
-  - `server/api/admin/{search,notifications}.get.ts` — thin; логика в `server/modules/admin/`.
-  - `server/db/schema.ts` распилен по 11 per-domain файлов + `relations.ts` + `index.ts`.
-  - `projects/work-status` hot-path: thin-controller + prepared queries.
-  - Shared system-константы и ключевые DTO вынесены.
+  - Все `server/api/**` thin-wrapped (207 handlers: admin-settings, projects/*, clients, contractors, designers, sellers, managers, documents, gallery, chat — zero `drizzle-orm` или `~/server/db/schema` imports).
+  - `server/utils/**` drained to infrastructure-only: body, errors, logger, messenger-cors, query, request-context, security-headers.
+  - Shared surface consolidated per §Целевая структура shared.
 - Что ещё не доведено до полного match:
-  - Часть доменов `server/api/**` всё ещё импортирует `drizzle-orm` и `~/server/db/schema` напрямую (см. baseline lint, ~190 ошибок).
-  - `server/utils/**` остаётся основным домом для проектной логики — модули в `server/modules/{auth,projects,chat}` кроме newly-added остаются bridge re-exports.
+  - `pnpm lint:errors` = 1, residual error is `messenger/core/src/agents/claude-cli-reply.ts` (out-of-scope for main-app v5 wave; tracked for a messenger-specific wave).
 - Критерий завершения: `pnpm lint:errors` = 0, `server/api/**` чисто HTTP/validation/auth, логика в `server/modules/**`, shared-контракты — единственный source of truth.

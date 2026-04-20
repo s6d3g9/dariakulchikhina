@@ -1552,3 +1552,17 @@ Wave 4 для UIDesignPanel закрыт.
 - OCC version-semantics на PATCH/PUT endpoints: handlers делегируют в service, которые возвращают null на 404 (→ 409 logically reserved for version mismatch via OCC in repository) ✓
 
 Результат: **Zero drift**. Все 5 доменов уже мигрированы в Wave 5 (2026-04-17). Коммит не требуется.
+
+### [done] 2026-04-20 — Wave 9 + wave9b matrix doc reconcile: strict dateline update and baseline refresh
+
+Цель: Strict reconcile на `11-backend-shared-refactor-map.md` — убедиться что baseline отражает реальное состояние после Wave 9 и Wave 9b (api thin-wrap complete, utils infrastructure-only, shared consolidated).
+
+Документация:
+- `docs/architecture-v5/11-backend-shared-refactor-map.md` — updated dateline (2026-04-20), refreshed "Что уже достигнуто" (207 handlers thin-wrapped, utils drained to infrastructure, shared consolidated), refreshed "Что ещё не доведено" (pnpm lint:errors = 1, residual error in messenger/core out-of-scope).
+
+Проверка:
+- `grep "~190" docs/architecture-v5/11-backend-shared-refactor-map.md` — 0 occurrences ✓
+- `grep "2026-04-20" docs/architecture-v5/11-backend-shared-refactor-map.md` — ≥1 occurrences ✓
+- `pnpm docs:v5:verify` — exit 0 ✓
+
+Результат: **Documentation synchronized**. Main-app lint baseline: 1 residual error (messenger out-of-scope).
