@@ -5,6 +5,9 @@ import {
   projectExtraServices,
   workStatusItems,
 } from '~/server/db/schema'
+import type { ProjectControlRow } from './admin.types'
+
+export type { ProjectControlRow }
 
 /**
  * Count extra-service rows currently in `requested` status across all
@@ -38,13 +41,6 @@ export async function countOverdueWorkItems(): Promise<number> {
       ),
     )
   return row?.count || 0
-}
-
-export interface ProjectControlRow {
-  slug: string
-  status: string
-  pages: string[]
-  profile: Record<string, unknown>
 }
 
 /**

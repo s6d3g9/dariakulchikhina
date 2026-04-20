@@ -1,28 +1,9 @@
 import { ilike, or } from 'drizzle-orm'
 import { useDb } from '~/server/db/index'
 import { projects, clients, contractors } from '~/server/db/schema'
+import type { SearchProjectRow, SearchClientRow, SearchContractorRow } from './admin.types'
 
-export interface SearchProjectRow {
-  id: number
-  slug: string
-  title: string
-  status: string
-}
-
-export interface SearchClientRow {
-  id: number
-  name: string
-  phone: string | null
-  email: string | null
-}
-
-export interface SearchContractorRow {
-  id: number
-  slug: string
-  name: string
-  companyName: string | null
-  phone: string | null
-}
+export type { SearchProjectRow, SearchClientRow, SearchContractorRow }
 
 const LIMIT_PER_ENTITY = 6
 

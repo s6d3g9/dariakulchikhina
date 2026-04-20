@@ -1,37 +1,7 @@
 import * as repo from './admin-search.repository'
+import type { SearchProject, SearchClient, SearchContractor, SearchResults } from './admin.types'
 
-export interface SearchProject {
-  id: number
-  slug: string
-  title: string
-  status: string
-  type: 'project'
-  href: string
-}
-export interface SearchClient {
-  id: number
-  name: string
-  phone: string | null
-  email: string | null
-  type: 'client'
-  href: string
-}
-export interface SearchContractor {
-  id: number
-  slug: string
-  name: string
-  companyName: string | null
-  phone: string | null
-  type: 'contractor'
-  href: string
-}
-
-export interface SearchResults {
-  projects: SearchProject[]
-  clients: SearchClient[]
-  contractors: SearchContractor[]
-  total: number
-}
+export type { SearchProject, SearchClient, SearchContractor, SearchResults }
 
 const MIN_QUERY_LENGTH = 2
 

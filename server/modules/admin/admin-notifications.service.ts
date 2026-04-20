@@ -3,18 +3,9 @@ import {
   ensureHybridControl,
 } from '~/shared/utils/project-control'
 import * as repo from './admin-notifications.repository'
+import type { NotificationBadgeCount, AdminNotificationsSummary } from './admin.types'
 
-export interface NotificationBadgeCount {
-  count: number
-  label: string
-}
-
-export interface AdminNotificationsSummary {
-  total: number
-  extra: NotificationBadgeCount
-  overdue: NotificationBadgeCount
-  control: NotificationBadgeCount
-}
+export type { NotificationBadgeCount, AdminNotificationsSummary }
 
 /**
  * Counters for the admin header notification badge. Aggregates three
