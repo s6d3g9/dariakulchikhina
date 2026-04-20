@@ -170,9 +170,8 @@ dariakulchikhina/
 
 Если смотреть практично, этот target-tree уже достаточно точен, чтобы начать Wave 1 и Wave 2 без придумывания новых директорий на ходу.
 
-## Current Status vs Target (2026-04-16)
+## Current Status vs Target (2026-04-20)
 
-- Status source: `14-refactor-roadmap.md` и operational-отчеты.
-- Что уже достигнуто: базовый каркас репозитория, `server/modules/auth/**`, `server/modules/projects/**`, `shared/constants/system/**`, отдельные runtime-контуры messenger и communications-service.
-- Что еще не доведено до полного match: наполнение `app/shared/**` и `app/features/**` как primary-layer, финальное выравнивание `server/db/schema/**` и `relations.ts`, полная FSD-раскладка `messenger/web/app/**`.
-- Правило интерпретации: этот файл фиксирует целевую структуру, а не текущий процент готовности.
+- Status source: `15-target-alignment-audit.md` (статус: **Aligned**).
+- Все контуры (`app`, `server`, `shared`, `messenger`, `services`) приведены к целевой раскладке.
+- Правило интерпретации: этот файл фиксирует целевую структуру; фактический operational-log батчей ведётся в `14-refactor-roadmap.md`.

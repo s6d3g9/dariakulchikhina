@@ -145,9 +145,8 @@
 
 Эти файлы замыкают отдельный realtime-контур и позволяют рефакторить его независимо от main app.
 
-## Current Status vs Target (2026-04-17)
+## Current Status vs Target (2026-04-20)
 
-- Status source: `14-refactor-roadmap.md` и профильные messenger-документы.
-- Что уже достигнуто: отдельные runtime-контуры `messenger/core`, `messenger/web`, `services/communications-service` сохранены; базовая декомпозиция по auth/store/core закреплена; все пути в матрице нормализованы до repo-root для машинной проверки.
-- Что ещё не доведено до полного match: полный FSD-срез `messenger/web/app/{entities,features}` и финальная alignment-раскладка bounded contexts в `messenger/core/src/**`.
-- Критерий завершения этого документа: realtime-контур полностью независим от main Nuxt app и использует shared-контракты без дублирования.
+- Status source: `15-target-alignment-audit.md` (статус: **Aligned**, 68/68 move rows done).
+- Все 68 переносов выполнены: `messenger/core/src/**` разложен по 11 bounded contexts; `messenger/web/app/**` соответствует FSD; `services/communications-service/src/**` разложен по auth/store.
+- Realtime-контур полностью независим от main Nuxt app; cross-boundary-контракты идут только через `shared/**`.

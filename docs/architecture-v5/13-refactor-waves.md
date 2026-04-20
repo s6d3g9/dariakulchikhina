@@ -119,9 +119,9 @@ Definition of done:
 
 Этот порядок минимизирует регрессии и позволяет идти итеративно.
 
-## Current Status vs Target (2026-04-16)
+## Current Status vs Target (2026-04-20)
 
-- Status source: `14-refactor-roadmap.md`.
-- Что уже достигнуто: Wave 0-3 реализованы частично/по батчам; для CRM admin и projects backend выполнены безопасные cutover-батчи с валидацией typecheck.
-- Что еще не доведено до полного match: завершение Wave 4-6 (полный frontend domain migration, полный server module migration, db schema split) и финальный Wave 7-8 cleanup.
+- Status source: `15-target-alignment-audit.md` и `14-refactor-roadmap.md`.
+- Волны 0–7 завершены структурно: frontend (Wave 3–4), backend modules (Wave 5), db schema split (Wave 6), messenger cutover (Wave 7).
+- Wave 8 (legacy cleanup) продолжается инкрементально: удаление остаточных bridge-зависимостей и domain-logic из `server/utils/**`.
 - Правило выполнения: каждая следующая волна подтверждается batch-записями в roadmap с проверкой и residual-risk.

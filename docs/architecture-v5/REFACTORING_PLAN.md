@@ -37,9 +37,9 @@
 
 Это позволяет вести рефакторинг без давления на production-контур.
 
-## Current Status vs Target (2026-04-16)
+## Current Status vs Target (2026-04-20)
 
-- Стратегический статус: refactor-программа активна, operational-log ведется в `14-refactor-roadmap.md`.
-- Зафиксированные завершения: frontend widget-shell cutover (ключевые CRM admin pages), backend projects/work-status service cutover, operational audit/tail reports.
-- Открытые направления до полного target-match: окончательное выравнивание FSD слоев (`app/shared`, `app/features`), доменных server-модулей, и DB schema split.
+- Стратегический статус: v5.3 архитектура реализована; `15-target-alignment-audit.md` подтверждает выравнивание всех контуров.
+- Operational-log завершённых батчей ведётся в `14-refactor-roadmap.md`.
+- Открытые направления: Wave 8 legacy cleanup, repository-layer split (Wave 7 §18), domain-error migration (§19), config/logging migration (§20).
 - Правило управления риском: движение только батчами с обязательной compile/runtime валидацией и фиксацией residual-debt.

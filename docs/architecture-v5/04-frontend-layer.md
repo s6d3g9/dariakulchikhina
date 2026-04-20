@@ -1,6 +1,6 @@
 # 4. Слой Фронтенда (app/ - Feature-Sliced Design)
 
-> **Статус:** целевая FSD-раскладка. Фактическое состояние см. в `15-target-alignment-audit.md` (часть слоёв `core/shared/features` ещё не создана) и `14-refactor-roadmap.md`.
+> Фактическое выравнивание FSD-слоёв подтверждено в `15-target-alignment-audit.md`. Слой `app/core/` пока не создан — используется напрямую через `app/shared/composables` и `app/entities/**`. Operational-log — в `14-refactor-roadmap.md`.
 
 Главный Nuxt-app распиливается по FSD, чтобы крупные виджеты и cabinets не зависели от конкретных страниц, а страницы становились тонкими route-shell.
 

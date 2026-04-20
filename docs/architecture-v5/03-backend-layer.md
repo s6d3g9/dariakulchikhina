@@ -27,7 +27,7 @@
 
 ## 3.2. Структура директорий
 
-> **Статус:** целевая раскладка. Фактический прогресс см. в `15-target-alignment-audit.md` и `14-refactor-roadmap.md`.
+> Фактическое выравнивание подтверждено в `15-target-alignment-audit.md`. Operational-log батчей — в `14-refactor-roadmap.md`.
 
 ```text
 server/
