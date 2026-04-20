@@ -9,24 +9,10 @@ import {
   type AgentRow,
 } from './agent-registry.repository'
 import { auditAgentMutation } from './agent-registry-audit.service'
+import type { CreateAgentInput, UpdateAgentInput } from './agent-registry.types'
 
 export type { AgentRow }
-
-export interface CreateAgentInput {
-  ownerUserId: string
-  name: string
-  description?: string
-  model?: string
-  config?: Record<string, unknown>
-}
-
-export interface UpdateAgentInput {
-  version: number
-  name?: string
-  description?: string
-  model?: string
-  config?: Record<string, unknown>
-}
+export * from './agent-registry.types'
 
 export async function listAgents(): Promise<AgentRow[]> {
   return findAllAgents()
