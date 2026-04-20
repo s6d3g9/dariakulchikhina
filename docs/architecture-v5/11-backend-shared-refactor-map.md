@@ -70,7 +70,7 @@
 - server/api/managers/ -> server/modules/managers/
 - server/api/documents/ -> server/modules/documents/
 - server/api/gallery/ -> server/modules/gallery/
-- server/api/upload.post.ts -> server/api/upload.post.ts  (no DB, multipart-only, stays)
+- server/api/upload.post.ts -> server/api/upload.post.ts  (thin handler, delegates to uploads module, stays) ✓ done 2026-04-20
 - server/api/suggest/address.get.ts -> server/api/suggest/address.get.ts  (external Yandex proxy, no DB, stays)
 - server/api/chat/ -> server/modules/chat/
 
@@ -80,8 +80,8 @@
 - server/utils/auth-registration.ts -> server/modules/auth/admin-auth.service.ts
 - server/utils/body.ts -> server/utils/body.ts  (infrastructure helper, stays)
 - server/utils/query.ts -> server/utils/query.ts  (infrastructure helper, stays)
-- server/utils/storage.ts -> server/modules/uploads/upload-storage.service.ts
-- server/utils/upload-validation.ts -> server/modules/uploads/upload-validation.service.ts
+- server/utils/storage.ts -> server/modules/uploads/upload-storage.service.ts  ✓ done 2026-04-20
+- server/utils/upload-validation.ts -> server/modules/uploads/upload-validation.service.ts  ✓ done 2026-04-20
 - server/utils/communications.ts -> server/modules/communications/communications-bootstrap.service.ts
 - server/utils/project-communications-relay.ts -> server/modules/communications/project-communications-relay.service.ts
 - server/utils/standalone-chat-communications.ts -> server/modules/chat/chat-communications.service.ts
