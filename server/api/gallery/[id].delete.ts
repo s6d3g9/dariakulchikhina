@@ -1,15 +1,15 @@
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
 import { deleteGalleryItem } from '~/server/modules/gallery/gallery.service'
+import { UnauthorizedError, NotFoundError } from '~/server/utils/errors'
 
-/**
- * DELETE /api/gallery/[id] — remove the row and clean up referenced
- * files from the upload directory.
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!Number.isFinite(id)) throw createError({ statusCode: 400 })
-
-  const deleted = await deleteGalleryItem(id)
-  if (!deleted) throw createError({ statusCode: 404 })
-  return { ok: true }
+export default defineEndpoint({
+  auth: 'required',
+  params: z.object({ id: z.string().regex(/^\d+$/) }),
+  async handler({ session, params }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    const deleted = await deleteGalleryItem(Number(params.id))
+    if (!deleted) throw new NotFoundError('GalleryItem', params.id)
+    return { ok: true }
+  },
 })

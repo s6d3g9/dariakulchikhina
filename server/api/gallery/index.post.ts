@@ -1,13 +1,12 @@
-import {
-  createGalleryItem,
-  CreateGallerySchema,
-} from '~/server/modules/gallery/gallery.service'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
+import { createGalleryItem, CreateGallerySchema, type CreateGalleryInput } from '~/server/modules/gallery/gallery.service'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-/**
- * POST /api/gallery — create a new gallery item.
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const body = await readValidatedNodeBody(event, CreateGallerySchema)
-  return await createGalleryItem(body)
+export default defineEndpoint({
+  auth: 'required',
+  input: CreateGallerySchema,
+  async handler({ session, input }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    return createGalleryItem(input as CreateGalleryInput)
+  },
 })

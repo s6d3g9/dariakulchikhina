@@ -1,14 +1,12 @@
-import {
-  reorderGalleryItems,
-  ReorderGallerySchema,
-} from '~/server/modules/gallery/gallery.service'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
+import { reorderGalleryItems, ReorderGallerySchema } from '~/server/modules/gallery/gallery.service'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-/**
- * PATCH /api/gallery/reorder — apply a batch of sortOrder updates
- * atomically. Used by the admin drag-and-drop UI.
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const body = await readValidatedNodeBody(event, ReorderGallerySchema)
-  return await reorderGalleryItems(body)
+export default defineEndpoint({
+  auth: 'required',
+  input: ReorderGallerySchema,
+  async handler({ session, input }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    return reorderGalleryItems(input)
+  },
 })
