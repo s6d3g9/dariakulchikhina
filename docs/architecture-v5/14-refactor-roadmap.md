@@ -1552,3 +1552,53 @@ Wave 4 для UIDesignPanel закрыт.
 - OCC version-semantics на PATCH/PUT endpoints: handlers делегируют в service, которые возвращают null на 404 (→ 409 logically reserved for version mismatch via OCC in repository) ✓
 
 Результат: **Zero drift**. Все 5 доменов уже мигрированы в Wave 5 (2026-04-17). Коммит не требуется.
+
+### [done] 2026-04-20 — Autonomous session (composer-platforma-v5 + orchestrator)
+
+**Pipeline**: composer-platforma-v5 + orchestrator daemon (pool=4, auto-merge + refill-queue systemd timers).  
+**Duration**: ~03:00–04:23 MSK.  
+**Merged commits** (top 30):
+
+```
+0a7861a refactor(server): disambiguate ClientProfileInputSchema from shared ClientProfileSchema
+41166a1 chore(server/utils): enforce infrastructure-only whitelist via lint + verifier
+9fb9f77 refactor(server/admin-settings): confirm module depth, drop residual utils bridges
+2378a05 refactor(server/uploads): confirm module depth, drop residual utils bridges
+9084989 refactor(server/agent-registry): confirm module depth, drop residual utils bridges
+b9b35df refactor(server/auth): confirm module depth, drop residual utils bridges
+aee2b11 refactor(server/chat): add chat-agents.service.ts proxy (wave9b matrix requirement)
+1c14d57 refactor(server/agents): fix broken server/utils/auth import → modules/auth/session.service
+8fc8556 refactor(server/utils): move auth/*/recovery logic into modules/auth
+ba9e76b refactor(server/uploads): add missing storage service imports to upload handler
+5160ad1 docs(architecture-v5): wave9 subjects domain audit — all 5 domains verified complete
+19be803 chore(server): read env via config in repo tests (lint-ratchet)
+be5397a docs(architecture-v5): mark documents matrix rows done 2026-04-20
+3e44bb7 docs(architecture-v5): verify communications handlers matrix 2026-04-20
+554b5a3 docs(architecture-v5): mark clients row done in matrix
+23c5b63 refactor(messenger/web): remove legacy-agents, convert to templates (wave8 W7 frontend-ui)
+a61fadb refactor(messenger/core): chat-agents service uses agent-registry CRUD
+049e145 chore(server): remove orphan exports
+218574e chore(frontend): remove orphan exports
+55ae149 chore: remove commented-out dead code
+71b1f79 refactor(messenger/web): add core/api settings facade
+8381d32 refactor(messenger/web): add core/api klipy facade
+a046751 refactor(messenger/web): add core/api contacts facade
+388c51e test(server/documents-gallery): add repositories unit suite
+f8c3c7c test(server/clients): add clients repository unit suite
+28825c0 refactor(messenger/chat): extract klipy feed paging composable
+ba5adb0 refactor(messenger/chat): extract forward picker sub-component
+f04855b refactor(messenger/chat): extract audio-draft composable
+8efa981 refactor(messenger/project-engine): extract ActionSearch
+6d72cfe docs(architecture-v5): append server/utils residual audit 2026-04-20
+```
+
+**Domains**: refactor(server), refactor(server/*), refactor(messenger/*), chore(server), docs(architecture-v5), test(server/*), chore(frontend).
+
+**Skipped branches** (conflicts; 10 most recent):
+- `wave9b-module-depth-audit` (313eacb77b2): conflict in `server/modules/ai/__tests__/ai.repositories.test.ts`
+- `wave9c-matrix-doc-strict-retry` (4ee4f8461): conflict in `14-refactor-roadmap.md` (local changes)
+- `wave9c-messenger-lint-exception` (e86c942eb): conflict in `14-refactor-roadmap.md` (local changes)
+- `wave9c-api-handler-size-audit`: 6 commits (too big, needs manual review)
+- `wave9b-matrix-doc-reconcile` (c66f2f2ed): conflict in `14-refactor-roadmap.md` (local changes)
+
+**Stats**: picked=33, skipped=1, failed=68 (conflict branches awaiting manual triage in next session).
