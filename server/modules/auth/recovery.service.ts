@@ -1,3 +1,5 @@
+// Auth module: recovery phrase word list and generator. Imported by admin/client/contractor auth services.
+// Phrases are crypto-random human words; callers store only the bcrypt hash, never the raw phrase.
 import { randomInt } from 'node:crypto'
 
 const RECOVERY_WORDS = [
