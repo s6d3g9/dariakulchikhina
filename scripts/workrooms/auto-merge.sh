@@ -37,7 +37,7 @@ if [ "$current" != "$remote" ]; then
 fi
 
 picked=0; skipped=0; failed=0
-for branch in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/claude/workroom-); do
+for branch in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/claude/workroom-*); do
   [ "${branch#origin/}" = "$branch" ] && continue
   # Already merged?
   if git merge-base --is-ancestor "$branch" HEAD 2>/dev/null; then
