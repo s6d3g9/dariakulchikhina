@@ -1,15 +1,15 @@
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
 import { getSeller } from '~/server/modules/sellers/sellers.service'
+import { UnauthorizedError, NotFoundError } from '~/server/utils/errors'
 
-/**
- * GET /api/sellers/[id]
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id || !Number.isFinite(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid seller id' })
-  }
-  const seller = await getSeller(id)
-  if (!seller) throw createError({ statusCode: 404, statusMessage: 'Seller not found' })
-  return seller
+export default defineEndpoint({
+  auth: 'required',
+  params: z.object({ id: z.string().regex(/^\d+$/) }),
+  async handler({ session, params }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    const seller = await getSeller(Number(params.id))
+    if (!seller) throw new NotFoundError('Seller', params.id)
+    return seller
+  },
 })

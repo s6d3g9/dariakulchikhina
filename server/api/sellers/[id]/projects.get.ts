@@ -1,13 +1,13 @@
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
 import { listSellerProjects } from '~/server/modules/sellers/sellers.service'
+import { UnauthorizedError } from '~/server/utils/errors'
 
-/**
- * GET /api/sellers/[id]/projects — projects linked via seller_projects.
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id || !Number.isFinite(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid seller id' })
-  }
-  return await listSellerProjects(id)
+export default defineEndpoint({
+  auth: 'required',
+  params: z.object({ id: z.string().regex(/^\d+$/) }),
+  async handler({ session, params }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    return listSellerProjects(Number(params.id))
+  },
 })

@@ -1,19 +1,16 @@
-import {
-  updateSeller,
-  UpdateSellerSchema,
-} from '~/server/modules/sellers/sellers.service'
+import { z } from 'zod'
+import { defineEndpoint } from '~/server/utils/define-endpoint'
+import { updateSeller, UpdateSellerSchema } from '~/server/modules/sellers/sellers.service'
+import { UnauthorizedError, NotFoundError } from '~/server/utils/errors'
 
-/**
- * PUT /api/sellers/[id] — partial update.
- */
-export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id || !Number.isFinite(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid seller id' })
-  }
-  const body = await readValidatedNodeBody(event, UpdateSellerSchema)
-  const updated = await updateSeller(id, body)
-  if (!updated) throw createError({ statusCode: 404, statusMessage: 'Seller not found' })
-  return updated
+export default defineEndpoint({
+  auth: 'required',
+  params: z.object({ id: z.string().regex(/^\d+$/) }),
+  input: UpdateSellerSchema,
+  async handler({ session, params, input }) {
+    if (session?.role !== 'admin') throw new UnauthorizedError()
+    const updated = await updateSeller(Number(params.id), input)
+    if (!updated) throw new NotFoundError('Seller', params.id)
+    return updated
+  },
 })
