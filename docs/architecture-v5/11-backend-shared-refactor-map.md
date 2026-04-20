@@ -67,7 +67,7 @@
 - server/api/contractors/ -> server/modules/contractors/
 - server/api/designers/ -> server/modules/designers/
 - server/api/sellers/ -> server/modules/sellers/
-- server/api/managers/ -> server/modules/managers/
+- server/api/managers/ -> server/modules/managers/  ✓ done 2026-04-20
 - server/api/documents/ -> server/modules/documents/
 - server/api/gallery/ -> server/modules/gallery/
 - server/api/upload.post.ts -> server/api/upload.post.ts  (no DB, multipart-only, stays)
