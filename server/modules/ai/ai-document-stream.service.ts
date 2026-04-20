@@ -2,9 +2,8 @@ import type { ServerResponse } from 'node:http'
 import type { LegalChunkWithScore } from './rag.service'
 import { GEMMA_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from './gemma-prompts'
 import { parseStreamReviewNotes } from './ai-stream-prompts'
+import { config } from '~/server/config'
 
-const MODEL_HEAVY  = process.env.OLLAMA_MODEL_HEAVY  || 'gemma3:27b'
-const MODEL_CHAT   = process.env.OLLAMA_MODEL_CHAT   || 'qwen3:4b'
 const DEFAULT_GEMMA_URL = 'http://localhost:11434'
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const TIMEOUT_MS = 900_000
@@ -22,6 +21,8 @@ export interface AiDocStreamParams {
 export async function streamAiDocument(res: ServerResponse, params: AiDocStreamParams): Promise<void> {
   const { action, aiModel, userPrompt, legalCtx, legalChunks } = params
   const isChat = action === 'chat'
+  const MODEL_HEAVY = config.OLLAMA_MODEL_HEAVY || 'gemma3:27b'
+  const MODEL_CHAT = config.OLLAMA_MODEL_CHAT || 'qwen3:4b'
   const isAnthropicModel = typeof aiModel === 'string' && aiModel.startsWith('claude-')
   const chosenModel = isAnthropicModel
     ? aiModel
@@ -62,7 +63,7 @@ export async function streamAiDocument(res: ServerResponse, params: AiDocStreamP
   res.write(': ping\n\n')
 
   if (isAnthropicModel) {
-    const apiKey = process.env.ANTHROPIC_API_KEY
+    const apiKey = config.ANTHROPIC_API_KEY
     if (!apiKey) {
       res.write(`data: ${JSON.stringify({ error: 'ANTHROPIC_API_KEY не настроен на сервере' })}\n\n`)
       res.end()
@@ -135,7 +136,7 @@ export async function streamAiDocument(res: ServerResponse, params: AiDocStreamP
   }
 
   // Ollama native API
-  const gemmaUrl = process.env.GEMMA_URL || DEFAULT_GEMMA_URL
+  const gemmaUrl = config.GEMMA_URL || DEFAULT_GEMMA_URL
   const ollamaRes = await fetch(`${gemmaUrl}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

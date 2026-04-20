@@ -32,6 +32,6 @@ export function getSuggestions(q: string, category: string): string[] {
   }
   const all: string[] = []
   for (const cat of Object.keys(db)) all.push(...flattenCategory(db[cat]))
-  const unique = [...new Set(all)]
+  const unique = Array.from(new Set(all))
   return q ? unique.filter(item => item.toLowerCase().includes(q)) : unique
 }
