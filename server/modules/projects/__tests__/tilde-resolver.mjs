@@ -3,19 +3,19 @@
  * and directory imports so that --experimental-strip-types can run server
  * modules directly.
  *
- * Registered via: node --import ./server/modules/clients/__tests__/tilde-resolver.mjs
+ * Registered via: node --import ./server/modules/projects/__tests__/tilde-resolver.mjs
  */
 import { registerHooks } from 'node:module'
 import { resolve, dirname, extname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { existsSync, statSync } from 'node:fs'
 
-// Resolve monorepo root (this file lives 5 levels deep: server/modules/clients/__tests__/)
+// Resolve monorepo root (this file lives 5 levels deep: server/modules/projects/__tests__/)
 const ROOT = resolve(fileURLToPath(import.meta.url), '../../../../../')
 
 function tildeToAbsolute(specifier) {
   if (!specifier.startsWith('~/')) return null
-  const rest = specifier.slice(2) // strip '~/'
+  const rest = specifier.slice(2)
 
   let base
   if (rest.startsWith('server/')) base = resolve(ROOT, rest)
@@ -30,11 +30,9 @@ function tildeToAbsolute(specifier) {
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
-    // 1. Handle ~/... aliases
     const abs = tildeToAbsolute(specifier)
     if (abs) return nextResolve(pathToFileURL(abs).href, context)
 
-    // 2. Handle relative imports pointing to a directory (e.g. './schema' → './schema/index.ts')
     if (
       (specifier.startsWith('./') || specifier.startsWith('../')) &&
       context.parentURL?.startsWith('file://')

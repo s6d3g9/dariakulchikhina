@@ -49,6 +49,17 @@
     "test:server:auth": "node --experimental-strip-types --import=./server/modules/auth/__tests__/tilde-register.mjs server/modules/auth/__tests__/auth.repository.test.ts",
     "test:server:clients": "node --experimental-strip-types --import=./server/modules/clients/__tests__/tilde-resolver.mjs server/modules/clients/__tests__/clients.repository.test.ts",
     "test:server:define-endpoint": "node --experimental-transform-types --import=./server/utils/__tests__/tilde-register.mjs server/utils/__tests__/define-endpoint.test.ts",
+    "test:server:uploads": "node --experimental-strip-types server/modules/uploads/__tests__/uploads.service.test.ts",
+    "test:server:auth:service": "node --experimental-strip-types server/modules/auth/__tests__/auth.service.test.ts",
+    "test:server:designers": "node --experimental-strip-types --import ./server/modules/designers/__tests__/tilde-resolver.mjs server/modules/designers/__tests__/designers.service.test.ts",
+    "test:server:contractors": "node --experimental-strip-types --import ./server/modules/contractors/__tests__/tilde-resolver.mjs server/modules/contractors/__tests__/contractors.service.test.ts",
+    "test:server:clients:service": "node --experimental-strip-types --import ./server/modules/clients/__tests__/tilde-resolver.mjs server/modules/clients/__tests__/clients.service.test.ts",
+    "test:server:documents": "node --experimental-strip-types --import ./server/modules/documents/__tests__/tilde-resolver.mjs server/modules/documents/__tests__/documents.service.test.ts",
+    "test:server:projects": "node --experimental-strip-types --import ./server/modules/projects/__tests__/tilde-resolver.mjs server/modules/projects/__tests__/projects.service.test.ts",
+    "test:server:ai:service": "node --experimental-strip-types server/modules/ai/__tests__/ai.service.test.ts",
+    "test:server:communications": "node --experimental-strip-types server/modules/communications/__tests__/communications.service.test.ts",
+    "test:server:chat": "node --experimental-strip-types server/modules/chat/__tests__/chat.service.test.ts",
+    "test:server:admin:service": "node --experimental-strip-types server/modules/admin/__tests__/admin.service.test.ts",
     "e2e:dispatcher": "bash tests/e2e/messenger-cli-dispatcher/run-e2e.sh"
   },
   "dependencies": {
