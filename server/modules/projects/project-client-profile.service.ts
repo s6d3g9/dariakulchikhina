@@ -2,14 +2,16 @@ import { z } from 'zod'
 import { CLIENT_PROFILE_EDITABLE_KEYS } from '~/shared/constants/profile-fields'
 import * as repo from '~/server/modules/projects/projects.repository'
 
-export const ClientProfileSchema = z
+// Strict write-only schema — only CLIENT_PROFILE_EDITABLE_KEYS are accepted,
+// all values coerced to string. Distinct from shared ClientProfileSchema (full read model).
+export const ClientProfileInputSchema = z
   .object(
     Object.fromEntries(
       CLIENT_PROFILE_EDITABLE_KEYS.map((k) => [k, z.string().max(1000).optional()]),
     ) as Record<string, z.ZodOptional<z.ZodString>>,
   )
   .strict()
-export type ClientProfileInput = z.infer<typeof ClientProfileSchema>
+export type ClientProfileInput = z.infer<typeof ClientProfileInputSchema>
 
 /**
  * Partial update of the `projects.profile` JSONB column, restricted to
