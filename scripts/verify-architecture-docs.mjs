@@ -205,6 +205,34 @@ function checkMatrices() {
   return summary
 }
 
+// --- Phase 4: server/utils/ filename whitelist ---
+
+const SERVER_UTILS_ALLOWED = new Set([
+  'body.ts',
+  'errors.ts',
+  'logger.ts',
+  'messenger-cors.ts',
+  'query.ts',
+  'request-context.ts',
+  'security-headers.ts',
+])
+
+function checkServerUtilsWhitelist() {
+  const utilsDir = join(REPO_ROOT, 'server', 'utils')
+  if (!existsSync(utilsDir)) return []
+  const issues = []
+  for (const name of readdirSync(utilsDir)) {
+    const abs = join(utilsDir, name)
+    if (!statSync(abs).isFile()) continue
+    if (!SERVER_UTILS_ALLOWED.has(name)) {
+      issues.push(
+        `server/utils/${name}: file not in the allowed whitelist. Add it to SERVER_UTILS_ALLOWED in scripts/verify-architecture-docs.mjs after architecture review.`,
+      )
+    }
+  }
+  return issues
+}
+
 // --- main ---
 
 const allFiles = getMarkdownFiles(DOCS_DIR)
@@ -214,7 +242,8 @@ const structuralIssues = allFiles.flatMap((filePath) =>
 )
 const indexIssues = validateIndex(allFiles)
 
-const issues = [...structuralIssues, ...indexIssues]
+const utilsWhitelistIssues = checkServerUtilsWhitelist()
+const issues = [...structuralIssues, ...indexIssues, ...utilsWhitelistIssues]
 
 if (issues.length > 0) {
   console.error('Architecture docs validation failed:')
