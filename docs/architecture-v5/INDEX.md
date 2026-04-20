@@ -28,16 +28,34 @@
 21. [Agent Orchestration & Claude CLI Sync — дерево runs, CLI bridge, WS tree-стрим](./21-agent-orchestration.md)
 22. [Skill Bundles — per-kind плагины для воркеров](./22-skill-bundles.md)
 23. [Project-Centric Messenger — проекты, коннекторы, скилы, MCP, bootstrap composer](./23-project-centric-messenger.md)
-21. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
+28. [Code Excellence — эволюция паттернов модулей до идеала](./28-code-excellence-plan.md)
+24. [Arch Audit: Project-Centric Messenger (2026-04-20)](./24-arch-audit-2026-04-20.md)
+25. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
 
 ## Операционные шаблоны
 
 [Task Templates](../task-templates/README.md) — canonical TASK.md templates for the composer → orchestrator → workers pipeline. Includes feature, bug, refactor, and tests templates with acceptance criteria, architectural guardrails, and v5 doc references. See [§22 Skill Bundles](./22-skill-bundles.md) for how `kind:` field routes tasks to the right worker and skill bundle.
-23. [Project-Centric Messenger — проекты, коннекторы, скилы, MCP, bootstrap composer](./23-project-centric-messenger.md)
+
+[ADR Index](./adr/README.md) — Architecture Decision Records: cursor pagination, WS ticket auth, DDD-lite, OCC versioning, soft-delete.
 
 ## Операционные отчеты
 1. [Refactor tail report](./refactor-tail-report.md)
 2. [Server audit report](./server-audit-report.md)
+3. [Messenger Runbook](./messenger-runbook.md)
+4. [Error Catalogue](./error-catalogue.md)
+
+## Тактические справочники (RAG)
+- [Backend Guide](../rag/BACKEND_GUIDE.md) — DDD-lite backend conventions, тонкие handlers, domain modules
+- [Class Dictionary](../rag/CLASS_DICTIONARY.md) — словарь доменных классов и типов
+- [Component Audit](../rag/COMPONENT_AUDIT.md) — инвентаризация компонентов
+- [Dark Mode](../rag/DARK_MODE.md) — реализация тёмной темы
+- [Drizzle Patterns](../rag/DRIZZLE_PATTERNS.md) — паттерны Drizzle ORM-запросов
+- [Pinia Stores](../rag/PINIA_STORES.md) — управление состоянием
+- [Redis Patterns](../rag/REDIS_PATTERNS.md) — кэш и Pub/Sub паттерны
+- [Refactor Patterns](../rag/REFACTOR_PATTERNS.md) — рецепты повторяющихся рефакторингов
+- [Tailwind Tokens](../rag/TAILWIND_TOKENS.md) — карта Tailwind-токенов
+- [Token Map](../rag/TOKEN_MAP.md) — карта дизайн-системных токенов
+- [Vue/Nuxt Guide](../rag/VUE_NUXT_GUIDE.md) — конвенции Nuxt 4 / Vue 3
 
 ## Правило актуальности
 - Текущий статус выполнения и фактические batch-изменения ведутся в `14-refactor-roadmap.md`.
