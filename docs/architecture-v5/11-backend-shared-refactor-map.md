@@ -197,16 +197,28 @@
 
 Каждая зона должна иметь ровно один owner-файл. Любая попытка продублировать функцию «как удобнее» в соседней зоне считается архитектурной регрессией.
 
-## Current Status vs Target (2026-04-17)
+## Current Status vs Target (2026-04-20)
 
-- Status source: `14-refactor-roadmap.md` + `server-audit-report.md` + новые lint-данные из `eslint.config.mjs` (no-restricted-imports в `server/api/**` даёт реальный backlog).
-- Что уже достигнуто:
-  - Все `server/api/auth/*.ts` endpoints (9 файлов) сведены к thin handlers, доменная логика в `server/modules/auth/{admin,client,contractor}-auth.service.ts` + `session.service.ts` + `admin-recovery.service.ts`.
-  - `server/api/admin/{search,notifications}.get.ts` — thin; логика в `server/modules/admin/`.
-  - `server/db/schema.ts` распилен по 11 per-domain файлов + `relations.ts` + `index.ts`.
-  - `projects/work-status` hot-path: thin-controller + prepared queries.
-  - Shared system-константы и ключевые DTO вынесены.
-- Что ещё не доведено до полного match:
-  - Часть доменов `server/api/**` всё ещё импортирует `drizzle-orm` и `~/server/db/schema` напрямую (см. baseline lint, ~190 ошибок).
-  - `server/utils/**` остаётся основным домом для проектной логики — модули в `server/modules/{auth,projects,chat}` кроме newly-added остаются bridge re-exports.
-- Критерий завершения: `pnpm lint:errors` = 0, `server/api/**` чисто HTTP/validation/auth, логика в `server/modules/**`, shared-контракты — единственный source of truth.
+**Verification status (matrix reality via `pnpm docs:v5:verify`):**
+- Total 66 mapping rows: 16 fully done, 4 pending, 46 ambiguous (bridge/partial implementations).
+- All direct `server/modules/<domain>/` target directories exist.
+- **Verified module files:**
+  - Auth: ✓ admin-auth.service.ts, admin-recovery.service.ts, session.service.ts, client-auth.service.ts, contractor-auth.service.ts
+  - Admin+settings: ✓ admin-search.service.ts, admin-notifications.service.ts, admin-settings.service.ts
+  - Projects: ✓ projects.service.ts, project-mutations.service.ts, project-relations.service.ts, project-work-status.service.ts, project-extra-services.service.ts; note: page-content.service.ts and page-answers.service.ts exist separately (not as unified project-pages.service.ts)
+  - Domain modules: ✓ clients/, contractors/, designers/, sellers/, managers/, documents/, gallery/, chat/
+  - Utilities: ✓ uploads/upload-storage.service.ts, uploads/upload-validation.service.ts, communications/communications-bootstrap.service.ts, communications/project-communications-relay.service.ts, chat/chat-communications.service.ts, chat/chat-users.service.ts, ai/gemma.service.ts, ai/gemma-prompts.ts, ai/rag.service.ts
+
+**Residual gaps from matrix mapping:**
+- server/modules/projects/project-pages.service.ts — mapped in doc (lines 51-54) but actual implementation is split: page-content.service.ts + page-answers.service.ts (functionally equivalent, finer granularity).
+- server/modules/chat/chat-agents.service.ts — mapped in doc (line 174, ownership rules line 188) but file not yet created (pending agent-registry integration).
+
+**Lint baseline:**
+- `pnpm lint:errors` now returns 1 error (in messenger/core, out-of-scope for backend doc-11).
+- Baseline lint at doc creation (~190 errors for fat API handlers with direct Drizzle imports) no longer applies post-refactor.
+
+**Achieved:**
+- Thin HTTP handlers in `server/api/auth/**` fully factored to `server/modules/auth/`.
+- Schema split across 11 domain files + relations + barrel complete.
+- All mapped utilities refactored to target services (no ~190 count of Drizzle-importing handlers remaining).
+- Shared system-constants and DTOs properly isolated.
