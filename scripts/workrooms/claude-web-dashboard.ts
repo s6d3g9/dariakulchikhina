@@ -33,23 +33,33 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { AsyncLocalStorage } from 'node:async_hooks';
+const requestCtx = new AsyncLocalStorage();
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 // ────────────────────────── config ──────────────────────────
 
 const HOME = homedir();
-const STATE_DIR = process.env.DASHBOARD_STATE_DIR || join(HOME, 'state/claude-sessions');
-const REGISTRY = join(STATE_DIR, '.registry.tsv');
-const ARCHIVE_DIR = join(STATE_DIR, 'archive');
-const ARCHIVE_REGISTRY = join(ARCHIVE_DIR, '.registry.tsv');
+const DEFAULT_STATE_DIR = process.env.DASHBOARD_STATE_DIR || join(HOME, 'state/claude-sessions');
+const DEFAULT_QUEUE_ROOT = process.env.DASHBOARD_QUEUE_DIR || join(HOME, 'state/queue');
+const DEFAULT_WORKROOMS_ROOT = process.env.DASHBOARD_WORKROOMS_DIR || join(HOME, 'workrooms');
+function stateDir() { return (requestCtx.getStore() as any)?.stateDir ?? DEFAULT_STATE_DIR; }
+function archiveDir() { return join(stateDir(), 'archive'); }
+function registry() { return join(stateDir(), '.registry.tsv'); }
+function archiveRegistry() { return join(archiveDir(), '.registry.tsv'); }
+function projectsFile() { return join(stateDir(), '.projects.json'); }
+function workroomsRoot() { return (requestCtx.getStore() as any)?.workroomsDir ?? DEFAULT_WORKROOMS_ROOT; }
+function queueRoot() { return (requestCtx.getStore() as any)?.queueDir ?? DEFAULT_QUEUE_ROOT; }
 const BIN_CLAUDE_SESSION = join(HOME, 'bin/claude-session');
 
-// Ensure archive dir exists + has a registry header
+// Ensure archive dir exists + has a registry header (for default user at startup)
 try {
-  if (!existsSync(ARCHIVE_DIR)) mkdirSync(ARCHIVE_DIR, { recursive: true });
-  if (!existsSync(ARCHIVE_REGISTRY)) {
-    writeFileSync(ARCHIVE_REGISTRY, 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tarchived_at\n');
+  const _initArchiveDir = join(DEFAULT_STATE_DIR, 'archive');
+  const _initArchiveRegistry = join(_initArchiveDir, '.registry.tsv');
+  if (!existsSync(_initArchiveDir)) mkdirSync(_initArchiveDir, { recursive: true });
+  if (!existsSync(_initArchiveRegistry)) {
+    writeFileSync(_initArchiveRegistry, 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tarchived_at\n');
   }
 } catch {}
 
@@ -66,8 +76,6 @@ function isComposerSlug(slug) {
 }
 
 const QUEUE_DIRS = ['pending', 'running', 'done', 'failed'];
-const QUEUE_ROOT = process.env.DASHBOARD_QUEUE_DIR || join(HOME, 'state/queue');
-const WORKROOMS_ROOT = process.env.DASHBOARD_WORKROOMS_DIR || join(HOME, 'workrooms');
 
 // Returns the body of a TASK.md (strips YAML frontmatter) and a frontmatter dict.
 function parseTaskFile(file) {
@@ -120,7 +128,7 @@ async function computeDependencyEdges() {
 
   // (A) declared deps from TASK.md frontmatter/body in queue dirs
   for (const dir of QUEUE_DIRS) {
-    const full = join(QUEUE_ROOT, dir);
+    const full = join(queueRoot(), dir);
     if (!existsSync(full)) continue;
     for (const name of readdirSync(full)) {
       if (!name.endsWith('.md')) continue;
@@ -175,10 +183,10 @@ const CTX_WINDOW_LIMIT = 200_000;        // claude-sonnet-4-6 / haiku-4-5
 // Find the TASK.md associated with a session slug. Checked in priority order:
 // 1) live workroom  2) queue/{running,pending,done,failed}/<slug>.md
 function findTaskFile(slug) {
-  const live = join(WORKROOMS_ROOT, slug, 'TASK.md');
+  const live = join(workroomsRoot(), slug, 'TASK.md');
   if (existsSync(live)) return { path: live, location: 'workroom' };
   for (const dir of QUEUE_DIRS) {
-    const f = join(QUEUE_ROOT, dir, `${slug}.md`);
+    const f = join(queueRoot(), dir, `${slug}.md`);
     if (existsSync(f)) return { path: f, location: `queue/${dir}` };
   }
   return null;
@@ -239,26 +247,37 @@ function collectSessionContext(slug) {
     };
   }
   const activeLog = sessionLogPath(slug);
-  const archiveLog = join(ARCHIVE_DIR, `${slug}.log`);
+  const archiveLog = join(archiveDir(), `${slug}.log`);
   const lp = existsSync(activeLog) ? activeLog : archiveLog;
   const files = collectSessionFiles(lp);
   return { task, files };
 }
 
 const PORT = Number(process.argv.includes('--port') ? process.argv[process.argv.indexOf('--port') + 1] : 9090);
-const BASIC_USER = process.env.DASHBOARD_USER || '';
-const BASIC_PASS = process.env.DASHBOARD_PASS || '';
-const AUTH_REQUIRED = Boolean(BASIC_USER && BASIC_PASS);
+function parseUsers() {
+  const raw = process.env.DASHBOARD_USERS;
+  if (raw) { try { return JSON.parse(raw); } catch {} }
+  const u1 = { user: process.env.DASHBOARD_USER || '', pass: process.env.DASHBOARD_PASS || '',
+    stateDir: DEFAULT_STATE_DIR, queueDir: DEFAULT_QUEUE_ROOT, workroomsDir: DEFAULT_WORKROOMS_ROOT };
+  return [u1];
+}
+const USERS = parseUsers();
 
 function checkAuth(req, res) {
-  if (!AUTH_REQUIRED) return true;
   const header = req.headers.authorization || '';
   if (header.startsWith('Basic ')) {
     try {
       const [u, p] = Buffer.from(header.slice(6), 'base64').toString('utf8').split(':');
-      if (u === BASIC_USER && p === BASIC_PASS) return true;
+      const matched = USERS.find((cfg: any) => cfg.user === u && cfg.pass === p);
+      if (!matched) {
+        res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="claude-sessions"', 'Content-Type': 'text/plain' });
+        res.end('Unauthorized');
+        return false;
+      }
+      return matched;
     } catch {}
   }
+  if (USERS.every((u: any) => !u.user && !u.pass)) return USERS[0];
   res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="claude-sessions"', 'Content-Type': 'text/plain' });
   res.end('Unauthorized');
   return false;
@@ -267,8 +286,8 @@ function checkAuth(req, res) {
 // ────────────────────────── registry ─────────────────────────
 
 function readRegistry() {
-  if (!existsSync(REGISTRY)) return [];
-  const lines = readFileSync(REGISTRY, 'utf8').trim().split('\n');
+  if (!existsSync(registry())) return [];
+  const lines = readFileSync(registry(), 'utf8').trim().split('\n');
   if (lines.length < 2) return [];
   return lines
     .slice(1)
@@ -282,8 +301,8 @@ function readRegistry() {
 }
 
 function readArchiveRegistry() {
-  if (!existsSync(ARCHIVE_REGISTRY)) return [];
-  const lines = readFileSync(ARCHIVE_REGISTRY, 'utf8').trim().split('\n');
+  if (!existsSync(archiveRegistry())) return [];
+  const lines = readFileSync(archiveRegistry(), 'utf8').trim().split('\n');
   if (lines.length < 2) return [];
   return lines
     .slice(1)
@@ -304,18 +323,18 @@ function archiveSession(slug) {
   const moveIfExists = (src, dst) => {
     if (existsSync(src)) { try { renameSync(src, dst); } catch {} }
   };
-  moveIfExists(join(STATE_DIR, `${slug}.log`),  join(ARCHIVE_DIR, `${slug}.log`));
-  moveIfExists(join(STATE_DIR, `${slug}.json`), join(ARCHIVE_DIR, `${slug}.json`));
+  moveIfExists(join(stateDir(), `${slug}.log`),  join(archiveDir(), `${slug}.log`));
+  moveIfExists(join(stateDir(), `${slug}.json`), join(archiveDir(), `${slug}.json`));
   // Remove from active registry (kill already did, but be safe)
-  if (existsSync(REGISTRY)) {
-    const lines = readFileSync(REGISTRY, 'utf8').split('\n');
+  if (existsSync(registry())) {
+    const lines = readFileSync(registry(), 'utf8').split('\n');
     const kept = lines.filter(l => !l.startsWith(`${slug}\t`));
-    writeFileSync(REGISTRY, kept.join('\n'));
+    writeFileSync(registry(), kept.join('\n'));
   }
   // Append to archive registry
   const archivedAt = new Date().toISOString();
   appendFileSync(
-    ARCHIVE_REGISTRY,
+    archiveRegistry(),
     `${active.slug}\t${active.uuid}\t${active.window}\t${active.workroom}\t${active.model}\t${active.created}\t${archivedAt}\n`,
   );
   return { ok: true };
@@ -351,7 +370,7 @@ function zeroMetrics(slug) {
   };
 }
 
-function sessionLogPath(slug) { return join(STATE_DIR, `${slug}.log`); }
+function sessionLogPath(slug) { return join(stateDir(), `${slug}.log`); }
 
 /** Compute per-session metrics by scanning the session log. */
 async function computeMetrics(slug) {
@@ -461,14 +480,14 @@ async function computeMetrics(slug) {
 // ──────────────── cost roll-up (month so far) ────────────────
 
 async function monthCostSoFar() {
-  if (!existsSync(STATE_DIR)) return 0;
+  if (!existsSync(stateDir())) return 0;
   const firstOfMonth = new Date();
   firstOfMonth.setDate(1); firstOfMonth.setHours(0, 0, 0, 0);
 
   let total = 0;
-  for (const f of readdirSync(STATE_DIR)) {
+  for (const f of readdirSync(stateDir())) {
     if (!f.endsWith('.log')) continue;
-    const p = join(STATE_DIR, f);
+    const p = join(stateDir(), f);
     const st = statSync(p);
     if (st.mtimeMs < firstOfMonth.getTime()) continue;
     try {
@@ -493,8 +512,8 @@ async function costWindows() {
   const w5h = now - 5 * 3600 * 1000;
   const w7d = now - 7 * 86400 * 1000;
   const res = { last5hUsd: 0, last7dUsd: 0, byModel: { opus: 0, sonnet: 0, haiku: 0, other: 0 } };
-  const dirs = [STATE_DIR];
-  if (existsSync(ARCHIVE_DIR)) dirs.push(ARCHIVE_DIR);
+  const dirs = [stateDir()];
+  if (existsSync(archiveDir())) dirs.push(archiveDir());
   for (const dir of dirs) {
     if (!existsSync(dir)) continue;
     for (const f of readdirSync(dir)) {
@@ -578,11 +597,12 @@ async function fetchAnthropicUsage() {
 
 const sseClients = new Set();
 
-function broadcastSse(event, data, slug = null) {
+function broadcastSse(event, data, slug = null, forStateDir = null) {
   const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
   for (const c of sseClients) {
-    if (slug && c.slug && c.slug !== slug && c.slug !== '*') continue;
-    try { c.res.write(payload); } catch { /* ignore */ }
+    if (slug && (c as any).slug && (c as any).slug !== slug && (c as any).slug !== '*') continue;
+    if (forStateDir && (c as any).stateDir && (c as any).stateDir !== forStateDir) continue;
+    try { (c as any).res.write(payload); } catch { /* ignore */ }
   }
 }
 
@@ -607,56 +627,61 @@ async function readLogTailSince(slug, byteOffset) {
   }
 }
 
-async function pollLoop() {
+async function pollLoopForDir(userStateDir: string) {
   setInterval(async () => {
     try {
-      const rows = readRegistry();
-      for (const r of rows) {
-        const p = sessionLogPath(r.slug);
-        if (!existsSync(p)) continue;
-        const mt = statSync(p).mtimeMs;
-        const sz = statSync(p).size;
+      await requestCtx.run({ stateDir: userStateDir }, async () => {
+        const rows = readRegistry();
+        for (const r of rows) {
+          const p = sessionLogPath(r.slug);
+          if (!existsSync(p)) continue;
+          const mt = statSync(p).mtimeMs;
+          const sz = statSync(p).size;
+          const posKey = `${userStateDir}:${r.slug}`;
 
-        // (A) Stream new log bytes (append-only to clients)
-        if (lastStreamPos[r.slug] === undefined) {
-          // First time we see this slug — baseline at EOF so we don't flood old content
-          lastStreamPos[r.slug] = sz;
-        } else if (sz > lastStreamPos[r.slug]) {
-          const { bytes, raw } = await readLogTailSince(r.slug, lastStreamPos[r.slug]);
-          lastStreamPos[r.slug] = bytes;
-          if (raw) {
-            // Only send complete lines — hold back an incomplete tail for next cycle
-            const lastNl = raw.lastIndexOf('\n');
-            if (lastNl >= 0) {
-              const complete = raw.slice(0, lastNl);
-              lastStreamPos[r.slug] = bytes - (raw.length - lastNl - 1);
-              broadcastSse('log-append', { slug: r.slug, raw: complete }, '*');
+          // (A) Stream new log bytes (append-only to clients)
+          if (lastStreamPos[posKey] === undefined) {
+            lastStreamPos[posKey] = sz;
+          } else if (sz > lastStreamPos[posKey]) {
+            const { bytes, raw } = await readLogTailSince(r.slug, lastStreamPos[posKey]);
+            lastStreamPos[posKey] = bytes;
+            if (raw) {
+              const lastNl = raw.lastIndexOf('\n');
+              if (lastNl >= 0) {
+                const complete = raw.slice(0, lastNl);
+                lastStreamPos[posKey] = bytes - (raw.length - lastNl - 1);
+                broadcastSse('log-append', { slug: r.slug, raw: complete }, '*', userStateDir);
+              }
             }
           }
-        }
 
-        // (B) Metrics update on mtime change (left panel)
-        if (lastSnapshot[r.slug] !== mt) {
-          lastSnapshot[r.slug] = mt;
-          const m = await computeMetrics(r.slug);
-          broadcastSse('metrics', { session: r, metrics: m }, '*');
+          // (B) Metrics update on mtime change (left panel)
+          const snapKey = `${userStateDir}:${r.slug}`;
+          if (lastSnapshot[snapKey] !== mt) {
+            lastSnapshot[snapKey] = mt;
+            const m = await computeMetrics(r.slug);
+            broadcastSse('metrics', { session: r, metrics: m }, '*', userStateDir);
+          }
         }
-      }
-      // Overall status every cycle. Quota is the live Anthropic
-      // /api/oauth/usage response (cached 60s inside fetchAnthropicUsage).
-      const cost = await monthCostSoFar();
-      const usage = await fetchAnthropicUsage();
-      broadcastSse('status', {
-        activeSessions: rows.length,
-        monthCostUsd: Number(cost.toFixed(4)),
-        monthBudgetUsd: MAX_SUBSCRIPTION_BUDGET_USD,
-        ctxLimit: CTX_WINDOW_LIMIT,
-        quota: usage,
-      }, '*');
+        const cost = await monthCostSoFar();
+        const usage = await fetchAnthropicUsage();
+        broadcastSse('status', {
+          activeSessions: rows.length,
+          monthCostUsd: Number(cost.toFixed(4)),
+          monthBudgetUsd: MAX_SUBSCRIPTION_BUDGET_USD,
+          ctxLimit: CTX_WINDOW_LIMIT,
+          quota: usage,
+        }, '*', userStateDir);
+      });
     } catch (err) {
       console.error('[poll]', err);
     }
   }, 1000);
+}
+
+async function pollLoop() {
+  const watchedDirs = new Set(USERS.map((u: any) => u.stateDir));
+  watchedDirs.forEach((dir: any) => pollLoopForDir(dir));
 }
 
 // ──────────────────────── HTTP server ────────────────────────
@@ -681,7 +706,11 @@ function runBin(args) {
 }
 
 async function handle(req, res) {
-  if (!checkAuth(req, res)) return;
+  const userConfig = checkAuth(req, res);
+  if (!userConfig) return;
+  return requestCtx.run(userConfig, () => handleInner(req, res));
+}
+async function handleInner(req, res) {
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
   const p = url.pathname;
 
@@ -764,7 +793,7 @@ async function handle(req, res) {
   if (logM && req.method === 'GET') {
     const slug = logM[1];
     const activePath = sessionLogPath(slug);
-    const archivePath = join(ARCHIVE_DIR, `${slug}.log`);
+    const archivePath = join(archiveDir(), `${slug}.log`);
     const path = existsSync(activePath) ? activePath
                : existsSync(archivePath) ? archivePath
                : null;
@@ -792,7 +821,7 @@ async function handle(req, res) {
       'X-Accel-Buffering': 'no',
     });
     res.write(':connected\n\n');
-    const client = { res, slug: '*' };
+    const client = { res, slug: '*', stateDir: stateDir() };
     sseClients.add(client);
     req.on('close', () => { sseClients.delete(client); try { res.end(); } catch {} });
     return;
