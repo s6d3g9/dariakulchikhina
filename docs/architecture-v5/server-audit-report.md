@@ -24,3 +24,19 @@ Scope: CRM `server/api/**`, `server/modules/projects/**` and current projects ho
 - `projects list` and `work-status` hot paths are now explicitly prepared.
 - No unresolved API body-validation gaps were found in current `server/api/**`.
 - No actionable N+1 read-path issue was found in the audited project list and work-status routes.
+
+## Residual audit 2026-04-20
+
+Audit of `server/utils/**` to classify utility files as infrastructure helpers (a), bridged domain logic (b), or unmoved domain logic (c).
+
+| File | Classification | Module target (if any) | Notes |
+|---|---|---|---|
+| body.ts | (a) Infrastructure helper | — | JSON body parsing with fallback strategies for Nitro v2 RC; integrates with Zod validation. |
+| errors.ts | (a) Infrastructure helper | — | Domain error class hierarchy; mapped to HTTP status codes by Nitro plugin. |
+| logger.ts | (a) Infrastructure helper | — | Pino logger wrapper with AsyncLocalStorage auto-enrichment of requestId/userId/role. |
+| messenger-cors.ts | (a) Infrastructure helper | — | CORS header setup for messenger requests; origin allowlist driven by config. |
+| query.ts | (a) Infrastructure helper | — | Safe query parameter parsing; workaround for h3 crash on relative URLs. |
+| request-context.ts | (a) Infrastructure helper | — | AsyncLocalStorage per-request context (requestId, userId, role); basis for log enrichment. |
+| security-headers.ts | (a) Infrastructure helper | — | CSP and Permissions-Policy header builder; integrates communications-service URL. |
+
+**Summary:** All 7 files in `server/utils/` are infrastructure helpers (category a). No domain logic resides here; no module targets needed.
