@@ -3,6 +3,9 @@
  * Whitelist allowed MIME types and enforce size limits.
  */
 import path from 'path'
+import type { FileValidationResult } from './uploads.types'
+
+export type { FileValidationResult }
 
 /** Maximum file size in bytes (20 MB) */
 export const MAX_FILE_SIZE = 20 * 1024 * 1024
@@ -38,11 +41,6 @@ const BLOCKED_EXTENSIONS = new Set([
   '.php', '.py', '.rb', '.pl', '.cgi', '.jsp',
   '.war', '.jar', '.class', '.dll', '.so',
 ])
-
-export interface FileValidationResult {
-  valid: boolean
-  error?: string
-}
 
 export function validateUploadedFile(
   data: Buffer | Uint8Array,
