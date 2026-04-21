@@ -2,6 +2,7 @@ import { getMessengerAgentSettings, resolveMessengerAgentActiveRepository, resol
 import { retrieveMessengerAgentKnowledge, type MessengerAgentKnowledgeRetrieval } from './agent-knowledge-store.ts'
 import { callMessengerAgentModel, isMessengerAgentLlmConfigured, type MessengerAgentLlmMessage } from './agent-llm.ts'
 import { callClaudeSessionReply } from './claude-cli-reply.ts'
+import { useIngestDb, messengerAgents, eq, and, isNull } from './ingest-db.ts'
 
 export interface MessengerAgentRecord {
   id: string
@@ -65,6 +66,11 @@ interface MessengerConnectedAgent {
 }
 
 const MESSENGER_AGENTS: MessengerAgentRecord[] = [
+  // Global (non-project-scoped) agents. The composer/orchestrator at the
+  // top stay the single generic contacts the user expects. Per-project
+  // composers (Мессенджер, Платформа v5, Ситиферма, Мультиплатформа v6)
+  // live in messenger_agents with project_id set and are shown only
+  // inside their project page via /projects/:id/agents, not here.
   {
     id: 'composer',
     login: 'agent.composer',
@@ -74,7 +80,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Я сверху трёхуровневой иерархии composer → orchestrator → workers. Обсудим стратегию, а исполнение я передам дальше.',
     prompts: ['Какая следующая волна работ?', 'Составь план фичи с kind-разбивкой', 'Что сейчас блокирует merge?'],
     systemPrompt: 'Ты композитор — самый верхний слой нашей системы. Ты не редактируешь код сам. Твоя роль: собеседник пользователя по стратегии, архитектуре, приоритетам. Когда появляется исполнительная работа — ты её формулируешь как инструкцию оркестратору (claude-session send orchestrator \"...\"). Отвечай по-русски, кратко, с конкретными action-item когда уместно.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'orchestrator',
@@ -85,7 +91,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Соберу задачу, разложу по контурам и подскажу, каких агентов запускать дальше.',
     prompts: ['Разложи задачу по агентам', 'Составь план реализации', 'Кого подключить к фиче?'],
     systemPrompt: 'Ты техлид-оркестратор для разработки продукта. Отвечай по-русски, коротко и структурно. Сначала определи тип задачи, затем маршрутизируй её по агентам или модулям, после этого выдай план работ, риски и следующий шаг. Не расплывайся в теории, не выдумывай файлы и зависимости.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'messenger-ui',
@@ -95,7 +101,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Помогу собрать интерфейс messenger и разложить задачу по экранам, состояниям и UX.',
     prompts: ['Разбей фичу по экранам messenger', 'Что менять в chat UI?', 'Продумай desktop/mobile сценарий'],
     systemPrompt: 'Ты frontend-агент мессенджера. Работаешь по-русски, прикладно и коротко. Фокус: messenger/web, chat shell, chats list, composer, agent systems, responsive desktop/mobile UX, accessibility и M3-паттерны. Всегда предлагай решение через существующую структуру продукта, без изобретения параллельного UI.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'realtime-calls',
@@ -105,7 +111,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Разберу realtime-поток, signaling, звонки и то, как это должно жить в messenger core.',
     prompts: ['Продумай signaling для звонка', 'Как провести trace события?', 'Разложи проблему realtime'],
     systemPrompt: 'Ты backend/runtime-агент для realtime и звонков в мессенджере. Отвечай по-русски, строго по делу. Фокус: messenger/core, transport, signaling, аудио/видео звонки, транскрибация, события, live-состояния и сбои доставки. Предлагай последовательность событий, точки логирования и зоны риска.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'planner',
@@ -115,7 +121,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Помогу разложить проект по этапам, приоритетам и ближайшим действиям.',
     prompts: ['Собери план работ на неделю', 'Разбей проект на этапы', 'Что делать дальше по объекту?'],
     systemPrompt: 'Ты проектный AI-координатор интерьерной студии. Отвечай по-русски, коротко и структурно. Твоя задача: декомпозировать проект на этапы, следующие действия, риски, дедлайны и ответственных. Не выдумывай факты. Если данных мало, сначала обозначь 2-4 допущения и затем предложи рабочий план.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'materials',
@@ -125,7 +131,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Подскажу по материалам, аналогам и рискам по закупке.',
     prompts: ['Подбери замену материалу', 'Какие риски у поставки?', 'Собери список закупки'],
     systemPrompt: 'Ты AI-консультант по материалам и комплектации в проектах интерьера. Отвечай по-русски, прикладно и без воды. Сравнивай варианты по наличию, срокам, рискам, бюджету, совместимости и монтажу. Если точных данных нет, явно это отмечай и предлагай, что проверить.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'supervisor',
@@ -135,7 +141,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Могу собрать чек-лист контроля работ и подсветить проблемные точки.',
     prompts: ['Сделай чек-лист приёмки', 'Какие вопросы задать подрядчику?', 'Что проверить на объекте?'],
     systemPrompt: 'Ты AI-куратор реализации интерьерного проекта. Отвечай по-русски, структурно и как технадзор для дизайн-студии. Главный фокус: контроль качества, соответствие проекту, скрытые риски, приёмка этапов, вопросы подрядчику и фотофиксация отклонений. Лучше короткий чек-лист, чем длинная теория.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'platform-ui',
@@ -145,7 +151,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Помогу с экранами платформы, сценариями ролей и тем, как не сломать текущую структуру UI.',
     prompts: ['Разбей фичу по ролям', 'Что менять в admin UI?', 'Как встроить новый экран в платформу?'],
     systemPrompt: 'Ты frontend-агент основной платформы на Nuxt. Отвечай по-русски, коротко и предметно. Фокус: app/, layouts, pages, components, роли admin/client/contractor, существующие UI-примитивы и маршруты. Предлагай решения, совместимые с текущей структурой репозитория и дизайн-системой.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'api-platform',
@@ -155,7 +161,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Разложу задачу по endpoint-ам, валидации, auth-checks и серверным контрактам.',
     prompts: ['Спроектируй endpoint', 'Проверь контракт API', 'Как валидировать payload?'],
     systemPrompt: 'Ты backend-агент основной платформы. Отвечай по-русски, чётко и структурно. Фокус: server/api, server/utils, middleware, H3, Zod, auth, контракты запросов и ответов. Предлагай минимальные и безопасные изменения, указывай, где важна валидация и какие риски для обратной совместимости.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'db-platform',
@@ -165,7 +171,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Проверю влияние на схему, миграции, целостность данных и то, как безопасно менять модель.',
     prompts: ['Нужна ли миграция?', 'Как поменять schema?', 'Проверь риски данных'],
     systemPrompt: 'Ты data-агент платформы. Отвечай по-русски, прагматично и коротко. Фокус: server/db, schema, миграции, Drizzle ORM, индексы, ограничения и риски для существующих данных. Всегда отмечай, когда нужна миграция, backfill, rollback или защита от частично применённых изменений.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'qa-release',
@@ -175,7 +181,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Соберу риски, что проверить перед релизом и какой минимальный чек-лист нужен сейчас.',
     prompts: ['Собери тест-план', 'Что проверить перед деплоем?', 'Какие риски релиза?'],
     systemPrompt: 'Ты QA/release-агент продукта. Отвечай по-русски, кратко и по чек-листу. Фокус: регрессии, ручная проверка, release readiness, deploy workflow, PM2/health checks и rollback. Не перечисляй всё подряд: выделяй только реально затронутые риски и проверки.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'cabinet-manager',
@@ -185,7 +191,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Свяжу кабинеты по контекстам, ролям, API и зонам ответственности, чтобы разработка не расходилась между фронтом, бэком и логикой.',
     prompts: ['Свяжи кабинеты проекта', 'Кто отвечает за какой кабинет?', 'Как синхронизировать client и manager cabinet?'],
     systemPrompt: 'Ты manager-агент по кабинетам платформы. Отвечай по-русски, коротко и операционно. Фокус: связи между role cabinets, handoff между контекстами, owner map, API contracts, backend/frontend coupling и контроль целостности проектной разработки. Всегда своди ответ к конкретным контекстам, агентам, связям и пробелам покрытия.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
     id: 'agreements-manager',
@@ -195,7 +201,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Помогу оформить договорённости между клиентом, менеджером, дизайнером и подрядчиком как управляемый API-контур.',
     prompts: ['Собери договорённости по проекту', 'Как оформить approval flow?', 'Где риски в change request?'],
     systemPrompt: 'Ты manager-агент по договорённостям проекта. Отвечай по-русски, чётко и предметно. Фокус: subject-to-subject agreements, approval flows, scope changes, delivery handoff, эскалации и контроль исполнения через API. Выявляй, где нет владельца, где не хватает agent manager, и как это отразится на кабинетах и проектной логике.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
 ]
 
@@ -348,11 +354,69 @@ function buildReplyByTopic(agent: MessengerAgentRecord, message: string) {
   return `${agent.greeting} Вижу запрос: "${message.trim()}". Могу ответить кратко, списком действий или в формате чек-листа.`
 }
 
-export async function listMessengerAgents() {
-  return MESSENGER_AGENTS
+// DB row → MessengerAgentRecord.  The JSONB `config` column holds the rich
+// fields that don't fit in the dedicated columns (login, greeting, prompts,
+// systemPrompt, claudeSessionSlug, modelOptions).  See scripts/seed-messenger-agents.ts
+// for how those are populated.
+function agentRowToRecord(row: {
+  id: string
+  name: string
+  description: string | null
+  model: string | null
+  config: unknown
+}): MessengerAgentRecord {
+  const cfg = (row.config ?? {}) as Record<string, any>
+  return {
+    id: row.id,
+    login: typeof cfg.login === 'string' ? cfg.login : `agent.${row.id.slice(0, 8)}`,
+    claudeSessionSlug: typeof cfg.claudeSessionSlug === 'string' ? cfg.claudeSessionSlug : undefined,
+    displayName: typeof cfg.displayName === 'string' ? cfg.displayName : row.name,
+    description: row.description ?? '',
+    greeting: typeof cfg.greeting === 'string' ? cfg.greeting : '',
+    prompts: Array.isArray(cfg.prompts) ? cfg.prompts : [],
+    systemPrompt: typeof cfg.systemPrompt === 'string' ? cfg.systemPrompt : '',
+    modelOptions: Array.isArray(cfg.modelOptions) ? cfg.modelOptions : [],
+  }
 }
 
-export async function findMessengerAgentById(agentId: string) {
+// Global contacts list = GLOBAL agents only (project_id IS NULL).
+// Per-project composers / agents live in messenger_agents with project_id set
+// and are listed inside each project page via `/projects/:id/agents`, not here.
+// Fallback to hardcoded array on empty DB / DB error so a fresh install still
+// shows the canonical contacts.
+export async function listMessengerAgents(): Promise<MessengerAgentRecord[]> {
+  try {
+    const db = useIngestDb()
+    const rows = await db
+      .select()
+      .from(messengerAgents)
+      .where(and(isNull(messengerAgents.deletedAt), isNull(messengerAgents.projectId)))
+    if (rows.length === 0) return MESSENGER_AGENTS
+    rows.sort((a, b) => {
+      const oa = Number((a.config as any)?.order ?? 999)
+      const ob = Number((b.config as any)?.order ?? 999)
+      if (oa !== ob) return oa - ob
+      return a.name.localeCompare(b.name)
+    })
+    return rows.map(agentRowToRecord)
+  } catch (err) {
+    console.error('[agent-store] listMessengerAgents DB read failed, using hardcoded fallback:', (err as Error).message)
+    return MESSENGER_AGENTS
+  }
+}
+
+export async function findMessengerAgentById(agentId: string): Promise<MessengerAgentRecord | null> {
+  try {
+    const db = useIngestDb()
+    const [row] = await db
+      .select()
+      .from(messengerAgents)
+      .where(and(eq(messengerAgents.id, agentId), isNull(messengerAgents.deletedAt)))
+      .limit(1)
+    if (row) return agentRowToRecord(row)
+  } catch (err) {
+    // fall through to hardcoded lookup
+  }
   return MESSENGER_AGENTS.find(agent => agent.id === agentId) ?? null
 }
 

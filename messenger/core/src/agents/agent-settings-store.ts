@@ -11,10 +11,21 @@ export interface MessengerAgentConnectionRecord {
   mode: MessengerAgentConnectionMode
 }
 
+export type MessengerAgentRepositoryType = 'ssh' | 'github' | 'gitlab' | 'bitbucket' | 'local' | 'custom'
+
 export interface MessengerAgentRepositoryRecord {
   id: string
   label: string
   path: string
+  type: MessengerAgentRepositoryType
+  url?: string
+  owner?: string
+  repo?: string
+  branch?: string
+  token?: string
+  instanceUrl?: string
+  protocol?: string
+  credentials?: string
 }
 
 export interface MessengerAgentKnowledgeSourceRecord {
@@ -26,9 +37,13 @@ export interface MessengerAgentKnowledgeSourceRecord {
   enabled: boolean
 }
 
+export type MessengerAgentEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+
 export interface MessengerAgentSettingsRecord {
   agentId: string
+  subscriptionId: string
   model: string
+  effort: MessengerAgentEffort
   apiKey: string
   ssh: {
     host: string
@@ -63,7 +78,9 @@ const STORAGE_PATH = resolveMessengerDataPath('agent-settings.json')
 function createDefaultSettings(agentId: string): MessengerAgentSettingsRecord {
   return {
     agentId,
-    model: 'GPT-5.4',
+    subscriptionId: 'builtin-claude-code-cli',
+    model: 'claude-sonnet-4-6',
+    effort: 'medium' as MessengerAgentEffort,
     apiKey: '',
     ssh: {
       host: '',
@@ -116,10 +133,25 @@ function normalizeRepositories(repositories: unknown, fallbackWorkspacePath = ''
       return
     }
 
+    const type = ['ssh', 'github', 'gitlab', 'bitbucket', 'local', 'custom'].includes(String(candidate.type))
+      ? candidate.type as MessengerAgentRepositoryType
+      : 'ssh'
+
+    const repoPath = type === 'ssh' || type === 'local' ? path : ''
+
     normalized.set(path, {
       id: normalizeRepositoryId(typeof candidate.id === 'string' ? candidate.id : '', index),
       label: normalizeRepositoryLabel(typeof candidate.label === 'string' ? candidate.label : '', path, index),
-      path,
+      path: repoPath,
+      type,
+      ...(candidate.url && typeof candidate.url === 'string' ? { url: candidate.url.trim() } : {}),
+      ...(candidate.owner && typeof candidate.owner === 'string' ? { owner: candidate.owner.trim() } : {}),
+      ...(candidate.repo && typeof candidate.repo === 'string' ? { repo: candidate.repo.trim() } : {}),
+      ...(candidate.branch && typeof candidate.branch === 'string' ? { branch: candidate.branch.trim() } : {}),
+      ...(candidate.token && typeof candidate.token === 'string' ? { token: candidate.token.trim() } : {}),
+      ...(candidate.instanceUrl && typeof candidate.instanceUrl === 'string' ? { instanceUrl: candidate.instanceUrl.trim() } : {}),
+      ...(candidate.protocol && typeof candidate.protocol === 'string' ? { protocol: candidate.protocol.trim() } : {}),
+      ...(candidate.credentials && typeof candidate.credentials === 'string' ? { credentials: candidate.credentials.trim() } : {}),
     })
   })
 
@@ -128,6 +160,7 @@ function normalizeRepositories(repositories: unknown, fallbackWorkspacePath = ''
       id: 'repo-1',
       label: normalizeRepositoryLabel('', fallbackWorkspacePath.trim(), 0),
       path: fallbackWorkspacePath.trim(),
+      type: 'ssh',
     })
   }
 
@@ -217,7 +250,9 @@ async function readSettingsFile(): Promise<AgentSettingsFile> {
             return {
               ...normalized,
               agentId: String(item?.agentId || normalized.agentId),
+              subscriptionId: typeof item?.subscriptionId === 'string' ? item.subscriptionId : normalized.subscriptionId,
               model: typeof item?.model === 'string' ? item.model : normalized.model,
+              effort: normalizeEffort(item?.effort),
               apiKey: typeof item?.apiKey === 'string' ? item.apiKey : normalized.apiKey,
               ssh: (() => {
                 const repositories = normalizeRepositories(item?.ssh?.repositories, typeof item?.ssh?.workspacePath === 'string' ? item.ssh.workspacePath : normalized.ssh.workspacePath)
@@ -316,9 +351,14 @@ export async function getMessengerAgentSettings(agentId: string) {
   return payload.settings.find(item => item.agentId === agentId) ?? createDefaultSettings(agentId)
 }
 
+const VALID_EFFORTS = new Set<string>(['low', 'medium', 'high', 'xhigh', 'max'])
+function normalizeEffort(value: unknown): MessengerAgentEffort {
+  return (typeof value === 'string' && VALID_EFFORTS.has(value)) ? value as MessengerAgentEffort : 'medium'
+}
+
 export async function updateMessengerAgentSettings(
   agentId: string,
-  input: Pick<MessengerAgentSettingsRecord, 'model' | 'apiKey' | 'ssh' | 'knowledge' | 'connections'> & {
+  input: Pick<MessengerAgentSettingsRecord, 'subscriptionId' | 'model' | 'effort' | 'apiKey' | 'ssh' | 'knowledge' | 'connections'> & {
     graphPosition?: MessengerAgentSettingsRecord['graphPosition']
   },
 ) {
@@ -331,7 +371,9 @@ export async function updateMessengerAgentSettings(
   const nextWorkspacePath = repositories.find(repository => repository.id === activeRepositoryId)?.path || input.ssh.workspacePath.trim()
   const nextSettings: MessengerAgentSettingsRecord = {
     agentId,
-    model: input.model.trim() || 'GPT-5.4',
+    subscriptionId: input.subscriptionId?.trim() || currentSettings.subscriptionId,
+    model: input.model.trim() || 'claude-sonnet-4-6',
+    effort: normalizeEffort(input.effort),
     apiKey: input.apiKey.trim(),
     ssh: {
       host: input.ssh.host.trim(),

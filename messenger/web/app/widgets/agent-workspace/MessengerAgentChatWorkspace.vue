@@ -4,6 +4,7 @@ import type {
   MessengerAgentItem,
   MessengerAgentKnowledgeSource,
   MessengerAgentRepository,
+  MessengerAgentRepositoryType,
   MessengerAgentSettings,
 } from '../../entities/agents/model/useMessengerAgents'
 import type { MessengerAgentKnowledgePreset, MessengerAgentKnowledgeStatus } from '../../entities/agents/model/useMessengerAgentKnowledge'
@@ -12,6 +13,8 @@ import type { MessengerAgentWorkspaceFilePreview, MessengerAgentWorkspaceListing
 import { useMessengerAgentStream } from '../../entities/agents/model/useMessengerAgentStream'
 import type { AgentSubstate } from '../../entities/agents/model/useMessengerAgentStream'
 import AgentRunTree from '../../features/agent-run-tree/ui/AgentRunTree.vue'
+import { SUBSCRIPTION_PROVIDERS } from '../../entities/settings/model/useMessengerSubscriptions'
+import type { MessengerSubscriptionModel } from '../../entities/settings/model/useMessengerSubscriptions'
 
 type AgentWorkspaceSectionKey = 'overview' | 'settings' | 'knowledge' | 'links' | 'runs' | 'graph' | 'explorer'
 
@@ -29,11 +32,13 @@ const emit = defineEmits<{
 
 const navigation = useMessengerConversationState()
 const agentsModel = useMessengerAgents()
+const subscriptionsModel = useMessengerSubscriptions()
 const runtime = useMessengerAgentRuntime()
 const runsModel = useMessengerAgentRuns()
 const edgePayloadsModel = useMessengerAgentEdgePayloads()
 const workspaceExplorer = useMessengerAgentWorkspace()
 const knowledgeModel = useMessengerAgentKnowledge()
+const cliSessionsModel = useMessengerCliSessions()
 
 const agentIdRef = computed(() => props.agentId)
 const agentStream = useMessengerAgentStream(agentIdRef)
@@ -63,8 +68,17 @@ const activeSection = useState<AgentWorkspaceSectionKey>('messenger-agent-chat-w
 const feedbackMessage = ref('')
 const feedbackTone = ref<'info' | 'error'>('info')
 const selectedRunId = ref<string | null>(null)
+const EFFORT_OPTIONS = [
+  { title: 'Low — быстро, экономно', value: 'low' },
+  { title: 'Medium — баланс (по умолчанию)', value: 'medium' },
+  { title: 'High — глубокое мышление', value: 'high' },
+  { title: 'XHigh — очень глубокое', value: 'xhigh' },
+  { title: 'Max — максимум', value: 'max' },
+]
 const settingsDraft = reactive({
-  model: 'GPT-5.4',
+  subscriptionId: 'builtin-claude-code-cli',
+  model: 'claude-sonnet-4-6',
+  effort: 'medium' as 'low' | 'medium' | 'high' | 'xhigh' | 'max',
   apiKey: '',
   ssh: {
     host: '',
@@ -138,6 +152,32 @@ const sectionIconMap: Record<AgentWorkspaceSectionKey, string> = {
   explorer: 'mdi-file-tree-outline',
 }
 
+const subscriptionOptions = computed(() =>
+  subscriptionsModel.subscriptions.value.map(sub => ({
+    title: sub.label,
+    value: sub.id,
+    subtitle: sub.account,
+  }))
+)
+const activeSubscription = computed(() =>
+  subscriptionsModel.subscriptions.value.find(s => s.id === settingsDraft.subscriptionId)
+  ?? subscriptionsModel.defaultSubscription.value
+)
+const activeProviderMeta = computed(() =>
+  SUBSCRIPTION_PROVIDERS.find(p => p.key === activeSubscription.value?.provider)
+)
+const activeModelOptions = computed((): MessengerSubscriptionModel[] => {
+  if (!activeSubscription.value) return []
+  const provider = SUBSCRIPTION_PROVIDERS.find(p => p.key === activeSubscription.value!.provider)
+  return provider?.models ?? []
+})
+const activeModelMeta = computed(() =>
+  activeModelOptions.value.find(m => m.id === settingsDraft.model)
+)
+const showEffortSelector = computed(() =>
+  activeProviderMeta.value?.supportsEffort
+  && (activeModelMeta.value?.supportsEffort ?? true)
+)
 const normalizedLogin = computed(() => props.agentLogin.replace(/^@/, '').trim())
 const resolvedAgent = computed<MessengerAgentItem | null>(() => agentsModel.agents.value.find(item => item.id === props.agentId || item.login === normalizedLogin.value) ?? null)
 const runtimeState = computed(() => {
@@ -220,12 +260,48 @@ const selectedRun = computed(() => {
   return runsModel.selectedRun.value
 })
 const activeConnections = computed(() => runtimeState.value?.activeConnections || [])
+
+// ── Session hierarchy ──────────────────────────────────────────────────────
+const agentCliSession = computed(() =>
+  resolvedAgent.value ? cliSessionsModel.sessionForAgent(resolvedAgent.value.id) : null,
+)
+
+const hierarchyParents = computed(() =>
+  incomingConnections.value.map(conn => ({
+    agent: conn.agent,
+    mode: conn.mode,
+    session: conn.agent ? cliSessionsModel.sessionForAgent(conn.agent.id) : null,
+  })),
+)
+
+const hierarchyChildren = computed(() =>
+  outgoingConnections.value.map(conn => ({
+    agent: conn.agent,
+    mode: conn.mode,
+    session: conn.agent ? cliSessionsModel.sessionForAgent(conn.agent.id) : null,
+  })),
+)
+
+
 const workspaceTitle = computed(() => resolvedAgent.value?.displayName || props.agentName)
 const workspaceGreeting = computed(() => resolvedAgent.value?.greeting || 'Подготовьте контекст и настройте агент перед следующей отправкой.')
 const workspaceModelLabel = computed(() => resolvedAgent.value?.settings.model || settingsDraft.model)
 const apiKeyConfigured = computed(() => Boolean(resolvedAgent.value?.settings.apiKeyConfigured))
 const sshConfigured = computed(() => Boolean(resolvedAgent.value?.settings.sshConfigured))
 const workspaceConfigured = computed(() => Boolean(resolvedAgent.value?.settings.ssh.workspacePath))
+const activeRepository = computed(() =>
+  settingsDraft.ssh.repositories.find(r => r.id === settingsDraft.ssh.activeRepositoryId)
+  ?? settingsDraft.ssh.repositories[0]
+  ?? null
+)
+
+const activeRepoMeta = computed(() => {
+  const repo = activeRepository.value
+  if (!repo) return null
+  const typeMeta = REPO_TYPE_META[repo.type || 'ssh']
+  return { repo, typeMeta }
+})
+
 const repositoryOptions = computed(() => settingsDraft.ssh.repositories.map(repository => ({
   title: repository.label,
   value: repository.id,
@@ -299,11 +375,38 @@ function syncActiveRepositoryPathFromWorkspace() {
   }
 }
 
+const REPO_TYPE_META: Record<MessengerAgentRepositoryType, { icon: string; label: string; color: string }> = {
+  ssh:       { icon: 'mdi-server-network', label: 'SSH-сервер', color: '#22c55e' },
+  github:    { icon: 'mdi-github', label: 'GitHub', color: '#e2e8f0' },
+  gitlab:    { icon: 'mdi-gitlab', label: 'GitLab', color: '#fc6d26' },
+  bitbucket: { icon: 'mdi-bitbucket', label: 'Bitbucket', color: '#0052cc' },
+  local:     { icon: 'mdi-folder-outline', label: 'Локально', color: '#a78bfa' },
+  custom:    { icon: 'mdi-connection', label: 'Кастомный', color: '#94a3b8' },
+}
+
+const REPO_TYPE_OPTIONS: Array<{ title: string; value: MessengerAgentRepositoryType }> = [
+  { title: 'SSH-сервер (текущий)', value: 'ssh' },
+  { title: 'GitHub', value: 'github' },
+  { title: 'GitLab', value: 'gitlab' },
+  { title: 'Bitbucket', value: 'bitbucket' },
+  { title: 'Локальная папка', value: 'local' },
+  { title: 'Кастомный протокол', value: 'custom' },
+]
+
 function serializeRepositories(repositories: MessengerAgentRepository[]) {
   return JSON.stringify(repositories.map(repository => ({
     id: repository.id,
     label: repository.label.trim(),
     path: repository.path.trim(),
+    type: repository.type,
+    url: repository.url?.trim() || '',
+    owner: repository.owner?.trim() || '',
+    repo: repository.repo?.trim() || '',
+    branch: repository.branch?.trim() || '',
+    token: repository.token?.trim() || '',
+    instanceUrl: repository.instanceUrl?.trim() || '',
+    protocol: repository.protocol?.trim() || '',
+    credentials: repository.credentials?.trim() || '',
   })))
 }
 
@@ -319,20 +422,23 @@ function serializeKnowledgeSources(sources: MessengerAgentKnowledgeSource[]) {
 }
 
 function syncSettingsDraft() {
-  settingsDraft.model = resolvedAgent.value?.settings.model || 'GPT-5.4'
+  settingsDraft.subscriptionId = resolvedAgent.value?.settings.subscriptionId || 'builtin-claude-code-cli'
+  settingsDraft.model = resolvedAgent.value?.settings.model || 'claude-sonnet-4-6'
+  settingsDraft.effort = (resolvedAgent.value?.settings.effort as any) || 'medium'
   settingsDraft.apiKey = resolvedAgent.value?.settings.apiKey || ''
   settingsDraft.ssh.host = resolvedAgent.value?.settings.ssh.host || ''
   settingsDraft.ssh.login = resolvedAgent.value?.settings.ssh.login || ''
   settingsDraft.ssh.port = resolvedAgent.value?.settings.ssh.port || 22
   settingsDraft.ssh.privateKey = resolvedAgent.value?.settings.ssh.privateKey || ''
   settingsDraft.ssh.workspacePath = resolvedAgent.value?.settings.ssh.workspacePath || ''
-  settingsDraft.ssh.repositories = (resolvedAgent.value?.settings.ssh.repositories || []).map(repository => ({ ...repository }))
+  settingsDraft.ssh.repositories = (resolvedAgent.value?.settings.ssh.repositories || []).map(repository => ({ ...repository, type: repository.type || 'ssh' }))
   settingsDraft.ssh.activeRepositoryId = resolvedAgent.value?.settings.ssh.activeRepositoryId || ''
   settingsDraft.knowledge.sources = (resolvedAgent.value?.settings.knowledge.sources || []).map(source => ({ ...source }))
   syncWorkspacePathFromDraftRepositories()
 }
 
 watch(() => resolvedAgent.value?.id, () => {
+  subscriptionsModel.hydrate()
   syncSettingsDraft()
   selectedRunId.value = null
   runsModel.clearSelection()
@@ -365,6 +471,7 @@ watch(() => props.agentId, async () => {
   await Promise.all([
     runsModel.refresh(resolvedAgent.value.id, 6),
     edgePayloadsModel.refresh(resolvedAgent.value.id, 8),
+    cliSessionsModel.refresh(),
   ])
 }, { immediate: true })
 
@@ -470,7 +577,7 @@ function describeRunEvent(event: MessengerAgentRunEvent) {
   return 'Без подробностей'
 }
 
-async function saveSettings(payload: Pick<MessengerAgentSettings, 'model' | 'apiKey'>) {
+async function saveSettings(payload: Pick<MessengerAgentSettings, 'subscriptionId' | 'model' | 'effort' | 'apiKey'>) {
   if (!resolvedAgent.value) {
     return
   }
@@ -480,7 +587,9 @@ async function saveSettings(payload: Pick<MessengerAgentSettings, 'model' | 'api
 
   try {
     const nextSettings = await agentsModel.saveSettings(resolvedAgent.value.id, {
+      subscriptionId: payload.subscriptionId,
       model: payload.model,
+      effort: payload.effort,
       apiKey: payload.apiKey,
       ssh: settingsDraft.ssh,
       knowledge: settingsDraft.knowledge,
@@ -508,28 +617,35 @@ async function saveSettings(payload: Pick<MessengerAgentSettings, 'model' | 'api
   }
 }
 
+function currentPayload() {
+  return { subscriptionId: settingsDraft.subscriptionId, model: settingsDraft.model, effort: settingsDraft.effort, apiKey: settingsDraft.apiKey }
+}
+
+async function handleSubscriptionChange(value: string) {
+  settingsDraft.subscriptionId = value
+  const provider = SUBSCRIPTION_PROVIDERS.find(p => p.key === subscriptionsModel.subscriptions.value.find(s => s.id === value)?.provider)
+  const models = provider?.models ?? []
+  if (models.length && !models.find(m => m.id === settingsDraft.model)) {
+    settingsDraft.model = models.find(m => m.tier === 'balanced')?.id || models[0]?.id || settingsDraft.model
+  }
+  await saveSettings(currentPayload())
+}
+
 async function handleModelChange(value: string) {
   settingsDraft.model = value
+  if (!resolvedAgent.value || resolvedAgent.value.settings.model === value) return
+  await saveSettings(currentPayload())
+}
 
-  if (!resolvedAgent.value || resolvedAgent.value.settings.model === value) {
-    return
-  }
-
-  await saveSettings({
-    model: value,
-    apiKey: settingsDraft.apiKey,
-  })
+async function handleEffortChange(value: string) {
+  settingsDraft.effort = value as any
+  if (!resolvedAgent.value || (resolvedAgent.value.settings.effort as any) === value) return
+  await saveSettings(currentPayload())
 }
 
 async function handleApiKeyBlur() {
-  if (!resolvedAgent.value || resolvedAgent.value.settings.apiKey === settingsDraft.apiKey) {
-    return
-  }
-
-  await saveSettings({
-    model: settingsDraft.model,
-    apiKey: settingsDraft.apiKey,
-  })
+  if (!resolvedAgent.value || resolvedAgent.value.settings.apiKey === settingsDraft.apiKey) return
+  await saveSettings(currentPayload())
 }
 
 function sshDraftChanged() {
@@ -553,11 +669,7 @@ async function handleSshBlur() {
   }
 
   syncActiveRepositoryPathFromWorkspace()
-
-  await saveSettings({
-    model: settingsDraft.model,
-    apiKey: settingsDraft.apiKey,
-  })
+  await saveSettings(currentPayload())
 
   if (activeSection.value === 'explorer') {
     await loadWorkspace()
@@ -568,11 +680,12 @@ async function handleSshBlur() {
   }
 }
 
-function addRepositoryDraft() {
+function addRepositoryDraft(type: MessengerAgentRepositoryType = 'ssh') {
   settingsDraft.ssh.repositories.push({
     id: createDraftId('repo'),
-    label: `Repo ${settingsDraft.ssh.repositories.length + 1}`,
+    label: `${REPO_TYPE_META[type].label} ${settingsDraft.ssh.repositories.length + 1}`,
     path: '',
+    type,
   })
 
   if (!settingsDraft.ssh.activeRepositoryId) {
@@ -868,6 +981,7 @@ async function openWorkspaceFile(path: string) {
           </div>
         </header>
 
+
         <p v-if="feedbackMessage" class="agent-chat-workspace__feedback" :class="{ 'agent-chat-workspace__feedback--error': feedbackTone === 'error' }">
           {{ feedbackMessage }}
         </p>
@@ -899,26 +1013,107 @@ async function openWorkspaceFile(path: string) {
               <h3 class="agent-chat-workspace__card-title">{{ sshConfigured ? explorerStatusLabel : 'Подключение не настроено' }}</h3>
               <p class="agent-chat-workspace__card-text">{{ workspaceConfigured ? `Рабочая папка: ${resolvedAgent?.settings.ssh.workspacePath}` : 'Добавьте login, IP, SSH key и рабочую папку, чтобы агент получил свой server context.' }}</p>
             </article>
+
+            <!-- Repo picker card -->
+            <article class="agent-chat-workspace__card agent-chat-workspace__card--repo">
+              <p class="agent-chat-workspace__card-eyebrow">Репозиторий</p>
+              <div v-if="activeRepoMeta" class="agent-repo-overview">
+                <div class="agent-repo-overview__badge">
+                  <VIcon size="20" :color="activeRepoMeta.typeMeta.color">{{ activeRepoMeta.typeMeta.icon }}</VIcon>
+                  <div class="agent-repo-overview__info">
+                    <strong class="agent-repo-overview__name">{{ activeRepoMeta.repo.label }}</strong>
+                    <span class="agent-repo-overview__type">{{ activeRepoMeta.typeMeta.label }}</span>
+                  </div>
+                </div>
+                <p v-if="activeRepoMeta.repo.type === 'ssh' || activeRepoMeta.repo.type === 'local'" class="agent-chat-workspace__card-text">
+                  {{ activeRepoMeta.repo.path || 'Путь не указан' }}
+                </p>
+                <p v-else-if="activeRepoMeta.repo.owner && activeRepoMeta.repo.repo" class="agent-chat-workspace__card-text">
+                  {{ activeRepoMeta.repo.owner }}/{{ activeRepoMeta.repo.repo }}{{ activeRepoMeta.repo.branch ? ` @ ${activeRepoMeta.repo.branch}` : '' }}
+                </p>
+                <p v-else-if="activeRepoMeta.repo.url" class="agent-chat-workspace__card-text">
+                  {{ activeRepoMeta.repo.url }}
+                </p>
+                <p v-else class="agent-chat-workspace__card-text">Детали не заполнены</p>
+              </div>
+              <p v-else class="agent-chat-workspace__card-text">Репозиторий не выбран.</p>
+
+              <!-- Inline switcher if multiple repos -->
+              <div v-if="settingsDraft.ssh.repositories.length > 1" class="agent-repo-switcher">
+                <button
+                  v-for="r in settingsDraft.ssh.repositories"
+                  :key="r.id"
+                  type="button"
+                  class="agent-repo-switcher__btn"
+                  :class="{ 'agent-repo-switcher__btn--active': r.id === settingsDraft.ssh.activeRepositoryId }"
+                  @click="handleActiveRepositoryChange(r.id)"
+                >
+                  <VIcon size="13" :color="REPO_TYPE_META[r.type || 'ssh'].color">{{ REPO_TYPE_META[r.type || 'ssh'].icon }}</VIcon>
+                  {{ r.label }}
+                </button>
+              </div>
+              <button type="button" class="agent-chat-workspace__ghost" @click="activeSection = 'settings'">
+                {{ settingsDraft.ssh.repositories.length ? 'Управлять репо →' : 'Добавить репозиторий →' }}
+              </button>
+            </article>
+
             <article class="agent-chat-workspace__card">
               <p class="agent-chat-workspace__card-eyebrow">Знания</p>
               <h3 class="agent-chat-workspace__card-title">{{ knowledgeStatus?.indexedSources || 0 }} источников</h3>
               <p class="agent-chat-workspace__card-text">{{ knowledgeEnabledCount ? `Подключено источников: ${knowledgeEnabledCount}.` : 'Источники RAG и vector пока не подключены.' }}</p>
             </article>
+
           </div>
 
           <div v-else-if="activeSection === 'settings'" class="agent-chat-workspace__content">
             <article class="agent-chat-workspace__card agent-chat-workspace__card--form">
               <p class="agent-chat-workspace__card-eyebrow">Быстрые настройки</p>
               <h3 class="agent-chat-workspace__card-title">Параметры ответа</h3>
-              <p class="agent-chat-workspace__card-text">Модель сохраняется сразу после выбора. API key и SSH-поля обновляются по blur.</p>
+              <p class="agent-chat-workspace__card-text">Все параметры сохраняются сразу после выбора.</p>
               <VSelect
-                :model-value="settingsDraft.model"
-                :items="resolvedAgent?.modelOptions || ['GPT-5.4']"
-                label="Модель агента"
+                :model-value="settingsDraft.subscriptionId"
+                :items="subscriptionOptions"
+                item-title="title"
+                item-value="value"
+                label="Подписка"
                 variant="outlined"
                 hide-details="auto"
                 :loading="settingsSaving"
-                @update:model-value="handleModelChange(typeof $event === 'string' ? $event : 'GPT-5.4')"
+                prepend-inner-icon="mdi-star-circle-outline"
+                @update:model-value="handleSubscriptionChange(typeof $event === 'string' ? $event : settingsDraft.subscriptionId)"
+              />
+              <VSelect
+                :model-value="settingsDraft.model"
+                :items="activeModelOptions.length ? activeModelOptions.map(m => ({ title: m.label, value: m.id })) : (resolvedAgent?.modelOptions ?? [])"
+                item-title="title"
+                item-value="value"
+                label="Модель"
+                variant="outlined"
+                hide-details="auto"
+                :loading="settingsSaving"
+                class="mt-3"
+                @update:model-value="handleModelChange(typeof $event === 'string' ? $event : settingsDraft.model)"
+              />
+              <div v-if="activeModelMeta" class="agent-chat-workspace__model-meta mt-1">
+                <VChip size="x-small" :color="activeModelMeta.tier === 'fast' ? 'success' : activeModelMeta.tier === 'powerful' ? 'warning' : 'primary'" variant="tonal">
+                  {{ activeModelMeta.tier === 'fast' ? 'Быстрый' : activeModelMeta.tier === 'powerful' ? 'Мощный' : 'Баланс' }}
+                </VChip>
+                <VChip size="x-small" variant="tonal" color="secondary">
+                  {{ activeModelMeta.contextK }}K контекст
+                </VChip>
+              </div>
+              <VSelect
+                v-if="showEffortSelector"
+                :model-value="settingsDraft.effort"
+                :items="EFFORT_OPTIONS"
+                item-title="title"
+                item-value="value"
+                label="Уровень усилия (effort)"
+                variant="outlined"
+                hide-details="auto"
+                :loading="settingsSaving"
+                class="mt-3"
+                @update:model-value="handleEffortChange(typeof $event === 'string' ? $event : 'medium')"
               />
               <VTextField
                 v-model="settingsDraft.apiKey"
@@ -966,43 +1161,263 @@ async function openWorkspaceFile(path: string) {
               <VSelect
                 :model-value="settingsDraft.ssh.activeRepositoryId"
                 :items="repositoryOptions"
-                label="Активный repo"
+                label="Активный репозиторий"
                 variant="outlined"
                 hide-details="auto"
                 :loading="settingsSaving"
                 @update:model-value="handleActiveRepositoryChange(typeof $event === 'string' ? $event : '')"
               />
-              <div class="agent-chat-workspace__stack">
+
+              <!-- Repository list -->
+              <div class="agent-repo-list">
                 <div
                   v-for="repository in settingsDraft.ssh.repositories"
                   :key="repository.id"
-                  class="agent-chat-workspace__list-item"
+                  class="agent-repo-card"
+                  :class="{ 'agent-repo-card--active': repository.id === settingsDraft.ssh.activeRepositoryId }"
                 >
-                  <div class="agent-chat-workspace__stack">
+                  <!-- Header row -->
+                  <div class="agent-repo-card__head">
+                    <VIcon size="16" :color="REPO_TYPE_META[repository.type || 'ssh'].color">
+                      {{ REPO_TYPE_META[repository.type || 'ssh'].icon }}
+                    </VIcon>
+                    <span class="agent-repo-card__type-label">{{ REPO_TYPE_META[repository.type || 'ssh'].label }}</span>
+                    <VSpacer />
+                    <button
+                      v-if="repository.id !== settingsDraft.ssh.activeRepositoryId"
+                      type="button"
+                      class="agent-repo-card__set-active"
+                      @click="handleActiveRepositoryChange(repository.id)"
+                    >Активный</button>
+                    <button type="button" class="agent-repo-card__remove" @click="removeRepositoryDraft(repository.id)">✕</button>
+                  </div>
+
+                  <!-- Common fields -->
+                  <div class="agent-repo-card__fields">
+                    <VSelect
+                      v-model="repository.type"
+                      :items="REPO_TYPE_OPTIONS"
+                      item-title="title"
+                      item-value="value"
+                      label="Тип"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      @update:model-value="handleRepositoryBlur"
+                    />
                     <VTextField
                       v-model="repository.label"
-                      label="Название repo"
+                      label="Название"
                       variant="outlined"
-                      hide-details="auto"
-                      :loading="settingsSaving"
+                      density="compact"
+                      hide-details
                       @blur="handleRepositoryBlur"
                     />
-                    <VTextField
-                      v-model="repository.path"
-                      label="Путь repo"
-                      variant="outlined"
-                      hide-details="auto"
-                      :loading="settingsSaving"
-                      @blur="handleRepositoryBlur"
-                    />
+
+                    <!-- SSH-specific -->
+                    <template v-if="!repository.type || repository.type === 'ssh'">
+                      <VTextField
+                        v-model="repository.path"
+                        label="Путь на сервере"
+                        placeholder="/home/user/project"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                    </template>
+
+                    <!-- GitHub -->
+                    <template v-else-if="repository.type === 'github'">
+                      <VTextField
+                        v-model="repository.owner"
+                        label="Owner / Org"
+                        placeholder="my-org"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.repo"
+                        label="Репозиторий"
+                        placeholder="my-repo"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.branch"
+                        label="Ветка"
+                        placeholder="main"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.token"
+                        label="GitHub Token (PAT)"
+                        placeholder="ghp_..."
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        type="password"
+                        @blur="handleRepositoryBlur"
+                      />
+                    </template>
+
+                    <!-- GitLab -->
+                    <template v-else-if="repository.type === 'gitlab'">
+                      <VTextField
+                        v-model="repository.instanceUrl"
+                        label="GitLab URL"
+                        placeholder="https://gitlab.com"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.owner"
+                        label="Namespace"
+                        placeholder="my-group/subgroup"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.repo"
+                        label="Репозиторий"
+                        placeholder="my-repo"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.branch"
+                        label="Ветка"
+                        placeholder="main"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.token"
+                        label="GitLab Token"
+                        placeholder="glpat-..."
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        type="password"
+                        @blur="handleRepositoryBlur"
+                      />
+                    </template>
+
+                    <!-- Bitbucket -->
+                    <template v-else-if="repository.type === 'bitbucket'">
+                      <VTextField
+                        v-model="repository.owner"
+                        label="Workspace"
+                        placeholder="my-workspace"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.repo"
+                        label="Репозиторий"
+                        placeholder="my-repo"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.branch"
+                        label="Ветка"
+                        placeholder="main"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.token"
+                        label="App Password / Token"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        type="password"
+                        @blur="handleRepositoryBlur"
+                      />
+                    </template>
+
+                    <!-- Local -->
+                    <template v-else-if="repository.type === 'local'">
+                      <VTextField
+                        v-model="repository.path"
+                        label="Путь на компьютере"
+                        placeholder="/Users/me/projects/my-repo"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                    </template>
+
+                    <!-- Custom -->
+                    <template v-else-if="repository.type === 'custom'">
+                      <VTextField
+                        v-model="repository.url"
+                        label="URL / Endpoint"
+                        placeholder="sftp://host/path или https://..."
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.protocol"
+                        label="Протокол"
+                        placeholder="sftp, ftp, webdav, s3..."
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        @blur="handleRepositoryBlur"
+                      />
+                      <VTextField
+                        v-model="repository.credentials"
+                        label="Credentials"
+                        placeholder="user:password или token"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        type="password"
+                        @blur="handleRepositoryBlur"
+                      />
+                    </template>
                   </div>
-                  <button type="button" class="agent-chat-workspace__ghost" @click="removeRepositoryDraft(repository.id)">
-                    Удалить repo
+                </div>
+
+                <!-- Add repo buttons -->
+                <div class="agent-repo-add-row">
+                  <button
+                    v-for="opt in REPO_TYPE_OPTIONS"
+                    :key="opt.value"
+                    type="button"
+                    class="agent-repo-add-btn"
+                    @click="addRepositoryDraft(opt.value)"
+                  >
+                    <VIcon size="14" :color="REPO_TYPE_META[opt.value].color">{{ REPO_TYPE_META[opt.value].icon }}</VIcon>
+                    {{ REPO_TYPE_META[opt.value].label }}
                   </button>
                 </div>
-                <button type="button" class="agent-chat-workspace__ghost" @click="addRepositoryDraft">
-                  Добавить repo
-                </button>
               </div>
               <VTextarea
                 v-model="settingsDraft.ssh.privateKey"

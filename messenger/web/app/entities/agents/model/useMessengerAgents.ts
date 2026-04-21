@@ -6,10 +6,21 @@ export interface MessengerAgentConnection {
   mode: MessengerAgentConnectionMode
 }
 
+export type MessengerAgentRepositoryType = 'ssh' | 'github' | 'gitlab' | 'bitbucket' | 'local' | 'custom'
+
 export interface MessengerAgentRepository {
   id: string
   label: string
   path: string
+  type: MessengerAgentRepositoryType
+  url?: string
+  owner?: string
+  repo?: string
+  branch?: string
+  token?: string
+  instanceUrl?: string
+  protocol?: string
+  credentials?: string
 }
 
 export interface MessengerAgentKnowledgeSource {
@@ -21,9 +32,13 @@ export interface MessengerAgentKnowledgeSource {
   enabled: boolean
 }
 
+export type MessengerAgentEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+
 export interface MessengerAgentSettings {
   agentId: string
+  subscriptionId: string
   model: string
+  effort: MessengerAgentEffort
   apiKey: string
   ssh: {
     host: string
@@ -84,7 +99,7 @@ export function useMessengerAgents() {
     }
   }
 
-  async function saveSettings(agentId: string, payload: Pick<MessengerAgentSettings, 'model' | 'apiKey' | 'ssh' | 'knowledge' | 'connections' | 'graphPosition'>) {
+  async function saveSettings(agentId: string, payload: Pick<MessengerAgentSettings, 'subscriptionId' | 'model' | 'effort' | 'apiKey' | 'ssh' | 'knowledge' | 'connections' | 'graphPosition'>) {
     settingsPending.value = true
 
     try {
