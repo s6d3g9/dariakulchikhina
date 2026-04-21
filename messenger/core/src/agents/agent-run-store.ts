@@ -445,3 +445,15 @@ export async function getAgentIngestToken(agentId: string): Promise<string | nul
     .limit(1)
   return row?.ingestToken ?? null
 }
+
+export async function isCliAgent(agentId: string): Promise<boolean> {
+  const db = useIngestDb()
+  const [row] = await db
+    .select({ config: messengerAgents.config })
+    .from(messengerAgents)
+    .where(and(eq(messengerAgents.id, agentId), isNull(messengerAgents.deletedAt)))
+    .limit(1)
+  if (!row) return false
+  const cfg = (row.config ?? {}) as Record<string, unknown>
+  return cfg.subscriptionId === 'builtin-claude-code-cli' || typeof cfg.claudeSessionSlug === 'string'
+}

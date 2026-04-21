@@ -22,7 +22,7 @@ import { getMessengerAgentKnowledgePreset } from '../agents/agent-knowledge-pres
 import { isMessengerAgentLlmConfigured } from '../agents/agent-llm.ts'
 import { buildMessengerCallAnalysis, type MessengerCallAnalysisToolId } from '../calls/call-analysis-service.ts'
 import { listMessengerAgentWorkspace, readMessengerAgentWorkspaceFile } from '../agents/agent-workspace-store.ts'
-import { appendMessengerAgentRunEvent, createRun, findRunningCliSessionForAgent, getAgentIngestToken, getMessengerAgentRunById, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from '../agents/agent-run-store.ts'
+import { appendMessengerAgentRunEvent, createRun, findRunningCliSessionForAgent, getAgentIngestToken, getMessengerAgentRunById, isCliAgent, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from '../agents/agent-run-store.ts'
 import { buildMessengerAgentReply, findMessengerAgentById, listMessengerAgents } from '../agents/agent-store.ts'
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from '../auth/auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
@@ -116,7 +116,7 @@ export async function createMessengerServer() {
 
   type MessengerRealtimeSocket = {
     send: (payload: string) => void
-    close: () => void
+    close: (code?: number, reason?: string) => void
     readyState: number
     on: (event: string, cb: (...args: any[]) => void) => void
   }
@@ -3027,6 +3027,175 @@ export async function createMessengerServer() {
       }
     })
   })
+
+  app.get<{ Params: { agentId: string } }>(
+    '/ws/agents/:agentId/stream',
+    { websocket: true },
+    async (socket: MessengerRealtimeSocket, request: FastifyRequest<{ Params: { agentId: string } }>) => {
+      const requestUrl = new URL(request.url || '/ws', `http://${request.headers.host || 'localhost'}`)
+      const token = requestUrl.searchParams.get('token')
+      const payload = token ? verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET) : null
+      const user = payload ? await findMessengerUserById(payload.sub) : null
+
+      if (!payload || !user) {
+        socket.close(4401, 'UNAUTHORIZED')
+        return
+      }
+
+      const { agentId } = request.params
+      const agent = await findMessengerAgentById(agentId)
+      if (!agent) {
+        socket.close(4404, 'AGENT_NOT_FOUND')
+        return
+      }
+
+      const connectionId = randomUUID()
+      const realtimeClient: MessengerRealtimeClient = {
+        connectionId,
+        userId: user.id,
+        clientId: `agent-stream-${agentId}`,
+        socket,
+        focused: true,
+        visible: true,
+        visibilityState: 'visible',
+        isMobile: false,
+        lastSeenAt: Date.now(),
+      }
+      clients.set(connectionId, realtimeClient)
+
+      // Auto-subscribe to the agent's stream channel to receive ingest broadcast events
+      const streamChannel = `agent-stream:${agentId}`
+      if (!channelSubscriptions.has(streamChannel)) channelSubscriptions.set(streamChannel, new Set())
+      channelSubscriptions.get(streamChannel)!.add(connectionId)
+
+      socket.send(JSON.stringify({
+        type: 'hello',
+        agentId,
+        userId: user.id,
+        timestamp: new Date().toISOString(),
+      }))
+
+      socket.on('message', async (value: Buffer) => {
+        try {
+          const data = JSON.parse(value.toString())
+
+          if (data.type === 'send' && typeof data.body === 'string' && typeof data.conversationId === 'string') {
+            const messageBody = data.body.trim()
+            const conversationId = data.conversationId as string
+            if (!messageBody || !conversationId) return
+
+            const conversation = await findConversationById(conversationId)
+            if (
+              !conversation
+              || conversation.kind !== 'agent'
+              || conversation.userAId !== user.id
+              || conversation.userBId !== agentId
+            ) {
+              socket.send(JSON.stringify({ type: 'error', error: 'CONVERSATION_FORBIDDEN' }))
+              return
+            }
+
+            const cliAgent = await isCliAgent(agentId)
+            const users = await listMessengerUsers()
+            await addMessageToConversation(conversationId, user, messageBody, { plaintext: cliAgent || undefined })
+            const ts = new Date().toISOString()
+            emitToUsers([user.id], { type: 'messages.updated', conversationId, timestamp: ts })
+
+            const runningCliSession = await findRunningCliSessionForAgent(agentId)
+            if (runningCliSession) {
+              const ingestToken = await getAgentIngestToken(agentId)
+              const coreConfig = readMessengerConfig()
+              const messengerCoreUrl = `http://localhost:${coreConfig.MESSENGER_CORE_PORT}`
+              if (ingestToken) {
+                const { runId } = await createRun({ agentId, conversationId, prompt: messageBody })
+                const claudeSessionBin = join(homedir(), 'bin/claude-session')
+                execFileAsync(claudeSessionBin, [
+                  'send', runningCliSession.slug, messageBody,
+                  '--agent-id', agentId,
+                  '--run-id', runId,
+                  '--messenger-core-url', messengerCoreUrl,
+                  '--ingest-token', ingestToken,
+                ]).catch((err: unknown) => app.log.warn(err, 'claude-session send failed (agent-stream ws)'))
+              }
+            } else {
+              try {
+                const transcript = await listMessagesForConversation(conversationId, user, users)
+                const replyBody = await buildMessengerAgentReply(
+                  agentId,
+                  messageBody,
+                  transcript
+                    .slice(-8)
+                    .filter(item => !item.deletedAt)
+                    .map(item => ({
+                      role: item.own ? 'user' as const : 'assistant' as const,
+                      content: item.kind === 'file'
+                        ? `${item.body}${item.attachment ? ` (${item.attachment.name})` : ''}`
+                        : item.body,
+                    })),
+                )
+                await addAgentMessageToConversation(conversationId, agent, replyBody, { plaintext: cliAgent || undefined })
+                emitToUsers([user.id], { type: 'messages.updated', conversationId, timestamp: new Date().toISOString() })
+              } catch (err) {
+                app.log.warn(err, 'agent fallback reply failed (agent-stream ws)')
+              }
+            }
+          }
+        } catch {
+          // ignore malformed frames
+        }
+      })
+
+      socket.on('close', () => {
+        clients.delete(connectionId)
+        for (const subscribers of channelSubscriptions.values()) {
+          subscribers.delete(connectionId)
+        }
+      })
+    },
+  )
+
+  app.get<{ Params: { rootRunId: string } }>(
+    '/ws/agent-tree/:rootRunId',
+    { websocket: true },
+    async (socket: MessengerRealtimeSocket, request: FastifyRequest<{ Params: { rootRunId: string } }>) => {
+      const requestUrl = new URL(request.url || '/ws', `http://${request.headers.host || 'localhost'}`)
+      const token = requestUrl.searchParams.get('token')
+      const payload = token ? verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET) : null
+      const user = payload ? await findMessengerUserById(payload.sub) : null
+
+      if (!payload || !user) {
+        socket.close(4401, 'UNAUTHORIZED')
+        return
+      }
+
+      const { rootRunId } = request.params
+      const connectionId = randomUUID()
+      const realtimeClient: MessengerRealtimeClient = {
+        connectionId,
+        userId: user.id,
+        clientId: `agent-tree-${rootRunId}`,
+        socket,
+        focused: false,
+        visible: true,
+        visibilityState: 'visible',
+        isMobile: false,
+        lastSeenAt: Date.now(),
+      }
+      clients.set(connectionId, realtimeClient)
+
+      // Subscribe to agent-tree channel to receive run-tree broadcast events
+      const treeChannel = `agent-tree:${rootRunId}`
+      if (!channelSubscriptions.has(treeChannel)) channelSubscriptions.set(treeChannel, new Set())
+      channelSubscriptions.get(treeChannel)!.add(connectionId)
+
+      socket.on('close', () => {
+        clients.delete(connectionId)
+        for (const subscribers of channelSubscriptions.values()) {
+          subscribers.delete(connectionId)
+        }
+      })
+    },
+  )
 
   registerIngestRoutes(app, broadcastToChannel, emitToUsers)
   registerOrchestrationRoutes(app, broadcastToChannel)

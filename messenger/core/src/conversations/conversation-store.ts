@@ -588,6 +588,7 @@ export async function addMessageToConversation(
     replyToMessageId?: string
     commentOnMessageId?: string
     forwardedFrom?: MessengerMessageRecord['forwardedFrom']
+    plaintext?: boolean
   },
 ): Promise<MessengerMessageRecord> {
   const conversation = await findConversationById(conversationId)
@@ -595,7 +596,7 @@ export async function addMessageToConversation(
   if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
   const policy = getConversationPolicy(conversation)
-  if (policy.secret && !options?.encryptedBody) throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
+  if (policy.secret && !options?.encryptedBody && !options?.plaintext) throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
 
   if (options?.replyToMessageId) {
     const rel = await getMessageRow(options.replyToMessageId, conversationId)
@@ -618,6 +619,7 @@ export async function addMessageToConversation(
       commentOnMessageId: options?.commentOnMessageId,
       forwardedFrom: options?.forwardedFrom,
     },
+    plaintext: options?.plaintext,
   })
   await updateConversationTimestamp(conversationId)
   return rowToMessengerMessageRecord(row) as MessengerMessageRecord
@@ -627,6 +629,7 @@ export async function addAgentMessageToConversation(
   conversationId: string,
   agent: MessengerAgentRecord,
   body: string,
+  options?: { plaintext?: boolean },
 ): Promise<MessengerMessageRecord> {
   const conversation = await findConversationById(conversationId)
   if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
@@ -636,6 +639,7 @@ export async function addAgentMessageToConversation(
     conversationId,
     senderUserId: null,
     payload: { body: body.trim(), kind: 'text', agentId: agent.id },
+    plaintext: options?.plaintext,
   })
   await updateConversationTimestamp(conversationId)
   return rowToMessengerMessageRecord(row) as MessengerMessageRecord
