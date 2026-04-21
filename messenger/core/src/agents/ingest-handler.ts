@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { useIngestDb, messengerAgents, messengerAgentRuns, messengerAgentRunEvents, eq, and, isNull, sql } from './ingest-db.ts'
+import { addAgentMessageToConversation, findConversationById } from '../conversations/conversation-store.ts'
+import { findMessengerAgentById } from './agent-store.ts'
 
 // --- event schemas ---
 
@@ -61,6 +63,7 @@ function consumeRateLimit(agentId: string): boolean {
 type RunSnapshot = {
   rootRunId: string
   parentRunId: string | null
+  conversationId: string | null
   status: string
   tokenInTotal: number
   tokenOutTotal: number
@@ -79,6 +82,7 @@ async function persistEvent(
       status: messengerAgentRuns.status,
       rootRunId: messengerAgentRuns.rootRunId,
       parentRunId: messengerAgentRuns.parentRunId,
+      conversationId: messengerAgentRuns.conversationId,
       tokenInTotal: messengerAgentRuns.tokenInTotal,
       tokenOutTotal: messengerAgentRuns.tokenOutTotal,
       costUsd: messengerAgentRuns.costUsd,
@@ -163,6 +167,7 @@ async function persistEvent(
       status: messengerAgentRuns.status,
       rootRunId: messengerAgentRuns.rootRunId,
       parentRunId: messengerAgentRuns.parentRunId,
+      conversationId: messengerAgentRuns.conversationId,
       tokenInTotal: messengerAgentRuns.tokenInTotal,
       tokenOutTotal: messengerAgentRuns.tokenOutTotal,
       costUsd: messengerAgentRuns.costUsd,
@@ -176,6 +181,7 @@ async function persistEvent(
     run: {
       rootRunId: (updated?.rootRunId ?? run.rootRunId) ?? event.runId,
       parentRunId: (updated?.parentRunId ?? run.parentRunId) ?? null,
+      conversationId: (updated?.conversationId ?? run.conversationId) ?? null,
       status: updated?.status ?? run.status,
       tokenInTotal: updated?.tokenInTotal ?? run.tokenInTotal,
       tokenOutTotal: updated?.tokenOutTotal ?? run.tokenOutTotal,
@@ -189,6 +195,7 @@ async function persistEvent(
 export function registerIngestRoutes(
   app: FastifyInstance,
   broadcastToChannel: (channel: string, event: Record<string, unknown>) => void,
+  emitToUsers?: (userIds: string[], event: Record<string, unknown>) => void,
 ) {
   const db = useIngestDb()
 
@@ -251,6 +258,27 @@ export function registerIngestRoutes(
           tokenOutTotal: run.tokenOutTotal,
           costUsd: run.costUsd,
         })
+
+        if (event.type === 'complete' && event.finalText && run.conversationId) {
+          try {
+            const agent = await findMessengerAgentById(agentId)
+            if (agent) {
+              await addAgentMessageToConversation(run.conversationId, agent, event.finalText)
+              if (emitToUsers) {
+                const conversation = await findConversationById(run.conversationId)
+                if (conversation) {
+                  const ts = new Date().toISOString()
+                  const participants = [conversation.userAId, conversation.userBId].filter(Boolean)
+                  emitToUsers(participants, { type: 'conversations.updated', conversationId: conversation.id, timestamp: ts })
+                  emitToUsers(participants, { type: 'messages.updated', conversationId: conversation.id, timestamp: ts })
+                }
+              }
+            }
+          } catch (err2) {
+            request.log.warn(err2, 'ingest: failed to save agent reply to conversation')
+          }
+        }
+
         return { persistedEventId }
       } catch (err: unknown) {
         const e = err as { statusCode?: number; message?: string }

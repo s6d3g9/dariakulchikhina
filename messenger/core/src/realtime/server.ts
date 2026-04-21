@@ -2,6 +2,12 @@ const activeLiveKitRooms = new Set<string>()
 
 import { joinLiveKitRoomAsBot } from '../calls/livekit-stt-bot.ts'
 import { randomUUID } from 'node:crypto'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+
+const execFileAsync = promisify(execFile)
 
 import Fastify, { type FastifyRequest } from 'fastify'
 import cors from '@fastify/cors'
@@ -16,7 +22,7 @@ import { getMessengerAgentKnowledgePreset } from '../agents/agent-knowledge-pres
 import { isMessengerAgentLlmConfigured } from '../agents/agent-llm.ts'
 import { buildMessengerCallAnalysis, type MessengerCallAnalysisToolId } from '../calls/call-analysis-service.ts'
 import { listMessengerAgentWorkspace, readMessengerAgentWorkspaceFile } from '../agents/agent-workspace-store.ts'
-import { appendMessengerAgentRunEvent, getMessengerAgentRunById, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from '../agents/agent-run-store.ts'
+import { appendMessengerAgentRunEvent, createRun, findRunningCliSessionForAgent, getAgentIngestToken, getMessengerAgentRunById, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from '../agents/agent-run-store.ts'
 import { buildMessengerAgentReply, findMessengerAgentById, listMessengerAgents } from '../agents/agent-store.ts'
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from '../auth/auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
@@ -274,7 +280,9 @@ export async function createMessengerServer() {
     agentId: z.string().trim().min(1).max(120),
   })
   const agentSettingsSchema = z.object({
+    subscriptionId: z.string().trim().max(120).optional().default('builtin-claude-code-cli'),
     model: z.string().trim().min(1).max(120),
+    effort: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).optional().default('medium'),
     apiKey: z.string().trim().max(2048).optional().default(''),
     ssh: z.object({
       host: z.string().trim().max(255).optional().default(''),
@@ -285,7 +293,16 @@ export async function createMessengerServer() {
       repositories: z.array(z.object({
         id: z.string().trim().min(1).max(120),
         label: z.string().trim().min(1).max(120),
-        path: z.string().trim().min(1).max(2048),
+        path: z.string().trim().max(2048).optional().default(''),
+        type: z.enum(['ssh', 'github', 'gitlab', 'bitbucket', 'local', 'custom']).optional().default('ssh'),
+        url: z.string().trim().max(2048).optional().default(''),
+        owner: z.string().trim().max(120).optional().default(''),
+        repo: z.string().trim().max(120).optional().default(''),
+        branch: z.string().trim().max(120).optional().default(''),
+        token: z.string().trim().max(2048).optional().default(''),
+        instanceUrl: z.string().trim().max(2048).optional().default(''),
+        protocol: z.string().trim().max(60).optional().default(''),
+        credentials: z.string().trim().max(4096).optional().default(''),
       })).max(12).optional().default([]),
       activeRepositoryId: z.string().trim().max(120).optional().default(''),
     }).optional().default({
@@ -1555,7 +1572,9 @@ export async function createMessengerServer() {
 
     const validAgentIds = new Set((await listMessengerAgents()).map(item => item.id))
     const settings = await updateMessengerAgentSettings(agent.id, {
+      subscriptionId: parsedBody.data.subscriptionId,
       model: parsedBody.data.model,
+      effort: parsedBody.data.effort,
       apiKey: parsedBody.data.apiKey,
       ssh: parsedBody.data.ssh,
       knowledge: parsedBody.data.knowledge,
@@ -2299,44 +2318,63 @@ export async function createMessengerServer() {
                 },
               })
             }
-            const transcript = await listMessagesForConversation(parsedParams.data.conversationId, session.user, users)
-            try {
-              const replyBody = await buildMessengerAgentReply(
-                agent.id,
-                parsedBody.data.body || parsedBody.data.forwardedFrom?.body || '',
-                transcript
-                  .slice(-8)
-                  .filter(item => !item.deletedAt)
-                  .map(item => ({
-                    role: item.own ? 'user' as const : 'assistant' as const,
-                    content: item.kind === 'file'
-                      ? `${item.body}${item.attachment ? ` (${item.attachment.name})` : ''}`
-                      : item.body,
-                  })),
-                {
-                  onTrace: emitAgentTrace,
-                },
-              )
-              await addAgentMessageToConversation(conversation.id, agent, replyBody)
-              await emitAgentTrace({
-                phase: 'completed',
-                status: 'completed',
-                summary: 'Ответ готов и добавлен в диалог.',
-                focus: `Итоговая длина ответа: ${replyBody.length} символов.`,
-                artifacts: [{
-                  kind: 'summary',
-                  label: 'Ответ',
-                  content: replyBody.slice(0, 320),
-                }],
-              })
-            } catch (error) {
-              await emitAgentTrace({
-                phase: 'failed',
-                status: 'failed',
-                summary: 'Сборка ответа остановилась с ошибкой.',
-                focus: error instanceof Error ? error.message : 'UNKNOWN_ERROR',
-              })
-              throw error
+            const messageBody = parsedBody.data.body || parsedBody.data.forwardedFrom?.body || ''
+            const runningCliSession = await findRunningCliSessionForAgent(agent.id)
+            if (runningCliSession && messageBody) {
+              const ingestToken = await getAgentIngestToken(agent.id)
+              const coreConfig = readMessengerConfig()
+              const messengerCoreUrl = `http://localhost:${coreConfig.MESSENGER_CORE_PORT}`
+              if (ingestToken) {
+                const { runId } = await createRun({ agentId: agent.id, conversationId: conversation.id, prompt: messageBody })
+                const claudeSessionBin = join(homedir(), 'bin/claude-session')
+                execFileAsync(claudeSessionBin, [
+                  'send', runningCliSession.slug, messageBody,
+                  '--agent-id', agent.id,
+                  '--run-id', runId,
+                  '--messenger-core-url', messengerCoreUrl,
+                  '--ingest-token', ingestToken,
+                ]).catch((err: unknown) => app.log.warn(err, 'claude-session send failed'))
+              }
+            } else {
+              const transcript = await listMessagesForConversation(parsedParams.data.conversationId, session.user, users)
+              try {
+                const replyBody = await buildMessengerAgentReply(
+                  agent.id,
+                  messageBody,
+                  transcript
+                    .slice(-8)
+                    .filter(item => !item.deletedAt)
+                    .map(item => ({
+                      role: item.own ? 'user' as const : 'assistant' as const,
+                      content: item.kind === 'file'
+                        ? `${item.body}${item.attachment ? ` (${item.attachment.name})` : ''}`
+                        : item.body,
+                    })),
+                  {
+                    onTrace: emitAgentTrace,
+                  },
+                )
+                await addAgentMessageToConversation(conversation.id, agent, replyBody)
+                await emitAgentTrace({
+                  phase: 'completed',
+                  status: 'completed',
+                  summary: 'Ответ готов и добавлен в диалог.',
+                  focus: `Итоговая длина ответа: ${replyBody.length} символов.`,
+                  artifacts: [{
+                    kind: 'summary',
+                    label: 'Ответ',
+                    content: replyBody.slice(0, 320),
+                  }],
+                })
+              } catch (error) {
+                await emitAgentTrace({
+                  phase: 'failed',
+                  status: 'failed',
+                  summary: 'Сборка ответа остановилась с ошибкой.',
+                  focus: error instanceof Error ? error.message : 'UNKNOWN_ERROR',
+                })
+                throw error
+              }
             }
           }
         }
@@ -2990,7 +3028,7 @@ export async function createMessengerServer() {
     })
   })
 
-  registerIngestRoutes(app, broadcastToChannel)
+  registerIngestRoutes(app, broadcastToChannel, emitToUsers)
   registerOrchestrationRoutes(app, broadcastToChannel)
   registerProjectsRoutes(app, broadcastToChannel)
 

@@ -3,6 +3,8 @@ import {
   useIngestDb,
   messengerAgentRuns,
   messengerAgentRunEvents,
+  messengerCliSessions,
+  messengerAgents,
   eq,
   isNull,
   and,
@@ -383,4 +385,28 @@ export async function updateTotals(
       costUsd: totals.costUsd.toFixed(8),
     })
     .where(eq(messengerAgentRuns.id, runId))
+}
+
+export async function findRunningCliSessionForAgent(agentId: string): Promise<{ id: string; slug: string; agentId: string } | null> {
+  const db = useIngestDb()
+  const [session] = await db
+    .select({ id: messengerCliSessions.id, slug: messengerCliSessions.slug, agentId: messengerCliSessions.agentId })
+    .from(messengerCliSessions)
+    .where(and(
+      eq(messengerCliSessions.agentId, agentId),
+      eq(messengerCliSessions.status, 'running'),
+      isNull(messengerCliSessions.deletedAt),
+    ))
+    .limit(1)
+  return session ?? null
+}
+
+export async function getAgentIngestToken(agentId: string): Promise<string | null> {
+  const db = useIngestDb()
+  const [row] = await db
+    .select({ ingestToken: messengerAgents.ingestToken })
+    .from(messengerAgents)
+    .where(and(eq(messengerAgents.id, agentId), isNull(messengerAgents.deletedAt)))
+    .limit(1)
+  return row?.ingestToken ?? null
 }
