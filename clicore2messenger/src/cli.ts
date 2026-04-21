@@ -29,7 +29,7 @@ export async function main(argv: string[]): Promise<void> {
   const messengerUrl =
     get("--messenger-core-url", "--messenger-url") ??
     process.env.MESSENGER_INGEST_URL ??
-    "http://localhost:3033";
+    "http://localhost:4300";
   const token =
     get("--ingest-token", "--token") ?? process.env.MESSENGER_INGEST_TOKEN ?? "";
   const resume = get("--resume");
@@ -77,7 +77,11 @@ export async function main(argv: string[]): Promise<void> {
   process.exit(exitCode);
 }
 
-main(process.argv).catch((err) => {
-  console.error("[bridge] unhandled error:", err);
-  process.exit(1);
-});
+// Only auto-run when executed directly (not when imported as a module)
+import { fileURLToPath } from "node:url";
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main(process.argv).catch((err) => {
+    console.error("[bridge] unhandled error:", err);
+    process.exit(1);
+  });
+}

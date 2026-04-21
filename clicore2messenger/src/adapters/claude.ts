@@ -52,27 +52,25 @@ function mapCliEvent(
   switch (ev.type) {
     case "system": {
       if (ev.subtype === "init") {
-        events.push({ type: "substate", runId, value: "idle" });
+        events.push({ type: "substate", runId, substate: "idle" });
       }
       break;
     }
 
     case "stream_event": {
-      // Claude CLI uses `event` key (not `stream_event`) inside the wrapper
       const se = (ev.event ?? ev.stream_event) as Record<string, unknown> | undefined;
       if (!se) break;
       switch (se.type) {
         case "message_start":
-          events.push({ type: "substate", runId, value: "thinking" });
+          events.push({ type: "substate", runId, substate: "thinking" });
           break;
 
         case "content_block_start": {
           const cb = se.content_block as Record<string, unknown> | undefined;
           if (cb?.type === "tool_use") {
-            events.push({ type: "substate", runId, value: "tool_call" });
-            const name = String(cb.name ?? "unknown");
-            const inputSummary = summarise(cb.input);
-            events.push({ type: "tool_use", runId, name, inputSummary });
+            events.push({ type: "substate", runId, substate: "tool_call" });
+            const tool = String(cb.name ?? "unknown");
+            events.push({ type: "tool_use", runId, tool, input: cb.input });
           }
           break;
         }
@@ -83,8 +81,8 @@ function mapCliEvent(
             const text = String(delta.text ?? "");
             if (text) {
               state.finalText += text;
-              events.push({ type: "substate", runId, value: "streaming" });
-              events.push({ type: "delta", runId, text });
+              events.push({ type: "substate", runId, substate: "streaming" });
+              events.push({ type: "delta", runId, delta: text });
             }
           }
           break;
@@ -104,7 +102,7 @@ function mapCliEvent(
       if (!state.finalText && typeof ev.result === "string") {
         state.finalText = ev.result;
       }
-      events.push({ type: "tokens", runId, in: tokensIn, out: tokensOut, totalCostUsd: costUsd });
+      events.push({ type: "tokens", runId, tokenIn: tokensIn, tokenOut: tokensOut, costUsd });
       break;
     }
 

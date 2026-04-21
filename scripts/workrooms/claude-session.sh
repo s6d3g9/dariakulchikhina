@@ -306,9 +306,26 @@ cmd_create() {
 # --- send ---
 cmd_send() {
   local slug="${1:-}"; shift || die "slug required"
-  local prompt="${*:-}"
-  [[ -n "${prompt}" ]] || die "follow-up prompt required"
   registry_has "${slug}" || die "no such session: ${slug}"
+
+  # Parse bridge flags (optional — when messenger dispatches a user message, it
+  # passes these so the reply streams back via claude-stream-bridge → ingest).
+  local agent_id="" run_id="" cli_session_id=""
+  local messenger_url="${MESSENGER_CORE_URL:-}" ingest_token="${MESSENGER_INGEST_TOKEN:-}"
+  local prompt_parts=()
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --agent-id)            agent_id="$2"; shift 2;;
+      --run-id)              run_id="$2"; shift 2;;
+      --cli-session-id)      cli_session_id="$2"; shift 2;;
+      --messenger-core-url)  messenger_url="$2"; shift 2;;
+      --ingest-token)        ingest_token="$2"; shift 2;;
+      --) shift; prompt_parts+=("$@"); break;;
+      *)  prompt_parts+=("$1"); shift;;
+    esac
+  done
+  local prompt="${prompt_parts[*]}"
+  [[ -n "${prompt}" ]] || die "follow-up prompt required"
 
   local uuid; uuid=$(registry_col "${slug}" 2)
   local window; window=$(registry_col "${slug}" 3)
@@ -319,8 +336,10 @@ cmd_send() {
   [[ -n "${workroom}" ]] && cwd="${HOME}/workrooms/${workroom}"
 
   ensure_tmux_session
-  # send does not re-register; bridge flags not threaded through send (follow-up is CLI-only)
-  run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${cwd}" "${prompt}" "yes"
+  # Thread bridge flags through to run_prompt_in_window so the follow-up reply
+  # is piped through claude-stream-bridge and ingested by messenger-core.
+  run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${cwd}" "${prompt}" "yes" \
+    "${agent_id}" "${run_id}" "${cli_session_id}" "${messenger_url}" "${ingest_token}"
   echo "[send] queued follow-up in ${window}"
 }
 

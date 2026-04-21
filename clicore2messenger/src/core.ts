@@ -134,26 +134,12 @@ export async function runSpawnMode(opts: SpawnModeOpts): Promise<number> {
   const finalizeEvents = adapter.finalize?.({ runId, state }) ?? [];
   let sentComplete = false;
   for (const ev of finalizeEvents) {
-    if (ev.type === "complete") {
-      await send({
-        ...ev,
-        totalTokens: (state.tokensIn + state.tokensOut) || ev.totalTokens,
-        durationMs,
-      });
-      sentComplete = true;
-    } else {
-      await send(ev);
-    }
+    await send(ev);
+    if (ev.type === "complete") sentComplete = true;
   }
 
   if (!sentComplete) {
-    await send({
-      type: "complete",
-      runId,
-      finalText: state.finalText,
-      totalTokens: state.tokensIn + state.tokensOut,
-      durationMs,
-    });
+    await send({ type: "complete", runId, finalText: state.finalText || undefined });
   }
 
   return 0;
@@ -175,7 +161,8 @@ export async function runPipeMode(opts: PipeModeOpts): Promise<void> {
     await post(messengerUrl, agentId, token, event).catch(() => writeDlq(dlqPath, event));
   };
 
-  const startMs = Date.now();
+  await send({ type: "run_start", runId });
+
   const state = { finalText: "", tokensIn: 0, tokensOut: 0, costUsd: 0 };
   const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
 
@@ -195,17 +182,13 @@ export async function runPipeMode(opts: PipeModeOpts): Promise<void> {
     }
   }
 
-  const durationMs = Date.now() - startMs;
   const finalizeEvents = adapter.finalize?.({ runId, state }) ?? [];
+  let sentComplete = false;
   for (const ev of finalizeEvents) {
-    if (ev.type === "complete") {
-      await send({
-        ...ev,
-        totalTokens: (state.tokensIn + state.tokensOut) || ev.totalTokens,
-        durationMs,
-      });
-    } else {
-      await send(ev);
-    }
+    await send(ev);
+    if (ev.type === "complete") sentComplete = true;
+  }
+  if (!sentComplete) {
+    await send({ type: "complete", runId, finalText: state.finalText || undefined });
   }
 }
