@@ -1,13 +1,20 @@
+// Shared-state composable: every caller (trigger widget + dialog) must
+// reference the same open/pending/form/error refs. `useState` keyed with a
+// stable string gives us that; plain `ref`/`reactive` were scoped per call
+// and produced the "click Create → nothing happens" symptom because the
+// dialog listened to a different `open` than the trigger mutated.
 export function useProjectCreate() {
   const projects = useMessengerProjects()
-  const open = ref(false)
-  const pending = ref(false)
-  const form = reactive({ name: '', description: '' })
-  const error = ref('')
+  const open = useState<boolean>('project-create-open', () => false)
+  const pending = useState<boolean>('project-create-pending', () => false)
+  const form = useState<{ name: string; description: string }>(
+    'project-create-form',
+    () => ({ name: '', description: '' }),
+  )
+  const error = useState<string>('project-create-error', () => '')
 
   function show() {
-    form.name = ''
-    form.description = ''
+    form.value = { name: '', description: '' }
     error.value = ''
     open.value = true
   }
@@ -17,19 +24,22 @@ export function useProjectCreate() {
   }
 
   async function submit() {
-    if (!form.name.trim() || pending.value) return null
+    if (!form.value.name.trim() || pending.value) return null
     pending.value = true
     error.value = ''
     try {
       const project = await projects.create({
-        name: form.name.trim(),
-        description: form.description.trim() || undefined,
+        name: form.value.name.trim(),
+        description: form.value.description.trim() || undefined,
       })
       open.value = false
       return project
     }
-    catch {
-      error.value = 'Не удалось создать проект. Попробуйте ещё раз.'
+    catch (e) {
+      const msg = (e as Error)?.message || ''
+      error.value = msg.includes('400') || msg.includes('INVALID')
+        ? 'Некорректное название проекта.'
+        : 'Не удалось создать проект. Попробуйте ещё раз.'
       return null
     }
     finally {

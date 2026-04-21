@@ -3,6 +3,8 @@ import type { MessengerMcpServer, McpPingResult } from '../../entities/mcp/model
 import type { MessengerExternalApi } from '../../entities/external-apis/model/useMessengerExternalApis'
 import type { MessengerProjectAgent } from '../../entities/agents/model/useMessengerProjectAgents'
 import type { BootstrapProposal } from '../../features/composer-bootstrap/model/useComposerBootstrap'
+import type { SkillBundle, MessengerProjectSkill } from '../../entities/skills/model/useMessengerSkills'
+import type { InstalledPlugin, MessengerProjectPlugin } from '../../entities/plugins/model/useMessengerPlugins'
 
 export function useProjectsApi() {
   const auth = useMessengerAuth()
@@ -92,6 +94,48 @@ export function useProjectsApi() {
     return auth.request<{ ok: true }>(`/projects/${projectId}/agents/${agentId}`, { method: 'DELETE' })
   }
 
+  // ── Skills ─────────────────────────────────────────────────────────────────
+
+  function listSkillBundles() {
+    return auth.request<{ bundles: SkillBundle[] }>('/skill-bundles', { method: 'GET' })
+  }
+
+  function listProjectSkills(projectId: string) {
+    return auth.request<{ skills: MessengerProjectSkill[] }>(`/projects/${projectId}/skills`, { method: 'GET' })
+  }
+
+  function upsertProjectSkill(projectId: string, skillId: string, body: { enabled?: boolean; config?: Record<string, unknown> }) {
+    return auth.request<{ skill: MessengerProjectSkill }>(`/projects/${projectId}/skills`, {
+      method: 'POST',
+      body: { skillId, ...body },
+    })
+  }
+
+  function deleteProjectSkill(projectId: string, skillId: string) {
+    return auth.request<{ ok: true }>(`/projects/${projectId}/skills/${skillId}`, { method: 'DELETE' })
+  }
+
+  // ── Plugins ────────────────────────────────────────────────────────────────
+
+  function listInstalledPlugins() {
+    return auth.request<{ plugins: InstalledPlugin[] }>('/plugins', { method: 'GET' })
+  }
+
+  function listProjectPlugins(projectId: string) {
+    return auth.request<{ plugins: MessengerProjectPlugin[] }>(`/projects/${projectId}/plugins`, { method: 'GET' })
+  }
+
+  function upsertProjectPlugin(projectId: string, pluginId: string, body: { enabled?: boolean; config?: Record<string, unknown> }) {
+    return auth.request<{ plugin: MessengerProjectPlugin }>(`/projects/${projectId}/plugins`, {
+      method: 'POST',
+      body: { pluginId, ...body },
+    })
+  }
+
+  function deleteProjectPlugin(projectId: string, pluginId: string) {
+    return auth.request<{ ok: true }>(`/projects/${projectId}/plugins/${pluginId}`, { method: 'DELETE' })
+  }
+
   // ── Bootstrap ──────────────────────────────────────────────────────────────
 
   function bootstrapProject(projectId: string, body: { mode: 'manual' | 'auto'; taskDescription?: string }) {
@@ -122,5 +166,13 @@ export function useProjectsApi() {
     deleteProjectAgent,
     bootstrapProject,
     bootstrapApply,
+    listSkillBundles,
+    listProjectSkills,
+    upsertProjectSkill,
+    deleteProjectSkill,
+    listInstalledPlugins,
+    listProjectPlugins,
+    upsertProjectPlugin,
+    deleteProjectPlugin,
   }
 }
