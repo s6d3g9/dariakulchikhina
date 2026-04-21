@@ -123,6 +123,8 @@ function sectionIcon(section: MessengerSectionKey) {
       return 'mdi-account-multiple-outline'
     case 'agents':
       return 'mdi-robot-outline'
+    case 'aidev':
+      return 'mdi-rocket-launch-outline'
     case 'settings':
       return 'mdi-cog-outline'
   }
@@ -202,6 +204,9 @@ async function logout() {
             v-if="agentsEnabled"
             v-show="navigation.activeSection.value === 'agents'"
           />
+          <MessengerAidevSection
+            v-show="navigation.activeSection.value === 'aidev'"
+          />
           <MessengerSettingsSection
             v-show="navigation.activeSection.value === 'settings'"
             @logout="logout"
@@ -254,6 +259,15 @@ async function logout() {
           @click="navValue = 'agents'"
         >
           <VIcon class="messenger-nav-icon">mdi-robot-outline</VIcon>
+        </button>
+
+        <button
+          type="button"
+          class="messenger-nav-btn"
+          :class="{ 'messenger-nav-btn--active': navValue === 'aidev' }"
+          @click="navValue = 'aidev'"
+        >
+          <VIcon class="messenger-nav-icon">mdi-rocket-launch-outline</VIcon>
         </button>
 
         <button
