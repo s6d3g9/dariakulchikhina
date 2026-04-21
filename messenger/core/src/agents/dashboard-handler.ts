@@ -32,6 +32,8 @@ import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 
 import { readMessengerConfig } from '../config.ts'
+import { findMessengerUserByLogin, findMessengerUserById } from '../auth/auth-store.ts'
+import { listMessengerProjects } from '../project-engine/project-engine-store.ts'
 import { findMessengerAgentById, listMessengerAgents } from './agent-store.ts'
 import { getMessengerAgentSettings, updateMessengerAgentSettings } from './agent-settings-store.ts'
 
@@ -65,7 +67,7 @@ const HOME = homedir()
 const ACTIVE_REGISTRY = join(HOME, 'state/claude-sessions/.registry.tsv')
 const ARCHIVE_REGISTRY = join(HOME, 'state/claude-sessions/archive/.registry.tsv')
 
-interface RegistrySession {
+export interface RegistrySession {
   slug: string
   uuid: string
   window: string
@@ -73,10 +75,30 @@ interface RegistrySession {
   model: string
   created: string
   kind: string
+  ownerUserId: string | null
   archived: boolean
   archivedAt: string | null
   logSize: number | null
   logMtimeMs: number | null
+}
+
+/**
+ * Read the claude-sessions registry, optionally including the archive, and
+ * optionally filtered to sessions owned by a specific userId. Empty owner
+ * rows (pre-migration) remain visible to everyone during the grace window.
+ * Exported so the session-authenticated /cli-sessions endpoint in
+ * realtime/server.ts can reuse the exact same reader.
+ */
+export function readCliSessionsRegistry(opts: {
+  includeArchive?: boolean
+  ownerId?: string | null
+} = {}): RegistrySession[] {
+  const active = readRegistryFile(ACTIVE_REGISTRY, false)
+  const archived = opts.includeArchive ? readRegistryFile(ARCHIVE_REGISTRY, true) : []
+  const all = [...active, ...archived]
+  const owner = (opts.ownerId ?? '').trim() || null
+  if (!owner) return all
+  return all.filter((s) => !s.ownerUserId || s.ownerUserId === owner)
 }
 
 function readRegistryFile(tsvPath: string, archived: boolean): RegistrySession[] {
@@ -98,12 +120,14 @@ function readRegistryFile(tsvPath: string, archived: boolean): RegistrySession[]
   for (const line of lines.slice(1)) {
     const cols = line.split('\t')
     if (cols.length < 6) continue
-    const [slug, uuid, window, workroom, model, created, seventh] = cols
+    const [slug, uuid, window, workroom, model, created, seventh, eighth] = cols
     if (!slug) continue
 
-    // 7th column: `kind` in active registry, `archived_at` in archive.
+    // Active registry columns (v3): slug|uuid|window|workroom|model|created|kind|owner_user_id
+    // Archive registry columns:    slug|uuid|window|workroom|model|created|archived_at[|owner_user_id]
     const kind = archived ? '' : (seventh || '').trim()
     const archivedAt = archived ? (seventh || '').trim() || null : null
+    const ownerUserId = ((archived ? eighth : eighth) || '').trim() || null
 
     const logPath = join(stateDir, `${slug}.log`)
     let logSize: number | null = null
@@ -126,6 +150,7 @@ function readRegistryFile(tsvPath: string, archived: boolean): RegistrySession[]
       model: model || '',
       created: created || '',
       kind,
+      ownerUserId,
       archived,
       archivedAt,
       logSize,
@@ -199,7 +224,7 @@ export function registerDashboardRoutes(app: FastifyInstance) {
     },
   )
 
-  app.get<{ Querystring: { includeArchive?: string } }>(
+  app.get<{ Querystring: { includeArchive?: string; ownerId?: string } }>(
     '/dashboard/cli-sessions/registry',
     async (request, reply) => {
       if (!resolveDashboardAuth(request)) {
@@ -207,9 +232,67 @@ export function registerDashboardRoutes(app: FastifyInstance) {
       }
       const includeArchive =
         request.query.includeArchive === '1' || request.query.includeArchive === 'true'
-      const active = readRegistryFile(ACTIVE_REGISTRY, false)
-      const archived = includeArchive ? readRegistryFile(ARCHIVE_REGISTRY, true) : []
-      return { sessions: [...active, ...archived] }
+      const ownerId = (request.query.ownerId ?? '').trim() || null
+      return { sessions: readCliSessionsRegistry({ includeArchive, ownerId }) }
+    },
+  )
+
+  // GET /dashboard/users/by-login/:login — resolve a messenger login to its
+  // userId so the dashboard can set `DASHBOARD_VIEWER_LOGIN=stas` instead
+  // of needing the raw UUID. Returns 404 if the login is not registered.
+  app.get<{ Params: { login: string } }>(
+    '/dashboard/users/by-login/:login',
+    async (request, reply) => {
+      if (!resolveDashboardAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+      const user = await findMessengerUserByLogin(request.params.login)
+      if (!user) return reply.code(404).send({ error: 'USER_NOT_FOUND' })
+      return { id: user.id, login: user.login, displayName: user.displayName }
+    },
+  )
+
+  // GET /dashboard/users/:id — mirror lookup by UUID.
+  app.get<{ Params: { id: string } }>(
+    '/dashboard/users/:id',
+    async (request, reply) => {
+      if (!resolveDashboardAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+      const user = await findMessengerUserById(request.params.id)
+      if (!user) return reply.code(404).send({ error: 'USER_NOT_FOUND' })
+      return { id: user.id, login: user.login, displayName: user.displayName }
+    },
+  )
+
+  // GET /dashboard/projects — messenger projects, returned in the same shape
+  // messenger-web reads them. `userId` query param is accepted but currently
+  // informational: projects today are shared across the instance, so every
+  // authenticated viewer sees the full list. If ownership is added to the
+  // project schema later, filter here.
+  app.get<{ Querystring: { userId?: string } }>(
+    '/dashboard/projects',
+    async (request, reply) => {
+      if (!resolveDashboardAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+      const all = await listMessengerProjects()
+      return {
+        projects: all.map((p) => ({
+          id: p.id,
+          slug: p.slug,
+          label: p.label,
+          description: p.description,
+          targetKind: p.targetKind,
+          rootPath: p.rootPath,
+          defaultBranch: p.defaultBranch,
+          contextsCount: Array.isArray(p.contexts) ? p.contexts.length : 0,
+          agentBindingsCount: Array.isArray(p.agentBindings) ? p.agentBindings.length : 0,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        })),
+        requestedUserId: (request.query.userId ?? '').trim() || null,
+      }
     },
   )
 }

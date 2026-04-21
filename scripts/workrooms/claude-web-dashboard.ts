@@ -256,6 +256,13 @@ const BASIC_PASS = process.env.DASHBOARD_PASS || '';
 const MESSENGER_CORE_URL = (process.env.MESSENGER_CORE_URL || 'http://127.0.0.1:4300').replace(/\/$/, '');
 const MESSENGER_DASHBOARD_TOKEN = process.env.MESSENGER_DASHBOARD_TOKEN || '';
 
+// Viewer identity. Setting DASHBOARD_VIEWER_LOGIN=stas makes the dashboard
+// represent that messenger user — sessions list, projects, agents all get
+// scoped to them. Resolved at boot and re-checked on demand. When empty,
+// the dashboard falls back to admin-view (everything, no filter).
+const DASHBOARD_VIEWER_LOGIN = (process.env.DASHBOARD_VIEWER_LOGIN || '').trim();
+let resolvedViewer = null; // { id, login, displayName } | null
+
 async function proxyMessengerCore(method, path, body) {
   if (!MESSENGER_DASHBOARD_TOKEN) {
     return { status: 503, body: { error: 'MESSENGER_DASHBOARD_TOKEN_NOT_SET' } };
@@ -279,6 +286,22 @@ async function proxyMessengerCore(method, path, body) {
     return { status: 502, body: { error: 'MESSENGER_CORE_UNREACHABLE', message: String(err) } };
   }
 }
+
+async function resolveViewer() {
+  if (!DASHBOARD_VIEWER_LOGIN) { resolvedViewer = null; return null; }
+  const r = await proxyMessengerCore('GET', '/dashboard/users/by-login/' + encodeURIComponent(DASHBOARD_VIEWER_LOGIN));
+  if (r.status === 200 && r.body && r.body.id) {
+    resolvedViewer = { id: r.body.id, login: r.body.login, displayName: r.body.displayName };
+    return resolvedViewer;
+  }
+  resolvedViewer = null;
+  return null;
+}
+// Resolve at boot. Fire-and-forget; periodic refresh handles eventual
+// messenger-core availability. If the messenger is down when the dashboard
+// starts, all sessions are shown until resolution succeeds.
+resolveViewer().catch(() => {});
+setInterval(() => { resolveViewer().catch(() => {}); }, 60_000);
 const AUTH_REQUIRED = Boolean(BASIC_USER && BASIC_PASS);
 
 function checkAuth(req, res) {
@@ -305,9 +328,10 @@ function readRegistry() {
     .slice(1)
     .map(l => l.split('\t'))
     .filter(cols => cols.length >= 6)
-    .map(([slug, uuid, window, workroom, model, created, kind]) => ({
+    .map(([slug, uuid, window, workroom, model, created, kind, ownerUserId]) => ({
       slug, uuid, window, workroom: workroom || '', model, created,
       kind: (kind || '').trim(),
+      ownerUserId: (ownerUserId || '').trim() || null,
       archived: false,
     }));
 }
@@ -320,10 +344,21 @@ function readArchiveRegistry() {
     .slice(1)
     .map(l => l.split('\t'))
     .filter(cols => cols.length >= 6)
-    .map(([slug, uuid, window, workroom, model, created, archivedAt]) => ({
+    .map(([slug, uuid, window, workroom, model, created, archivedAt, ownerUserId]) => ({
       slug, uuid, window, workroom: workroom || '', model, created,
-      archivedAt: archivedAt || '', archived: true,
+      archivedAt: archivedAt || '',
+      ownerUserId: (ownerUserId || '').trim() || null,
+      archived: true,
     }));
+}
+
+// Filter sessions to the ones visible to the current viewer. Sessions with
+// empty `ownerUserId` (pre-migration grace) remain visible to everyone;
+// sessions owned by someone else are hidden. With no resolved viewer the
+// dashboard falls back to admin-view (everything).
+function filterSessionsForViewer(sessions) {
+  if (!resolvedViewer || !resolvedViewer.id) return sessions;
+  return sessions.filter(s => !s.ownerUserId || s.ownerUserId === resolvedViewer.id);
 }
 
 // Archive: kill tmux window if alive, move log + state file into archive/, add to archive registry.
@@ -728,13 +763,32 @@ async function handle(req, res) {
     const includeArchive = url.searchParams.get('include') === 'archive';
     const active = readRegistry();
     const archive = includeArchive ? readArchiveRegistry() : [];
-    const all = [...active, ...archive];
+    const all = filterSessionsForViewer([...active, ...archive]);
     const enriched = await Promise.all(all.map(async r => ({
       session: { ...r, role: isComposerSlug(r.slug) ? 'composer' : isOrchestratorSlug(r.slug) ? 'orchestrator' : 'worker' },
       metrics: r.archived ? zeroMetrics(r.slug) : await computeMetrics(r.slug),
     })));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(enriched));
+    return;
+  }
+
+  // ── viewer identity + projects list ──
+  if (p === '/api/me' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      viewer: resolvedViewer,
+      viewerLogin: DASHBOARD_VIEWER_LOGIN || null,
+      adminView: !resolvedViewer,
+    }));
+    return;
+  }
+
+  if (p === '/api/projects' && req.method === 'GET') {
+    const qs = resolvedViewer ? '?userId=' + encodeURIComponent(resolvedViewer.id) : '';
+    const r = await proxyMessengerCore('GET', '/dashboard/projects' + qs);
+    res.writeHead(r.status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(r.body ?? {}));
     return;
   }
 
@@ -1003,6 +1057,11 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   }
   .nav-row + .nav-row{border-top:1px solid var(--line)}
   .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0}
+  .nav-row.projects{background:#0d1320;border-bottom:1px solid var(--line)}
+  .nav-row.projects .label{color:#7cc4ff;font-weight:600}
+  .nav-row.projects .tab{background:#0f1a2a;border:1px solid #1f3048}
+  .nav-row.projects .tab.active{border-color:#7cc4ff;color:#7cc4ff;box-shadow:inset 0 0 0 1px #7cc4ff}
+  .nav-row.projects .tab .dot{background:#7cc4ff;box-shadow:0 0 4px #7cc4ff}
   .nav-row.composers{background:#14130b;border-bottom:1px solid var(--line)}
   .nav-row.composers .label{color:#fbbf24;font-weight:600}
   .nav-row.composers .tab{background:#1f1b0c;border:1px solid #3a2f12}
@@ -1093,6 +1152,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   <h1>◼ claude sessions</h1>
   <div class="stat"><b>active</b><span id="hdr-count">–</span></div>
   <div class="stat"><b>uptime</b><span id="hdr-uptime">–</span></div>
+  <div class="stat" id="hdr-viewer-stat" title="Logged-in viewer (DASHBOARD_VIEWER_LOGIN)"><b>viewer</b><span id="hdr-viewer">resolving…</span></div>
   <div style="flex:1"></div>
   <button id="btn-refresh" title="force refresh">↻</button>
 </header>
@@ -1131,6 +1191,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 </section>
 <div class="navs">
   <svg id="deps-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+  <div class="nav-row projects" id="nav-projects"><span class="label">📁 projects</span></div>
   <div class="nav-row composers" id="nav-composers"><span class="label">★ composer</span></div>
   <div class="nav-row orchestrators" id="nav-orchestrators"><span class="label">◆ orchestrators</span></div>
   <div class="nav-row workers" id="nav-workers"><span class="label">workers</span><span class="spacer"></span>
@@ -1149,11 +1210,14 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 <script>
 (() => {
   const state = { sessions: [], metrics: {}, active: null, archiveExpanded: false, showDeps: true, hoveredSlug: null, startedAt: Date.now(),
-                  status: { activeSessions:0, monthCostUsd:0, monthBudgetUsd:200, ctxLimit:200000 } };
+                  status: { activeSessions:0, monthCostUsd:0, monthBudgetUsd:200, ctxLimit:200000 },
+                  viewer: null, adminView: true, projects: [], activeProjectSlug: null };
+  const projectsRowEl = document.getElementById('nav-projects');
   const composerRowEl = document.getElementById('nav-composers');
   const orchRowEl = document.getElementById('nav-orchestrators');
   const workersRowEl = document.getElementById('nav-workers');
   const archiveRowEl = document.getElementById('nav-archive');
+  const hdrViewerEl = document.getElementById('hdr-viewer');
   const sideEl = document.getElementById('side');
   const contentEl = document.getElementById('content');
   const rightSideEl = document.getElementById('right-side');
@@ -1538,10 +1602,66 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   // archive-folder-label click is inside nav-row — make sure it still fires
   // (drag threshold is 6px, label click needs no drag so it's fine)
 
+  function renderViewerBadge() {
+    if (!hdrViewerEl) return;
+    if (state.viewer) {
+      hdrViewerEl.textContent = state.viewer.login + (state.viewer.displayName ? ' · ' + state.viewer.displayName : '');
+      hdrViewerEl.style.color = '#7cc4ff';
+    } else {
+      hdrViewerEl.textContent = 'admin (all)';
+      hdrViewerEl.style.color = 'var(--mute)';
+    }
+  }
+
+  function renderProjects() {
+    if (!projectsRowEl) return;
+    projectsRowEl.querySelectorAll('.tab, small').forEach(n => n.remove());
+    if (!state.projects.length) {
+      const empty = document.createElement('small');
+      empty.className = 'tab'; empty.style.opacity = '.4'; empty.style.cursor = 'default';
+      empty.textContent = state.viewer ? '(no projects for ' + state.viewer.login + ')' : '(no projects)';
+      projectsRowEl.appendChild(empty);
+      return;
+    }
+    // Pseudo-"all" tab to clear the project filter.
+    const allTab = document.createElement('button');
+    allTab.className = 'tab' + (state.activeProjectSlug ? '' : ' active');
+    allTab.textContent = 'all';
+    allTab.title = 'Show sessions across every project';
+    allTab.onclick = () => { state.activeProjectSlug = null; renderProjects(); renderTabs(); };
+    projectsRowEl.appendChild(allTab);
+    for (const p of state.projects) {
+      const tab = document.createElement('button');
+      const isActive = state.activeProjectSlug === p.slug;
+      tab.className = 'tab' + (isActive ? ' active' : '');
+      tab.innerHTML = '<span class="dot"></span>' + escHtml(p.label || p.slug) +
+        ' <span style="color:var(--mute);font-size:10px">' + escHtml(p.slug) + '</span>';
+      tab.title = (p.description || '') + ' · root=' + (p.rootPath || '?');
+      tab.onclick = () => {
+        state.activeProjectSlug = isActive ? null : p.slug;
+        renderProjects();
+        renderTabs();
+      };
+      projectsRowEl.appendChild(tab);
+    }
+  }
+
+  function escHtml(s){ return String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  // Sessions filtered by the active project (simplest join: session.workroom
+  // == project.slug). When no project is selected, returns every session.
+  function visibleSessions() {
+    if (!state.activeProjectSlug) return state.sessions;
+    const slug = state.activeProjectSlug;
+    return state.sessions.filter(s => (s.workroom || '') === slug);
+  }
+
   function renderTabs() {
+    renderProjects();
+    const scoped = visibleSessions();
     // Composer row — always pinned at the top. Typically one session.
     composerRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const composers = state.sessions.filter(s => s.role === 'composer' && !s.archived);
+    const composers = scoped.filter(s => s.role === 'composer' && !s.archived);
     if (composers.length === 0) {
       const empty = document.createElement('small'); empty.className = 'tab'; empty.style.opacity = '.4';
       empty.style.cursor = 'default'; empty.textContent = '(no composer — run: claude-session create composer --model sonnet)';
@@ -1551,7 +1671,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     }
     // Orchestrators row
     orchRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const orch = state.sessions.filter(s => (s.role === 'orchestrator' || s.role === 'composer') && !s.archived);
+    const orch = scoped.filter(s => (s.role === 'orchestrator' || s.role === 'composer') && !s.archived);
     if (orch.length === 0) {
       const empty = document.createElement('small'); empty.className = 'tab'; empty.style.opacity = '.4';
       empty.style.cursor = 'default'; empty.textContent = '(no orchestrators)';
@@ -1561,12 +1681,12 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     }
     // Workers row — active only, composer + orchestrator excluded
     workersRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const workers = state.sessions.filter(s => s.role !== 'orchestrator' && s.role !== 'composer' && !s.archived);
+    const workers = scoped.filter(s => s.role !== 'orchestrator' && s.role !== 'composer' && !s.archived);
     const spacer = workersRowEl.querySelector('.spacer');
     for (const s of workers) workersRowEl.insertBefore(makeTabEl(s), spacer);
     // Archive row — archived sessions (both orchestrators & workers)
     archiveRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const archived = state.sessions.filter(s => s.archived);
+    const archived = scoped.filter(s => s.archived);
     document.getElementById('archive-count').textContent = archived.length;
     document.getElementById('archive-chevron').textContent = state.archiveExpanded ? '▼' : '▶';
     archiveRowEl.classList.toggle('collapsed', !state.archiveExpanded);
@@ -1917,6 +2037,24 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     } catch (err) {
       state.messengerAgentsError = String(err && err.message || err);
     }
+    // Viewer identity (resolved on server from DASHBOARD_VIEWER_LOGIN env)
+    try {
+      const meResp = await fetch('/api/me');
+      if (meResp.ok) {
+        const me = await meResp.json();
+        state.viewer = me.viewer || null;
+        state.adminView = !!me.adminView;
+      }
+    } catch { /* keep previous */ }
+    renderViewerBadge();
+    // Messenger projects — the "projects" scope on the dashboard.
+    try {
+      const pr = await fetch('/api/projects');
+      if (pr.ok) {
+        const json = await pr.json();
+        state.projects = Array.isArray(json.projects) ? json.projects : [];
+      }
+    } catch { /* keep previous */ }
     // Always include archive now — folder collapses/hides it visually
     const r = await fetch('/api/sessions?include=archive');
     const arr = await r.json();
