@@ -2,13 +2,15 @@
 import type { MessengerProject } from '../../../entities/projects/model/useMessengerProjects'
 import type { MessengerMcpServer } from '../../../entities/mcp/model/useMessengerMcp'
 import type { MessengerExternalApi } from '../../../entities/external-apis/model/useMessengerExternalApis'
+import type { MessengerConnector } from '../../../entities/connectors/model/useMessengerConnectors'
 
 const props = defineProps<{ project: MessengerProject }>()
 
 const projectIdRef = computed(() => props.project.id)
-const activeTab = ref('mcp')
+const activeTab = ref('composer')
 
 const tabs = [
+  { key: 'composer', label: 'Composer', icon: 'mdi-chat-processing-outline' },
   { key: 'agents', label: 'Агенты', icon: 'mdi-robot-outline' },
   { key: 'connectors', label: 'Коннекторы', icon: 'mdi-connection' },
   { key: 'skills', label: 'Навыки', icon: 'mdi-lightning-bolt-outline' },
@@ -20,18 +22,79 @@ const tabs = [
 
 const mcpModel = useMessengerMcp(projectIdRef)
 const extApisModel = useMessengerExternalApis(projectIdRef)
-const agentsModel = useMessengerProjectAgents(projectIdRef)
-
-const agentPickerOpen = ref(false)
-const bootstrapOnFirstProject = useState('messenger-bootstrap-on-arrival', () => false)
+const connectorsModel = useMessengerConnectors(projectIdRef)
+const skillsModel = useMessengerSkills(projectIdRef)
+const pluginsModel = useMessengerPlugins(projectIdRef)
+const projectAgentsModel = useMessengerProjectAgents(projectIdRef)
 
 onMounted(async () => {
-  await Promise.all([mcpModel.refresh(), extApisModel.refresh(), agentsModel.refresh()])
-  if (bootstrapOnFirstProject.value && !agentsModel.agents.value.length) {
-    bootstrapOnFirstProject.value = false
-    agentPickerOpen.value = true
-  }
+  await Promise.all([
+    mcpModel.refresh(),
+    extApisModel.refresh(),
+    connectorsModel.refresh(),
+    skillsModel.refresh(),
+    pluginsModel.refresh(),
+    projectAgentsModel.refresh(),
+  ])
 })
+
+// ── Project Agents form ────────────────────────────────────────────────────
+
+const agentDialogOpen = ref(false)
+const agentFormPending = ref(false)
+const agentDraft = reactive({
+  type: 'worker' as 'composer' | 'orchestrator' | 'worker' | 'custom',
+  name: '',
+  description: '',
+  model: '',
+  skillBundleKind: '',
+})
+
+const agentTypeOptions = [
+  { title: 'Composer', value: 'composer' },
+  { title: 'Orchestrator', value: 'orchestrator' },
+  { title: 'Worker', value: 'worker' },
+  { title: 'Custom', value: 'custom' },
+]
+
+const skillBundleOptions = computed(() => [
+  { title: '— не выбрано —', value: '' },
+  ...skillsModel.bundles.value.map(b => ({ title: b.label, value: b.id })),
+])
+
+function openAgentCreate() {
+  agentDraft.type = 'worker'
+  agentDraft.name = ''
+  agentDraft.description = ''
+  agentDraft.model = ''
+  agentDraft.skillBundleKind = ''
+  agentDialogOpen.value = true
+}
+
+async function submitAgentForm() {
+  if (!agentDraft.name.trim()) return
+  agentFormPending.value = true
+  try {
+    await projectAgentsModel.create({
+      type: agentDraft.type,
+      name: agentDraft.name.trim(),
+      description: agentDraft.description.trim() || undefined,
+      model: agentDraft.model.trim() || undefined,
+      skillBundleKind: agentDraft.skillBundleKind || undefined,
+    })
+    agentDialogOpen.value = false
+  }
+  finally {
+    agentFormPending.value = false
+  }
+}
+
+const AGENT_TYPE_COLORS: Record<string, string> = {
+  composer: 'primary',
+  orchestrator: 'secondary',
+  worker: 'info',
+  custom: 'surface-variant',
+}
 
 // ── MCP form ───────────────────────────────────────────────────────────────
 
@@ -118,6 +181,77 @@ function mcpStatusLabel(serverId: string): string {
   return '—'
 }
 
+// ── Connectors form ────────────────────────────────────────────────────────
+
+const connDialogOpen = ref(false)
+const connEditTarget = ref<MessengerConnector | null>(null)
+const connFormPending = ref(false)
+const connDraft = reactive({
+  type: 'claude-cli',
+  label: '',
+  configRaw: '{}',
+  enabled: true,
+  isDefault: false,
+})
+const connConfigError = ref<string | null>(null)
+
+const connectorTypeOptions = [
+  { title: 'Claude CLI', value: 'claude-cli' },
+  { title: 'Claude API', value: 'claude-api' },
+  { title: 'OpenAI', value: 'openai' },
+  { title: 'Custom', value: 'custom' },
+]
+
+function openConnCreate() {
+  connEditTarget.value = null
+  connDraft.type = 'claude-cli'
+  connDraft.label = ''
+  connDraft.configRaw = '{}'
+  connDraft.enabled = true
+  connDraft.isDefault = false
+  connConfigError.value = null
+  connDialogOpen.value = true
+}
+
+function openConnEdit(connector: MessengerConnector) {
+  connEditTarget.value = connector
+  connDraft.type = connector.type
+  connDraft.label = connector.label
+  connDraft.configRaw = JSON.stringify(connector.config, null, 2)
+  connDraft.enabled = connector.enabled
+  connDraft.isDefault = connector.isDefault
+  connConfigError.value = null
+  connDialogOpen.value = true
+}
+
+function parseConnConfig(): Record<string, unknown> | null {
+  try {
+    return JSON.parse(connDraft.configRaw || '{}')
+  }
+  catch {
+    connConfigError.value = 'Некорректный JSON'
+    return null
+  }
+}
+
+async function submitConnForm() {
+  const config = parseConnConfig()
+  if (config === null) return
+  connFormPending.value = true
+  try {
+    if (connEditTarget.value) {
+      await connectorsModel.update(connEditTarget.value.id, { type: connDraft.type, label: connDraft.label, config, enabled: connDraft.enabled, isDefault: connDraft.isDefault })
+    }
+    else {
+      await connectorsModel.create({ type: connDraft.type, label: connDraft.label, config, enabled: connDraft.enabled, isDefault: connDraft.isDefault })
+    }
+    connDialogOpen.value = false
+  }
+  finally {
+    connFormPending.value = false
+  }
+}
+
 // ── External APIs form ─────────────────────────────────────────────────────
 
 const extDialogOpen = ref(false)
@@ -184,79 +318,214 @@ async function submitExtForm() {
 
 <template>
   <div class="project-config-tabs">
-    <VTabs v-model="activeTab" class="project-config-tabs__nav" density="compact" show-arrows>
-      <VTab v-for="tab in tabs" :key="tab.key" :value="tab.key" class="project-config-tabs__tab">
-        <VIcon start size="16">{{ tab.icon }}</VIcon>
-        {{ tab.label }}
-      </VTab>
-    </VTabs>
-
+    <!-- Content on top, sub-tabs at bottom — self-similar with Чаты/Контакты/Агенты. -->
     <VTabsWindow v-model="activeTab" class="project-config-tabs__panels">
-      <!-- Agents tab (W6 — LIVE) -->
+      <!-- Composer tab (aidev batch 4 — LIVE) -->
+      <VTabsWindowItem value="composer" class="project-config-tabs__panel project-config-tabs__panel--flush">
+        <AidevComposerTab :project="project" />
+      </VTabsWindowItem>
+
+      <!-- Agents tab -->
       <VTabsWindowItem value="agents" class="project-config-tabs__panel">
         <div class="project-config-tabs__toolbar">
-          <span class="project-config-tabs__count">Агенты ({{ agentsModel.agents.value.length }})</span>
-          <VBtn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="agentPickerOpen = true">
+          <span class="project-config-tabs__count">Агенты ({{ projectAgentsModel.agents.value.length }})</span>
+          <VBtn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="openAgentCreate">
             Добавить
           </VBtn>
         </div>
 
-        <VList v-if="agentsModel.agents.value.length" bg-color="transparent" density="comfortable">
+        <VList v-if="projectAgentsModel.agents.value.length" bg-color="transparent" density="comfortable">
           <VListItem
-            v-for="agent in agentsModel.agents.value"
+            v-for="agent in projectAgentsModel.agents.value"
             :key="agent.id"
             :title="agent.name"
-            :subtitle="agent.description || agent.type"
+            :subtitle="agent.description || agent.model || agent.skillBundleKind || ''"
           >
             <template #prepend>
-              <VIcon size="20" color="primary">mdi-robot-outline</VIcon>
+              <VIcon :color="AGENT_TYPE_COLORS[agent.type] || 'on-surface-variant'">mdi-robot-outline</VIcon>
             </template>
             <template #append>
-              <VChip :color="agent.type === 'composer' ? 'primary' : 'secondary'" size="x-small" label class="mr-2">
+              <VChip :color="AGENT_TYPE_COLORS[agent.type] || 'default'" size="x-small" label class="mr-2">
                 {{ agent.type }}
               </VChip>
-              <VBtn size="small" variant="text" color="error" icon="mdi-delete-outline" title="Удалить" @click="agentsModel.remove(agent.id)" />
+              <VChip v-if="agent.skillBundleKind" size="x-small" color="secondary" variant="outlined" class="mr-2">
+                {{ agent.skillBundleKind }}
+              </VChip>
+              <VBtn size="small" variant="text" color="error" icon="mdi-delete-outline" title="Удалить" @click="projectAgentsModel.remove(agent.id)" />
+            </template>
+          </VListItem>
+        </VList>
+
+        <div v-else-if="!projectAgentsModel.pending.value" class="project-config-tabs__empty">
+          <VIcon size="36" color="on-surface-variant">mdi-robot-outline</VIcon>
+          <p>Нет агентов. Добавьте первого.</p>
+        </div>
+
+        <div v-if="projectAgentsModel.pending.value" class="project-config-tabs__empty">
+          <VProgressCircular indeterminate size="32" />
+        </div>
+
+        <VDialog v-model="agentDialogOpen" max-width="520">
+          <VCard>
+            <VCardTitle>Добавить агента</VCardTitle>
+            <VCardText>
+              <VSelect v-model="agentDraft.type" :items="agentTypeOptions" label="Тип" density="compact" class="mb-3" />
+              <VTextField v-model="agentDraft.name" label="Название" density="compact" class="mb-3" required />
+              <VTextField v-model="agentDraft.description" label="Описание (необязательно)" density="compact" class="mb-3" />
+              <VTextField v-model="agentDraft.model" label="Модель (необязательно)" density="compact" placeholder="claude-sonnet-4-6" class="mb-3" />
+              <VSelect v-model="agentDraft.skillBundleKind" :items="skillBundleOptions" label="Набор навыков" density="compact" />
+            </VCardText>
+            <VCardActions>
+              <VSpacer />
+              <VBtn variant="text" @click="agentDialogOpen = false">Отмена</VBtn>
+              <VBtn color="primary" variant="tonal" :loading="agentFormPending" :disabled="!agentDraft.name.trim()" @click="submitAgentForm">
+                Добавить
+              </VBtn>
+            </VCardActions>
+          </VCard>
+        </VDialog>
+      </VTabsWindowItem>
+
+      <!-- Connectors (W4 — LIVE) -->
+      <VTabsWindowItem value="connectors" class="project-config-tabs__panel">
+        <div class="project-config-tabs__toolbar">
+          <span class="project-config-tabs__count">Коннекторы ({{ connectorsModel.connectors.value.length }})</span>
+          <VBtn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="openConnCreate">
+            Добавить
+          </VBtn>
+        </div>
+
+        <VList v-if="connectorsModel.connectors.value.length" bg-color="transparent" density="comfortable">
+          <VListItem
+            v-for="conn in connectorsModel.connectors.value"
+            :key="conn.id"
+            :title="conn.label"
+            :subtitle="conn.type"
+          >
+            <template #append>
+              <VChip v-if="conn.isDefault" size="x-small" color="primary" label class="mr-1">default</VChip>
+              <VSwitch
+                :model-value="conn.enabled"
+                density="compact"
+                color="primary"
+                hide-details
+                class="mr-1"
+                @update:model-value="connectorsModel.update(conn.id, { enabled: !conn.enabled })"
+              />
+              <VBtn size="small" variant="text" icon="mdi-pencil-outline" title="Редактировать" @click="openConnEdit(conn)" />
+              <VBtn size="small" variant="text" color="error" icon="mdi-delete-outline" title="Удалить" @click="connectorsModel.remove(conn.id)" />
             </template>
           </VListItem>
         </VList>
 
         <div v-else class="project-config-tabs__empty">
-          <VIcon size="36" color="on-surface-variant">mdi-robot-off-outline</VIcon>
-          <p>Нет агентов. Добавьте первого — начните с Composer.</p>
+          <VIcon size="36" color="on-surface-variant">mdi-connection</VIcon>
+          <p>Нет коннекторов. Добавьте первый.</p>
         </div>
 
-        <AgentPicker
-          v-model="agentPickerOpen"
-          :project-id="props.project.id"
-          @agent-created="agentsModel.refresh()"
-          @proposal-applied="agentsModel.refresh()"
-        />
+        <VDialog v-model="connDialogOpen" max-width="520">
+          <VCard>
+            <VCardTitle>{{ connEditTarget ? 'Редактировать коннектор' : 'Добавить коннектор' }}</VCardTitle>
+            <VCardText>
+              <VSelect v-model="connDraft.type" :items="connectorTypeOptions" label="Тип" density="compact" class="mb-3" />
+              <VTextField v-model="connDraft.label" label="Название" density="compact" class="mb-3" required />
+              <VTextarea
+                v-model="connDraft.configRaw"
+                label="Config (JSON)"
+                density="compact"
+                rows="4"
+                :error-messages="connConfigError ? [connConfigError] : []"
+                class="mb-3"
+                @input="connConfigError = null"
+              />
+              <VSwitch v-model="connDraft.enabled" label="Включён" density="compact" color="primary" class="mb-2" />
+              <VSwitch v-model="connDraft.isDefault" label="По умолчанию" density="compact" color="secondary" />
+            </VCardText>
+            <VCardActions>
+              <VSpacer />
+              <VBtn variant="text" @click="connDialogOpen = false">Отмена</VBtn>
+              <VBtn color="primary" variant="tonal" :loading="connFormPending" :disabled="!connDraft.label" @click="submitConnForm">
+                {{ connEditTarget ? 'Сохранить' : 'Добавить' }}
+              </VBtn>
+            </VCardActions>
+          </VCard>
+        </VDialog>
       </VTabsWindowItem>
 
-      <!-- Connectors stub (W4) -->
-      <VTabsWindowItem value="connectors" class="project-config-tabs__panel">
-        <div class="project-config-tabs__stub">
-          <VIcon size="48" class="mb-3" color="secondary">mdi-connection</VIcon>
-          <p class="project-config-tabs__empty-title">Коннекторы</p>
-          <VChip color="warning" size="small" class="mt-2">Coming in W4</VChip>
-        </div>
-      </VTabsWindowItem>
-
-      <!-- Skills stub (W4) -->
+      <!-- Skills (W4 — LIVE) -->
       <VTabsWindowItem value="skills" class="project-config-tabs__panel">
-        <div class="project-config-tabs__stub">
-          <VIcon size="48" class="mb-3" color="secondary">mdi-lightning-bolt-outline</VIcon>
-          <p class="project-config-tabs__empty-title">Навыки</p>
-          <VChip color="warning" size="small" class="mt-2">Coming in W4</VChip>
+        <div class="project-config-tabs__toolbar">
+          <span class="project-config-tabs__count">
+            Навыки ({{ skillsModel.projectSkills.value.filter(s => s.enabled).length }} / {{ skillsModel.bundles.value.length }})
+          </span>
+        </div>
+
+        <VList v-if="skillsModel.bundles.value.length" bg-color="transparent" density="comfortable">
+          <VListItem
+            v-for="bundle in skillsModel.bundles.value"
+            :key="bundle.id"
+            :title="bundle.label"
+            :subtitle="bundle.purpose"
+          >
+            <template #append>
+              <VSwitch
+                :model-value="skillsModel.isEnabled(bundle.id)"
+                density="compact"
+                color="primary"
+                hide-details
+                @update:model-value="skillsModel.toggle(bundle.id)"
+              />
+            </template>
+          </VListItem>
+        </VList>
+
+        <div v-else-if="!skillsModel.pending.value" class="project-config-tabs__empty">
+          <VIcon size="36" color="on-surface-variant">mdi-lightning-bolt-outline</VIcon>
+          <p>Нет доступных навыков.</p>
+        </div>
+
+        <div v-if="skillsModel.pending.value" class="project-config-tabs__empty">
+          <VProgressCircular indeterminate size="32" />
         </div>
       </VTabsWindowItem>
 
-      <!-- Plugins stub (W4) -->
+      <!-- Plugins (W4 — LIVE) -->
       <VTabsWindowItem value="plugins" class="project-config-tabs__panel">
-        <div class="project-config-tabs__stub">
-          <VIcon size="48" class="mb-3" color="secondary">mdi-puzzle-outline</VIcon>
-          <p class="project-config-tabs__empty-title">Плагины</p>
-          <VChip color="warning" size="small" class="mt-2">Coming in W4</VChip>
+        <div class="project-config-tabs__toolbar">
+          <span class="project-config-tabs__count">
+            Плагины ({{ pluginsModel.enabledPluginIds.value.size }} / {{ pluginsModel.installedPlugins.value.length }})
+          </span>
+        </div>
+
+        <VList v-if="pluginsModel.installedPlugins.value.length" bg-color="transparent" density="comfortable">
+          <VListItem
+            v-for="plugin in pluginsModel.installedPlugins.value"
+            :key="plugin.id"
+            :title="plugin.name"
+            :subtitle="plugin.description || plugin.id"
+          >
+            <template #prepend>
+              <VIcon color="secondary">mdi-puzzle-outline</VIcon>
+            </template>
+            <template #append>
+              <VSwitch
+                :model-value="pluginsModel.isEnabled(plugin.id)"
+                density="compact"
+                color="primary"
+                hide-details
+                @update:model-value="pluginsModel.toggle(plugin.id)"
+              />
+            </template>
+          </VListItem>
+        </VList>
+
+        <div v-else-if="!pluginsModel.pending.value" class="project-config-tabs__empty">
+          <VIcon size="36" color="on-surface-variant">mdi-puzzle-outline</VIcon>
+          <p>Плагины не найдены. Убедитесь, что Claude CLI доступен на сервере.</p>
+        </div>
+
+        <div v-if="pluginsModel.pending.value" class="project-config-tabs__empty">
+          <VProgressCircular indeterminate size="32" />
         </div>
       </VTabsWindowItem>
 
@@ -380,15 +649,35 @@ async function submitExtForm() {
         </VDialog>
       </VTabsWindowItem>
 
-      <!-- Settings stub -->
+      <!-- Settings tab (LIVE — rename + delete + meta) -->
       <VTabsWindowItem value="settings" class="project-config-tabs__panel">
-        <div class="project-config-tabs__stub">
-          <VIcon size="48" class="mb-3" color="secondary">mdi-cog-outline</VIcon>
-          <p class="project-config-tabs__empty-title">Настройки проекта</p>
-          <VChip color="warning" size="small" class="mt-2">Coming later</VChip>
-        </div>
+        <AidevProjectSettingsTab :project="project" />
       </VTabsWindowItem>
     </VTabsWindow>
+
+    <!-- Sub-tabs row (icon-only, at bottom, above global bottom-nav) -->
+    <div class="section-tabs-row project-config-tabs__nav-row">
+      <VTabs
+        v-model="activeTab"
+        class="section-tabs project-config-tabs__nav"
+        bg-color="surface-container"
+        color="primary"
+        density="compact"
+        show-arrows
+        grow
+      >
+        <VTab
+          v-for="tab in tabs"
+          :key="tab.key"
+          :value="tab.key"
+          :aria-label="tab.label"
+          :title="tab.label"
+          class="project-config-tabs__tab"
+        >
+          <VIcon>{{ tab.icon }}</VIcon>
+        </VTab>
+      </VTabs>
+    </div>
   </div>
 </template>
 
@@ -397,15 +686,25 @@ async function submitExtForm() {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
+.project-config-tabs__nav-row {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0;
+}
 .project-config-tabs__nav {
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.project-config-tabs__tab {
+  min-width: 0;
 }
 
 .project-config-tabs__panels {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 

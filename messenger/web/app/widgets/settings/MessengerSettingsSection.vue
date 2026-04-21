@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { SUBSCRIPTION_PROVIDERS, daysUntilNextPeriod, formatTokenCount } from '~/entities/settings/model/useMessengerSubscriptions'
+import type { MessengerSubscription, MessengerSubscriptionProvider } from '~/entities/settings/model/useMessengerSubscriptions'
 const auth = useMessengerAuth()
 const realtime = useMessengerRealtime()
 const calls = useMessengerCalls()
@@ -7,8 +9,81 @@ const settingsModel = useMessengerSettings()
 const permissionActionMessage = ref('')
 const mediaStatus = ref({ microphone: 'Не проверялось', camera: 'Не проверялось' })
 
+const subscriptions = useMessengerSubscriptions()
+const showAddDialog = ref(false)
+const editingSubId = ref<string | null>(null)
+const expandedSubId = ref<string | null>(null)
+
+function toggleSubExpand(id: string) {
+  expandedSubId.value = expandedSubId.value === id ? null : id
+}
+
+const daysLeft = daysUntilNextPeriod()
+
+function currentPeriodLabel() {
+  const now = new Date()
+  const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  return `До 1 ${months[nextMonth.getMonth()]} — ${daysLeft} дн.`
+}
+const subForm = reactive<{
+  provider: MessengerSubscriptionProvider
+  label: string
+  account: string
+  apiKey: string
+}>({
+  provider: 'openai',
+  label: '',
+  account: '',
+  apiKey: '',
+})
+
+function openAddDialog() {
+  subForm.provider = 'openai'
+  subForm.label = ''
+  subForm.account = ''
+  subForm.apiKey = ''
+  editingSubId.value = null
+  showAddDialog.value = true
+}
+
+function openEditDialog(sub: MessengerSubscription) {
+  subForm.provider = sub.provider
+  subForm.label = sub.label
+  subForm.account = sub.account
+  subForm.apiKey = sub.apiKey ?? ''
+  editingSubId.value = sub.id
+  showAddDialog.value = true
+}
+
+function saveSubscription() {
+  const providerMeta = SUBSCRIPTION_PROVIDERS.find(p => p.key === subForm.provider)
+  if (!providerMeta || !subForm.account.trim()) return
+  const label = subForm.label.trim() || providerMeta.title
+  if (editingSubId.value) {
+    subscriptions.update(editingSubId.value, {
+      label,
+      account: subForm.account.trim(),
+      apiKey: subForm.apiKey.trim() || undefined,
+    })
+  } else {
+    subscriptions.add({
+      provider: subForm.provider,
+      label,
+      account: subForm.account.trim(),
+      apiKey: subForm.apiKey.trim() || undefined,
+    })
+  }
+  showAddDialog.value = false
+}
+
+const activeProviderMeta = computed(() =>
+  SUBSCRIPTION_PROVIDERS.find(p => p.key === subForm.provider)
+)
+
 onMounted(() => {
   settingsModel.hydrate()
+  subscriptions.hydrate()
   settingsModel.settings.value.devices.keepSignedIn = auth.persistenceMode.value === 'local'
   if (auth.token.value) {
     void settingsModel.hydrateAiSettings()
@@ -75,7 +150,7 @@ const notificationPermissionStateLabel = computed(() => permissionLabelMap[setti
 const microphonePermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.microphone])
 const cameraPermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.camera])
 const installActionLabel = computed(() => install.installPending.value ? 'Запрашиваем установку...' : 'Установить как приложение')
-function settingsTabIcon(key: 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account') {
+function settingsTabIcon(key: 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account' | 'subscription') {
   switch (key) {
     case 'profile':
       return 'mdi-account-outline'
@@ -89,6 +164,8 @@ function settingsTabIcon(key: 'profile' | 'notifications' | 'privacy' | 'themes'
       return 'mdi-brain'
     case 'devices':
       return 'mdi-cellphone-cog'
+    case 'subscription':
+      return 'mdi-star-circle-outline'
     default:
       return 'mdi-card-account-details-outline'
   }
@@ -224,7 +301,7 @@ function closeSettingsSearch() {
   setTimeout(() => { settingsSearchOpen.value = false }, 150)
 }
 function selectSettingsSection(key: string) {
-  settingsModel.openSection(key as 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account')
+  settingsModel.openSection(key as 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account' | 'subscription')
   settingsSearch.value = ''
   settingsSearchOpen.value = false
 }
@@ -668,6 +745,169 @@ function themeCardStyle(theme: { preview: [string, string, string] }) {
           </section>
         </div>
       </VWindowItem>
+
+      <!-- Subscription -->
+      <VWindowItem value="subscription">
+        <div class="settings-panel pa-4">
+          <section class="settings-grid">
+            <div class="d-flex align-center justify-space-between mb-4">
+              <p class="setting-card__title mb-0">Подписки AI</p>
+              <VBtn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="openAddDialog()">
+                Добавить
+              </VBtn>
+            </div>
+
+            <div
+              v-for="sub in subscriptions.subscriptions.value"
+              :key="sub.id"
+              class="sub-card"
+              :class="{ 'sub-card--default': sub.isDefault, 'sub-card--expanded': expandedSubId === sub.id }"
+            >
+              <!-- Clickable header row -->
+              <button type="button" class="sub-card__header" @click="toggleSubExpand(sub.id)">
+                <VIcon :color="subscriptions.providerOf(sub).color" size="24" class="sub-card__icon">
+                  {{ subscriptions.providerOf(sub).icon }}
+                </VIcon>
+                <div class="sub-card__info">
+                  <strong class="sub-card__label">{{ sub.label }}</strong>
+                  <span class="sub-card__account">{{ sub.account }}</span>
+                </div>
+                <VChip v-if="sub.isDefault" size="x-small" color="primary" variant="tonal" class="ml-2 mr-1">
+                  Основная
+                </VChip>
+                <VIcon size="18" class="sub-card__chevron" :class="{ 'sub-card__chevron--open': expandedSubId === sub.id }">
+                  mdi-chevron-down
+                </VIcon>
+              </button>
+
+              <!-- Expandable stats -->
+              <Transition name="sub-expand">
+                <div v-if="expandedSubId === sub.id" class="sub-card__stats">
+                  <!-- Billing period -->
+                  <div class="sub-stat-row">
+                    <VIcon size="14" color="secondary">mdi-calendar-clock-outline</VIcon>
+                    <span class="sub-stat-label">Период</span>
+                    <span class="sub-stat-value">{{ currentPeriodLabel() }}</span>
+                  </div>
+
+                  <!-- Provider & context -->
+                  <div class="sub-stat-row">
+                    <VIcon size="14" color="secondary">mdi-information-outline</VIcon>
+                    <span class="sub-stat-label">Провайдер</span>
+                    <span class="sub-stat-value">{{ subscriptions.providerOf(sub).title }}</span>
+                  </div>
+                  <div class="sub-stat-row">
+                    <VIcon size="14" color="secondary">mdi-text-box-multiple-outline</VIcon>
+                    <span class="sub-stat-label">Моделей</span>
+                    <span class="sub-stat-value">{{ subscriptions.modelsOf(sub).length || '∞' }}</span>
+                  </div>
+
+                  <!-- Models list -->
+                  <div v-if="subscriptions.modelsOf(sub).length" class="sub-models-list">
+                    <div
+                      v-for="m in subscriptions.modelsOf(sub)"
+                      :key="m.id"
+                      class="sub-model-row"
+                    >
+                      <span class="sub-model-name">{{ m.label }}</span>
+                      <VChip size="x-small" :color="m.tier === 'fast' ? 'success' : m.tier === 'powerful' ? 'warning' : 'info'" variant="tonal">
+                        {{ m.contextK }}K
+                      </VChip>
+                    </div>
+                  </div>
+
+                  <!-- Token usage -->
+                  <div class="sub-usage-section">
+                    <span class="sub-usage-title">Использование за период</span>
+                    <div class="sub-stat-row">
+                      <VIcon size="14" color="secondary">mdi-arrow-right-circle-outline</VIcon>
+                      <span class="sub-stat-label">Input токены</span>
+                      <span class="sub-stat-value sub-stat-value--mono">{{ formatTokenCount(subscriptions.getUsage(sub.id).inputTokens) }}</span>
+                    </div>
+                    <div class="sub-stat-row">
+                      <VIcon size="14" color="secondary">mdi-arrow-left-circle-outline</VIcon>
+                      <span class="sub-stat-label">Output токены</span>
+                      <span class="sub-stat-value sub-stat-value--mono">{{ formatTokenCount(subscriptions.getUsage(sub.id).outputTokens) }}</span>
+                    </div>
+                    <div class="sub-stat-row">
+                      <VIcon size="14" color="secondary">mdi-lightning-bolt-outline</VIcon>
+                      <span class="sub-stat-label">Cache read</span>
+                      <span class="sub-stat-value sub-stat-value--mono">{{ formatTokenCount(subscriptions.getUsage(sub.id).cacheReadTokens) }}</span>
+                    </div>
+                    <div class="sub-stat-row">
+                      <VIcon size="14" color="secondary">mdi-robot-outline</VIcon>
+                      <span class="sub-stat-label">Запросов</span>
+                      <span class="sub-stat-value sub-stat-value--mono">{{ subscriptions.getUsage(sub.id).requestCount }}</span>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+
+              <!-- Actions -->
+              <div class="sub-card__actions">
+                <VBtn v-if="!sub.isDefault" size="x-small" variant="text" color="secondary" @click="subscriptions.setDefault(sub.id)">
+                  Сделать основной
+                </VBtn>
+                <VBtn size="x-small" variant="text" @click="openEditDialog(sub)">
+                  Изменить
+                </VBtn>
+                <VBtn v-if="sub.id !== 'builtin-claude-code-cli'" size="x-small" variant="text" color="error" @click="subscriptions.remove(sub.id)">
+                  Удалить
+                </VBtn>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Add / Edit dialog -->
+        <VDialog v-model="showAddDialog" max-width="480">
+          <VCard>
+            <VCardTitle class="pa-4 pb-2">
+              {{ editingSubId ? 'Изменить подписку' : 'Добавить подписку' }}
+            </VCardTitle>
+            <VCardText class="pa-4 pt-2">
+              <VSelect
+                v-if="!editingSubId"
+                v-model="subForm.provider"
+                :items="SUBSCRIPTION_PROVIDERS"
+                item-title="title"
+                item-value="key"
+                label="Провайдер"
+                variant="outlined"
+                class="mb-3"
+              />
+              <VTextField
+                v-model="subForm.label"
+                label="Название (необязательно)"
+                variant="outlined"
+                class="mb-3"
+                :placeholder="activeProviderMeta?.title"
+              />
+              <VTextField
+                v-model="subForm.account"
+                :label="activeProviderMeta?.accountLabel || 'Аккаунт'"
+                :placeholder="activeProviderMeta?.accountPlaceholder"
+                variant="outlined"
+                class="mb-3"
+              />
+              <VTextField
+                v-if="activeProviderMeta?.hasApiKey"
+                v-model="subForm.apiKey"
+                :label="activeProviderMeta?.apiKeyLabel || 'API Key'"
+                variant="outlined"
+                type="password"
+              />
+            </VCardText>
+            <VCardActions class="pa-4 pt-0">
+              <VSpacer />
+              <VBtn variant="text" @click="showAddDialog = false">Отмена</VBtn>
+              <VBtn color="primary" variant="flat" :disabled="!subForm.account.trim()" @click="saveSubscription()">
+                {{ editingSubId ? 'Сохранить' : 'Добавить' }}
+              </VBtn>
+            </VCardActions>
+          </VCard>
+        </VDialog>
+      </VWindowItem>
     </VWindow>
 
     <!-- Horizontal Tab Bar (bottom, above search dock) -->
@@ -679,7 +919,7 @@ function themeCardStyle(theme: { preview: [string, string, string] }) {
         color="primary"
         density="compact"
         grow
-        @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account')"
+        @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account' | 'subscription')"
       >
         <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key" :aria-label="section.title" :title="section.title">
           <VIcon>{{ settingsTabIcon(section.key) }}</VIcon>
@@ -719,3 +959,174 @@ function themeCardStyle(theme: { preview: [string, string, string] }) {
     </div>
   </section>
 </template>
+
+<style scoped>
+.subscription-status-active {
+  color: #22c55e;
+}
+
+.sub-card {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.sub-card--default {
+  border-color: rgba(var(--v-theme-primary), 0.4);
+  background: rgba(var(--v-theme-primary), 0.05);
+}
+
+.sub-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sub-card__icon {
+  flex-shrink: 0;
+}
+
+.sub-card__info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.sub-card__label {
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.sub-card__account {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub-card__actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.sub-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.sub-card__header:focus-visible {
+  outline: 2px solid rgba(var(--v-theme-primary), 0.6);
+  border-radius: 6px;
+}
+
+.sub-card__chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: transform 0.2s ease;
+}
+
+.sub-card__chevron--open {
+  transform: rotate(180deg);
+  opacity: 0.8;
+}
+
+.sub-card__stats {
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  padding-top: 10px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.sub-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 0.75rem;
+}
+
+.sub-stat-label {
+  flex: 1;
+  opacity: 0.6;
+}
+
+.sub-stat-value {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sub-stat-value--mono {
+  font-family: monospace;
+  letter-spacing: 0.03em;
+}
+
+.sub-usage-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+}
+
+.sub-usage-title {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.45;
+  margin-bottom: 4px;
+}
+
+.sub-models-list {
+  margin: 6px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  background: rgba(var(--v-theme-on-surface), 0.03);
+  border-radius: 8px;
+}
+
+.sub-model-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  gap: 6px;
+}
+
+.sub-model-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+
+/* Expand/collapse animation */
+.sub-expand-enter-active,
+.sub-expand-leave-active {
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  max-height: 600px;
+  opacity: 1;
+}
+
+.sub-expand-enter-from,
+.sub-expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+</style>

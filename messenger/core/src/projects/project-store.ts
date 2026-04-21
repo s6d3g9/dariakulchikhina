@@ -126,17 +126,13 @@ export async function findProjectBySlug(
   return { ok: true, project: row }
 }
 
-export async function listProjects(ownerUserId: string): Promise<ProjectRow[]> {
+export async function listProjects(): Promise<ProjectRow[]> {
   const db = useIngestDb()
   return db
     .select()
     .from(messengerProjects)
-    .where(
-      and(
-        eq(messengerProjects.ownerUserId, ownerUserId),
-        isNull(messengerProjects.deletedAt),
-      ),
-    )
+    .where(isNull(messengerProjects.deletedAt))
+    .orderBy(messengerProjects.createdAt)
 }
 
 export async function updateProject(

@@ -14,7 +14,7 @@ import {
 } from '../../../../theme/messengerColorSchemes'
 import { getAiSettings, putAiSettings } from '../../../core/api/settings'
 
-type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account'
+type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account' | 'subscription'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerStyleKey = 'liquid' | 'material'
 type MessengerInterpretationProvider = 'algorithm' | 'api'
@@ -414,6 +414,11 @@ export function useMessengerSettings() {
       key: 'account' as const,
       title: 'Аккаунт',
       hint: 'Email, удаление аккаунта, выход',
+    },
+    {
+      key: 'subscription' as const,
+      title: 'Подписка',
+      hint: 'Claude Code CLI — активная подписка и план',
     },
   ]
 

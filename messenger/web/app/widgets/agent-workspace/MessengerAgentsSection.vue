@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { SUBSCRIPTION_PROVIDERS } from '../../entities/settings/model/useMessengerSubscriptions'
 const agentsModel = useMessengerAgents()
 const conversations = useMessengerConversations()
 const navigation = useMessengerConversationState()
+const subscriptionsModel = useMessengerSubscriptions()
 const actionError = ref('')
 const agentsTab = ref<'directory' | 'graph'>('directory')
 const graphTab = ref<'agents' | 'project'>('project')
@@ -9,8 +11,17 @@ const searchDraft = ref('')
 const searchOpen = ref(false)
 const settingsDialogOpen = ref(false)
 const editingAgentId = ref<string | null>(null)
+const EFFORT_OPTIONS = [
+  { title: 'Low — быстро, экономно', value: 'low' },
+  { title: 'Medium — баланс (по умолчанию)', value: 'medium' },
+  { title: 'High — глубокое мышление', value: 'high' },
+  { title: 'XHigh — очень глубокое', value: 'xhigh' },
+  { title: 'Max — максимум', value: 'max' },
+]
 const settingsDraft = reactive({
-  model: 'GPT-5.4',
+  subscriptionId: 'builtin-claude-code-cli',
+  model: 'claude-sonnet-4-6',
+  effort: 'medium' as 'low' | 'medium' | 'high' | 'xhigh' | 'max',
   apiKey: '',
   ssh: {
     host: '',
@@ -25,6 +36,25 @@ const settingsDraft = reactive({
 })
 
 const editingAgent = computed(() => agentsModel.agents.value.find(agent => agent.id === editingAgentId.value) ?? null)
+const subscriptionOptions = computed(() =>
+  subscriptionsModel.subscriptions.value.map(sub => ({ title: sub.label, value: sub.id, subtitle: sub.account }))
+)
+const activeSubscription = computed(() =>
+  subscriptionsModel.subscriptions.value.find(s => s.id === settingsDraft.subscriptionId)
+  ?? subscriptionsModel.defaultSubscription.value
+)
+const activeModelOptions = computed(() => {
+  const provider = SUBSCRIPTION_PROVIDERS.find(p => p.key === activeSubscription.value?.provider)
+  return provider?.models?.map(m => ({ title: m.label, value: m.id })) ?? []
+})
+const activeModelMeta = computed(() => {
+  const provider = SUBSCRIPTION_PROVIDERS.find(p => p.key === activeSubscription.value?.provider)
+  return provider?.models?.find(m => m.id === settingsDraft.model)
+})
+const showEffortSelector = computed(() => {
+  const provider = SUBSCRIPTION_PROVIDERS.find(p => p.key === activeSubscription.value?.provider)
+  return provider?.supportsEffort && (activeModelMeta.value?.supportsEffort ?? true)
+})
 const availableLinkedAgents = computed(() => agentsModel.agents.value.filter(agent => agent.id !== editingAgentId.value))
 const normalizedSearchQuery = computed(() => searchDraft.value.trim().toLowerCase())
 const filteredAgents = computed(() => {
@@ -102,8 +132,11 @@ function openSettings(agentId: string) {
     return
   }
 
+  subscriptionsModel.hydrate()
   editingAgentId.value = agentId
+  settingsDraft.subscriptionId = agent.settings.subscriptionId || 'builtin-claude-code-cli'
   settingsDraft.model = agent.settings.model
+  settingsDraft.effort = (agent.settings.effort as any) || 'medium'
   settingsDraft.apiKey = agent.settings.apiKey
   settingsDraft.ssh.host = agent.settings.ssh.host
   settingsDraft.ssh.login = agent.settings.ssh.login
@@ -148,7 +181,9 @@ async function saveSettings() {
 
   try {
     await agentsModel.saveSettings(editingAgent.value.id, {
+      subscriptionId: settingsDraft.subscriptionId,
       model: settingsDraft.model,
+      effort: settingsDraft.effort,
       apiKey: settingsDraft.apiKey,
       ssh: settingsDraft.ssh,
       knowledge: editingAgent.value.settings.knowledge,
@@ -335,13 +370,44 @@ async function saveSettings() {
             </div>
 
             <div>
-              <div class="title-small mb-2">Выбор модели</div>
+              <div class="title-small mb-2">Подписка и модель</div>
+              <VSelect
+                v-model="settingsDraft.subscriptionId"
+                :items="subscriptionOptions"
+                item-title="title"
+                item-value="value"
+                label="Подписка"
+                variant="outlined"
+                hide-details="auto"
+                prepend-inner-icon="mdi-star-circle-outline"
+                @update:model-value="val => { const p = SUBSCRIPTION_PROVIDERS.find(pr => pr.key === subscriptionsModel.subscriptions.value.find(s => s.id === val)?.provider); const models = p?.models ?? []; if (models.length && !models.find(m => m.id === settingsDraft.model)) { settingsDraft.model = models.find(m => m.tier === 'balanced')?.id || models[0]?.id || settingsDraft.model } }"
+              />
               <VSelect
                 v-model="settingsDraft.model"
-                :items="editingAgent.modelOptions"
+                :items="activeModelOptions.length ? activeModelOptions : (editingAgent?.modelOptions?.map(m => ({ title: m, value: m })) ?? [])"
+                item-title="title"
+                item-value="value"
                 label="Модель ответа"
                 variant="outlined"
                 hide-details="auto"
+                class="mt-3"
+              />
+              <div v-if="activeModelMeta" class="d-flex gap-2 mt-2">
+                <VChip size="x-small" :color="activeModelMeta.tier === 'fast' ? 'success' : activeModelMeta.tier === 'powerful' ? 'warning' : 'primary'" variant="tonal">
+                  {{ activeModelMeta.tier === 'fast' ? 'Быстрый' : activeModelMeta.tier === 'powerful' ? 'Мощный' : 'Баланс' }}
+                </VChip>
+                <VChip size="x-small" variant="tonal" color="secondary">{{ activeModelMeta.contextK }}K контекст</VChip>
+              </div>
+              <VSelect
+                v-if="showEffortSelector"
+                v-model="settingsDraft.effort"
+                :items="EFFORT_OPTIONS"
+                item-title="title"
+                item-value="value"
+                label="Уровень усилия (effort)"
+                variant="outlined"
+                hide-details="auto"
+                class="mt-3"
               />
             </div>
 

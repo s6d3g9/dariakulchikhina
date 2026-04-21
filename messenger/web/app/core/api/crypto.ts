@@ -1,33 +1,40 @@
+import { messengerAuthRequest } from './auth'
 import type { MessengerDevicePublicKey, MessengerConversationKeyPackage } from '../../entities/messages/model/useMessengerCrypto'
 
 export type MessengerConversationKeyPackageSubmission = Omit<MessengerConversationKeyPackage, 'createdAt'>
 
+// NOTE: this module deliberately uses `messengerAuthRequest` (a plain helper
+// that reads the current token via an injected provider) instead of
+// `useMessengerAuth()`.  Wrapping it in a composable used to create a setup-
+// time cycle:
+//   useMessengerAuth → useMessengerCrypto → useCryptoApi → useMessengerAuth
+// which blew the stack during Nuxt app init ("Maximum call stack size
+// exceeded"). `messengerAuthRequest` has no composable dependencies so the
+// cycle is broken here.
 export function useCryptoApi() {
-  const auth = useMessengerAuth()
-
   function putDeviceKey(publicKey: MessengerDevicePublicKey) {
-    return auth.request<void>('/crypto/device-key', {
+    return messengerAuthRequest<void>('/crypto/device-key', {
       method: 'PUT',
       body: { publicKey },
     })
   }
 
   function getConversationEncryption(conversationId: string) {
-    return auth.request<{ keyPackage: MessengerConversationKeyPackage | null }>(
+    return messengerAuthRequest<{ keyPackage: MessengerConversationKeyPackage | null }>(
       `/conversations/${conversationId}/encryption`,
       { method: 'GET' },
     )
   }
 
   function postConversationEncryption(conversationId: string, packages: MessengerConversationKeyPackageSubmission[]) {
-    return auth.request<void>(`/conversations/${conversationId}/encryption`, {
+    return messengerAuthRequest<void>(`/conversations/${conversationId}/encryption`, {
       method: 'POST',
       body: { packages },
     })
   }
 
   function getUserDeviceKey(userId: string) {
-    return auth.request<{ publicKey: MessengerDevicePublicKey | null }>(
+    return messengerAuthRequest<{ publicKey: MessengerDevicePublicKey | null }>(
       `/users/${userId}/device-key`,
       { method: 'GET' },
     )

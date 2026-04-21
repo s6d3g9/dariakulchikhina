@@ -1,4 +1,7 @@
 import { spawnSync as _spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { homedir } from 'node:os'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
@@ -216,6 +219,93 @@ export function registerOrchestrationRoutes(
       })
 
       return result
+    },
+  )
+
+  // GET /cli-sessions — read filesystem registry + match to messenger agents
+  app.get<{ Querystring: { includeArchived?: string } }>(
+    '/cli-sessions',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const includeArchived = request.query.includeArchived === 'true' || request.query.includeArchived === '1'
+      const HOME = homedir()
+      const stateDir = process.env.DASHBOARD_STATE_DIR ?? join(HOME, 'state/claude-sessions')
+
+      type SessionRow = {
+        slug: string
+        uuid: string
+        window: string
+        workroom: string
+        model: string
+        created: string
+        kind: string
+        status: 'running' | 'done'
+        archivedAt: string | null
+      }
+
+      function parseRegistry(content: string, isArchive: boolean): SessionRow[] {
+        const lines = content.trim().split('\n')
+        if (lines.length < 2) return []
+        const headers = (lines[0] ?? '').split('\t')
+        return lines.slice(1).flatMap((line) => {
+          const cols = line.split('\t')
+          const obj: Record<string, string> = {}
+          headers.forEach((h, i) => { obj[h] = cols[i] ?? '' })
+          if (!obj.slug) return []
+          return [{
+            slug: obj.slug,
+            uuid: obj.uuid ?? '',
+            window: obj.window ?? '',
+            workroom: obj.workroom ?? '',
+            model: obj.model ?? '',
+            created: obj.created ?? '',
+            kind: obj.kind ?? '',
+            status: isArchive ? 'done' : 'running',
+            archivedAt: obj.archived_at ?? null,
+          }]
+        })
+      }
+
+      const sessions: SessionRow[] = []
+      try {
+        sessions.push(...parseRegistry(readFileSync(join(stateDir, '.registry.tsv'), 'utf8'), false))
+      }
+      catch {}
+
+      if (includeArchived) {
+        try {
+          sessions.push(...parseRegistry(readFileSync(join(stateDir, 'archive', '.registry.tsv'), 'utf8'), true))
+        }
+        catch {}
+      }
+
+      // Map slugs → agent records via config.claudeSessionSlug
+      let allAgents: Array<{ id: string; name: string; config: unknown }> = []
+      try {
+        allAgents = await db.select({ id: messengerAgents.id, name: messengerAgents.name, config: messengerAgents.config })
+          .from(messengerAgents)
+          .where(isNull(messengerAgents.deletedAt))
+      }
+      catch {}
+
+      const agentBySlug = new Map<string, { id: string; name: string; displayName: string }>()
+      for (const agent of allAgents) {
+        const cfg = (agent.config ?? {}) as Record<string, unknown>
+        const slug = typeof cfg.claudeSessionSlug === 'string' ? cfg.claudeSessionSlug : null
+        const displayName = typeof cfg.displayName === 'string' ? cfg.displayName : agent.name
+        if (slug) agentBySlug.set(slug, { id: agent.id, name: agent.name, displayName })
+      }
+
+      return {
+        sessions: sessions.map(s => ({
+          ...s,
+          agentId: agentBySlug.get(s.slug)?.id ?? null,
+          agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
+        })),
+      }
     },
   )
 

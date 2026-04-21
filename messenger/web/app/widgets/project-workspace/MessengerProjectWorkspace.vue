@@ -86,6 +86,7 @@ onMounted(async () => {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  min-height: 0;
 }
 
 .project-workspace__header {
@@ -130,6 +131,7 @@ onMounted(async () => {
 .project-workspace__content {
   flex: 1;
   overflow: hidden;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }

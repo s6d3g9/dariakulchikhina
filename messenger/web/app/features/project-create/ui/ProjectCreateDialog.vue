@@ -33,7 +33,7 @@ async function handleSubmit() {
 
       <VCardText class="project-create-dialog__body">
         <VTextField
-          v-model="dialog.form.name"
+          v-model="dialog.form.value.name"
           label="Название"
           autofocus
           :disabled="dialog.pending.value"
@@ -45,7 +45,7 @@ async function handleSubmit() {
         />
 
         <VTextarea
-          v-model="dialog.form.description"
+          v-model="dialog.form.value.description"
           label="Описание (необязательно)"
           :disabled="dialog.pending.value"
           rows="3"
@@ -72,7 +72,7 @@ async function handleSubmit() {
           color="primary"
           variant="flat"
           :loading="dialog.pending.value"
-          :disabled="!dialog.form.name.trim() || dialog.pending.value"
+          :disabled="!dialog.form.value.name.trim() || dialog.pending.value"
           @click="handleSubmit"
         >
           Создать

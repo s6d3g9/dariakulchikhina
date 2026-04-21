@@ -1,5 +1,43 @@
 import { randomUUID } from 'node:crypto'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn as spawnProcess } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join as joinPath } from 'node:path'
+
+const CLAUDE_SESSION_BIN = joinPath(homedir(), 'bin/claude-session')
+
+// Fire-and-forget: asks ~/bin/claude-session to create a new composer-bound
+// tmux session. We don't await — the CLI blocks ~2s on init; meanwhile the
+// HTTP response comes back with config.claudeSessionSpawn describing the
+// outcome shape {scheduled:true,slug}. If the binary is missing (new env
+// bootstrap), we mark scheduled:false so the client can offer a retry.
+function spawnComposerClaudeSession(input: {
+  slug: string
+  projectName: string
+  systemPrompt: string
+}): Record<string, unknown> {
+  if (!existsSync(CLAUDE_SESSION_BIN)) {
+    return { scheduled: false, reason: 'claude-session binary missing', slug: input.slug }
+  }
+  const prompt = [
+    `Ты композитор проекта "${input.projectName}" в messenger-е.`,
+    `Отвечай по-русски, кратко, с action-item.`,
+    input.systemPrompt || 'Сам код не правишь. Делегируешь исполнение orchestrator-у через claude-session send.',
+    '',
+    'Просто подтверди готовность одной строкой.',
+  ].join('\n')
+  try {
+    const child = spawnProcess(
+      CLAUDE_SESSION_BIN,
+      ['create', input.slug, '--model', 'sonnet', '--prompt', prompt],
+      { detached: true, stdio: 'ignore' },
+    )
+    child.unref()
+    return { scheduled: true, slug: input.slug }
+  } catch (err) {
+    return { scheduled: false, reason: (err as Error).message, slug: input.slug }
+  }
+}
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
@@ -236,7 +274,7 @@ export function registerProjectsRoutes(
     const payload = resolveSessionAuth(request)
     if (!payload) return reply.code(401).send({ error: 'UNAUTHORIZED' })
 
-    const projects = await listProjects(payload.sub)
+    const projects = await listProjects()
     return { projects }
   })
 
@@ -645,6 +683,23 @@ export function registerProjectsRoutes(
       type: parsed.data.type,
       skillBundleKind: parsed.data.skillBundleKind ?? defaults.skillBundleKind,
       systemPrompt: parsed.data.systemPrompt ?? defaults.systemPrompt,
+    }
+
+    // For type=composer, spawn a dedicated claude-session via the local CLI
+    // dispatcher so the agent has a real tmux-backed chat endpoint that
+    // `callClaudeSessionReply` can resume. Slug is derived from project.slug
+    // (already a safe kebab-form) prefixed with 'composer-'. Failures are
+    // logged but don't block DB insert — user can retry via spawn endpoint later.
+    if (parsed.data.type === 'composer') {
+      const projectSlug = (found as { project: { slug: string } }).project.slug
+      const baseSlug = ('composer-' + (projectSlug || '')).slice(0, 40).replace(/[^a-z0-9-]/g, '-')
+      const slug = baseSlug.replace(/^-+|-+$/g, '') || `composer-${params.data.id.slice(0, 8)}`
+      agentConfig.claudeSessionSlug = slug
+      agentConfig.claudeSessionSpawn = spawnComposerClaudeSession({
+        slug,
+        projectName: (found as { project: { name: string } }).project.name,
+        systemPrompt: String(agentConfig.systemPrompt || ''),
+      })
     }
 
     const [agent] = await db

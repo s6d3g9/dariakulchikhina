@@ -319,7 +319,7 @@ function archiveSession(slug) {
   const active = readRegistry().find(r => r.slug === slug);
   if (!active) return { ok: false, reason: 'not found in active registry' };
   // Best effort: kill tmux window via claude-session (ignores errors if already gone)
-  try { spawnSync(BIN_CLAUDE_SESSION, ['kill', slug], { timeout: 5000 }); } catch {}
+  try { spawnSync(BIN_CLAUDE_SESSION, ['kill', slug], { timeout: 5000, env: { ...process.env, CLAUDE_SESSION_STATE_DIR: stateDir(), CLAUDE_SESSION_WORKROOMS_ROOT: workroomsRoot() } }); } catch {}
   const moveIfExists = (src, dst) => {
     if (existsSync(src)) { try { renameSync(src, dst); } catch {} }
   };
@@ -697,7 +697,11 @@ function readBody(req) {
 
 function runBin(args) {
   return new Promise(resolveFn => {
-    const p = spawn(BIN_CLAUDE_SESSION, args);
+    const ctx = (requestCtx.getStore() as any);
+    const env = ctx?.stateDir
+      ? { ...process.env, CLAUDE_SESSION_STATE_DIR: ctx.stateDir, CLAUDE_SESSION_WORKROOMS_ROOT: ctx.workroomsDir ?? DEFAULT_WORKROOMS_ROOT }
+      : process.env;
+    const p = spawn(BIN_CLAUDE_SESSION, args, { env });
     let stdout = '', stderr = '';
     p.stdout.on('data', d => stdout += d.toString());
     p.stderr.on('data', d => stderr += d.toString());

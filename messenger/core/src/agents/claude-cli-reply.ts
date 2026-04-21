@@ -23,7 +23,7 @@ import { spawn } from 'node:child_process'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
-import { readMessengerConfig } from '../config.js'
+import { readMessengerConfig } from '../config.ts'
 
 const HOME = homedir()
 const REGISTRY_PATH = join(HOME, 'state/claude-sessions/.registry.tsv')

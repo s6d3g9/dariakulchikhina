@@ -73,6 +73,13 @@ export function useAgentsApi() {
     })
   }
 
+  function listCliSessions(includeArchived = false) {
+    return auth.request<{ sessions: import('../../entities/sessions/model/useMessengerCliSessions').MessengerCliSession[] }>('/cli-sessions', {
+      method: 'GET',
+      query: { includeArchived: includeArchived ? '1' : undefined },
+    })
+  }
+
   return {
     listAgents,
     getAgentSettings,
@@ -86,5 +93,6 @@ export function useAgentsApi() {
     listAgentRuns,
     getAgentRun,
     listAgentEdgePayloads,
+    listCliSessions,
   }
 }

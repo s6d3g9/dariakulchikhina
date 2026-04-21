@@ -1,5 +1,25 @@
 # 14. Roadmap исполнения рефакторинга v5
 
+## Autonomous session 2026-04-20 03:00–08:00
+
+Composer: composer-platforma-v5. Base commit: 764e036.
+
+**Situational assessment at session start:**
+- `pnpm lint:errors`: 1 error — `messenger/core/src/agents/claude-cli-reply.ts` (skip, out of scope)
+- `server/api/**`: 0 fat handlers importing drizzle-orm — Wave 5 facade appears COMPLETE
+- `server/modules/**`: all 15 target domains populated
+- Doc 15 (dated 2026-04-19): stale — shows "~207 fat API handlers" but actual count is 0
+- Wave 8 W1–W6: done (per git history). W7 legacy sweep (MESSENGER_AGENTS → DB-backed): pending
+- Failed task in queue: `w2-projects-api.md` — messenger/core W2 work, RED LINE, not requeued
+
+**Batches dispatched:** (updated as session progresses)
+- Batch 1 (03:05): doc-verify + wave8-W7 legacy sweep + doc15-refresh + roadmap-update
+
+**Blockers:**
+- `~/state/queue/failed/w2-projects-api.md`: scope = `messenger/core/**` (Wave 8 W2 Core API). Violates red line. Classification: this task is either already merged or belongs to a previous autonomous session that is no longer active. Do NOT requeue. Leaving here for user review.
+
+---
+
 Этот файл нужен не как еще один общий план, а как **рабочий журнал рефакторинга**, в который вносятся уже сделанные изменения, текущий статус и следующий безопасный шаг.
 
 ## Зачем нужен отдельный roadmap
@@ -1534,6 +1554,29 @@ Wave 4 для UIDesignPanel закрыт.
 - **`AdminDocumentsSection` registry**: search/sort/filter state composable + card grid.
 - **`app/layouts/admin.vue`**: header utility bar (search/notifications/edit mode) → `AdminHeaderUtilities.vue`, hamburger panel — separate work.
 - **`Wipe2Renderer.vue`** (517 строк): conditional content render'ы; вынести bullet block renderers.
+
+## Doc-23: Project-Centric Messenger — Pipeline W1–W7
+
+Инициатива Doc-23 разворачивает messenger UX с "список агентов" на "проекты → конфигурация → агенты". Полная спецификация: [23-project-centric-messenger.md](./23-project-centric-messenger.md).
+
+### Прогресс волн
+
+| Волна | Kind | Ветка / Задача | Статус | Дата |
+|---|---|---|---|---|
+| W1 — DB schema + migrations | `db-migration` | `wave8-project-centric-w1-db-mig` | 🟡 in-progress | 2026-04-19 |
+| W2 — Core API (projects CRUD) | `backend-api` + `backend-module` | — | ⬜ pending | — |
+| W3 — Frontend projects shell | `frontend-ui` | — | ⬜ pending | — |
+| W4 — Connectors + skills/plugins tabs | `frontend-ui` | — | ⬜ pending | — |
+| W5 — MCP + External APIs tabs | `frontend-ui` | — | ⬜ pending | — |
+| W6 — Agent creation + Composer bootstrap | `frontend-ui` + `backend-api` | — | ⬜ pending | — |
+| W7 — Legacy sweep + docs | `frontend-ui` + `docs-update` | — | ⬜ pending | — |
+
+### Gate-правила (из §8 спецификации)
+
+- **W2 не запускается** до зелёного W1 (миграция применима, `SELECT * FROM messenger_projects LIMIT 0` проходит).
+- **W4 не запускается** до зелёного W3 (маршрутизация `/projects` и `/projects/:slug` работает).
+- **W5 может идти параллельно W4** — независимые tabs (MCP / External APIs не зависят от connectors/skills).
+- **W7 не запускается** до зелёного W6 (e2e: composer.auto → proposal → apply → greeting).
 
 ### [verified] 2026-04-20 — Wave 9 / subjects domain modules audit (clients, contractors, designers, sellers, managers)
 
