@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { MessengerAgentConnectionMode, MessengerAgentGraphNodeInput } from '../../entities/agents/model/useMessengerAgents'
 import type { MessengerConversationItem } from '../../entities/conversations/model/useMessengerConversations'
+import { getSessionKindMeta } from '../../entities/sessions/model/useMessengerCliSessions'
 
 const conversations = useMessengerConversations()
 const agentsModel = useMessengerAgents()
@@ -25,18 +26,31 @@ type AgentSystemRun = {
 }
 
 // ── Папки чатов ─────────────────────────────────────────────────────────────
+type SessionRole = 'orchestrator' | 'worker' | 'standalone'
+
+type SessionMember = {
+  agentId: string
+  role: SessionRole
+  subscriptionId: string
+  model: string
+  effort: string
+  workroom: string
+}
+
 type ChatFolder = {
   key: string
   label: string
   chatIds: string[]
-  kind?: 'manual' | 'agent' | 'agent-system'
+  kind?: 'manual' | 'agent' | 'agent-system' | 'session-group'
   agentIds?: string[]
   templateKey?: string
   runs?: AgentSystemRun[]
   lastRun?: AgentSystemRun
+  members?: SessionMember[]
+  createdAt?: string
 }
 
-type ChatMode = 'people' | 'agents' | 'systems'
+type ChatMode = 'people' | 'agents' | 'systems' | 'sessions'
 
 type AgentSystemCard = {
   key: string
@@ -172,6 +186,25 @@ const AGENT_SYSTEM_TEMPLATES: AgentSystemTemplate[] = [
 
 const FOLDERS_LS_KEY = 'messenger-chat-folders'
 const AGENT_SYSTEMS_FOLDER_KEY = 'agent-systems'
+const SESSIONS_FOLDER_KEY = 'sessions-root'
+
+const SESSION_ROLE_LABELS: Record<SessionRole, string> = {
+  orchestrator: 'Оркестратор',
+  worker: 'Воркер',
+  standalone: 'Автономный',
+}
+
+const SESSION_ROLE_ICONS: Record<SessionRole, string> = {
+  orchestrator: 'mdi-star-circle-outline',
+  worker: 'mdi-robot-outline',
+  standalone: 'mdi-console-line',
+}
+
+const SESSION_ROLE_COLORS: Record<SessionRole, string> = {
+  orchestrator: 'warning',
+  worker: 'info',
+  standalone: 'secondary',
+}
 
 function normalizeAgentSystemRun(input: unknown): AgentSystemRun | null {
   if (!input || typeof input !== 'object') {
@@ -249,7 +282,7 @@ function loadFolders(): ChatFolder[] {
             chatIds: Array.isArray(folder.chatIds) ? folder.chatIds : [],
             kind: isLegacyAgentFolder
               ? 'agent'
-              : (folder.kind === 'agent' || folder.kind === 'agent-system' ? folder.kind : 'manual'),
+              : (folder.kind === 'agent' || folder.kind === 'agent-system' || folder.kind === 'session-group' ? folder.kind : 'manual'),
             agentIds: Array.isArray(folder.agentIds) ? folder.agentIds : [],
             templateKey: typeof folder.templateKey === 'string' ? folder.templateKey : undefined,
             runs: [
@@ -264,6 +297,8 @@ function loadFolders(): ChatFolder[] {
               .filter((run, index, runs) => runs.findIndex(item => item.sentAt === run.sentAt && item.prompt === run.prompt) === index)
               .slice(0, 12),
             lastRun: normalizeAgentSystemRun(folder.lastRun) ?? undefined,
+            members: Array.isArray(folder.members) ? folder.members : undefined,
+            createdAt: typeof folder.createdAt === 'string' ? folder.createdAt : undefined,
           }
         })
       : []
@@ -282,6 +317,7 @@ const agentMap = computed(() => new Map(agentsModel.agents.value.map(agent => [a
 const manualFolders = computed(() => userFolders.value.filter(folder => (folder.kind || 'manual') === 'manual'))
 const agentFolders = computed(() => userFolders.value.filter(folder => folder.kind === 'agent'))
 const systemFolders = computed(() => userFolders.value.filter(folder => folder.kind === 'agent-system'))
+const sessionGroups = computed(() => userFolders.value.filter(folder => folder.kind === 'session-group'))
 const activeFolder = computed(() => userFolders.value.find(folder => folder.key === activeFolderKey.value) ?? null)
 const visibleFolders = computed(() => {
   if (activeChatMode.value === 'people') {
@@ -292,10 +328,16 @@ const visibleFolders = computed(() => {
     return agentFolders.value
   }
 
+  if (activeChatMode.value === 'sessions') {
+    return sessionGroups.value
+  }
+
   return systemFolders.value
 })
 const activeAgentSystem = computed(() => activeChatMode.value === 'systems' && activeFolder.value?.kind === 'agent-system' ? activeFolder.value : null)
 const showAgentSystemsDirectory = computed(() => activeChatMode.value === 'systems' && activeFolderKey.value === AGENT_SYSTEMS_FOLDER_KEY)
+const activeSessionGroup = computed(() => activeChatMode.value === 'sessions' && activeFolder.value?.kind === 'session-group' ? activeFolder.value : null)
+const showSessionsDirectory = computed(() => activeChatMode.value === 'sessions' && activeFolderKey.value === SESSIONS_FOLDER_KEY)
 const availableSystemTemplates = computed(() => AGENT_SYSTEM_TEMPLATES
   .map(template => ({
     ...template,
@@ -357,6 +399,14 @@ function ensureActiveFolderForMode(mode = activeChatMode.value) {
     return
   }
 
+  if (mode === 'sessions') {
+    const sessionFolderSelected = sessionGroups.value.some(folder => folder.key === activeFolderKey.value)
+    if (!sessionFolderSelected && activeFolderKey.value !== SESSIONS_FOLDER_KEY) {
+      activeFolderKey.value = SESSIONS_FOLDER_KEY
+    }
+    return
+  }
+
   if (activeFolderKey.value === 'all') {
     return
   }
@@ -379,7 +429,7 @@ function setChatMode(mode: ChatMode) {
 }
 
 const filteredConversations = computed(() => {
-  if (showAgentSystemsDirectory.value) {
+  if (showAgentSystemsDirectory.value || showSessionsDirectory.value) {
     return []
   }
 
@@ -487,6 +537,147 @@ function createAgentFolderIfNeeded(agentId: string, displayName: string) {
   })
 
   return folderKey
+}
+
+// ── Сессии ────────────────────────────────────────────────────────────────────
+const subscriptionsModel = useMessengerSubscriptions()
+const cliSessions = useMessengerCliSessions()
+
+const showSessionComposer = ref(false)
+const sessionComposerError = ref('')
+const sessionComposerPending = ref(false)
+
+const SESSION_EFFORT_OPTIONS = [
+  { title: 'Low — быстро', value: 'low' },
+  { title: 'Medium — баланс', value: 'medium' },
+  { title: 'High — тщательно', value: 'high' },
+  { title: 'XHigh — максимум', value: 'xhigh' },
+]
+
+const SESSION_ROLE_OPTIONS = [
+  { title: 'Оркестратор', value: 'orchestrator' as SessionRole },
+  { title: 'Воркер', value: 'worker' as SessionRole },
+  { title: 'Автономный', value: 'standalone' as SessionRole },
+]
+
+type SessionMemberDraft = {
+  agentId: string
+  role: SessionRole
+  subscriptionId: string
+  model: string
+  effort: string
+  workroom: string
+}
+
+const sessionDraftLabel = ref('')
+const sessionDraftMembers = ref<SessionMemberDraft[]>([])
+
+function makeBlankMember(role: SessionRole = 'worker'): SessionMemberDraft {
+  const defaultSub = subscriptionsModel.defaultSubscription.value
+  const subId = defaultSub?.id || 'builtin-claude-code-cli'
+  const models = subscriptionsModel.modelsByProvider(defaultSub?.provider || 'claude-code-cli')
+  const balancedModel = models.find(m => m.tier === 'balanced') || models[0]
+  return {
+    agentId: '',
+    role,
+    subscriptionId: subId,
+    model: balancedModel?.id || '',
+    effort: 'medium',
+    workroom: '',
+  }
+}
+
+function openSessionComposer() {
+  sessionDraftLabel.value = ''
+  sessionDraftMembers.value = [
+    makeBlankMember('orchestrator'),
+    makeBlankMember('worker'),
+  ]
+  sessionComposerError.value = ''
+  showSessionComposer.value = true
+}
+
+function addSessionMember() {
+  sessionDraftMembers.value.push(makeBlankMember('worker'))
+}
+
+function removeSessionMember(index: number) {
+  sessionDraftMembers.value.splice(index, 1)
+}
+
+function modelsForMember(member: SessionMemberDraft) {
+  const sub = subscriptionsModel.subscriptions.value.find(s => s.id === member.subscriptionId)
+  if (!sub) return []
+  return subscriptionsModel.modelsOf(sub)
+}
+
+function onMemberSubscriptionChange(member: SessionMemberDraft) {
+  const models = modelsForMember(member)
+  const balanced = models.find(m => m.tier === 'balanced') || models[0]
+  member.model = balanced?.id || ''
+}
+
+async function createSessionGroup() {
+  sessionComposerError.value = ''
+  const label = sessionDraftLabel.value.trim()
+  if (!label) {
+    sessionComposerError.value = 'Укажите название группы сессий.'
+    return
+  }
+  const validMembers = sessionDraftMembers.value.filter(m => m.agentId)
+  if (!validMembers.length) {
+    sessionComposerError.value = 'Добавьте хотя бы одного участника с выбранным агентом.'
+    return
+  }
+
+  sessionComposerPending.value = true
+  const chatIds: string[] = []
+
+  try {
+    for (const member of validMembers) {
+      await conversations.openAgentConversation(member.agentId)
+      const convId = conversations.activeConversationId.value
+      if (convId && !chatIds.includes(convId)) chatIds.push(convId)
+    }
+
+    const folderKey = `session-group-${Date.now()}`
+    upsertFolder({
+      key: folderKey,
+      label,
+      chatIds,
+      kind: 'session-group',
+      agentIds: validMembers.map(m => m.agentId),
+      members: validMembers,
+      createdAt: new Date().toISOString(),
+    })
+
+    activeChatMode.value = 'sessions'
+    activeFolderKey.value = folderKey
+    navigation.openSection('chats')
+    showSessionComposer.value = false
+  } catch {
+    sessionComposerError.value = 'Не удалось открыть чаты с участниками сессии.'
+  } finally {
+    sessionComposerPending.value = false
+  }
+}
+
+function openSessionGroup(folderKey: string) {
+  activeChatMode.value = 'sessions'
+  activeFolderKey.value = folderKey
+}
+
+function formatSessionGroupMeta(folder: ChatFolder) {
+  const members = folder.members || []
+  const orch = members.filter(m => m.role === 'orchestrator').length
+  const workers = members.filter(m => m.role === 'worker').length
+  const standalone = members.filter(m => m.role === 'standalone').length
+  const parts: string[] = []
+  if (orch) parts.push(`${orch} оркестратор`)
+  if (workers) parts.push(`${workers} воркер${workers > 1 ? 'а' : ''}`)
+  if (standalone) parts.push(`${standalone} авт.`)
+  if (!parts.length) parts.push(`${(folder.agentIds || []).length} агентов`)
+  return parts.join(' · ')
 }
 
 // ── Новый чат (FAB) ──────────────────────────────────────────────────────────
@@ -633,6 +824,14 @@ async function openAgentFromGallery(agentId: string) {
   } catch {
     newChatError.value = 'Не удалось открыть чат с агентом.'
   }
+}
+
+async function openCliSession(agentId: string | null) {
+  if (!agentId) return
+  try {
+    await conversations.openAgentConversation(agentId)
+    navigation.openSection('chat')
+  } catch {}
 }
 
 function toggleAgentSystemMember(agentId: string) {
@@ -889,6 +1088,10 @@ const emptyStateTitle = computed(() => {
     return 'Внутри системы пока нет чатов.'
   }
 
+  if (activeSessionGroup.value) {
+    return 'В группе сессий пока нет чатов.'
+  }
+
   if (activeChatMode.value === 'agents') {
     return 'Чаты с AI-агентами пока пусты.'
   }
@@ -897,13 +1100,19 @@ const emptyStateTitle = computed(() => {
     return 'Система пока не выбрана.'
   }
 
+  if (activeChatMode.value === 'sessions') {
+    return 'Группа сессий не выбрана.'
+  }
+
   return 'Чаты с людьми пока пусты.'
 })
 
 onMounted(async () => {
   await conversations.refresh()
+  subscriptionsModel.hydrate()
   searchDraft.value = conversations.query.value
   ensureActiveFolderForMode()
+  await cliSessions.refresh()
 })
 
 onBeforeUnmount(() => {
@@ -1095,6 +1304,15 @@ function formatChatPreview(chat: MessengerConversationItem) {
         :aria-selected="activeChatMode === 'systems'"
         @click="setChatMode('systems')"
       >Системы AI</button>
+      <button
+        v-if="agentsEnabled"
+        type="button"
+        class="chats-submenu-chip"
+        :class="{ 'chats-submenu-chip--active': activeChatMode === 'sessions' }"
+        role="tab"
+        :aria-selected="activeChatMode === 'sessions'"
+        @click="setChatMode('sessions')"
+      >Сессии</button>
     </div>
 
     <!-- Список чатов + FAB -->
@@ -1117,7 +1335,126 @@ function formatChatPreview(chat: MessengerConversationItem) {
         </div>
       </div>
 
+      <!-- Sessions directory -->
+      <div v-else-if="agentsEnabled && showSessionsDirectory" class="sessions-directory">
+        <!-- Live sessions from dashboard registry -->
+        <div class="sessions-directory__section">
+          <div class="sessions-directory__header">
+            <p class="sessions-directory__title">
+              <span class="sessions-directory__live-dot" />
+              Живые сессии
+            </p>
+            <VBtn
+              size="x-small"
+              variant="text"
+              icon="mdi-refresh"
+              :loading="cliSessions.pending.value"
+              title="Обновить"
+              @click="cliSessions.refresh()"
+            />
+          </div>
+
+          <!-- Hierarchy: composer → orchestrators → workers -->
+          <div v-if="cliSessions.runningSessions.value.length" class="cli-sessions-hierarchy">
+            <template v-for="(tier, tierIdx) in cliSessions.hierarchy.value" :key="tierIdx">
+              <div v-if="tier.length" class="cli-sessions-tier">
+                <div
+                  v-for="session in tier"
+                  :key="session.slug"
+                  class="cli-session-chip"
+                  :class="`cli-session-chip--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
+                  @click="openCliSession(session.agentId)"
+                >
+                  <span class="cli-session-chip__dot" />
+                  <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
+                  <span class="cli-session-chip__name">{{ session.agentDisplayName || session.slug }}</span>
+                  <span class="cli-session-chip__kind">{{ getSessionKindMeta(session.kind).label }}</span>
+                  <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-chip__wr">{{ session.workroom }}</VChip>
+                </div>
+              </div>
+              <div v-if="tier.length && tierIdx < cliSessions.hierarchy.value.length - 1 && cliSessions.hierarchy.value.slice(tierIdx + 1).some(t => t.length)" class="cli-sessions-tier-arrow">
+                <VIcon size="14" color="on-surface-variant">mdi-arrow-down</VIcon>
+              </div>
+            </template>
+          </div>
+
+          <div v-else-if="!cliSessions.pending.value" class="empty-state empty-state--compact">
+            <p class="empty-state__title">Нет активных сессий.</p>
+            <p class="empty-state__hint">Запустите сессию через <code>claude-session create &lt;slug&gt;</code></p>
+          </div>
+        </div>
+
+        <!-- Manual session groups -->
+        <div class="sessions-directory__section">
+          <div class="sessions-directory__header">
+            <p class="sessions-directory__title">Группы сессий</p>
+            <VBtn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="openSessionComposer()">
+              Новая группа
+            </VBtn>
+          </div>
+
+          <button
+            v-for="group in sessionGroups"
+            :key="group.key"
+            type="button"
+            class="session-group-card"
+            @click="openSessionGroup(group.key)"
+          >
+            <div class="session-group-card__head">
+              <VIcon size="18" color="primary">mdi-layers-outline</VIcon>
+              <span class="session-group-card__title">{{ group.label }}</span>
+            </div>
+            <span class="session-group-card__meta">{{ formatSessionGroupMeta(group) }}</span>
+            <div v-if="group.members?.length" class="session-group-card__members">
+              <div
+                v-for="member in group.members"
+                :key="`${member.agentId}-${member.role}`"
+                class="session-group-card__member"
+              >
+                <VIcon size="13" :color="SESSION_ROLE_COLORS[member.role]">{{ SESSION_ROLE_ICONS[member.role] }}</VIcon>
+                <span class="session-group-card__member-name">
+                  {{ agentMap.get(member.agentId)?.displayName || member.agentId }}
+                </span>
+                <span class="session-group-card__member-role">{{ SESSION_ROLE_LABELS[member.role] }}</span>
+              </div>
+            </div>
+          </button>
+
+          <div v-if="!sessionGroups.length" class="empty-state empty-state--compact">
+            <p class="empty-state__title">Групп сессий пока нет.</p>
+            <p class="empty-state__hint">Нажмите «Новая группа» — укажите оркестратор, воркеров и подписки.</p>
+          </div>
+        </div>
+      </div>
+
       <VList v-else class="section-list" bg-color="transparent" lines="two">
+        <!-- Session group banner -->
+        <div v-if="agentsEnabled && activeSessionGroup" class="session-group-banner">
+          <div class="session-group-banner__head">
+            <div class="session-group-banner__copy">
+              <p class="session-group-banner__title">{{ activeSessionGroup.label }}</p>
+              <p class="session-group-banner__meta">{{ formatSessionGroupMeta(activeSessionGroup) }}</p>
+            </div>
+            <div class="session-group-banner__actions">
+              <VBtn size="small" variant="tonal" @click="openSessionComposer()">+ Группа</VBtn>
+            </div>
+          </div>
+          <div v-if="activeSessionGroup.members?.length" class="session-group-banner__members">
+            <div
+              v-for="member in activeSessionGroup.members"
+              :key="`${member.agentId}-${member.role}`"
+              class="session-member-row"
+            >
+              <VIcon size="16" :color="SESSION_ROLE_COLORS[member.role]">{{ SESSION_ROLE_ICONS[member.role] }}</VIcon>
+              <div class="session-member-row__info">
+                <span class="session-member-row__name">{{ agentMap.get(member.agentId)?.displayName || member.agentId }}</span>
+                <span class="session-member-row__meta">{{ SESSION_ROLE_LABELS[member.role] }} · {{ member.model || 'модель не выбрана' }} · {{ member.effort }}</span>
+              </div>
+              <VChip v-if="member.workroom" size="x-small" variant="outlined">{{ member.workroom }}</VChip>
+            </div>
+          </div>
+        </div>
+
         <div v-if="agentsEnabled && activeAgentSystemCard" class="agent-system-banner">
           <div class="agent-system-banner__head">
             <div class="agent-system-banner__copy">
@@ -1244,13 +1581,22 @@ function formatChatPreview(chat: MessengerConversationItem) {
 
       <!-- FAB -->
       <button
-        v-if="agentsEnabled && !showNewChatDialog"
+        v-if="agentsEnabled && !showNewChatDialog && !showSessionComposer && activeChatMode !== 'sessions'"
         type="button"
         class="chats-fab"
         aria-label="Создать чат"
         @click="showNewChatDialog = true"
       >
         <VIcon color="on-primary-container">mdi-pencil-outline</VIcon>
+      </button>
+      <button
+        v-if="agentsEnabled && !showSessionComposer && activeChatMode === 'sessions'"
+        type="button"
+        class="chats-fab"
+        aria-label="Новая группа сессий"
+        @click="openSessionComposer()"
+      >
+        <VIcon color="on-primary-container">mdi-plus</VIcon>
       </button>
     </div>
 
@@ -1266,7 +1612,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
         @click="activeFolderKey = 'all'"
       >{{ activeChatMode === 'agents' ? 'Все агенты' : 'Все' }}</button>
       <button
-        v-else
+        v-else-if="activeChatMode === 'systems'"
         type="button"
         class="chats-folder-chip"
         :class="{ 'chats-folder-chip--active': activeFolderKey === AGENT_SYSTEMS_FOLDER_KEY }"
@@ -1274,6 +1620,15 @@ function formatChatPreview(chat: MessengerConversationItem) {
         :aria-selected="activeFolderKey === AGENT_SYSTEMS_FOLDER_KEY"
         @click="activeFolderKey = AGENT_SYSTEMS_FOLDER_KEY"
       >Каталог систем</button>
+      <button
+        v-else-if="activeChatMode === 'sessions'"
+        type="button"
+        class="chats-folder-chip"
+        :class="{ 'chats-folder-chip--active': activeFolderKey === SESSIONS_FOLDER_KEY }"
+        role="tab"
+        :aria-selected="activeFolderKey === SESSIONS_FOLDER_KEY"
+        @click="activeFolderKey = SESSIONS_FOLDER_KEY"
+      >Все группы</button>
       <button
         v-for="folder in visibleFolders"
         :key="folder.key"
@@ -1549,6 +1904,150 @@ function formatChatPreview(chat: MessengerConversationItem) {
             @click="broadcastToAgentSystem()"
           >
             Отправить всем агентам
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+    <!-- Диалог: Composer сессий -->
+    <VDialog v-if="agentsEnabled" v-model="showSessionComposer" max-width="620" scrollable>
+      <VCard>
+        <VCardTitle class="pa-4 pb-2 d-flex align-center gap-2">
+          <VIcon color="primary">mdi-layers-outline</VIcon>
+          Новая группа сессий
+        </VCardTitle>
+        <VCardText class="pa-4 pt-2">
+          <VTextField
+            v-model="sessionDraftLabel"
+            label="Название группы"
+            placeholder="Например: Feature X — параллельная разработка"
+            variant="outlined"
+            class="mb-4"
+          />
+
+          <div class="session-members-list">
+            <div
+              v-for="(member, index) in sessionDraftMembers"
+              :key="index"
+              class="session-member-card"
+            >
+              <div class="session-member-card__head">
+                <VIcon size="16" :color="SESSION_ROLE_COLORS[member.role]">{{ SESSION_ROLE_ICONS[member.role] }}</VIcon>
+                <span class="session-member-card__label">Участник {{ index + 1 }}</span>
+                <VSpacer />
+                <VBtn size="x-small" icon variant="text" color="error" :disabled="sessionDraftMembers.length <= 1" @click="removeSessionMember(index)">
+                  <VIcon size="16">mdi-close</VIcon>
+                </VBtn>
+              </div>
+
+              <div class="session-member-card__fields">
+                <!-- Role -->
+                <VSelect
+                  v-model="member.role"
+                  :items="SESSION_ROLE_OPTIONS"
+                  item-title="title"
+                  item-value="value"
+                  label="Роль"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="session-member-card__field"
+                />
+
+                <!-- Agent -->
+                <VSelect
+                  v-model="member.agentId"
+                  :items="agentsModel.agents.value.map(a => ({ title: a.displayName, subtitle: `@${a.login}`, value: a.id }))"
+                  item-title="title"
+                  item-value="value"
+                  label="Агент"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="session-member-card__field"
+                >
+                  <template #item="{ props, item }">
+                    <VListItem v-bind="props" :subtitle="item.raw.subtitle" />
+                  </template>
+                </VSelect>
+
+                <!-- Subscription -->
+                <VSelect
+                  v-model="member.subscriptionId"
+                  :items="subscriptionsModel.subscriptions.value.map(s => ({ title: s.label, value: s.id }))"
+                  item-title="title"
+                  item-value="value"
+                  label="Подписка"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="session-member-card__field"
+                  @update:model-value="onMemberSubscriptionChange(member)"
+                />
+
+                <!-- Model -->
+                <VSelect
+                  v-model="member.model"
+                  :items="modelsForMember(member).map(m => ({ title: m.label, value: m.id }))"
+                  item-title="title"
+                  item-value="value"
+                  label="Модель"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="session-member-card__field"
+                  :disabled="!modelsForMember(member).length"
+                />
+
+                <!-- Effort -->
+                <VSelect
+                  v-model="member.effort"
+                  :items="SESSION_EFFORT_OPTIONS"
+                  item-title="title"
+                  item-value="value"
+                  label="Effort"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="session-member-card__field"
+                />
+
+                <!-- Workroom -->
+                <VTextField
+                  v-model="member.workroom"
+                  label="Workroom (необязательно)"
+                  placeholder="w1-feature-x"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="session-member-card__field"
+                />
+              </div>
+            </div>
+          </div>
+
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            prepend-icon="mdi-plus"
+            class="mt-3"
+            @click="addSessionMember()"
+          >
+            Добавить участника
+          </VBtn>
+
+          <VAlert v-if="sessionComposerError" type="error" class="mt-3">{{ sessionComposerError }}</VAlert>
+        </VCardText>
+        <VCardActions class="pa-4 pt-0">
+          <VBtn variant="text" @click="showSessionComposer = false">Отмена</VBtn>
+          <VSpacer />
+          <VBtn
+            color="primary"
+            variant="flat"
+            :loading="sessionComposerPending"
+            :disabled="sessionComposerPending || !sessionDraftLabel.trim() || !sessionDraftMembers.some(m => m.agentId)"
+            @click="createSessionGroup()"
+          >
+            Создать группу
           </VBtn>
         </VCardActions>
       </VCard>

@@ -43,7 +43,7 @@ watch(() => form.login, (value) => {
 onMounted(async () => {
   await auth.hydrate()
   if (auth.user.value) {
-    await navigateTo('/projects')
+    await navigateTo('/')
     return
   }
 
@@ -72,7 +72,7 @@ onMounted(async () => {
       password: testPassword,
     })
 
-    const nextTarget = getQueryValue(route.query.next) || '/projects'
+    const nextTarget = getQueryValue(route.query.next) || '/'
     await navigateTo(nextTarget)
   } catch {
     errorMessage.value = 'Не удалось войти. Проверьте логин и пароль.'
@@ -98,7 +98,7 @@ async function submit() {
       login: normalizedLogin.value,
       password: form.password,
     })
-    await navigateTo('/projects')
+    await navigateTo('/')
   } catch {
     errorMessage.value = 'Не удалось войти. Проверьте логин и пароль.'
   } finally {

@@ -4,6 +4,7 @@ import type { MessengerKlipyItem } from '../../entities/messages/model/useMessen
 import type { MessengerConversationSecuritySummary } from '../../entities/messages/model/useMessengerCrypto'
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
 import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
+import { getSessionKindMeta } from '../../entities/sessions/model/useMessengerCliSessions'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -11,6 +12,7 @@ interface MessengerThreadMessage extends MessengerConversationMessage {
 
 const conversations = useMessengerConversations()
 const auth = useMessengerAuth()
+const cliSessionsModel = useMessengerCliSessions()
 const contacts = useMessengerContacts()
 const messengerCrypto = useMessengerCrypto()
 const klipy = useMessengerKlipy()
@@ -253,6 +255,21 @@ const activePeerAvatar = computed(() => {
 const activeConversationPolicy = computed(() => conversations.activeConversation.value?.policy ?? null)
 const activeConversationSecret = computed(() => Boolean(conversations.activeConversation.value?.secret))
 const activeConversationAgent = computed(() => conversations.activeConversation.value?.peerType === 'agent')
+
+const chatSessNavVisible = computed(() =>
+  activeConversationAgent.value && cliSessionsModel.runningSessions.value.length > 0,
+)
+const chatWorkerGroups = computed(() => {
+  const workers = cliSessionsModel.hierarchy.value[2] ?? []
+  const groups = new Map<string, typeof workers>()
+  for (const s of workers) {
+    const key = s.kind || 'worker'
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(s)
+  }
+  return [...groups.entries()].map(([kind, sessions]) => ({ kind, sessions }))
+})
+
 const activeConversationSupportsSecuritySummary = computed(() => conversations.activeConversation.value?.peerType === 'user')
 const canForwardFromActiveConversation = computed(() => activeConversationPolicy.value?.allowForwardOut !== false)
 const allowMutualDelete = computed(() => Boolean(activeConversationPolicy.value?.allowMutualDelete))
@@ -1948,7 +1965,9 @@ watch(() => activeConversationAgent.value, (value) => {
   if (conversations.activeConversation.value) {
     agentWorkspaceCollapsed.value = isMobileChatViewport()
   }
-})
+
+  void cliSessionsModel.refresh()
+}, { immediate: true })
 
 function relationTitle(mode: 'reply' | 'comment' | null) {
   if (mode === 'reply') {
@@ -2062,6 +2081,53 @@ onBeforeUnmount(() => {
         @pointerdown="handleChatAreaPointerDown"
       />
 
+      <!-- Session hierarchy bar — below chat header, agent conversations only -->
+      <div v-if="chatSessNavVisible" class="sess-nav">
+        <div v-if="cliSessionsModel.hierarchy.value[0]?.length" class="sess-nav__row sess-nav__row--composers">
+          <span class="sess-nav__label">Composers</span>
+          <div
+            v-for="session in cliSessionsModel.hierarchy.value[0]"
+            :key="session.slug"
+            class="sess-nav__tab"
+            :title="session.slug"
+          >
+            <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+            <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
+            <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+          </div>
+        </div>
+        <div v-if="cliSessionsModel.hierarchy.value[1]?.length" class="sess-nav__row sess-nav__row--orchestrators">
+          <span class="sess-nav__label">Orchestrators</span>
+          <div
+            v-for="session in cliSessionsModel.hierarchy.value[1]"
+            :key="session.slug"
+            class="sess-nav__tab"
+            :title="session.slug"
+          >
+            <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+            <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
+            <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+          </div>
+        </div>
+        <template v-if="chatWorkerGroups.length">
+          <div class="sess-nav__row sess-nav__row--workers">
+            <span class="sess-nav__label">Workers</span>
+          </div>
+          <div v-for="group in chatWorkerGroups" :key="group.kind" class="sess-nav__row sess-nav__row--wg">
+            <span class="sess-nav__wg-label">{{ getSessionKindMeta(group.kind).label }}</span>
+            <div
+              v-for="session in group.sessions"
+              :key="session.slug"
+              class="sess-nav__tab"
+              :title="session.slug"
+            >
+              <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+              <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
+              <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+            </div>
+          </div>
+        </template>
+      </div>
 
       <p v-if="actionError" class="auth-error">{{ actionError }}</p>
   <p v-else-if="calls.requestingPermissions.value" class="copy-toast">Запрашиваем доступ к микрофону{{ conversations.activeConversation.value ? '' : '' }}…</p>
