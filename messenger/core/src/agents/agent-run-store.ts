@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import {
   useIngestDb,
   messengerAgentRuns,
@@ -389,7 +392,9 @@ export async function updateTotals(
 
 export async function findRunningCliSessionForAgent(agentId: string): Promise<{ id: string; slug: string; agentId: string } | null> {
   const db = useIngestDb()
-  const [session] = await db
+
+  // First try the DB table (populated when sessions are created with --agent-id)
+  const [dbSession] = await db
     .select({ id: messengerCliSessions.id, slug: messengerCliSessions.slug, agentId: messengerCliSessions.agentId })
     .from(messengerCliSessions)
     .where(and(
@@ -398,7 +403,37 @@ export async function findRunningCliSessionForAgent(agentId: string): Promise<{ 
       isNull(messengerCliSessions.deletedAt),
     ))
     .limit(1)
-  return session ?? null
+  if (dbSession) return dbSession
+
+  // Fall back to the TSV registry (sessions created without --agent-id)
+  const [agentRow] = await db
+    .select({ config: messengerAgents.config })
+    .from(messengerAgents)
+    .where(and(eq(messengerAgents.id, agentId), isNull(messengerAgents.deletedAt)))
+    .limit(1)
+  if (!agentRow) return null
+
+  const cfg = (agentRow.config ?? {}) as Record<string, unknown>
+  const slug = typeof cfg.claudeSessionSlug === 'string' ? cfg.claudeSessionSlug : null
+  if (!slug) return null
+
+  const stateDir = process.env.DASHBOARD_STATE_DIR ?? join(homedir(), 'state/claude-sessions')
+  let registryContent: string
+  try {
+    registryContent = readFileSync(join(stateDir, '.registry.tsv'), 'utf8')
+  } catch {
+    return null
+  }
+
+  const lines = registryContent.trim().split('\n')
+  const headers = (lines[0] ?? '').split('\t')
+  const slugIdx = headers.indexOf('slug')
+  if (slugIdx === -1) return null
+
+  const match = lines.slice(1).find(line => line.split('\t')[slugIdx] === slug)
+  if (!match) return null
+
+  return { id: slug, slug, agentId }
 }
 
 export async function getAgentIngestToken(agentId: string): Promise<string | null> {

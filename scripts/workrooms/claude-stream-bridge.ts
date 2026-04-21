@@ -1,6 +1,11 @@
 #!/usr/bin/env -S node --experimental-strip-types
 /**
  * claude-stream-bridge — adapts Claude CLI stream-json events → messenger ingest endpoint
+ *
+ * Two modes:
+ *   Spawn mode  (--prompt or --prompt-file): spawns claude CLI, reads its stdout
+ *   Pipe mode   (no --prompt / --conversation-id): reads stream-json from stdin
+ *
  * Zero npm dependencies; uses only Node built-ins.
  */
 
@@ -12,47 +17,42 @@ import * as readline from "node:readline";
 import { randomUUID } from "node:crypto";
 
 // ---------------------------------------------------------------------------
-// Types
+// Ingest event types (matching ingest-handler.ts schemas exactly)
 // ---------------------------------------------------------------------------
-
-type Substate =
-  | "idle"
-  | "thinking"
-  | "tool_call"
-  | "awaiting_input"
-  | "streaming"
-  | "error";
 
 type IngestEvent =
-  | { type: "run_start"; runId: string; conversationId: string; prompt: string }
-  | { type: "substate"; runId: string; value: Substate }
-  | { type: "delta"; runId: string; text: string }
-  | { type: "tool_use"; runId: string; name: string; inputSummary: string }
-  | { type: "tokens"; runId: string; in: number; out: number; totalCostUsd: number }
-  | { type: "complete"; runId: string; finalText: string; totalTokens: number; durationMs: number }
-  | { type: "error"; runId: string; message: string; fatal: boolean };
+  | { type: "run_start"; runId: string; prompt?: string }
+  | { type: "substate"; runId: string; substate: string; message?: string }
+  | { type: "delta"; runId: string; delta: string }
+  | { type: "tool_use"; runId: string; tool: string; input?: unknown }
+  | { type: "tokens"; runId: string; tokenIn: number; tokenOut: number; costUsd?: number }
+  | { type: "complete"; runId: string; finalText?: string }
+  | { type: "error"; runId: string; message: string; fatal?: boolean };
 
 // ---------------------------------------------------------------------------
-// CLI arg parsing (no external deps)
+// CLI arg parsing
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv: string[]): {
   agentId: string;
-  conversationId: string;
-  prompt: string;
+  conversationId?: string;
+  prompt?: string;
   promptFile?: string;
   model: string;
   messengerUrl: string;
   token: string;
   resume?: string;
   runId: string;
+  pipeMode: boolean;
 } {
   const args = argv.slice(2);
-  const get = (flag: string) => {
-    const i = args.indexOf(flag);
-    return i !== -1 && i + 1 < args.length ? args[i + 1] : undefined;
+  const get = (...flags: string[]) => {
+    for (const flag of flags) {
+      const i = args.indexOf(flag);
+      if (i !== -1 && i + 1 < args.length) return args[i + 1];
+    }
+    return undefined;
   };
-  const has = (flag: string) => args.includes(flag);
 
   const agentId = get("--agent-id");
   const conversationId = get("--conversation-id");
@@ -60,24 +60,25 @@ function parseArgs(argv: string[]): {
   const promptFile = get("--prompt-file");
   const model = get("--model") ?? "sonnet";
   const messengerUrl =
-    get("--messenger-url") ??
+    get("--messenger-core-url", "--messenger-url") ??
     process.env.MESSENGER_INGEST_URL ??
-    "http://localhost:3033";
+    "http://localhost:4300";
   const token =
-    get("--token") ?? process.env.MESSENGER_INGEST_TOKEN ?? "";
+    get("--ingest-token", "--token") ??
+    process.env.MESSENGER_INGEST_TOKEN ??
+    "";
   const resume = get("--resume");
   const runId = get("--run-id") ?? randomUUID();
 
   if (!agentId) die("--agent-id is required");
-  if (!conversationId) die("--conversation-id is required");
-  if (!promptArg && !promptFile) die("--prompt or --prompt-file is required");
-  if (!token) die("MESSENGER_INGEST_TOKEN / --token is required");
+  if (!token) die("--ingest-token / --token / MESSENGER_INGEST_TOKEN required");
 
-  const prompt =
-    promptArg ??
-    fs.readFileSync(promptFile!, "utf8");
+  // Pipe mode: no prompt means read from stdin
+  const pipeMode = !promptArg && !promptFile;
 
-  return { agentId, conversationId, prompt, promptFile, model, messengerUrl, token, resume, runId };
+  const prompt = pipeMode ? undefined : (promptArg ?? fs.readFileSync(promptFile!, "utf8"));
+
+  return { agentId, conversationId, prompt, promptFile, model, messengerUrl, token, resume, runId, pipeMode };
 }
 
 function die(msg: string): never {
@@ -110,15 +111,13 @@ async function postEvent(
         },
         body,
       });
-      if (res.ok || res.status === 202) return; // success
+      if (res.ok || res.status === 202) return;
       if (res.status >= 400 && res.status < 500 && res.status !== 429) {
-        // permanent client error
         console.error(`[bridge] permanent error ${res.status} for event ${event.type}`);
         writeDlq(dlqPath, event);
         return;
       }
-      // 5xx or 429 → retry
-    } catch (err) {
+    } catch (_err) {
       // network error → retry
     }
     if (attempt < MAX_ATTEMPTS) {
@@ -144,7 +143,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Stream-JSON event mapper
+// Stream-JSON event mapper (matches ingest-handler.ts schema exactly)
 // ---------------------------------------------------------------------------
 
 function mapCliEvent(
@@ -159,27 +158,25 @@ function mapCliEvent(
   switch (ev.type) {
     case "system": {
       if (ev.subtype === "init") {
-        events.push({ type: "substate", runId, value: "idle" });
+        events.push({ type: "substate", runId, substate: "idle" });
       }
       break;
     }
 
     case "stream_event": {
-      // Claude CLI uses `event` key (not `stream_event`) inside the wrapper
       const se = (ev.event ?? ev.stream_event) as Record<string, unknown> | undefined;
       if (!se) break;
       switch (se.type) {
         case "message_start":
-          events.push({ type: "substate", runId, value: "thinking" });
+          events.push({ type: "substate", runId, substate: "thinking" });
           break;
 
         case "content_block_start": {
           const cb = se.content_block as Record<string, unknown> | undefined;
           if (cb?.type === "tool_use") {
-            events.push({ type: "substate", runId, value: "tool_call" });
-            const name = String(cb.name ?? "unknown");
-            const inputSummary = summarise(cb.input);
-            events.push({ type: "tool_use", runId, name, inputSummary });
+            events.push({ type: "substate", runId, substate: "tool_call" });
+            const tool = String(cb.name ?? "unknown");
+            events.push({ type: "tool_use", runId, tool, input: cb.input });
           }
           break;
         }
@@ -190,8 +187,8 @@ function mapCliEvent(
             const text = String(delta.text ?? "");
             if (text) {
               state.finalText += text;
-              events.push({ type: "substate", runId, value: "streaming" });
-              events.push({ type: "delta", runId, text });
+              events.push({ type: "substate", runId, substate: "streaming" });
+              events.push({ type: "delta", runId, delta: text });
             }
           }
           break;
@@ -211,7 +208,7 @@ function mapCliEvent(
       if (!state.finalText && typeof ev.result === "string") {
         state.finalText = ev.result;
       }
-      events.push({ type: "tokens", runId, in: tokensIn, out: tokensOut, totalCostUsd: costUsd });
+      events.push({ type: "tokens", runId, tokenIn: tokensIn, tokenOut: tokensOut, costUsd });
       break;
     }
 
@@ -225,22 +222,13 @@ function mapCliEvent(
   return events;
 }
 
-function summarise(input: unknown): string {
-  try {
-    const compact = JSON.stringify(input) ?? "";
-    return compact.length > 120 ? compact.slice(0, 117) + "..." : compact;
-  } catch {
-    return "";
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 async function main() {
   const opts = parseArgs(process.argv);
-  const { agentId, conversationId, prompt, model, messengerUrl, token, resume, runId } = opts;
+  const { agentId, prompt, model, messengerUrl, token, resume, runId, pipeMode } = opts;
 
   const ingestBase = `${messengerUrl}/agents/${agentId}/stream`;
   const dlqPath = path.join(
@@ -252,86 +240,82 @@ async function main() {
 
   const post = (event: IngestEvent) => postEvent(ingestBase, token, event, runId, dlqPath);
   const startMs = Date.now();
-
-  // 1. Signal run start
-  await post({ type: "run_start", runId, conversationId, prompt });
-
-  // 2. Spawn Claude CLI
-  const claudeBin =
-    process.env.CLAUDE_CLI_BIN ??
-    path.join(os.homedir(), ".local", "bin", "claude");
-
-  const cliArgs = [
-    "--print",
-    "--model", model,
-    "--output-format", "stream-json",
-    "--include-partial-messages",
-    "--verbose",
-    "--input-format", "text",
-  ];
-  if (resume) cliArgs.push("--resume", resume);
-
-  const child = spawn(claudeBin, cliArgs, {
-    stdio: ["pipe", "pipe", "pipe"],
-    env: { ...process.env },
-  });
-
-  child.stdin.write(prompt);
-  child.stdin.end();
-
-  // Accumulate mutable run state
   const state = { finalText: "", tokensIn: 0, tokensOut: 0, costUsd: 0 };
 
-  // 3. Parse stdout line by line
-  const rl = readline.createInterface({ input: child.stdout, crlfDelay: Infinity });
+  // Signal run start
+  await post({ type: "run_start", runId, ...(prompt ? { prompt } : {}) });
 
+  let inputStream: NodeJS.ReadableStream;
+
+  if (pipeMode) {
+    // Pipe mode: read stream-json from stdin
+    inputStream = process.stdin;
+  } else {
+    // Spawn mode: launch Claude CLI
+    const claudeBin =
+      process.env.CLAUDE_CLI_BIN ??
+      path.join(os.homedir(), ".local", "bin", "claude");
+
+    const cliArgs = [
+      "--print",
+      "--model", model,
+      "--output-format", "stream-json",
+      "--include-partial-messages",
+      "--verbose",
+      "--input-format", "text",
+    ];
+    if (resume) cliArgs.push("--resume", resume);
+
+    const child = spawn(claudeBin, cliArgs, {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env },
+    });
+
+    child.stdin.write(prompt ?? "");
+    child.stdin.end();
+
+    // Collect stderr
+    const stderrChunks: Buffer[] = [];
+    child.stderr.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
+
+    const rl = readline.createInterface({ input: child.stdout, crlfDelay: Infinity });
+    for await (const line of rl) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      let parsed: unknown;
+      try { parsed = JSON.parse(trimmed); }
+      catch { await post({ type: "error", runId, message: `parse error: ${trimmed.slice(0, 200)}`, fatal: false }); continue; }
+      for (const ev of mapCliEvent(parsed, runId, state)) await post(ev);
+    }
+
+    const exitCode = await new Promise<number>((resolve) => {
+      child.on("close", (code) => resolve(code ?? 1));
+    });
+
+    if (exitCode !== 0) {
+      const stderrText = Buffer.concat(stderrChunks).toString("utf8").trim();
+      await post({ type: "error", runId, message: stderrText || `claude exited with code ${exitCode}`, fatal: true });
+      process.exit(1);
+    }
+
+    await post({ type: "complete", runId, finalText: state.finalText || undefined });
+    process.exit(0);
+    return;
+  }
+
+  // Pipe mode: read from stdin
+  const rl = readline.createInterface({ input: inputStream, crlfDelay: Infinity });
   for await (const line of rl) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     let parsed: unknown;
-    try {
-      parsed = JSON.parse(trimmed);
-    } catch (err) {
-      await post({ type: "error", runId, message: `parse error: ${trimmed.slice(0, 200)}`, fatal: false });
-      continue;
-    }
-    const mapped = mapCliEvent(parsed, runId, state);
-    for (const ev of mapped) {
-      await post(ev);
-    }
+    try { parsed = JSON.parse(trimmed); }
+    catch { continue; }
+    for (const ev of mapCliEvent(parsed, runId, state)) await post(ev);
   }
-
-  // Collect stderr for error messages
-  const stderrChunks: Buffer[] = [];
-  child.stderr.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
-
-  // 4. Wait for process exit
-  const exitCode = await new Promise<number>((resolve) => {
-    child.on("close", (code) => resolve(code ?? 1));
-  });
 
   const durationMs = Date.now() - startMs;
-
-  if (exitCode !== 0) {
-    const stderrText = Buffer.concat(stderrChunks).toString("utf8").trim();
-    await post({
-      type: "error",
-      runId,
-      message: stderrText || `claude exited with code ${exitCode}`,
-      fatal: true,
-    });
-    process.exit(1);
-  }
-
-  // 5. Emit complete
-  await post({
-    type: "complete",
-    runId,
-    finalText: state.finalText,
-    totalTokens: state.tokensIn + state.tokensOut,
-    durationMs,
-  });
-
+  await post({ type: "complete", runId, finalText: state.finalText || undefined });
   process.exit(0);
 }
 
