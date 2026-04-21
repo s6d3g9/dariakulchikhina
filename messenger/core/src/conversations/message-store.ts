@@ -70,7 +70,9 @@ export function deserializePayload(ciphertext: Buffer): MessagePayload {
 export function rowToMessengerMessageRecord(row: StoredMessageRow) {
   const payload = row.deletedAt
     ? { body: '', kind: 'text' as const }
-    : deserializePayload(row.ciphertext)
+    : row.contentType === 'text/plain'
+      ? { body: row.ciphertext.toString('utf8'), kind: 'text' as const }
+      : deserializePayload(row.ciphertext)
 
   const agentId = !row.deletedAt && (deserializePayload(row.ciphertext) as MessagePayload).agentId
   const effectiveSenderId = (agentId as string | undefined) ?? row.senderUserId ?? ''
@@ -113,17 +115,20 @@ export async function insertMessage(params: {
   conversationId: string
   senderUserId: string | null
   payload: MessagePayload
+  plaintext?: boolean
 }): Promise<StoredMessageRow> {
   const db = useMessengerDb()
-  const ciphertext = serializePayload(params.payload)
+  const ciphertext = params.plaintext
+    ? Buffer.from(params.payload.body, 'utf8')
+    : serializePayload(params.payload)
   const [row] = await db
     .insert(messengerMessages)
     .values({
       conversationId: params.conversationId,
       senderUserId: params.senderUserId ?? undefined,
       ciphertext,
-      keyId: params.payload.encryptedBody ? params.payload.encryptedBody.iv.slice(0, 16) : null,
-      contentType: params.payload.kind,
+      keyId: params.plaintext ? null : (params.payload.encryptedBody ? params.payload.encryptedBody.iv.slice(0, 16) : null),
+      contentType: params.plaintext ? 'text/plain' : params.payload.kind,
     })
     .returning()
   return row as StoredMessageRow

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { useIngestDb, messengerAgents, messengerAgentRuns, messengerAgentRunEvents, eq, and, isNull, sql } from './ingest-db.ts'
 import { addAgentMessageToConversation, findConversationById } from '../conversations/conversation-store.ts'
 import { findMessengerAgentById } from './agent-store.ts'
+import { isCliAgent } from './agent-run-store.ts'
 
 // --- event schemas ---
 
@@ -261,9 +262,12 @@ export function registerIngestRoutes(
 
         if (event.type === 'complete' && event.finalText && run.conversationId) {
           try {
-            const agent = await findMessengerAgentById(agentId)
+            const [agent, cliAgent] = await Promise.all([
+              findMessengerAgentById(agentId),
+              isCliAgent(agentId),
+            ])
             if (agent) {
-              await addAgentMessageToConversation(run.conversationId, agent, event.finalText)
+              await addAgentMessageToConversation(run.conversationId, agent, event.finalText, { plaintext: cliAgent })
               if (emitToUsers) {
                 const conversation = await findConversationById(run.conversationId)
                 if (conversation) {
