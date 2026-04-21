@@ -27,6 +27,7 @@ import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, b
 import { readMessengerConfig } from '../config.ts'
 import { registerIngestRoutes } from '../agents/ingest-handler.ts'
 import { registerOrchestrationRoutes } from '../agents/orchestration-handler.ts'
+import { registerDashboardRoutes, readCliSessionsRegistry } from '../agents/dashboard-handler.ts'
 import { registerProjectsRoutes } from '../projects/projects-handler.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from '../media/media-store.ts'
 import { hasMessengerTranscriptionHttpBackend, isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from '../transcription/transcription-service.ts'
@@ -846,6 +847,47 @@ export async function createMessengerServer() {
     const projects = await listMessengerProjects()
     return { projects }
   })
+
+  // Session-authenticated CLI-sessions list for the messenger-web UI.
+  // Mirrors GET /dashboard/cli-sessions/registry but scoped to the logged-in
+  // user so they see only their tmux sessions (matched by owner_user_id in
+  // ~/state/claude-sessions/.registry.tsv). Optional ?projectSlug=<slug>
+  // filters further by the workroom column, which matches the project's
+  // slug when the session was started via `claude-session create
+  // --workroom <projectSlug>`.
+  app.get<{ Querystring: { includeArchive?: string; projectSlug?: string } }>(
+    '/cli-sessions/registry',
+    async (request, reply) => {
+      const session = await resolveSession(request)
+      if (!session) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const includeArchive =
+        request.query.includeArchive === '1' || request.query.includeArchive === 'true'
+      const projectSlug = (request.query.projectSlug ?? '').trim() || null
+
+      let sessions = readCliSessionsRegistry({
+        includeArchive,
+        ownerId: session.user.id,
+      })
+      if (projectSlug) {
+        // Match sessions whose workroom equals the project slug, PLUS any
+        // session without a workroom (treated as "global" — the composer
+        // is the canonical example; it's one-per-server, not per-project,
+        // so it must show up inside every project view).
+        sessions = sessions.filter((s) => !s.workroom || s.workroom === projectSlug)
+      }
+      return {
+        sessions,
+        viewer: {
+          id: session.user.id,
+          login: session.user.login,
+          displayName: session.user.displayName,
+        },
+      }
+    },
+  )
 
   app.get('/project-engine/templates', async (request, reply) => {
     const session = await resolveSession(request)
@@ -2992,6 +3034,7 @@ export async function createMessengerServer() {
 
   registerIngestRoutes(app, broadcastToChannel)
   registerOrchestrationRoutes(app, broadcastToChannel)
+  registerDashboardRoutes(app)
   registerProjectsRoutes(app, broadcastToChannel)
 
   return app

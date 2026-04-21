@@ -1,25 +1,32 @@
 #!/usr/bin/env -S node --experimental-strip-types
 /**
- * Smoke test: claude-stream-bridge against real claude CLI + local mock ingest server.
+ * Smoke test: claude-stream-bridge against a local mock ingest server.
+ *
+ * The new bridge is a STDIN FILTER (not a spawner). We feed it a fixed
+ * Claude CLI stream-json transcript and verify it POSTs the right ingest
+ * events to the mock server.
  *
  * Assertions:
- *   - run_start received exactly once
+ *   - run_start received exactly once (with our runId)
  *   - at least one delta received
- *   - complete received exactly once
- *   - tokens received with non-negative in/out
+ *   - exactly one tokens event, with non-negative integer tokenIn/tokenOut
+ *   - exactly one complete received
+ *   - no fatal errors
+ *   - bridge exits 0
  *
  * Exits 0 on pass, 1 on failure.
  */
 
 import * as http from "node:http";
 import * as path from "node:path";
-import * as os from "node:os";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+interface IngestEvent {
+  type: string;
+  runId?: string;
+  [key: string]: unknown;
+}
 
 function getFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -33,54 +40,20 @@ function getFreePort(): Promise<number> {
   });
 }
 
-interface IngestEvent {
-  type: string;
-  [key: string]: unknown;
-}
-
-function startMockServer(port: number): {
-  events: IngestEvent[];
-  close: () => Promise<void>;
-} {
-  const events: IngestEvent[] = [];
-
-  const server = http.createServer((req, res) => {
-    let body = "";
-    req.on("data", (chunk) => (body += chunk));
-    req.on("end", () => {
-      try {
-        const ev = JSON.parse(body) as IngestEvent;
-        events.push(ev);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true }));
-      } catch {
-        res.writeHead(400);
-        res.end();
-      }
-    });
-  });
-
-  return {
-    events,
-    close: () =>
-      new Promise<void>((resolve, reject) =>
-        server.close((err) => (err ? reject(err) : resolve()))
-      ),
-  };
-  // Actually start listening:
-  Object.defineProperty(events, "__server__", { value: server, enumerable: false });
-  // (unreachable but TS is happy)
-}
-
-// ---------------------------------------------------------------------------
-// Main test
-// ---------------------------------------------------------------------------
+// A minimal but realistic stream-json transcript that exercises every branch
+// of mapCliEvent(): system init, message_start, content_block_start tool_use,
+// content_block_delta text_delta, and a terminal `result` event with usage.
+const STREAM_FIXTURE: Array<Record<string, unknown>> = [
+  { type: "system", subtype: "init", session_id: "fixture", model: "haiku" },
+  { type: "stream_event", event: { type: "message_start", message: { usage: { input_tokens: 11, cache_read_input_tokens: 0 } } } },
+  { type: "stream_event", event: { type: "content_block_delta", delta: { type: "text_delta", text: "OK" } } },
+  { type: "result", usage: { input_tokens: 11, output_tokens: 2 }, total_cost_usd: 0.000041, duration_ms: 320 },
+];
 
 async function runSmoke() {
   const port = await getFreePort();
   const receivedEvents: IngestEvent[] = [];
 
-  // Start mock ingest server
   const server = http.createServer((req, res) => {
     let body = "";
     req.on("data", (chunk: Buffer) => (body += chunk.toString()));
@@ -98,46 +71,45 @@ async function runSmoke() {
     });
   });
 
-  await new Promise<void>((resolve) =>
-    server.listen(port, "127.0.0.1", resolve)
-  );
-
+  await new Promise<void>((resolve) => server.listen(port, "127.0.0.1", resolve));
   console.log(`[smoke] mock ingest server on port ${port}`);
 
   const agentId = randomUUID();
-  const conversationId = randomUUID();
+  const runId = randomUUID();
   const bridgeSrc = path.resolve(
     path.dirname(new URL(import.meta.url).pathname),
     "..",
-    "claude-stream-bridge.ts"
+    "claude-stream-bridge.ts",
   );
 
-  const env = {
-    ...process.env,
-    MESSENGER_INGEST_URL: `http://127.0.0.1:${port}`,
-    MESSENGER_INGEST_TOKEN: "smoke-test-token",
-  };
-
-  console.log(`[smoke] spawning bridge for agent ${agentId}`);
+  console.log(`[smoke] spawning bridge agent=${agentId} run=${runId}`);
 
   const bridge = spawn(
     process.execPath,
-    ["--experimental-strip-types", bridgeSrc,
+    [
+      "--experimental-strip-types",
+      bridgeSrc,
       "--agent-id", agentId,
-      "--conversation-id", conversationId,
-      "--prompt", "Reply with exactly: OK",
-      "--model", "haiku",
+      "--run-id", runId,
+      "--messenger-core-url", `http://127.0.0.1:${port}`,
+      "--ingest-token", "smoke-test-token",
     ],
     {
-      stdio: ["ignore", "pipe", "pipe"],
-      env,
-    }
+      stdio: ["pipe", "pipe", "pipe"],
+      env: process.env,
+    },
   );
 
   bridge.stdout.on("data", (d: Buffer) => process.stdout.write(d));
   bridge.stderr.on("data", (d: Buffer) => process.stderr.write(d));
 
-  const TIMEOUT_MS = 60_000;
+  // Feed the fixture line-by-line and close stdin so the bridge flushes.
+  for (const ev of STREAM_FIXTURE) {
+    bridge.stdin.write(JSON.stringify(ev) + "\n");
+  }
+  bridge.stdin.end();
+
+  const TIMEOUT_MS = 15_000;
   let timedOut = false;
   const timer = setTimeout(() => {
     timedOut = true;
@@ -145,48 +117,51 @@ async function runSmoke() {
   }, TIMEOUT_MS);
 
   const exitCode = await new Promise<number>((resolve) =>
-    bridge.on("close", (code) => resolve(code ?? 1))
+    bridge.on("close", (code) => resolve(code ?? 1)),
   );
   clearTimeout(timer);
   await new Promise<void>((resolve) => server.close(() => resolve()));
 
   if (timedOut) {
-    fail("bridge timed out after 60 s");
+    fail("bridge timed out after 15 s");
   }
 
   console.log(`\n[smoke] bridge exited with code ${exitCode}`);
   console.log(`[smoke] total events received: ${receivedEvents.length}`);
 
-  // Print event summary
   const byType: Record<string, number> = {};
   for (const ev of receivedEvents) {
     byType[ev.type] = (byType[ev.type] ?? 0) + 1;
   }
   console.log("[smoke] event counts:", JSON.stringify(byType, null, 2));
 
-  // --- Assertions ---
   const runStarts = receivedEvents.filter((e) => e.type === "run_start");
   const deltas = receivedEvents.filter((e) => e.type === "delta");
   const completes = receivedEvents.filter((e) => e.type === "complete");
   const tokenEvents = receivedEvents.filter((e) => e.type === "tokens");
   const fatalErrors = receivedEvents.filter(
-    (e) => e.type === "error" && e.fatal === true
+    (e) => e.type === "error" && e.fatal === true,
   );
 
   assert(runStarts.length === 1, `expected exactly 1 run_start, got ${runStarts.length}`);
+  assert(runStarts[0].runId === runId, `run_start.runId must match: ${runStarts[0].runId} vs ${runId}`);
   assert(deltas.length >= 1, `expected at least 1 delta, got ${deltas.length}`);
   assert(completes.length === 1, `expected exactly 1 complete, got ${completes.length}`);
-  assert(tokenEvents.length >= 1, `expected at least 1 tokens event, got ${tokenEvents.length}`);
+  assert(tokenEvents.length === 1, `expected exactly 1 tokens event, got ${tokenEvents.length}`);
   assert(fatalErrors.length === 0, `unexpected fatal errors: ${JSON.stringify(fatalErrors)}`);
 
-  const tok = tokenEvents[0] as { in?: number; out?: number };
+  const tok = tokenEvents[0] as { tokenIn?: number; tokenOut?: number; costUsd?: number };
   assert(
-    typeof tok.in === "number" && tok.in >= 0,
-    `tokens.in must be non-negative, got ${tok.in}`
+    typeof tok.tokenIn === "number" && Number.isInteger(tok.tokenIn) && tok.tokenIn >= 0,
+    `tokens.tokenIn must be non-negative integer, got ${tok.tokenIn}`,
   );
   assert(
-    typeof tok.out === "number" && tok.out >= 0,
-    `tokens.out must be non-negative, got ${tok.out}`
+    typeof tok.tokenOut === "number" && Number.isInteger(tok.tokenOut) && tok.tokenOut >= 0,
+    `tokens.tokenOut must be non-negative integer, got ${tok.tokenOut}`,
+  );
+  assert(
+    tok.costUsd === undefined || (typeof tok.costUsd === "number" && tok.costUsd >= 0),
+    `tokens.costUsd must be non-negative, got ${tok.costUsd}`,
   );
 
   assert(exitCode === 0, `bridge exited with non-zero code ${exitCode}`);
@@ -205,6 +180,6 @@ function fail(message: string): never {
 }
 
 runSmoke().catch((err) => {
-  console.error("[smoke] unhandled error:", err);
+  console.error("[smoke] unhandled:", err);
   process.exit(1);
 });

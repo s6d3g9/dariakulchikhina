@@ -248,6 +248,60 @@ function collectSessionContext(slug) {
 const PORT = Number(process.argv.includes('--port') ? process.argv[process.argv.indexOf('--port') + 1] : 9090);
 const BASIC_USER = process.env.DASHBOARD_USER || '';
 const BASIC_PASS = process.env.DASHBOARD_PASS || '';
+
+// ─── messenger-core link (shared source of truth for agents + sessions) ───
+// Dashboard proxies a narrow slice of messenger-core so the browser never
+// needs a messenger user session: we forward /api/agents and
+// /api/agents/:id/model through here with MESSENGER_DASHBOARD_TOKEN attached.
+const MESSENGER_CORE_URL = (process.env.MESSENGER_CORE_URL || 'http://127.0.0.1:4300').replace(/\/$/, '');
+const MESSENGER_DASHBOARD_TOKEN = process.env.MESSENGER_DASHBOARD_TOKEN || '';
+
+// Viewer identity. Setting DASHBOARD_VIEWER_LOGIN=stas makes the dashboard
+// represent that messenger user — sessions list, projects, agents all get
+// scoped to them. Resolved at boot and re-checked on demand. When empty,
+// the dashboard falls back to admin-view (everything, no filter).
+const DASHBOARD_VIEWER_LOGIN = (process.env.DASHBOARD_VIEWER_LOGIN || '').trim();
+let resolvedViewer = null; // { id, login, displayName } | null
+
+async function proxyMessengerCore(method, path, body) {
+  if (!MESSENGER_DASHBOARD_TOKEN) {
+    return { status: 503, body: { error: 'MESSENGER_DASHBOARD_TOKEN_NOT_SET' } };
+  }
+  const url = MESSENGER_CORE_URL + path;
+  const init = {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + MESSENGER_DASHBOARD_TOKEN,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (body !== undefined) init.body = JSON.stringify(body);
+  try {
+    const r = await fetch(url, init);
+    const text = await r.text();
+    let parsed;
+    try { parsed = text ? JSON.parse(text) : null; } catch { parsed = { raw: text }; }
+    return { status: r.status, body: parsed };
+  } catch (err) {
+    return { status: 502, body: { error: 'MESSENGER_CORE_UNREACHABLE', message: String(err) } };
+  }
+}
+
+async function resolveViewer() {
+  if (!DASHBOARD_VIEWER_LOGIN) { resolvedViewer = null; return null; }
+  const r = await proxyMessengerCore('GET', '/dashboard/users/by-login/' + encodeURIComponent(DASHBOARD_VIEWER_LOGIN));
+  if (r.status === 200 && r.body && r.body.id) {
+    resolvedViewer = { id: r.body.id, login: r.body.login, displayName: r.body.displayName };
+    return resolvedViewer;
+  }
+  resolvedViewer = null;
+  return null;
+}
+// Resolve at boot. Fire-and-forget; periodic refresh handles eventual
+// messenger-core availability. If the messenger is down when the dashboard
+// starts, all sessions are shown until resolution succeeds.
+resolveViewer().catch(() => {});
+setInterval(() => { resolveViewer().catch(() => {}); }, 60_000);
 const AUTH_REQUIRED = Boolean(BASIC_USER && BASIC_PASS);
 
 function checkAuth(req, res) {
@@ -274,9 +328,10 @@ function readRegistry() {
     .slice(1)
     .map(l => l.split('\t'))
     .filter(cols => cols.length >= 6)
-    .map(([slug, uuid, window, workroom, model, created, kind]) => ({
+    .map(([slug, uuid, window, workroom, model, created, kind, ownerUserId]) => ({
       slug, uuid, window, workroom: workroom || '', model, created,
       kind: (kind || '').trim(),
+      ownerUserId: (ownerUserId || '').trim() || null,
       archived: false,
     }));
 }
@@ -289,10 +344,21 @@ function readArchiveRegistry() {
     .slice(1)
     .map(l => l.split('\t'))
     .filter(cols => cols.length >= 6)
-    .map(([slug, uuid, window, workroom, model, created, archivedAt]) => ({
+    .map(([slug, uuid, window, workroom, model, created, archivedAt, ownerUserId]) => ({
       slug, uuid, window, workroom: workroom || '', model, created,
-      archivedAt: archivedAt || '', archived: true,
+      archivedAt: archivedAt || '',
+      ownerUserId: (ownerUserId || '').trim() || null,
+      archived: true,
     }));
+}
+
+// Filter sessions to the ones visible to the current viewer. Sessions with
+// empty `ownerUserId` (pre-migration grace) remain visible to everyone;
+// sessions owned by someone else are hidden. With no resolved viewer the
+// dashboard falls back to admin-view (everything).
+function filterSessionsForViewer(sessions) {
+  if (!resolvedViewer || !resolvedViewer.id) return sessions;
+  return sessions.filter(s => !s.ownerUserId || s.ownerUserId === resolvedViewer.id);
 }
 
 // Archive: kill tmux window if alive, move log + state file into archive/, add to archive registry.
@@ -697,13 +763,32 @@ async function handle(req, res) {
     const includeArchive = url.searchParams.get('include') === 'archive';
     const active = readRegistry();
     const archive = includeArchive ? readArchiveRegistry() : [];
-    const all = [...active, ...archive];
+    const all = filterSessionsForViewer([...active, ...archive]);
     const enriched = await Promise.all(all.map(async r => ({
       session: { ...r, role: isComposerSlug(r.slug) ? 'composer' : isOrchestratorSlug(r.slug) ? 'orchestrator' : 'worker' },
       metrics: r.archived ? zeroMetrics(r.slug) : await computeMetrics(r.slug),
     })));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(enriched));
+    return;
+  }
+
+  // ── viewer identity + projects list ──
+  if (p === '/api/me' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      viewer: resolvedViewer,
+      viewerLogin: DASHBOARD_VIEWER_LOGIN || null,
+      adminView: !resolvedViewer,
+    }));
+    return;
+  }
+
+  if (p === '/api/projects' && req.method === 'GET') {
+    const qs = resolvedViewer ? '?userId=' + encodeURIComponent(resolvedViewer.id) : '';
+    const r = await proxyMessengerCore('GET', '/dashboard/projects' + qs);
+    res.writeHead(r.status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(r.body ?? {}));
     return;
   }
 
@@ -810,6 +895,46 @@ async function handle(req, res) {
     const r = await runBin(['send', slug, prompt]);
     res.writeHead(r.code === 0 ? 200 : 500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ code: r.code, stdout: r.stdout, stderr: r.stderr }));
+    return;
+  }
+
+  // ── messenger-core proxy: list agents (with current settings.model) ──
+  // Shared source of truth. Both 9090 and 3300 render the same agent list
+  // + same per-agent model, because both read it from messenger-core.
+  if (p === '/api/agents' && req.method === 'GET') {
+    const r = await proxyMessengerCore('GET', '/dashboard/agents');
+    res.writeHead(r.status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(r.body ?? {}));
+    return;
+  }
+
+  // ── messenger-core proxy: patch agent model ──
+  // Targeted — preserves every other settings field. Picked up by
+  // buildMessengerAgentReply() on the NEXT reply turn (no restart).
+  const modelM = p.match(/^\/api\/agents\/([A-Za-z0-9_-]+)\/model$/);
+  if (modelM && req.method === 'PATCH') {
+    const agentId = modelM[1];
+    let payload;
+    try { payload = JSON.parse(await readBody(req)); } catch { payload = null; }
+    if (!payload || typeof payload.model !== 'string' || !payload.model.trim()) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'model required' }));
+      return;
+    }
+    const r = await proxyMessengerCore('PATCH', `/dashboard/agents/${encodeURIComponent(agentId)}/model`, {
+      model: payload.model.trim(),
+    });
+    res.writeHead(r.status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(r.body ?? {}));
+    return;
+  }
+
+  // ── messenger-core proxy: cli-sessions registry (shared view for both UIs) ──
+  if (p === '/api/cli-sessions/registry' && req.method === 'GET') {
+    const includeArchive = url.searchParams.get('includeArchive') === '1' ? '?includeArchive=1' : '';
+    const r = await proxyMessengerCore('GET', '/dashboard/cli-sessions/registry' + includeArchive);
+    res.writeHead(r.status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(r.body ?? {}));
     return;
   }
 
@@ -932,6 +1057,11 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   }
   .nav-row + .nav-row{border-top:1px solid var(--line)}
   .nav-row .label{color:var(--mute);font-size:10px;letter-spacing:.5px;text-transform:uppercase;margin-right:.5rem;min-width:90px;flex-shrink:0}
+  .nav-row.projects{background:#0d1320;border-bottom:1px solid var(--line)}
+  .nav-row.projects .label{color:#7cc4ff;font-weight:600}
+  .nav-row.projects .tab{background:#0f1a2a;border:1px solid #1f3048}
+  .nav-row.projects .tab.active{border-color:#7cc4ff;color:#7cc4ff;box-shadow:inset 0 0 0 1px #7cc4ff}
+  .nav-row.projects .tab .dot{background:#7cc4ff;box-shadow:0 0 4px #7cc4ff}
   .nav-row.composers{background:#14130b;border-bottom:1px solid var(--line)}
   .nav-row.composers .label{color:#fbbf24;font-weight:600}
   .nav-row.composers .tab{background:#1f1b0c;border:1px solid #3a2f12}
@@ -1022,6 +1152,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   <h1>◼ claude sessions</h1>
   <div class="stat"><b>active</b><span id="hdr-count">–</span></div>
   <div class="stat"><b>uptime</b><span id="hdr-uptime">–</span></div>
+  <div class="stat" id="hdr-viewer-stat" title="Logged-in viewer (DASHBOARD_VIEWER_LOGIN)"><b>viewer</b><span id="hdr-viewer">resolving…</span></div>
   <div style="flex:1"></div>
   <button id="btn-refresh" title="force refresh">↻</button>
 </header>
@@ -1060,6 +1191,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 </section>
 <div class="navs">
   <svg id="deps-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+  <div class="nav-row projects" id="nav-projects"><span class="label">📁 projects</span></div>
   <div class="nav-row composers" id="nav-composers"><span class="label">★ composer</span></div>
   <div class="nav-row orchestrators" id="nav-orchestrators"><span class="label">◆ orchestrators</span></div>
   <div class="nav-row workers" id="nav-workers"><span class="label">workers</span><span class="spacer"></span>
@@ -1078,11 +1210,14 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 <script>
 (() => {
   const state = { sessions: [], metrics: {}, active: null, archiveExpanded: false, showDeps: true, hoveredSlug: null, startedAt: Date.now(),
-                  status: { activeSessions:0, monthCostUsd:0, monthBudgetUsd:200, ctxLimit:200000 } };
+                  status: { activeSessions:0, monthCostUsd:0, monthBudgetUsd:200, ctxLimit:200000 },
+                  viewer: null, adminView: true, projects: [], activeProjectSlug: null };
+  const projectsRowEl = document.getElementById('nav-projects');
   const composerRowEl = document.getElementById('nav-composers');
   const orchRowEl = document.getElementById('nav-orchestrators');
   const workersRowEl = document.getElementById('nav-workers');
   const archiveRowEl = document.getElementById('nav-archive');
+  const hdrViewerEl = document.getElementById('hdr-viewer');
   const sideEl = document.getElementById('side');
   const contentEl = document.getElementById('content');
   const rightSideEl = document.getElementById('right-side');
@@ -1467,10 +1602,68 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
   // archive-folder-label click is inside nav-row — make sure it still fires
   // (drag threshold is 6px, label click needs no drag so it's fine)
 
+  function renderViewerBadge() {
+    if (!hdrViewerEl) return;
+    if (state.viewer) {
+      hdrViewerEl.textContent = state.viewer.login + (state.viewer.displayName ? ' · ' + state.viewer.displayName : '');
+      hdrViewerEl.style.color = '#7cc4ff';
+    } else {
+      hdrViewerEl.textContent = 'admin (all)';
+      hdrViewerEl.style.color = 'var(--mute)';
+    }
+  }
+
+  function renderProjects() {
+    if (!projectsRowEl) return;
+    projectsRowEl.querySelectorAll('.tab, small').forEach(n => n.remove());
+    if (!state.projects.length) {
+      const empty = document.createElement('small');
+      empty.className = 'tab'; empty.style.opacity = '.4'; empty.style.cursor = 'default';
+      empty.textContent = state.viewer ? '(no projects for ' + state.viewer.login + ')' : '(no projects)';
+      projectsRowEl.appendChild(empty);
+      return;
+    }
+    // Pseudo-"all" tab to clear the project filter.
+    const allTab = document.createElement('button');
+    allTab.className = 'tab' + (state.activeProjectSlug ? '' : ' active');
+    allTab.textContent = 'all';
+    allTab.title = 'Show sessions across every project';
+    allTab.onclick = () => { state.activeProjectSlug = null; renderProjects(); renderTabs(); };
+    projectsRowEl.appendChild(allTab);
+    for (const p of state.projects) {
+      const tab = document.createElement('button');
+      const isActive = state.activeProjectSlug === p.slug;
+      tab.className = 'tab' + (isActive ? ' active' : '');
+      tab.innerHTML = '<span class="dot"></span>' + escHtml(p.label || p.slug) +
+        ' <span style="color:var(--mute);font-size:10px">' + escHtml(p.slug) + '</span>';
+      tab.title = (p.description || '') + ' · root=' + (p.rootPath || '?');
+      tab.onclick = () => {
+        state.activeProjectSlug = isActive ? null : p.slug;
+        renderProjects();
+        renderTabs();
+      };
+      projectsRowEl.appendChild(tab);
+    }
+  }
+
+  function escHtml(s){ return String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  // Sessions scoped by the active project. An empty workroom is treated
+  // as a "global" session (composer etc.) and therefore visible in every
+  // project view — consistent with the server-side /cli-sessions/registry
+  // filter. When no project is selected, all sessions are shown.
+  function visibleSessions() {
+    if (!state.activeProjectSlug) return state.sessions;
+    const slug = state.activeProjectSlug;
+    return state.sessions.filter(s => !s.workroom || s.workroom === slug);
+  }
+
   function renderTabs() {
+    renderProjects();
+    const scoped = visibleSessions();
     // Composer row — always pinned at the top. Typically one session.
     composerRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const composers = state.sessions.filter(s => s.role === 'composer' && !s.archived);
+    const composers = scoped.filter(s => s.role === 'composer' && !s.archived);
     if (composers.length === 0) {
       const empty = document.createElement('small'); empty.className = 'tab'; empty.style.opacity = '.4';
       empty.style.cursor = 'default'; empty.textContent = '(no composer — run: claude-session create composer --model sonnet)';
@@ -1480,7 +1673,7 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     }
     // Orchestrators row
     orchRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const orch = state.sessions.filter(s => (s.role === 'orchestrator' || s.role === 'composer') && !s.archived);
+    const orch = scoped.filter(s => (s.role === 'orchestrator' || s.role === 'composer') && !s.archived);
     if (orch.length === 0) {
       const empty = document.createElement('small'); empty.className = 'tab'; empty.style.opacity = '.4';
       empty.style.cursor = 'default'; empty.textContent = '(no orchestrators)';
@@ -1490,12 +1683,12 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
     }
     // Workers row — active only, composer + orchestrator excluded
     workersRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const workers = state.sessions.filter(s => s.role !== 'orchestrator' && s.role !== 'composer' && !s.archived);
+    const workers = scoped.filter(s => s.role !== 'orchestrator' && s.role !== 'composer' && !s.archived);
     const spacer = workersRowEl.querySelector('.spacer');
     for (const s of workers) workersRowEl.insertBefore(makeTabEl(s), spacer);
     // Archive row — archived sessions (both orchestrators & workers)
     archiveRowEl.querySelectorAll('.tab').forEach(n => n.remove());
-    const archived = state.sessions.filter(s => s.archived);
+    const archived = scoped.filter(s => s.archived);
     document.getElementById('archive-count').textContent = archived.length;
     document.getElementById('archive-chevron').textContent = state.archiveExpanded ? '▼' : '▶';
     archiveRowEl.classList.toggle('collapsed', !state.archiveExpanded);
@@ -1653,7 +1846,44 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
           Selecting a new kind changes the bias prompt for the next turn; existing turns keep their original subjectivity.
         </div>
       \`;
-      rightSideEl.innerHTML = taskHtml + filesHtml + skillsHtml;
+      // ── messenger-agent sync block ──
+      // Shown when the selected tmux session is paired with a messenger
+      // agent (by claudeSessionSlug). The model picker PATCHes
+      // messenger-core/dashboard/agents/:id/model, which is the same source
+      // buildMessengerAgentReply reads on the next reply turn. So 9090 and
+      // 3300 stay in sync on the Composer model without any extra wiring.
+      const bySlug = state.messengerAgentsBySlug || {};
+      const agent = bySlug[slug] || null;
+      let agentHtml = '';
+      if (agent) {
+        const currentModel = (agent.settings && agent.settings.model) || '';
+        const options = Array.isArray(agent.modelOptions) ? agent.modelOptions.slice() : [];
+        if (currentModel && !options.includes(currentModel)) options.unshift(currentModel);
+        const optionEls = options.map(m => '<option value="'+esc(m)+'"'+(m===currentModel?' selected':'')+'>'+esc(m)+'</option>').join('');
+        agentHtml = \`
+          <h3>messenger agent
+            <span class="kind-pill" style="color:#7cc4ff;border-color:#7cc4ff">\${esc(agent.id)}</span>
+          </h3>
+          <dl>
+            <dt>display</dt><dd>\${esc(agent.displayName || '')}</dd>
+            <dt>login</dt><dd>\${esc(agent.login || '')}</dd>
+            \${agent.settings && agent.settings.updatedAt ? '<dt>updated</dt><dd>'+esc(new Date(agent.settings.updatedAt).toLocaleString())+'</dd>' : ''}
+          </dl>
+          <div style="color:var(--mute);font-size:11px;line-height:1.4;margin:.25rem 0 .4rem">\${esc(agent.description || '')}</div>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.5px">
+            model (applied to next reply)
+            <select class="kind-select" id="agent-model-select" data-agent-id="\${esc(agent.id)}">\${optionEls}</select>
+          </label>
+          <div id="agent-model-status" style="font-size:10px;color:var(--mute);margin-top:.25rem;min-height:12px"></div>
+          <div style="color:var(--mute);font-size:10px;margin-top:.4rem;line-height:1.4">
+            Stored in messenger-core agent-settings.json. Messenger UI (port 3300) reads the same value — change here, new reply picks it up without restart.
+          </div>
+        \`;
+      } else if (state.messengerAgentsError) {
+        agentHtml = '<h3>messenger agent</h3><div style="color:var(--err);font-size:11px">messenger-core unreachable: '+esc(state.messengerAgentsError)+'</div>';
+      }
+
+      rightSideEl.innerHTML = taskHtml + filesHtml + skillsHtml + agentHtml;
       const sel = document.getElementById('skill-kind-select');
       if (sel) sel.onchange = async () => {
         const newKind = sel.value;
@@ -1664,6 +1894,40 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ prompt: msg })
         });
+      };
+      const modelSel = document.getElementById('agent-model-select');
+      const modelStatus = document.getElementById('agent-model-status');
+      if (modelSel) modelSel.onchange = async () => {
+        const agentId = modelSel.dataset.agentId;
+        const nextModel = modelSel.value;
+        if (!agentId || !nextModel) return;
+        modelSel.disabled = true;
+        if (modelStatus) modelStatus.textContent = 'saving…';
+        try {
+          const resp = await fetch('/api/agents/'+encodeURIComponent(agentId)+'/model', {
+            method: 'PATCH',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ model: nextModel }),
+          });
+          if (!resp.ok) {
+            const body = await resp.json().catch(() => ({}));
+            throw new Error(body.error || ('HTTP ' + resp.status));
+          }
+          const body = await resp.json();
+          // Update local cache so the next renderRightSide doesn't flicker
+          // back to the old value.
+          const a = state.messengerAgentsBySlug[slug];
+          if (a) {
+            a.settings = a.settings || {};
+            a.settings.model = body.model;
+            a.settings.updatedAt = body.updatedAt;
+          }
+          if (modelStatus) modelStatus.textContent = 'saved ✓  (next reply on ' + nextModel + ')';
+        } catch (err) {
+          if (modelStatus) modelStatus.textContent = 'save failed: ' + (err && err.message || err);
+        } finally {
+          modelSel.disabled = false;
+        }
       };
     } catch (e) {
       rightSideEl.innerHTML = '<div class="placeholder">failed to load context</div>';
@@ -1755,6 +2019,44 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
         state.skillBundles = await sb.json();
       } catch { state.skillBundles = {}; }
     }
+    // Messenger agents — proxied from messenger-core so the dashboard and
+    // the messenger UI share a single source for per-agent model. Refreshed
+    // every cycle so a PUT from the messenger side shows up here within 1s.
+    try {
+      const ma = await fetch('/api/agents');
+      if (ma.ok) {
+        const json = await ma.json();
+        state.messengerAgents = Array.isArray(json.agents) ? json.agents : [];
+        state.messengerAgentsBySlug = {};
+        for (const a of state.messengerAgents) {
+          if (a && a.claudeSessionSlug) state.messengerAgentsBySlug[a.claudeSessionSlug] = a;
+        }
+        state.messengerAgentsError = null;
+      } else {
+        const body = await ma.json().catch(() => ({}));
+        state.messengerAgentsError = body.error || ('HTTP ' + ma.status);
+      }
+    } catch (err) {
+      state.messengerAgentsError = String(err && err.message || err);
+    }
+    // Viewer identity (resolved on server from DASHBOARD_VIEWER_LOGIN env)
+    try {
+      const meResp = await fetch('/api/me');
+      if (meResp.ok) {
+        const me = await meResp.json();
+        state.viewer = me.viewer || null;
+        state.adminView = !!me.adminView;
+      }
+    } catch { /* keep previous */ }
+    renderViewerBadge();
+    // Messenger projects — the "projects" scope on the dashboard.
+    try {
+      const pr = await fetch('/api/projects');
+      if (pr.ok) {
+        const json = await pr.json();
+        state.projects = Array.isArray(json.projects) ? json.projects : [];
+      }
+    } catch { /* keep previous */ }
     // Always include archive now — folder collapses/hides it visually
     const r = await fetch('/api/sessions?include=archive');
     const arr = await r.json();
@@ -1845,6 +2147,25 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 
   // Periodic right-side refresh (tool_use events trickle in over time).
   setInterval(() => { if (state.active) renderRightSide(state.active); }, 5000);
+
+  // Periodic agent-settings poll — keeps the Composer model picker in sync
+  // with the messenger UI (port 3300) when the model is changed over there.
+  async function refreshAgents() {
+    try {
+      const ma = await fetch('/api/agents');
+      if (!ma.ok) return;
+      const json = await ma.json();
+      state.messengerAgents = Array.isArray(json.agents) ? json.agents : [];
+      state.messengerAgentsBySlug = {};
+      for (const a of state.messengerAgents) {
+        if (a && a.claudeSessionSlug) state.messengerAgentsBySlug[a.claudeSessionSlug] = a;
+      }
+      state.messengerAgentsError = null;
+    } catch (err) {
+      state.messengerAgentsError = String(err && err.message || err);
+    }
+  }
+  setInterval(refreshAgents, 5000);
 
   // SSE
   const sse = new EventSource('/api/stream');

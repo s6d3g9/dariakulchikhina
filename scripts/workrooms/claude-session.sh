@@ -51,10 +51,15 @@ MESSENGER_CORE_URL="${MESSENGER_CORE_URL:-}"
 MESSENGER_INGEST_TOKEN="${MESSENGER_INGEST_TOKEN:-}"
 
 mkdir -p "${STATE_DIR}"
-[ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tkind\n' > "${REGISTRY}"
+[ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tkind\towner_user_id\n' > "${REGISTRY}"
 # Backward-compat migration: existing registries lack the `kind` column.
 if [ -f "${REGISTRY}" ] && ! head -1 "${REGISTRY}" | grep -q kind; then
   awk -F'\t' -v OFS='\t' 'NR==1 {print $0, "kind"; next} {print $0, ""}' "${REGISTRY}" > "${REGISTRY}.tmp" \
+    && mv "${REGISTRY}.tmp" "${REGISTRY}"
+fi
+# Backward-compat migration: existing registries lack the `owner_user_id` column.
+if [ -f "${REGISTRY}" ] && ! head -1 "${REGISTRY}" | grep -q owner_user_id; then
+  awk -F'\t' -v OFS='\t' 'NR==1 {print $0, "owner_user_id"; next} {print $0, ""}' "${REGISTRY}" > "${REGISTRY}.tmp" \
     && mv "${REGISTRY}.tmp" "${REGISTRY}"
 fi
 
@@ -211,7 +216,7 @@ cmd_create() {
   [[ -n "${slug}" ]] || die "slug required"
   [[ "${slug}" =~ ^[a-z0-9][a-z0-9-]{1,39}$ ]] || die "slug must be [a-z0-9-]{2,40}"
 
-  local workroom="" model="sonnet" prompt="" effort="" kind=""
+  local workroom="" model="sonnet" prompt="" effort="" kind="" owner=""
   local agent_id="" run_id="" parent_run=""
   local messenger_url="${MESSENGER_CORE_URL:-}" ingest_token="${MESSENGER_INGEST_TOKEN:-}"
 
@@ -222,6 +227,7 @@ cmd_create() {
       --prompt)             prompt="$2"; shift 2;;
       --effort)             effort="$2"; shift 2;;
       --kind)               kind="$2"; shift 2;;
+      --owner)              owner="$2"; shift 2;;
       --agent-id)           agent_id="$2"; shift 2;;
       --run-id)             run_id="$2"; shift 2;;
       --parent-run)         parent_run="$2"; shift 2;;
@@ -230,6 +236,13 @@ cmd_create() {
       *) die "unknown flag: $1";;
     esac
   done
+
+  # Default owner from env (so every session on this server is tagged with
+  # the tmux operator's messenger user id without needing the flag at
+  # every call). Empty string means "unowned" — visible to all viewers.
+  if [[ -z "${owner}" && -n "${CLAUDE_SESSION_DEFAULT_OWNER:-}" ]]; then
+    owner="${CLAUDE_SESSION_DEFAULT_OWNER}"
+  fi
 
   # --- resolve kind -> skill bundle --------------------------------------
   if [[ -z "${kind}" ]]; then
@@ -279,7 +292,7 @@ cmd_create() {
   prompt="${prompt}${bias}"
 
   # Register first so listing is correct even if the run fails.
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" "${kind}" \
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" "${kind}" "${owner}" \
     >> "${REGISTRY}"
   : > "${logfile}"
 
@@ -329,8 +342,8 @@ cmd_list() {
   if [[ $(wc -l < "${REGISTRY}") -le 1 ]]; then
     echo "(no sessions)"; return 0
   fi
-  printf '%-20s %-36s %-16s %-22s %-10s %-25s %s\n' SLUG UUID WINDOW WORKROOM MODEL CREATED KIND
-  awk -F'\t' 'NR>1 {printf "%-20s %-36s %-16s %-22s %-10s %-25s %s\n", $1, $2, $3, $4, $5, $6, ($7 ? $7 : "-")}' "${REGISTRY}"
+  printf '%-20s %-36s %-16s %-22s %-10s %-25s %-10s %s\n' SLUG UUID WINDOW WORKROOM MODEL CREATED KIND OWNER
+  awk -F'\t' 'NR>1 {printf "%-20s %-36s %-16s %-22s %-10s %-25s %-10s %s\n", $1, $2, $3, $4, $5, $6, ($7 ? $7 : "-"), ($8 ? $8 : "-")}' "${REGISTRY}"
 }
 
 # --- attach ---
@@ -376,6 +389,8 @@ cmd_state() {
   printf 'workroom = %s\n' "$(registry_col "${slug}" 4)"
   printf 'model    = %s\n' "$(registry_col "${slug}" 5)"
   printf 'created  = %s\n' "$(registry_col "${slug}" 6)"
+  printf 'kind     = %s\n' "$(registry_col "${slug}" 7)"
+  printf 'owner    = %s\n' "$(registry_col "${slug}" 8)"
   printf 'logfile  = %s\n' "${STATE_DIR}/${slug}.log"
 }
 

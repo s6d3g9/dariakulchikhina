@@ -10,6 +10,7 @@ const activeTab = ref('mcp')
 
 const tabs = [
   { key: 'agents', label: 'Агенты', icon: 'mdi-robot-outline' },
+  { key: 'cli-sessions', label: 'Сессии CLI', icon: 'mdi-console' },
   { key: 'connectors', label: 'Коннекторы', icon: 'mdi-connection' },
   { key: 'skills', label: 'Навыки', icon: 'mdi-lightning-bolt-outline' },
   { key: 'plugins', label: 'Плагины', icon: 'mdi-puzzle-outline' },
@@ -21,16 +22,40 @@ const tabs = [
 const mcpModel = useMessengerMcp(projectIdRef)
 const extApisModel = useMessengerExternalApis(projectIdRef)
 const agentsModel = useMessengerProjectAgents(projectIdRef)
+const projectSlugRef = computed(() => props.project.slug)
+const cliSessionsModel = useMessengerCliSessions(projectSlugRef)
 
 const agentPickerOpen = ref(false)
 const bootstrapOnFirstProject = useState('messenger-bootstrap-on-arrival', () => false)
 
 onMounted(async () => {
-  await Promise.all([mcpModel.refresh(), extApisModel.refresh(), agentsModel.refresh()])
+  await Promise.all([
+    mcpModel.refresh(),
+    extApisModel.refresh(),
+    agentsModel.refresh(),
+    cliSessionsModel.refresh(),
+  ])
   if (bootstrapOnFirstProject.value && !agentsModel.agents.value.length) {
     bootstrapOnFirstProject.value = false
     agentPickerOpen.value = true
   }
+})
+
+// Auto-refresh CLI sessions every 5s while the user is on the tab — the
+// registry lives on disk and gets new rows whenever `claude-session create`
+// runs, which is not directly observable from the web side.
+let cliSessionsTimer: ReturnType<typeof setInterval> | null = null
+watch(activeTab, (tab) => {
+  if (tab === 'cli-sessions' && !cliSessionsTimer) {
+    cliSessionsTimer = setInterval(() => cliSessionsModel.refresh(), 5000)
+    cliSessionsModel.refresh()
+  } else if (tab !== 'cli-sessions' && cliSessionsTimer) {
+    clearInterval(cliSessionsTimer)
+    cliSessionsTimer = null
+  }
+}, { immediate: true })
+onBeforeUnmount(() => {
+  if (cliSessionsTimer) clearInterval(cliSessionsTimer)
 })
 
 // ── MCP form ───────────────────────────────────────────────────────────────
@@ -231,6 +256,87 @@ async function submitExtForm() {
           @agent-created="agentsModel.refresh()"
           @proposal-applied="agentsModel.refresh()"
         />
+      </VTabsWindowItem>
+
+      <!-- CLI sessions tab — tmux Claude-CLI sessions owned by the current
+           messenger user, scoped to this project by workroom slug. Same
+           source of truth the dashboard (9090) reads. -->
+      <VTabsWindowItem value="cli-sessions" class="project-config-tabs__panel">
+        <div class="project-config-tabs__toolbar">
+          <span class="project-config-tabs__count">
+            Сессии CLI ({{ cliSessionsModel.sessions.value.length }})
+            <span v-if="cliSessionsModel.pending.value" style="opacity:.6">· обновление…</span>
+          </span>
+          <VBtn
+            size="small"
+            variant="text"
+            prepend-icon="mdi-refresh"
+            :loading="cliSessionsModel.pending.value"
+            @click="cliSessionsModel.refresh()"
+          >
+            Обновить
+          </VBtn>
+        </div>
+
+        <div
+          v-if="cliSessionsModel.error.value"
+          class="project-config-tabs__error"
+        >
+          Не удалось загрузить сессии: {{ cliSessionsModel.error.value }}
+        </div>
+
+        <VList
+          v-else-if="cliSessionsModel.sessions.value.length"
+          bg-color="transparent"
+          density="comfortable"
+        >
+          <VListItem
+            v-for="s in cliSessionsModel.sessions.value"
+            :key="s.slug"
+            :title="s.slug"
+            :subtitle="`${s.model || '?'} · ${s.kind || 'default'} · log ${cliSessionsModel.fmtSize(s.logSize)} · ${cliSessionsModel.fmtAge(s.logMtimeMs)}`"
+          >
+            <template #prepend>
+              <VIcon
+                size="20"
+                :color="s.archived ? 'on-surface-variant' : 'primary'"
+              >
+                {{ s.archived ? 'mdi-archive-outline' : 'mdi-console' }}
+              </VIcon>
+            </template>
+            <template #append>
+              <VChip
+                v-if="s.workroom"
+                size="x-small"
+                label
+                color="secondary"
+                class="mr-1"
+              >
+                {{ s.workroom }}
+              </VChip>
+              <VChip
+                v-if="s.archived"
+                size="x-small"
+                label
+                color="surface-variant"
+              >
+                archive
+              </VChip>
+            </template>
+          </VListItem>
+        </VList>
+
+        <div v-else class="project-config-tabs__empty">
+          <VIcon size="36" color="on-surface-variant">mdi-console-line</VIcon>
+          <p class="project-config-tabs__empty-title">Нет сессий</p>
+          <p class="project-config-tabs__empty-hint">
+            Запусти на сервере:
+            <code>
+              claude-session create my-slug --workroom {{ props.project.slug }} --model sonnet --prompt "..."
+            </code>
+            Сессия появится здесь и в дашборде на порту 9090 автоматически.
+          </p>
+        </div>
       </VTabsWindowItem>
 
       <!-- Connectors stub (W4) -->
@@ -453,5 +559,28 @@ async function submitExtForm() {
 .project-config-tabs__coming-label {
   font-size: 0.75rem;
   opacity: 0.45;
+}
+
+.project-config-tabs__error {
+  background: rgba(255, 100, 100, 0.08);
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  color: rgb(var(--v-theme-error));
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 8px 0 12px;
+  font-size: 0.85rem;
+}
+
+.project-config-tabs__empty code {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8em;
+  color: rgb(var(--v-theme-on-surface));
+  word-break: break-all;
+  max-width: 100%;
 }
 </style>
