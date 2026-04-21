@@ -211,7 +211,7 @@ cmd_create() {
   [[ -n "${slug}" ]] || die "slug required"
   [[ "${slug}" =~ ^[a-z0-9][a-z0-9-]{1,39}$ ]] || die "slug must be [a-z0-9-]{2,40}"
 
-  local workroom="" model="sonnet" prompt="" effort="" kind=""
+  local workroom="" model="opus" prompt="" effort="" kind=""
   local agent_id="" run_id="" parent_run=""
   local messenger_url="${MESSENGER_CORE_URL:-}" ingest_token="${MESSENGER_INGEST_TOKEN:-}"
 
