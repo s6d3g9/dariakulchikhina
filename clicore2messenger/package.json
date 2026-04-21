@@ -1,0 +1,18 @@
+{
+  "name": "@daria/clicore2messenger",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/cli.js",
+  "bin": {
+    "clicore2messenger": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types src/adapters/__tests__/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
+  }
+}
