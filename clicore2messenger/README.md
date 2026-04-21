@@ -42,3 +42,12 @@ clicore2messenger \
 | `--run-id` | | (random UUID) | Run identifier |
 | `--cli-session-id` | | | CLI session slug for logging |
 | `--adapter` | | `claude` | Adapter name |
+
+## Wiring sessions
+
+Two session orchestrators live at `scripts/workrooms/`:
+
+- `claude-session.sh` — spawns `claude` CLI, pipes stream-json through `claude-stream-bridge` (default `--adapter=claude`)
+- `copilot-session.sh` — spawns `copilot` CLI, pipes markdown output through `claude-stream-bridge --adapter=copilot`
+
+Run `scripts/workrooms/install-bridge.sh` once to symlink these into `~/bin`.

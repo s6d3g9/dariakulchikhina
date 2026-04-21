@@ -17,4 +17,9 @@ ln -sf "$SESSION_SRC" "$BIN_DIR/claude-session"
 chmod +x "$SESSION_SRC"
 echo "Installed: $BIN_DIR/claude-session -> $SESSION_SRC"
 
+COPILOT_SESSION_SRC="$SCRIPT_DIR/copilot-session.sh"
+ln -sf "$COPILOT_SESSION_SRC" "$BIN_DIR/copilot-session"
+chmod +x "$COPILOT_SESSION_SRC"
+echo "Installed: $BIN_DIR/copilot-session -> $COPILOT_SESSION_SRC"
+
 echo "Make sure $BIN_DIR is in your PATH."
