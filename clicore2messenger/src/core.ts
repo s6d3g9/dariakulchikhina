@@ -5,14 +5,14 @@ import * as path from "node:path";
 import * as readline from "node:readline";
 import type { CliAdapter, IngestEvent } from "./types.ts";
 
-export async function post(url: string, token: string, event: IngestEvent): Promise<void> {
+export async function post(baseUrl: string, agentId: string, token: string, event: IngestEvent): Promise<void> {
   const body = JSON.stringify(event);
   const MAX_ATTEMPTS = 3;
   let attempt = 0;
   while (attempt < MAX_ATTEMPTS) {
     attempt++;
     try {
-      const res = await fetch(`${url}/cli-ingest`, {
+      const res = await fetch(`${baseUrl}/agents/${agentId}/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -62,11 +62,11 @@ export interface SpawnModeOpts {
 }
 
 export async function runSpawnMode(opts: SpawnModeOpts): Promise<number> {
-  const { adapter, model, resume, prompt, runId, conversationId, messengerUrl, token } = opts;
+  const { adapter, model, resume, prompt, runId, conversationId, agentId, messengerUrl, token } = opts;
   const dlqPath = path.join(os.homedir(), "state", "claude-bridge", `${runId}.dlq.ndjson`);
 
   const send = async (event: IngestEvent) => {
-    await post(messengerUrl, token, event).catch(() => writeDlq(dlqPath, event));
+    await post(messengerUrl, agentId, token, event).catch(() => writeDlq(dlqPath, event));
   };
 
   const startMs = Date.now();
@@ -135,16 +135,17 @@ export async function runSpawnMode(opts: SpawnModeOpts): Promise<number> {
 export interface PipeModeOpts {
   adapter: CliAdapter;
   runId: string;
+  agentId: string;
   messengerUrl: string;
   token: string;
 }
 
 export async function runPipeMode(opts: PipeModeOpts): Promise<void> {
-  const { adapter, runId, messengerUrl, token } = opts;
+  const { adapter, runId, agentId, messengerUrl, token } = opts;
   const dlqPath = path.join(os.homedir(), "state", "claude-bridge", `${runId}.dlq.ndjson`);
 
   const send = async (event: IngestEvent) => {
-    await post(messengerUrl, token, event).catch(() => writeDlq(dlqPath, event));
+    await post(messengerUrl, agentId, token, event).catch(() => writeDlq(dlqPath, event));
   };
 
   const state = { finalText: "", tokensIn: 0, tokensOut: 0, costUsd: 0 };

@@ -43,7 +43,7 @@ export async function main(argv: string[]): Promise<void> {
   const pipeMode = !promptArg && !promptFile;
 
   if (pipeMode) {
-    await runPipeMode({ adapter, runId, messengerUrl, token });
+    await runPipeMode({ adapter, runId, agentId, messengerUrl, token });
     process.exit(0);
   }
 
