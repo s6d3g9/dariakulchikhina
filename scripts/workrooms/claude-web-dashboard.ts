@@ -248,6 +248,37 @@ function collectSessionContext(slug) {
 const PORT = Number(process.argv.includes('--port') ? process.argv[process.argv.indexOf('--port') + 1] : 9090);
 const BASIC_USER = process.env.DASHBOARD_USER || '';
 const BASIC_PASS = process.env.DASHBOARD_PASS || '';
+
+// ─── messenger-core link (shared source of truth for agents + sessions) ───
+// Dashboard proxies a narrow slice of messenger-core so the browser never
+// needs a messenger user session: we forward /api/agents and
+// /api/agents/:id/model through here with MESSENGER_DASHBOARD_TOKEN attached.
+const MESSENGER_CORE_URL = (process.env.MESSENGER_CORE_URL || 'http://127.0.0.1:4300').replace(/\/$/, '');
+const MESSENGER_DASHBOARD_TOKEN = process.env.MESSENGER_DASHBOARD_TOKEN || '';
+
+async function proxyMessengerCore(method, path, body) {
+  if (!MESSENGER_DASHBOARD_TOKEN) {
+    return { status: 503, body: { error: 'MESSENGER_DASHBOARD_TOKEN_NOT_SET' } };
+  }
+  const url = MESSENGER_CORE_URL + path;
+  const init = {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + MESSENGER_DASHBOARD_TOKEN,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (body !== undefined) init.body = JSON.stringify(body);
+  try {
+    const r = await fetch(url, init);
+    const text = await r.text();
+    let parsed;
+    try { parsed = text ? JSON.parse(text) : null; } catch { parsed = { raw: text }; }
+    return { status: r.status, body: parsed };
+  } catch (err) {
+    return { status: 502, body: { error: 'MESSENGER_CORE_UNREACHABLE', message: String(err) } };
+  }
+}
 const AUTH_REQUIRED = Boolean(BASIC_USER && BASIC_PASS);
 
 function checkAuth(req, res) {
@@ -810,6 +841,46 @@ async function handle(req, res) {
     const r = await runBin(['send', slug, prompt]);
     res.writeHead(r.code === 0 ? 200 : 500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ code: r.code, stdout: r.stdout, stderr: r.stderr }));
+    return;
+  }
+
+  // ── messenger-core proxy: list agents (with current settings.model) ──
+  // Shared source of truth. Both 9090 and 3300 render the same agent list
+  // + same per-agent model, because both read it from messenger-core.
+  if (p === '/api/agents' && req.method === 'GET') {
+    const r = await proxyMessengerCore('GET', '/dashboard/agents');
+    res.writeHead(r.status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(r.body ?? {}));
+    return;
+  }
+
+  // ── messenger-core proxy: patch agent model ──
+  // Targeted — preserves every other settings field. Picked up by
+  // buildMessengerAgentReply() on the NEXT reply turn (no restart).
+  const modelM = p.match(/^\/api\/agents\/([A-Za-z0-9_-]+)\/model$/);
+  if (modelM && req.method === 'PATCH') {
+    const agentId = modelM[1];
+    let payload;
+    try { payload = JSON.parse(await readBody(req)); } catch { payload = null; }
+    if (!payload || typeof payload.model !== 'string' || !payload.model.trim()) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'model required' }));
+      return;
+    }
+    const r = await proxyMessengerCore('PATCH', `/dashboard/agents/${encodeURIComponent(agentId)}/model`, {
+      model: payload.model.trim(),
+    });
+    res.writeHead(r.status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(r.body ?? {}));
+    return;
+  }
+
+  // ── messenger-core proxy: cli-sessions registry (shared view for both UIs) ──
+  if (p === '/api/cli-sessions/registry' && req.method === 'GET') {
+    const includeArchive = url.searchParams.get('includeArchive') === '1' ? '?includeArchive=1' : '';
+    const r = await proxyMessengerCore('GET', '/dashboard/cli-sessions/registry' + includeArchive);
+    res.writeHead(r.status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(r.body ?? {}));
     return;
   }
 
@@ -1653,7 +1724,44 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
           Selecting a new kind changes the bias prompt for the next turn; existing turns keep their original subjectivity.
         </div>
       \`;
-      rightSideEl.innerHTML = taskHtml + filesHtml + skillsHtml;
+      // ── messenger-agent sync block ──
+      // Shown when the selected tmux session is paired with a messenger
+      // agent (by claudeSessionSlug). The model picker PATCHes
+      // messenger-core/dashboard/agents/:id/model, which is the same source
+      // buildMessengerAgentReply reads on the next reply turn. So 9090 and
+      // 3300 stay in sync on the Composer model without any extra wiring.
+      const bySlug = state.messengerAgentsBySlug || {};
+      const agent = bySlug[slug] || null;
+      let agentHtml = '';
+      if (agent) {
+        const currentModel = (agent.settings && agent.settings.model) || '';
+        const options = Array.isArray(agent.modelOptions) ? agent.modelOptions.slice() : [];
+        if (currentModel && !options.includes(currentModel)) options.unshift(currentModel);
+        const optionEls = options.map(m => '<option value="'+esc(m)+'"'+(m===currentModel?' selected':'')+'>'+esc(m)+'</option>').join('');
+        agentHtml = \`
+          <h3>messenger agent
+            <span class="kind-pill" style="color:#7cc4ff;border-color:#7cc4ff">\${esc(agent.id)}</span>
+          </h3>
+          <dl>
+            <dt>display</dt><dd>\${esc(agent.displayName || '')}</dd>
+            <dt>login</dt><dd>\${esc(agent.login || '')}</dd>
+            \${agent.settings && agent.settings.updatedAt ? '<dt>updated</dt><dd>'+esc(new Date(agent.settings.updatedAt).toLocaleString())+'</dd>' : ''}
+          </dl>
+          <div style="color:var(--mute);font-size:11px;line-height:1.4;margin:.25rem 0 .4rem">\${esc(agent.description || '')}</div>
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.5px">
+            model (applied to next reply)
+            <select class="kind-select" id="agent-model-select" data-agent-id="\${esc(agent.id)}">\${optionEls}</select>
+          </label>
+          <div id="agent-model-status" style="font-size:10px;color:var(--mute);margin-top:.25rem;min-height:12px"></div>
+          <div style="color:var(--mute);font-size:10px;margin-top:.4rem;line-height:1.4">
+            Stored in messenger-core agent-settings.json. Messenger UI (port 3300) reads the same value — change here, new reply picks it up without restart.
+          </div>
+        \`;
+      } else if (state.messengerAgentsError) {
+        agentHtml = '<h3>messenger agent</h3><div style="color:var(--err);font-size:11px">messenger-core unreachable: '+esc(state.messengerAgentsError)+'</div>';
+      }
+
+      rightSideEl.innerHTML = taskHtml + filesHtml + skillsHtml + agentHtml;
       const sel = document.getElementById('skill-kind-select');
       if (sel) sel.onchange = async () => {
         const newKind = sel.value;
@@ -1664,6 +1772,40 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ prompt: msg })
         });
+      };
+      const modelSel = document.getElementById('agent-model-select');
+      const modelStatus = document.getElementById('agent-model-status');
+      if (modelSel) modelSel.onchange = async () => {
+        const agentId = modelSel.dataset.agentId;
+        const nextModel = modelSel.value;
+        if (!agentId || !nextModel) return;
+        modelSel.disabled = true;
+        if (modelStatus) modelStatus.textContent = 'saving…';
+        try {
+          const resp = await fetch('/api/agents/'+encodeURIComponent(agentId)+'/model', {
+            method: 'PATCH',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ model: nextModel }),
+          });
+          if (!resp.ok) {
+            const body = await resp.json().catch(() => ({}));
+            throw new Error(body.error || ('HTTP ' + resp.status));
+          }
+          const body = await resp.json();
+          // Update local cache so the next renderRightSide doesn't flicker
+          // back to the old value.
+          const a = state.messengerAgentsBySlug[slug];
+          if (a) {
+            a.settings = a.settings || {};
+            a.settings.model = body.model;
+            a.settings.updatedAt = body.updatedAt;
+          }
+          if (modelStatus) modelStatus.textContent = 'saved ✓  (next reply on ' + nextModel + ')';
+        } catch (err) {
+          if (modelStatus) modelStatus.textContent = 'save failed: ' + (err && err.message || err);
+        } finally {
+          modelSel.disabled = false;
+        }
       };
     } catch (e) {
       rightSideEl.innerHTML = '<div class="placeholder">failed to load context</div>';
@@ -1755,6 +1897,26 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
         state.skillBundles = await sb.json();
       } catch { state.skillBundles = {}; }
     }
+    // Messenger agents — proxied from messenger-core so the dashboard and
+    // the messenger UI share a single source for per-agent model. Refreshed
+    // every cycle so a PUT from the messenger side shows up here within 1s.
+    try {
+      const ma = await fetch('/api/agents');
+      if (ma.ok) {
+        const json = await ma.json();
+        state.messengerAgents = Array.isArray(json.agents) ? json.agents : [];
+        state.messengerAgentsBySlug = {};
+        for (const a of state.messengerAgents) {
+          if (a && a.claudeSessionSlug) state.messengerAgentsBySlug[a.claudeSessionSlug] = a;
+        }
+        state.messengerAgentsError = null;
+      } else {
+        const body = await ma.json().catch(() => ({}));
+        state.messengerAgentsError = body.error || ('HTTP ' + ma.status);
+      }
+    } catch (err) {
+      state.messengerAgentsError = String(err && err.message || err);
+    }
     // Always include archive now — folder collapses/hides it visually
     const r = await fetch('/api/sessions?include=archive');
     const arr = await r.json();
@@ -1845,6 +2007,25 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 
   // Periodic right-side refresh (tool_use events trickle in over time).
   setInterval(() => { if (state.active) renderRightSide(state.active); }, 5000);
+
+  // Periodic agent-settings poll — keeps the Composer model picker in sync
+  // with the messenger UI (port 3300) when the model is changed over there.
+  async function refreshAgents() {
+    try {
+      const ma = await fetch('/api/agents');
+      if (!ma.ok) return;
+      const json = await ma.json();
+      state.messengerAgents = Array.isArray(json.agents) ? json.agents : [];
+      state.messengerAgentsBySlug = {};
+      for (const a of state.messengerAgents) {
+        if (a && a.claudeSessionSlug) state.messengerAgentsBySlug[a.claudeSessionSlug] = a;
+      }
+      state.messengerAgentsError = null;
+    } catch (err) {
+      state.messengerAgentsError = String(err && err.message || err);
+    }
+  }
+  setInterval(refreshAgents, 5000);
 
   // SSE
   const sse = new EventSource('/api/stream');

@@ -93,6 +93,11 @@ const envSchema = z.object({
   LIVEKIT_API_SECRET: z.string().trim().optional(),
   // Claude CLI — path to claude binary for agent subprocess spawning
   CLAUDE_BIN: z.string().optional(),
+  // Shared secret for the /dashboard/* surface consumed by claude-web-dashboard
+  // (port 9090). Narrower than the user session + narrower than the ingest
+  // token; the dashboard reads agent metadata and patches the Composer model
+  // through this auth. Leave empty to disable the endpoints entirely.
+  MESSENGER_DASHBOARD_TOKEN: z.string().optional(),
 })
 
 export function readMessengerConfig() {

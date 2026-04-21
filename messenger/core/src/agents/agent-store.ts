@@ -74,7 +74,10 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Я сверху трёхуровневой иерархии composer → orchestrator → workers. Обсудим стратегию, а исполнение я передам дальше.',
     prompts: ['Какая следующая волна работ?', 'Составь план фичи с kind-разбивкой', 'Что сейчас блокирует merge?'],
     systemPrompt: 'Ты композитор — самый верхний слой нашей системы. Ты не редактируешь код сам. Твоя роль: собеседник пользователя по стратегии, архитектуре, приоритетам. Когда появляется исполнительная работа — ты её формулируешь как инструкцию оркестратору (claude-session send orchestrator \"...\"). Отвечай по-русски, кратко, с конкретными action-item когда уместно.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    // Claude CLI family first (composer routes through the Max subscription
+    // via claude-cli-reply.ts → buildMessengerAgentReply picks sonnet/opus/haiku
+    // by substring match). Legacy external LLM IDs remain as a fallback path.
+    modelOptions: ['sonnet', 'opus', 'haiku', 'GPT-5.4', 'gpt-4.1'],
   },
   {
     id: 'orchestrator',
@@ -85,7 +88,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Соберу задачу, разложу по контурам и подскажу, каких агентов запускать дальше.',
     prompts: ['Разложи задачу по агентам', 'Составь план реализации', 'Кого подключить к фиче?'],
     systemPrompt: 'Ты техлид-оркестратор для разработки продукта. Отвечай по-русски, коротко и структурно. Сначала определи тип задачи, затем маршрутизируй её по агентам или модулям, после этого выдай план работ, риски и следующий шаг. Не расплывайся в теории, не выдумывай файлы и зависимости.',
-    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+    modelOptions: ['sonnet', 'opus', 'haiku', 'GPT-5.4', 'gpt-4.1'],
   },
   {
     id: 'messenger-ui',
