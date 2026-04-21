@@ -1648,12 +1648,14 @@ const HTML = /* html */ `<!doctype html><html lang="en"><head>
 
   function escHtml(s){ return String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
-  // Sessions filtered by the active project (simplest join: session.workroom
-  // == project.slug). When no project is selected, returns every session.
+  // Sessions scoped by the active project. An empty workroom is treated
+  // as a "global" session (composer etc.) and therefore visible in every
+  // project view — consistent with the server-side /cli-sessions/registry
+  // filter. When no project is selected, all sessions are shown.
   function visibleSessions() {
     if (!state.activeProjectSlug) return state.sessions;
     const slug = state.activeProjectSlug;
-    return state.sessions.filter(s => (s.workroom || '') === slug);
+    return state.sessions.filter(s => !s.workroom || s.workroom === slug);
   }
 
   function renderTabs() {

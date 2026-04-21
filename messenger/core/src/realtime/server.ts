@@ -872,7 +872,11 @@ export async function createMessengerServer() {
         ownerId: session.user.id,
       })
       if (projectSlug) {
-        sessions = sessions.filter((s) => s.workroom === projectSlug)
+        // Match sessions whose workroom equals the project slug, PLUS any
+        // session without a workroom (treated as "global" — the composer
+        // is the canonical example; it's one-per-server, not per-project,
+        // so it must show up inside every project view).
+        sessions = sessions.filter((s) => !s.workroom || s.workroom === projectSlug)
       }
       return {
         sessions,
