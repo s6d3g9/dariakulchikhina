@@ -53,6 +53,7 @@ export interface SpawnModeOpts {
   adapter: CliAdapter;
   model: string;
   resume?: string;
+  effort?: "low" | "medium" | "high" | "xhigh";
   prompt: string;
   runId: string;
   conversationId: string;
@@ -62,7 +63,7 @@ export interface SpawnModeOpts {
 }
 
 export async function runSpawnMode(opts: SpawnModeOpts): Promise<number> {
-  const { adapter, model, resume, prompt, runId, conversationId, agentId, messengerUrl, token } = opts;
+  const { adapter, model, resume, effort, prompt, runId, conversationId, agentId, messengerUrl, token } = opts;
   const dlqPath = path.join(os.homedir(), "state", "claude-bridge", `${runId}.dlq.ndjson`);
 
   const send = async (event: IngestEvent) => {
@@ -73,17 +74,30 @@ export async function runSpawnMode(opts: SpawnModeOpts): Promise<number> {
 
   await send({ type: "run_start", runId, conversationId, prompt });
 
-  const { bin, args } = adapter.spawnArgs({ model, resume, inputFormat: "text" });
+  const { bin, args } = adapter.spawnArgs({ model, resume, effort, prompt, inputFormat: "text" });
+  const useStdin = adapter.pipeStdin !== false;
   const child = spawn(bin, args, {
-    stdio: ["pipe", "pipe", "pipe"],
+    stdio: [useStdin ? "pipe" : "ignore", "pipe", "pipe"],
     env: { ...process.env },
   });
 
-  child.stdin.write(prompt);
-  child.stdin.end();
+  if (useStdin) {
+    child.stdin!.write(prompt);
+    child.stdin!.end();
+  }
 
   const state = { finalText: "", tokensIn: 0, tokensOut: 0, costUsd: 0 };
-  const rl = readline.createInterface({ input: child.stdout, crlfDelay: Infinity });
+
+  // Register stderr and close handlers BEFORE the readline loop so fast-exiting
+  // children (e.g. /bin/echo in tests) don't fire 'close' before we listen.
+  const stderrChunks: Buffer[] = [];
+  child.stderr!.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
+  const closePromise = new Promise<number>((resolve) => {
+    child.on("close", (code) => resolve(code ?? 1));
+  });
+
+  // stdout is always "pipe" — non-null assertion is safe
+  const rl = readline.createInterface({ input: child.stdout!, crlfDelay: Infinity });
 
   for await (const line of rl) {
     const trimmed = line.trim();
@@ -101,12 +115,7 @@ export async function runSpawnMode(opts: SpawnModeOpts): Promise<number> {
     }
   }
 
-  const stderrChunks: Buffer[] = [];
-  child.stderr.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
-
-  const exitCode = await new Promise<number>((resolve) => {
-    child.on("close", (code) => resolve(code ?? 1));
-  });
+  const exitCode = await closePromise;
 
   const durationMs = Date.now() - startMs;
 
@@ -121,13 +130,31 @@ export async function runSpawnMode(opts: SpawnModeOpts): Promise<number> {
     return 1;
   }
 
-  await send({
-    type: "complete",
-    runId,
-    finalText: state.finalText,
-    totalTokens: state.tokensIn + state.tokensOut,
-    durationMs,
-  });
+  // Let adapter flush buffered state; if it emits complete we use that (with real timing).
+  const finalizeEvents = adapter.finalize?.({ runId, state }) ?? [];
+  let sentComplete = false;
+  for (const ev of finalizeEvents) {
+    if (ev.type === "complete") {
+      await send({
+        ...ev,
+        totalTokens: (state.tokensIn + state.tokensOut) || ev.totalTokens,
+        durationMs,
+      });
+      sentComplete = true;
+    } else {
+      await send(ev);
+    }
+  }
+
+  if (!sentComplete) {
+    await send({
+      type: "complete",
+      runId,
+      finalText: state.finalText,
+      totalTokens: state.tokensIn + state.tokensOut,
+      durationMs,
+    });
+  }
 
   return 0;
 }
@@ -148,6 +175,7 @@ export async function runPipeMode(opts: PipeModeOpts): Promise<void> {
     await post(messengerUrl, agentId, token, event).catch(() => writeDlq(dlqPath, event));
   };
 
+  const startMs = Date.now();
   const state = { finalText: "", tokensIn: 0, tokensOut: 0, costUsd: 0 };
   const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
 
@@ -163,6 +191,20 @@ export async function runPipeMode(opts: PipeModeOpts): Promise<void> {
       continue;
     }
     for (const ev of events) {
+      await send(ev);
+    }
+  }
+
+  const durationMs = Date.now() - startMs;
+  const finalizeEvents = adapter.finalize?.({ runId, state }) ?? [];
+  for (const ev of finalizeEvents) {
+    if (ev.type === "complete") {
+      await send({
+        ...ev,
+        totalTokens: (state.tokensIn + state.tokensOut) || ev.totalTokens,
+        durationMs,
+      });
+    } else {
       await send(ev);
     }
   }

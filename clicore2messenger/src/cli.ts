@@ -2,6 +2,7 @@
 import * as fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import { claudeAdapter } from "./adapters/claude.ts";
+import { copilotAdapter } from "./adapters/copilot.ts";
 import { runSpawnMode, runPipeMode } from "./core.ts";
 
 export async function main(argv: string[]): Promise<void> {
@@ -32,13 +33,21 @@ export async function main(argv: string[]): Promise<void> {
   const token =
     get("--ingest-token", "--token") ?? process.env.MESSENGER_INGEST_TOKEN ?? "";
   const resume = get("--resume");
+  const effort = get("--effort") as "low" | "medium" | "high" | "xhigh" | undefined;
   const runId = get("--run-id") ?? randomUUID();
   const adapterName = get("--adapter") ?? "claude";
 
   if (!agentId) die("--agent-id is required");
   if (!token) die("MESSENGER_INGEST_TOKEN / --ingest-token is required");
 
-  const adapter = adapterName === "claude" ? claudeAdapter : die(`unknown adapter: ${adapterName}`);
+  let adapter;
+  if (adapterName === "claude") {
+    adapter = claudeAdapter;
+  } else if (adapterName === "copilot") {
+    adapter = copilotAdapter;
+  } else {
+    die(`unknown adapter: ${adapterName}`);
+  }
 
   const pipeMode = !promptArg && !promptFile;
 
@@ -56,6 +65,7 @@ export async function main(argv: string[]): Promise<void> {
     adapter,
     model,
     resume,
+    effort,
     prompt,
     runId,
     conversationId,

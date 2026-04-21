@@ -5,6 +5,11 @@ import type { CliAdapter, CliAdapterContext, IngestEvent } from "../types.ts";
 export const claudeAdapter: CliAdapter = {
   name: "claude",
 
+  finalize(_ctx: CliAdapterContext): IngestEvent[] {
+    // complete is emitted by the result event mapping; nothing to flush
+    return [];
+  },
+
   parseLine(line: string, ctx: CliAdapterContext): IngestEvent[] {
     const trimmed = line.trim();
     if (!trimmed) return [];

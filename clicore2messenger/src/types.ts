@@ -6,6 +6,7 @@ export type Substate =
   | "tool_call"
   | "awaiting_input"
   | "streaming"
+  | "running"
   | "error";
 
 export type IngestEvent =
@@ -29,10 +30,16 @@ export interface CliAdapterContext {
 
 export interface CliAdapter {
   readonly name: "claude" | "copilot" | string;
+  /** When false, the bridge uses stdin:ignore for the child process (adapter takes prompt via args). Default: true. */
+  readonly pipeStdin?: boolean;
   parseLine(line: string, ctx: CliAdapterContext): IngestEvent[];
+  /** Called once after EOF / child exit. Emits any buffered final events. */
+  finalize?(ctx: CliAdapterContext): IngestEvent[];
   spawnArgs(opts: {
     model: string;
     resume?: string;
     inputFormat?: "text" | "stream-json";
+    prompt?: string;
+    effort?: "low" | "medium" | "high" | "xhigh";
   }): { bin: string; args: string[] };
 }
