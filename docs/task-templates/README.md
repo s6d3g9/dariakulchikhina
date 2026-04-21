@@ -10,6 +10,11 @@ These are canonical TASK.md templates for the composer → orchestrator → work
 | `bug.md` | `backend-api`, `frontend-ui`, `messenger-realtime`, `incident` | Fixing a reported defect with reproduction steps, root cause analysis, and minimal fix scope. |
 | `refactor.md` | `backend-module`, `frontend-ui` (primarily) | Extracting, splitting, renaming, or moving a cohesive code unit without changing behavior. |
 | `tests.md` | `tests` | Adding or extending test suites to improve coverage, protect invariants, or prevent regressions. |
+| `db-migration.md` | `db-migration` | Drizzle schema change (new table, column, index, FK). Required before any backend-api/backend-module task that depends on the schema change. |
+| `backend-api.md` | `backend-api` | New or updated HTTP endpoint in `server/api/**`. Thin handler delegating to service. |
+| `backend-module.md` | `backend-module` | Service + repository layer work inside `server/modules/<domain>/`. Business logic and persistence split. |
+| `frontend-ui.md` | `frontend-ui` | Vue component, composable, or FSD slice in `app/` or `messenger/web/`. |
+| `docs-update.md` | `docs-update` | Architecture doc sync after a completed wave, new ADR, runbook, or catalogue entry. |
 
 ## How TASK.md flows
 
