@@ -64,3 +64,35 @@ Both feed the same session; output updates live on the dashboard and in the UI.
 | Agent run events (persisted) | PG `messenger_agent_run_events` | One row per event + edge; indexed by `agent_id` |
 | Agent run stream (live) | PG `messenger_agent_run_streams` | Output chunks, cursor-based pagination (see UI) |
 | Dashboard auth | `~/.claude-dashboard-auth` | Basic auth credentials; regenerate to rotate |
+| DLQ (failed events) | `~/state/claude-bridge-dlq/*.ndjson` | Events that failed to POST; replayed with `claude-bridge-dlq` |
+
+## 8. DLQ replay
+
+When the stream bridge cannot deliver events to messenger core (network error, restart, etc.) it writes
+them to `~/state/claude-bridge-dlq/<filename>.ndjson` (one JSON event per line).
+
+**Inspect the queue:**
+```bash
+claude-bridge-dlq list            # all files with event count, timestamps, size
+claude-bridge-dlq show <file>     # pretty-print events via jq
+```
+
+**Replay a file:**
+```bash
+# Dry-run first — prints what would be POSTed without sending
+claude-bridge-dlq replay <file> --dry-run --agent-id <agentId>
+
+# Live replay — POSTs events; deletes the file on full success
+MESSENGER_INGEST_TOKEN=<token> claude-bridge-dlq replay <file> --agent-id <agentId>
+```
+
+The agent ID is auto-detected from the filename when it starts with a UUID (`<agentId>-*.ndjson`);
+otherwise pass `--agent-id` explicitly.
+
+**On failure:** the file is left intact, failed payloads are printed to stderr, and the command exits 1.
+Re-running is safe — the server deduplicates by `runId` + event sequence.
+
+**Remove a file without replaying:**
+```bash
+claude-bridge-dlq purge <file>
+```
