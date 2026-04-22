@@ -80,6 +80,10 @@ export function useAgentsApi() {
     })
   }
 
+  function killCliSession(slug: string) {
+    return auth.request<void>(`/cli-sessions/${slug}`, { method: 'DELETE' })
+  }
+
   return {
     listAgents,
     getAgentSettings,
@@ -94,5 +98,6 @@ export function useAgentsApi() {
     getAgentRun,
     listAgentEdgePayloads,
     listCliSessions,
+    killCliSession,
   }
 }

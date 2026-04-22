@@ -362,4 +362,41 @@ export function registerOrchestrationRoutes(
       return { id: inserted.id }
     },
   )
+
+  // DELETE /cli-sessions/:slug
+  app.delete<{ Params: { slug: string } }>(
+    '/cli-sessions/:slug',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const { slug } = request.params
+
+      const [session] = await db
+        .select({ id: messengerCliSessions.id })
+        .from(messengerCliSessions)
+        .where(
+          and(
+            eq(messengerCliSessions.slug, slug),
+            isNull(messengerCliSessions.deletedAt),
+          ),
+        )
+        .limit(1)
+
+      if (!session) {
+        return reply.code(404).send({ error: 'SESSION_NOT_FOUND' })
+      }
+
+      const result = spawnSync('claude-session', ['kill', slug], {
+        encoding: 'utf-8',
+      })
+
+      if (result.error || result.status !== 0) {
+        return reply.code(500).send({ error: 'EXEC_FAILED', stderr: result.stderr ?? '' })
+      }
+
+      return reply.code(204).send()
+    },
+  )
 }

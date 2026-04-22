@@ -68,5 +68,20 @@ export function useMessengerCliSessions() {
     }
   }
 
-  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh }
+  async function killSession(slug: string) {
+    const removedIdx = sessions.value.findIndex(s => s.slug === slug)
+    if (removedIdx !== -1) {
+      const backup = sessions.value[removedIdx]
+      sessions.value.splice(removedIdx, 1)
+      try {
+        await api.killCliSession(slug)
+      }
+      catch {
+        if (backup) sessions.value.splice(removedIdx, 0, backup)
+        throw new Error('Failed to kill session')
+      }
+    }
+  }
+
+  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh, killSession }
 }

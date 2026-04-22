@@ -94,6 +94,8 @@ const messageReactionOptions = ['👍', '❤️', '🔥', '😂', '👏', '😮'
 const securitySummary = ref<MessengerConversationSecuritySummary | null>(null)
 const securitySummaryPending = ref(false)
 const securitySummaryUpdatedAt = ref<string | null>(null)
+const killSessionSlug = ref<string | null>(null)
+const killSessionPending = ref(false)
 
 let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
 let composerResizeObserver: ResizeObserver | null = null
@@ -1997,6 +1999,20 @@ function relationPreviewText(message: { body: string; kind: 'text' | 'file'; att
   return message.body
 }
 
+async function handleKillSession(slug: string) {
+  if (!confirm(`Kill session ${slug}?`)) return
+  killSessionPending.value = true
+  try {
+    await cliSessionsModel.killSession(slug)
+  }
+  catch (e) {
+    console.error('Failed to kill session:', e)
+  }
+  finally {
+    killSessionPending.value = false
+  }
+}
+
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown)
 
@@ -2085,29 +2101,51 @@ onBeforeUnmount(() => {
       <div v-if="chatSessNavVisible" class="sess-nav">
         <div v-if="cliSessionsModel.hierarchy.value[0]?.length" class="sess-nav__row sess-nav__row--composers">
           <span class="sess-nav__label">Composers</span>
-          <div
+          <VMenu
             v-for="session in cliSessionsModel.hierarchy.value[0]"
             :key="session.slug"
-            class="sess-nav__tab"
-            :title="session.slug"
           >
-            <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
-            <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
-            <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
-          </div>
+            <template #activator="{ props }">
+              <div
+                class="sess-nav__tab"
+                :title="session.slug"
+                v-bind="props"
+              >
+                <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+                <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
+                <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+              </div>
+            </template>
+            <VList density="compact">
+              <VListItem @click="handleKillSession(session.slug)">
+                <VListItemTitle>Kill session</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
         </div>
         <div v-if="cliSessionsModel.hierarchy.value[1]?.length" class="sess-nav__row sess-nav__row--orchestrators">
           <span class="sess-nav__label">Orchestrators</span>
-          <div
+          <VMenu
             v-for="session in cliSessionsModel.hierarchy.value[1]"
             :key="session.slug"
-            class="sess-nav__tab"
-            :title="session.slug"
           >
-            <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
-            <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
-            <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
-          </div>
+            <template #activator="{ props }">
+              <div
+                class="sess-nav__tab"
+                :title="session.slug"
+                v-bind="props"
+              >
+                <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+                <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
+                <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+              </div>
+            </template>
+            <VList density="compact">
+              <VListItem @click="handleKillSession(session.slug)">
+                <VListItemTitle>Kill session</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
         </div>
         <template v-if="chatWorkerGroups.length">
           <div class="sess-nav__row sess-nav__row--workers">
@@ -2115,16 +2153,27 @@ onBeforeUnmount(() => {
           </div>
           <div v-for="group in chatWorkerGroups" :key="group.kind" class="sess-nav__row sess-nav__row--wg">
             <span class="sess-nav__wg-label">{{ getSessionKindMeta(group.kind).label }}</span>
-            <div
+            <VMenu
               v-for="session in group.sessions"
               :key="session.slug"
-              class="sess-nav__tab"
-              :title="session.slug"
             >
-              <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
-              <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
-              <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
-            </div>
+              <template #activator="{ props }">
+                <div
+                  class="sess-nav__tab"
+                  :title="session.slug"
+                  v-bind="props"
+                >
+                  <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+                  <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
+                  <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+                </div>
+              </template>
+              <VList density="compact">
+                <VListItem @click="handleKillSession(session.slug)">
+                  <VListItemTitle>Kill session</VListItemTitle>
+                </VListItem>
+              </VList>
+            </VMenu>
           </div>
         </template>
       </div>
