@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-restricted-imports
 import { drizzle } from 'drizzle-orm/postgres-js'
 // eslint-disable-next-line no-restricted-imports
-import { eq, and, isNull, sql, gt, lt, lte, or, desc } from 'drizzle-orm'
+import { eq, and, isNull, sql, gt, lt, lte, or, desc, asc } from 'drizzle-orm'
 // eslint-disable-next-line no-restricted-imports
 import postgres from 'postgres'
 // eslint-disable-next-line no-restricted-imports
@@ -10,12 +10,35 @@ import {
   messengerAgentRuns,
   messengerAgentRunEvents,
   messengerCliSessions,
+  messengerSubscriptions,
+  messengerAgentModelRouting,
+  messengerProjectSkills,
+  messengerProjectPlugins,
 } from '../../../../server/db/schema/messenger.ts'
 import { readMessengerConfig } from '../config.ts'
 
-export { messengerAgents, messengerAgentRuns, messengerAgentRunEvents, messengerCliSessions, eq, and, isNull, sql, gt, lt, lte, or, desc }
+export {
+  messengerAgents,
+  messengerAgentRuns,
+  messengerAgentRunEvents,
+  messengerCliSessions,
+  messengerSubscriptions,
+  messengerAgentModelRouting,
+  messengerProjectSkills,
+  messengerProjectPlugins,
+  eq, and, isNull, sql, gt, lt, lte, or, desc, asc,
+}
 
-const schema = { messengerAgents, messengerAgentRuns, messengerAgentRunEvents, messengerCliSessions }
+const schema = {
+  messengerAgents,
+  messengerAgentRuns,
+  messengerAgentRunEvents,
+  messengerCliSessions,
+  messengerSubscriptions,
+  messengerAgentModelRouting,
+  messengerProjectSkills,
+  messengerProjectPlugins,
+}
 export type IngestDb = ReturnType<typeof drizzle<typeof schema>>
 
 let _db: IngestDb | null = null

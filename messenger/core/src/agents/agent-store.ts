@@ -2,6 +2,7 @@ import { getMessengerAgentSettings, resolveMessengerAgentActiveRepository, resol
 import { retrieveMessengerAgentKnowledge, type MessengerAgentKnowledgeRetrieval } from './agent-knowledge-store.ts'
 import { callMessengerAgentModel, isMessengerAgentLlmConfigured, type MessengerAgentLlmMessage } from './agent-llm.ts'
 import { callClaudeSessionReply } from './claude-cli-reply.ts'
+import { routeAgentReply } from './subscription-router.ts'
 import { useIngestDb, messengerAgents, eq, and, isNull } from './ingest-db.ts'
 
 export interface MessengerAgentRecord {
@@ -665,17 +666,40 @@ export async function buildMessengerAgentReply(
     })),
   })
 
-  // Prefer the user's Claude Code CLI subscription when the agent is
-  // wired to a claude-session slug. Ephemeral per-call session: system
-  // prompt + recent messenger transcript go in; plain reply text comes
-  // out. Falls through to the external LLM path on any failure.
+  // --- Primary path: subscription router -----------------------------------
+  // Try the DB-configured subscription first (supports all providers).
+  // Falls through to legacy paths on NO_ROUTING_CONFIG or any error.
+  if (normalizedMessage) {
+    try {
+      const text = await routeAgentReply({
+        agentId,
+        claudeSessionSlug: agent.claudeSessionSlug,
+        model: modelOverride ?? settings.model ?? undefined,
+        systemPrompt: agent.systemPrompt,
+        history: history.slice(-8).map(h => ({ role: h.role, content: h.content })),
+        message: normalizedMessage,
+      })
+      await runtimeHooks.onTrace?.({
+        phase: 'completed',
+        status: 'completed',
+        summary: `Ответ через subscription router (${agent.claudeSessionSlug ?? 'api'}).`,
+      })
+      return text
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg !== 'NO_ROUTING_CONFIG') {
+        console.warn('[agent-reply] subscription router failed, falling back:', msg)
+      }
+      // NO_ROUTING_CONFIG → no routing row → fall through to legacy path
+    }
+  }
+
+  // --- Legacy fallback: direct claude-session slug -------------------------
   if (normalizedMessage && agent.claudeSessionSlug) {
     try {
       const effectiveModel = modelOverride ?? settings.model
       const text = await callClaudeSessionReply({
         slug: agent.claudeSessionSlug,
-        // Pass the full model ID so the CLI resolves it correctly.
-        // Short aliases ('opus'/'sonnet') map to older model generations.
         model: effectiveModel ?? undefined,
         systemPrompt: agent.systemPrompt,
         history: history.slice(-8).map(h => ({ role: h.role, content: h.content })),
@@ -684,12 +708,11 @@ export async function buildMessengerAgentReply(
       await runtimeHooks.onTrace?.({
         phase: 'completed',
         status: 'completed',
-        summary: `Ответ получен через claude-session ${agent.claudeSessionSlug}.`,
+        summary: `Ответ через claude-session ${agent.claudeSessionSlug} (legacy).`,
       })
       return text
     } catch (err) {
-      // Non-fatal: log and fall through to the external LLM path below.
-      console.warn('[agent-reply] claude-session failed, falling back:', err instanceof Error ? err.message : err)
+      console.warn('[agent-reply] claude-session failed, falling back to LLM:', err instanceof Error ? err.message : err)
     }
   }
 
