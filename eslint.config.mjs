@@ -46,6 +46,7 @@ export default tseslint.config(
       'cityfarm/**',
       'messenger/web/.nuxt/**',
       'messenger/web/.output/**',
+      'messenger/core/dist/**',
       '.claude/worktrees/**',
       '**/*.d.ts',
       // Legacy one-off scripts at repo root
@@ -514,6 +515,17 @@ export default tseslint.config(
     ],
     rules: {
       'no-restricted-syntax': 'off',
+    },
+  },
+
+  // messenger/core/src/mcp/** — standalone stdio MCP server processes.
+  // These are child processes with their own env/config; they are NOT part of
+  // the messenger HTTP runtime, so cross-runtime and process.env rules are relaxed.
+  {
+    files: ['messenger/core/src/mcp/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
+      'no-restricted-imports': 'off',
     },
   },
 
