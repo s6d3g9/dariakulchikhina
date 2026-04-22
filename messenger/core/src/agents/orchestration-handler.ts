@@ -1,4 +1,4 @@
-import { spawnSync as _spawnSync } from 'node:child_process'
+import { spawnSync as _spawnSync, execFile } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
@@ -306,6 +306,25 @@ export function registerOrchestrationRoutes(
           agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
         })),
       }
+    },
+  )
+
+  // POST /cli-sessions/:slug/compact — send /compact to tmux window
+  app.post<{ Params: { slug: string } }>(
+    '/cli-sessions/:slug/compact',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const { slug } = request.params
+      const check = spawnSync('tmux', ['has-session', '-t', `cc:cc-${slug}`], { timeout: 2000 })
+      if (check.status !== 0) {
+        return reply.code(404).send({ error: 'SESSION_NOT_FOUND' })
+      }
+
+      execFile('tmux', ['send-keys', '-t', `cc:cc-${slug}`, '/compact', 'Enter'], () => {})
+      return reply.code(204).send()
     },
   )
 

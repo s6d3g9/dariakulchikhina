@@ -68,5 +68,9 @@ export function useMessengerCliSessions() {
     }
   }
 
-  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh }
+  async function compactSession(slug: string) {
+    await api.compactCliSession(slug)
+  }
+
+  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh, compactSession }
 }

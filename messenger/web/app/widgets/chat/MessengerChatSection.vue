@@ -270,6 +270,13 @@ const chatWorkerGroups = computed(() => {
   return [...groups.entries()].map(([kind, sessions]) => ({ kind, sessions }))
 })
 
+const activeCliSession = computed(() => {
+  const peerId = conversations.activeConversation.value?.peerUserId
+  if (!peerId) return null
+  return cliSessionsModel.runningSessions.value.find(s => s.agentId === peerId) ?? null
+})
+const compactPending = ref(false)
+
 const activeConversationSupportsSecuritySummary = computed(() => conversations.activeConversation.value?.peerType === 'user')
 const canForwardFromActiveConversation = computed(() => activeConversationPolicy.value?.allowForwardOut !== false)
 const allowMutualDelete = computed(() => Boolean(activeConversationPolicy.value?.allowMutualDelete))
@@ -1919,6 +1926,32 @@ function handleChatAreaPointerDown() {
   }
 }
 
+async function handleCompact() {
+  const session = activeCliSession.value
+  if (!session || conversations.messagePending.value || compactPending.value) {
+    return
+  }
+
+  copiedLabel.value = 'Compacting context…'
+  compactPending.value = true
+  try {
+    await cliSessionsModel.compactSession(session.slug)
+    copiedLabel.value = 'Compact sent'
+    setTimeout(() => {
+      if (copiedLabel.value === 'Compact sent') {
+        copiedLabel.value = ''
+      }
+    }, 2200)
+  }
+  catch {
+    copiedLabel.value = ''
+    actionError.value = 'Не удалось отправить /compact.'
+  }
+  finally {
+    compactPending.value = false
+  }
+}
+
 async function handleRunStarted() {
   actionError.value = ''
   if (!draft.value.trim() || !conversations.activeConversation.value) {
@@ -2083,6 +2116,16 @@ onBeforeUnmount(() => {
 
       <!-- Session hierarchy bar — below chat header, agent conversations only -->
       <div v-if="chatSessNavVisible" class="sess-nav">
+        <div class="sess-nav__toolbar">
+          <button
+            class="sess-nav__compact-btn"
+            :disabled="!activeCliSession || conversations.messagePending.value || compactPending"
+            title="Send /compact to the active Claude session"
+            @click="handleCompact"
+          >
+            Compact
+          </button>
+        </div>
         <div v-if="cliSessionsModel.hierarchy.value[0]?.length" class="sess-nav__row sess-nav__row--composers">
           <span class="sess-nav__label">Composers</span>
           <div

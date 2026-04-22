@@ -80,6 +80,10 @@ export function useAgentsApi() {
     })
   }
 
+  function compactCliSession(slug: string) {
+    return auth.request<Record<string, never>>(`/cli-sessions/${encodeURIComponent(slug)}/compact`, { method: 'POST' })
+  }
+
   return {
     listAgents,
     getAgentSettings,
@@ -94,5 +98,6 @@ export function useAgentsApi() {
     getAgentRun,
     listAgentEdgePayloads,
     listCliSessions,
+    compactCliSession,
   }
 }
