@@ -22,4 +22,9 @@ ln -sf "$COPILOT_SESSION_SRC" "$BIN_DIR/copilot-session"
 chmod +x "$COPILOT_SESSION_SRC"
 echo "Installed: $BIN_DIR/copilot-session -> $COPILOT_SESSION_SRC"
 
+COPILOT_BRIDGE_SRC="$SCRIPT_DIR/copilot-stream-bridge.sh"
+ln -sf "$COPILOT_BRIDGE_SRC" "$BIN_DIR/copilot-stream-bridge"
+chmod +x "$COPILOT_BRIDGE_SRC"
+echo "Installed: $BIN_DIR/copilot-stream-bridge -> $COPILOT_BRIDGE_SRC"
+
 echo "Make sure $BIN_DIR is in your PATH."

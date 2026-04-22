@@ -51,10 +51,19 @@ MESSENGER_CORE_URL="${MESSENGER_CORE_URL:-}"
 MESSENGER_INGEST_TOKEN="${MESSENGER_INGEST_TOKEN:-}"
 
 mkdir -p "${STATE_DIR}"
-[ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tkind\n' > "${REGISTRY}"
-# Backward-compat migration: existing registries lack the `kind` column.
+[ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tkind\tproject_id\teffort\tengine\n' > "${REGISTRY}"
+# Backward-compat migrations: add missing columns one at a time.
 if [ -f "${REGISTRY}" ] && ! head -1 "${REGISTRY}" | grep -q kind; then
-  awk -F'\t' -v OFS='\t' 'NR==1 {print $0, "kind"; next} {print $0, ""}' "${REGISTRY}" > "${REGISTRY}.tmp" \
+  awk -F'\t' -v OFS='\t' 'NR==1 {print $0, "kind", "project_id", "effort", "engine"; next} {print $0, "", "", "", "claude"}' "${REGISTRY}" > "${REGISTRY}.tmp" \
+    && mv "${REGISTRY}.tmp" "${REGISTRY}"
+elif [ -f "${REGISTRY}" ] && ! head -1 "${REGISTRY}" | grep -q project_id; then
+  awk -F'\t' -v OFS='\t' 'NR==1 {print $0, "project_id", "effort", "engine"; next} {print $0, "", "", "claude"}' "${REGISTRY}" > "${REGISTRY}.tmp" \
+    && mv "${REGISTRY}.tmp" "${REGISTRY}"
+elif [ -f "${REGISTRY}" ] && ! head -1 "${REGISTRY}" | grep -q effort; then
+  awk -F'\t' -v OFS='\t' 'NR==1 {print $0, "effort", "engine"; next} {print $0, "", "claude"}' "${REGISTRY}" > "${REGISTRY}.tmp" \
+    && mv "${REGISTRY}.tmp" "${REGISTRY}"
+elif [ -f "${REGISTRY}" ] && ! head -1 "${REGISTRY}" | grep -q engine; then
+  awk -F'\t' -v OFS='\t' 'NR==1 {print $0, "engine"; next} {print $0, "claude"}' "${REGISTRY}" > "${REGISTRY}.tmp" \
     && mv "${REGISTRY}.tmp" "${REGISTRY}"
 fi
 
@@ -211,9 +220,11 @@ cmd_create() {
   [[ -n "${slug}" ]] || die "slug required"
   [[ "${slug}" =~ ^[a-z0-9][a-z0-9-]{1,39}$ ]] || die "slug must be [a-z0-9-]{2,40}"
 
-  local workroom="" model="sonnet" prompt="" effort="" kind=""
+  local workroom="" model="sonnet" prompt="" effort="" kind="" project_id=""
   local agent_id="" run_id="" parent_run=""
   local messenger_url="${MESSENGER_CORE_URL:-}" ingest_token="${MESSENGER_INGEST_TOKEN:-}"
+  # Inherit project_id from environment if set by a parent composer session
+  project_id="${CLAUDE_SESSION_PROJECT_ID:-}"
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -222,6 +233,7 @@ cmd_create() {
       --prompt)             prompt="$2"; shift 2;;
       --effort)             effort="$2"; shift 2;;
       --kind)               kind="$2"; shift 2;;
+      --project-id)         project_id="$2"; shift 2;;
       --agent-id)           agent_id="$2"; shift 2;;
       --run-id)             run_id="$2"; shift 2;;
       --parent-run)         parent_run="$2"; shift 2;;
@@ -279,7 +291,7 @@ cmd_create() {
   prompt="${prompt}${bias}"
 
   # Register first so listing is correct even if the run fails.
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" "${kind}" \
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" "${kind}" "${project_id:-}" "${effort:-}" "claude" \
     >> "${REGISTRY}"
   : > "${logfile}"
 
@@ -348,8 +360,8 @@ cmd_list() {
   if [[ $(wc -l < "${REGISTRY}") -le 1 ]]; then
     echo "(no sessions)"; return 0
   fi
-  printf '%-20s %-36s %-16s %-22s %-10s %-25s %s\n' SLUG UUID WINDOW WORKROOM MODEL CREATED KIND
-  awk -F'\t' 'NR>1 {printf "%-20s %-36s %-16s %-22s %-10s %-25s %s\n", $1, $2, $3, $4, $5, $6, ($7 ? $7 : "-")}' "${REGISTRY}"
+  printf '%-20s %-36s %-16s %-22s %-10s %-25s %-14s %s\n' SLUG UUID WINDOW WORKROOM MODEL CREATED KIND ENGINE
+  awk -F'\t' 'NR>1 {printf "%-20s %-36s %-16s %-22s %-10s %-25s %-14s %s\n", $1, $2, $3, $4, $5, $6, ($7 ? $7 : "-"), ($10 ? $10 : "claude")}' "${REGISTRY}"
 }
 
 # --- attach ---

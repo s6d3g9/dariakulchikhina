@@ -32,17 +32,55 @@ set -euo pipefail
 TMUX_SESSION="cp"
 STATE_DIR="${COPILOT_SESSION_STATE_DIR:-${HOME}/state/copilot-sessions}"
 REGISTRY="${STATE_DIR}/.registry.tsv"
+CLAUDE_STATE_DIR="${HOME}/state/claude-sessions"
+CLAUDE_REGISTRY="${CLAUDE_STATE_DIR}/.registry.tsv"
 COPILOT_BIN="${HOME}/bin/copilot"
-BRIDGE_BIN="${HOME}/bin/claude-stream-bridge"
+BRIDGE_BIN="${HOME}/bin/copilot-stream-bridge"
 WORKROOMS_ROOT="${COPILOT_SESSION_WORKROOMS_ROOT:-${HOME}/workrooms}"
 
 MESSENGER_CORE_URL="${MESSENGER_CORE_URL:-}"
 MESSENGER_INGEST_TOKEN="${MESSENGER_INGEST_TOKEN:-}"
 
 mkdir -p "${STATE_DIR}"
-[ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\teffort\n' > "${REGISTRY}"
+[ -f "${REGISTRY}" ] || printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\teffort\tengine\n' > "${REGISTRY}"
+# Backward-compat: add engine column if missing
+if [ -f "${REGISTRY}" ] && ! head -1 "${REGISTRY}" | grep -q 'engine'; then
+  awk -F'\t' -v OFS='\t' 'NR==1 {print $0, "engine"; next} {print $0, "copilot"}' "${REGISTRY}" > "${REGISTRY}.tmp" \
+    && mv "${REGISTRY}.tmp" "${REGISTRY}"
+fi
 
 die() { echo "ERROR: $*" >&2; exit 1; }
+
+# Register a new cli-session in messenger core and return the cli_session id.
+register_cli_session() {
+  local agent_id="$1" slug="$2" model="$3" window="$4" uuid="$5" logpath="$6"
+  local run_id="${7:-}" url="${8}" token="${9}"
+
+  local body
+  body=$(printf '{"agentId":%s,"workroomSlug":%s,"model":%s,"tmuxWindow":%s,"claudeSessionUuid":%s,"logPath":%s,"runId":%s}' \
+    "$(printf '%s' "${agent_id}" | jq -Rs .)" \
+    "$(printf '%s' "${slug}"     | jq -Rs .)" \
+    "$(printf '%s' "${model}"    | jq -Rs .)" \
+    "$(printf '%s' "${window}"   | jq -Rs .)" \
+    "$(printf '%s' "${uuid}"     | jq -Rs .)" \
+    "$(printf '%s' "${logpath}"  | jq -Rs .)" \
+    "$(if [[ -n "${run_id}" ]]; then printf '%s' "${run_id}" | jq -Rs .; else echo 'null'; fi)")
+
+  local http_resp
+  http_resp=$(curl -sS -w '\n%{http_code}' \
+    -X POST "${url}/cli-sessions" \
+    -H "Authorization: Bearer ${token}" \
+    -H "Content-Type: application/json" \
+    -d "${body}") || die "curl failed calling ${url}/cli-sessions"
+
+  local http_body http_code
+  http_body=$(echo "${http_resp}" | head -n -1)
+  http_code=$(echo "${http_resp}" | tail -n 1)
+
+  [[ "${http_code}" =~ ^2 ]] || die "POST /cli-sessions returned HTTP ${http_code}: ${http_body}"
+
+  echo "${http_body}" | jq -r '.id' || die "could not parse .id from: ${http_body}"
+}
 
 [[ -x "${COPILOT_BIN}" ]] || die "copilot binary not found at ${COPILOT_BIN} — run: cd /tmp && curl -sL https://github.com/github/copilot-cli/releases/download/v1.0.34/copilot-linux-x64.tar.gz -o c.tar.gz && tar xzf c.tar.gz && mv copilot ~/bin/copilot && chmod +x ~/bin/copilot"
 
@@ -112,7 +150,7 @@ run_prompt_in_window() {
   # Build command: run copilot, tee to log, stream through bridge if configured
   local cmdline
   if [[ -n "${agent_id}" && -n "${messenger_url}" && -n "${ingest_token}" ]]; then
-    local bridge_args=( --adapter copilot --agent-id "${agent_id}" --messenger-core-url "${messenger_url}" --ingest-token "${ingest_token}" )
+    local bridge_args=( --agent-id "${agent_id}" --slug "${slug}" --messenger-core-url "${messenger_url}" --ingest-token "${ingest_token}" )
     [[ -n "${run_id}" ]] && bridge_args+=( --run-id "${run_id}" )
     cmdline="cd ${cwd@Q} && ${COPILOT_BIN} ${args[*]@Q} -p \"\$(cat ${pfile@Q})\" 2>&1 | tee -a ${logfile@Q} | ${BRIDGE_BIN} ${bridge_args[*]@Q} && rm -f ${pfile@Q}"
   else
@@ -161,15 +199,38 @@ cmd_create() {
 
   ensure_tmux_session
 
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" "${effort}" \
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" "${effort}" "copilot" \
     >> "${REGISTRY}"
   : > "${logfile}"
+
+  # Register cli-session in messenger and mirror row to claude-sessions registry
+  local cli_session_id=""
+  if [[ -n "${agent_id}" ]]; then
+    [[ -n "${messenger_url}" ]]  || die "--messenger-core-url (or \$MESSENGER_CORE_URL) required with --agent-id"
+    [[ -n "${ingest_token}" ]]   || die "--ingest-token (or \$MESSENGER_INGEST_TOKEN) required with --agent-id"
+    [[ -x "${BRIDGE_BIN}" ]]     || die "copilot-stream-bridge not found at ${BRIDGE_BIN} — run scripts/workrooms/install-bridge.sh"
+
+    cli_session_id=$(register_cli_session \
+      "${agent_id}" "${slug}" "${model}" "${window}" "${uuid}" "${logfile}" \
+      "${run_id}" "${messenger_url}" "${ingest_token}")
+    echo "[create] registered cli-session id=${cli_session_id}"
+
+    # Mirror to claude-sessions registry so 'claude-session list' shows engine=copilot
+    mkdir -p "${CLAUDE_STATE_DIR}"
+    if [ ! -f "${CLAUDE_REGISTRY}" ]; then
+      printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tkind\tproject_id\teffort\tengine\n' > "${CLAUDE_REGISTRY}"
+    fi
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "${slug}" "${uuid}" "${window}" "${workroom:-}" "${model}" "$(date -Iseconds)" \
+      "copilot" "" "${effort}" "copilot" \
+      >> "${CLAUDE_REGISTRY}"
+  fi
 
   run_prompt_in_window "${slug}" "${window}" "${uuid}" "${model}" "${effort}" "${cwd}" "${prompt}" "no" \
     "${agent_id}" "${messenger_url}" "${ingest_token}" "${run_id}"
 
-  echo "[create] slug=${slug} uuid=${uuid} window=${window} model=${model} effort=${effort} workroom=${workroom:-<none>}"
+  echo "[create] slug=${slug} uuid=${uuid} window=${window} model=${model} effort=${effort} workroom=${workroom:-<none>} engine=copilot"
   echo "[create] Attach: tmux attach -t ${TMUX_SESSION} \\; select-window -t :${window}"
   echo "[create] Logs:   copilot-session logs ${slug}"
 }
@@ -200,8 +261,8 @@ cmd_list() {
   if [[ $(wc -l < "${REGISTRY}") -le 1 ]]; then
     echo "(no copilot sessions)"; return 0
   fi
-  printf '%-20s %-36s %-16s %-22s %-20s %-8s %-25s\n' SLUG UUID WINDOW WORKROOM MODEL EFFORT CREATED
-  awk -F'\t' 'NR>1 {printf "%-20s %-36s %-16s %-22s %-20s %-8s %-25s\n", $1, $2, $3, $4, $5, ($7?$7:"-"), $6}' "${REGISTRY}"
+  printf '%-20s %-36s %-16s %-22s %-20s %-8s %-25s %s\n' SLUG UUID WINDOW WORKROOM MODEL EFFORT CREATED ENGINE
+  awk -F'\t' 'NR>1 {printf "%-20s %-36s %-16s %-22s %-20s %-8s %-25s %s\n", $1, $2, $3, $4, $5, ($7?$7:"-"), $6, ($8?$8:"copilot")}' "${REGISTRY}"
 }
 
 cmd_attach() {
