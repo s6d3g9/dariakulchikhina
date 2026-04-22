@@ -259,8 +259,26 @@ const activeConversationAgent = computed(() => conversations.activeConversation.
 const chatSessNavVisible = computed(() =>
   activeConversationAgent.value && cliSessionsModel.runningSessions.value.length > 0,
 )
+// When the active conversation is bound to a project agent, derive that
+// project id so the session navigation is scoped to that project only.
+const currentAgentProjectId = computed<string | null>(() => {
+  const conv = conversations.activeConversation.value
+  if (!conv || conv.peerType !== 'agent') return null
+  const sess = cliSessionsModel.sessions.value.find(x => x.agentId === conv.peerUserId)
+  return sess?.agentProjectId ?? null
+})
+
+// Project-scoped slice of the global session hierarchy. When no project
+// context is detected we fall back to the global hierarchy (back-compat).
+const projectScopedHierarchy = computed(() => {
+  const all = cliSessionsModel.hierarchy.value
+  const projectId = currentAgentProjectId.value
+  if (!projectId) return all
+  return all.map(tier => tier.filter(sess => sess.agentProjectId === projectId)) as typeof all
+})
+
 const chatWorkerGroups = computed(() => {
-  const workers = cliSessionsModel.hierarchy.value[2] ?? []
+  const workers = projectScopedHierarchy.value[2] ?? []
   const groups = new Map<string, typeof workers>()
   for (const s of workers) {
     const key = s.kind || 'worker'
@@ -269,6 +287,117 @@ const chatWorkerGroups = computed(() => {
   }
   return [...groups.entries()].map(([kind, sessions]) => ({ kind, sessions }))
 })
+
+// Open the chat for a session-bound agent when its chip is clicked.
+async function onSessionChipClick(sess: { agentId: string | null }) {
+  if (!sess.agentId) return
+  try { await conversations.openAgentConversation(sess.agentId) }
+  catch (err) { console.warn('[chat] could not open agent conversation', err) }
+}
+
+// --- Thinking indicator ---------------------------------------------------
+// Show a pulsing bubble after the user sends to an agent chat until the reply
+// arrives. Bubble shows agent name + model name (mini-caption).
+const awaitingAgentReply = ref(false)
+const agentReplyAwaitSince = ref<number>(0)
+
+const activeAgentSession = computed(() => {
+  const conv = conversations.activeConversation.value
+  if (!conv || conv.peerType !== 'agent') return null
+  return cliSessionsModel.sessions.value.find(s => s.agentId === conv.peerUserId) ?? null
+})
+
+const activeAgentModelLabel = computed(() => {
+  const sess = activeAgentSession.value
+  if (sess?.model) return sess.model
+  const conv = conversations.activeConversation.value as unknown as {
+    peerType?: string
+    peer?: { model?: string; settings?: { model?: string } }
+  } | null
+  return conv?.peer?.settings?.model || conv?.peer?.model || 'sonnet'
+})
+
+// Live reasoning stream for chat agent
+const chatAgentIdRef = computed(() => conversations.activeConversation.value?.peerUserId || '')
+const chatAgentStream = useMessengerAgentStream(chatAgentIdRef as any)
+const chatReasoningExpanded = ref(false)
+const { groups: chatGroups, distinctFiles: chatDistinctFiles, formatDuration: chatFormatDuration } = useReasoningGroups(chatAgentStream.toolUses as any)
+const chatRunDuration = computed(() => {
+  const start = chatAgentStream.runStartedAt.value
+  if (!start) return ''
+  return chatFormatDuration(Date.now() - start)
+})
+const chatSubstateLabel = computed(() => {
+  if (chatDoneTrace.value) return 'Завершено'
+  const s = chatAgentStream.substate.value as string
+  return ({
+    idle: 'Готов',
+    thinking: 'Думает…',
+    tool_call: 'Запускает инструменты…',
+    awaiting_input: 'Ждёт ввод',
+    streaming: 'Отвечает…',
+    error: 'Ошибка',
+  } as Record<string, string>)[s] || 'Работает…'
+})
+// True when a run has completed and there's a trace to browse (but no active run)
+const chatDoneTrace = computed(() =>
+  !awaitingAgentReply.value &&
+  chatAgentStream.substate.value === 'idle' &&
+  (chatAgentStream.toolUses.value.length > 0 || chatAgentStream.tokenCount.value.total > 0),
+)
+function toggleChatReasoning() { chatReasoningExpanded.value = !chatReasoningExpanded.value }
+const chatGroupsExpanded = ref<Record<string, boolean>>({})
+function chatGroupExpanded(key: string) { return chatGroupsExpanded.value[key] ?? true }
+function toggleChatGroup(key: string) { chatGroupsExpanded.value = { ...chatGroupsExpanded.value, [key]: !chatGroupExpanded(key) } }
+
+// When the agent stream goes idle: refresh sessions, reload messages so the
+// committed reply appears in the thread, and always clear the thinking bubble
+// (in case the run had no finalText / no conversationId and messages.updated
+// never fired — without this the bubble hangs forever).
+watch(chatAgentStream.substate, (next, prev) => {
+  if (next === 'idle' && prev !== 'idle') {
+    cliSessionsModel.refresh()
+    void conversations.loadMessages()
+    awaitingAgentReply.value = false
+    chatReasoningExpanded.value = false
+  }
+  // Expand automatically when a new run starts
+  if (next !== 'idle' && prev === 'idle') {
+    chatReasoningExpanded.value = true
+  }
+})
+
+// Restore thinking bubble if there's an active run for current agent on
+// conversation open / page reload (awaitingAgentReply is local state and
+// would otherwise reset to false on reload).
+const chatAgentsApi = useAgentsApi()
+async function probeChatActiveRun() {
+  const aid = chatAgentIdRef.value
+  if (!aid) return
+  try {
+    const resp = await chatAgentsApi.getAgentActiveRun(aid)
+    if (resp.run) {
+      awaitingAgentReply.value = true
+      agentReplyAwaitSince.value = new Date(resp.run.createdAt).getTime()
+    }
+  } catch {}
+}
+watch(chatAgentIdRef, async (newId) => {
+  if (newId) await probeChatActiveRun()
+}, { immediate: true })
+
+// Clear when a new agent message arrives after our lastSentAt.
+watch(() => conversations.messages.value, (list) => {
+  if (!awaitingAgentReply.value) return
+  for (let i = list.length - 1; i >= 0; i--) {
+    const m = list[i] as unknown as { own?: boolean; createdAt?: string }
+    const ts = m?.createdAt ? new Date(m.createdAt).getTime() : 0
+    if (m?.own === false && ts >= agentReplyAwaitSince.value - 500) {
+      awaitingAgentReply.value = false
+      return
+    }
+  }
+}, { deep: true })
 
 const activeConversationSupportsSecuritySummary = computed(() => conversations.activeConversation.value?.peerType === 'user')
 const canForwardFromActiveConversation = computed(() => activeConversationPolicy.value?.allowForwardOut !== false)
@@ -1122,6 +1251,11 @@ async function submit() {
     })
     pendingScrollMessageId.value = commentTargetId
     viewport.scheduleViewportSync()
+    // Show thinking indicator for agent chats until reply arrives.
+    if (activeConversationAgent.value) {
+      awaitingAgentReply.value = true
+      agentReplyAwaitSince.value = Date.now()
+    }
   } catch {
     draft.value = text
     actionError.value = 'Не удалось отправить сообщение.'
@@ -1969,6 +2103,28 @@ watch(() => activeConversationAgent.value, (value) => {
   void cliSessionsModel.refresh()
 }, { immediate: true })
 
+// Trigger a session refresh once auth becomes ready (token may not be
+// available at setup time, so the immediate watcher above can silently 401).
+watch(auth.ready, (ready) => {
+  if (ready && activeConversationAgent.value) void cliSessionsModel.refresh()
+})
+
+// Poll sessions every 20 s while an agent chat is active so the hierarchy
+// bar stays up-to-date without requiring a page reload.
+let cliSessionsPollTimer: ReturnType<typeof setInterval> | null = null
+watch(activeConversationAgent, (isAgent) => {
+  if (isAgent) {
+    if (!cliSessionsPollTimer) {
+      cliSessionsPollTimer = setInterval(() => { void cliSessionsModel.refresh() }, 20_000)
+    }
+  } else {
+    if (cliSessionsPollTimer) {
+      clearInterval(cliSessionsPollTimer)
+      cliSessionsPollTimer = null
+    }
+  }
+}, { immediate: true })
+
 function relationTitle(mode: 'reply' | 'comment' | null) {
   if (mode === 'reply') {
     return 'Ответ'
@@ -2014,6 +2170,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown)
+  if (cliSessionsPollTimer) {
+    clearInterval(cliSessionsPollTimer)
+    cliSessionsPollTimer = null
+  }
 })
 </script>
 
@@ -2081,28 +2241,57 @@ onBeforeUnmount(() => {
         @pointerdown="handleChatAreaPointerDown"
       />
 
+      <!-- Context window + cache metrics bar — agent conversations only -->
+      <div v-if="activeConversationAgent && chatAgentStream.tokenCount.value.total > 0" class="ctx-bar">
+        <div class="ctx-bar__track">
+          <div class="ctx-bar__fill" :style="{ width: chatAgentStream.tokenCount.value.contextPct + '%' }" />
+        </div>
+        <span class="ctx-bar__pct">{{ chatAgentStream.tokenCount.value.contextPct }}%</span>
+        <span class="ctx-bar__tokens">{{ Math.round(chatAgentStream.tokenCount.value.total / 1000) }}k / 200k</span>
+        <template v-if="chatAgentStream.tokenCount.value.cacheRead > 0">
+          <span class="ctx-bar__sep">·</span>
+          <span class="ctx-bar__cache ctx-bar__cache--read" title="Прочитано из кеша">⚡ {{ Math.round(chatAgentStream.tokenCount.value.cacheRead / 1000) }}k</span>
+        </template>
+        <template v-if="chatAgentStream.tokenCount.value.cacheWrite > 0">
+          <span class="ctx-bar__sep">·</span>
+          <span class="ctx-bar__cache ctx-bar__cache--write" title="Записано в кеш">✦ {{ Math.round(chatAgentStream.tokenCount.value.cacheWrite / 1000) }}k</span>
+        </template>
+        <template v-if="chatAgentStream.costUsd.value > 0">
+          <span class="ctx-bar__sep">·</span>
+          <span class="ctx-bar__cost">${{ chatAgentStream.costUsd.value.toFixed(3) }}</span>
+        </template>
+      </div>
+
       <!-- Session hierarchy bar — below chat header, agent conversations only -->
       <div v-if="chatSessNavVisible" class="sess-nav">
-        <div v-if="cliSessionsModel.hierarchy.value[0]?.length" class="sess-nav__row sess-nav__row--composers">
+        <div v-if="projectScopedHierarchy[0]?.length" class="sess-nav__row sess-nav__row--composers">
           <span class="sess-nav__label">Composers</span>
           <div
-            v-for="session in cliSessionsModel.hierarchy.value[0]"
+            v-for="session in projectScopedHierarchy[0]"
             :key="session.slug"
             class="sess-nav__tab"
             :title="session.slug"
+            :role="session.agentId ? 'button' : undefined"
+            :tabindex="session.agentId ? 0 : undefined"
+            :style="session.agentId ? 'cursor: pointer;' : undefined"
+            @click="onSessionChipClick(session)"
           >
             <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
             <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
             <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
           </div>
         </div>
-        <div v-if="cliSessionsModel.hierarchy.value[1]?.length" class="sess-nav__row sess-nav__row--orchestrators">
+        <div v-if="projectScopedHierarchy[1]?.length" class="sess-nav__row sess-nav__row--orchestrators">
           <span class="sess-nav__label">Orchestrators</span>
           <div
-            v-for="session in cliSessionsModel.hierarchy.value[1]"
+            v-for="session in projectScopedHierarchy[1]"
             :key="session.slug"
             class="sess-nav__tab"
             :title="session.slug"
+            :role="session.agentId ? 'button' : undefined"
+            :tabindex="session.agentId ? 0 : undefined"
+            :style="session.agentId ? 'cursor: pointer;' : undefined"
+            @click="onSessionChipClick(session)"
           >
             <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
             <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
@@ -2120,6 +2309,10 @@ onBeforeUnmount(() => {
               :key="session.slug"
               class="sess-nav__tab"
               :title="session.slug"
+              :role="session.agentId ? 'button' : undefined"
+              :tabindex="session.agentId ? 0 : undefined"
+              :style="session.agentId ? 'cursor: pointer;' : undefined"
+              @click="onSessionChipClick(session)"
             >
               <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
               <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
@@ -2199,6 +2392,88 @@ onBeforeUnmount(() => {
             @copy-link="(href, label) => copyLink(href, label)"
             @open-photo="openPhotoGallery"
           />
+
+          <!-- Thinking indicator — active run OR collapsed trace of last completed run -->
+          <div
+            v-if="awaitingAgentReply || chatDoneTrace"
+            class="chat-thinking-bubble-row"
+            :class="{ 'chat-thinking-bubble-row--done': chatDoneTrace }"
+            aria-live="polite"
+            aria-label="Агент думает"
+          >
+            <div class="chat-thinking-bubble">
+              <button
+                type="button"
+                class="chat-thinking-bubble__header chat-thinking-bubble__header--btn"
+                :aria-expanded="chatReasoningExpanded"
+                @click="toggleChatReasoning"
+              >
+                <VIcon size="14" class="chat-thinking-bubble__icon">mdi-robot-outline</VIcon>
+                <span class="chat-thinking-bubble__name">{{ activePeerName }}</span>
+                <span class="chat-thinking-bubble__model">· {{ activeAgentModelLabel }}</span>
+                <span class="chat-thinking-bubble__state">· {{ chatSubstateLabel }}</span>
+                <VIcon size="14" class="chat-thinking-bubble__chevron">
+                  {{ chatReasoningExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                </VIcon>
+              </button>
+
+              <div v-if="!chatReasoningExpanded" class="chat-thinking-bubble__dots" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+
+              <div v-else class="chat-thinking-bubble__expand">
+                <div v-if="chatRunDuration || chatAgentStream.tokenCount.value.total" class="chat-thinking-meta">
+                  <span v-if="chatRunDuration" class="chat-thinking-meta-chip" title="Длительность">⏱ {{ chatRunDuration }}</span>
+                  <span v-if="chatAgentStream.tokenCount.value.total" class="chat-thinking-meta-chip" title="Токены in/out">🧠 {{ chatAgentStream.tokenCount.value.input }}↓ / {{ chatAgentStream.tokenCount.value.output }}↑</span>
+                  <span v-if="chatAgentStream.tokenCount.value.contextPct" class="chat-thinking-meta-chip" title="Контекст">📊 {{ chatAgentStream.tokenCount.value.contextPct }}%</span>
+                  <span v-if="chatDistinctFiles.length" class="chat-thinking-meta-chip" title="Файлов задействовано">📁 {{ chatDistinctFiles.length }}</span>
+                </div>
+                <div v-for="group in chatGroups" :key="group.key" class="chat-thinking-group">
+                  <button
+                    type="button"
+                    class="chat-thinking-group-title chat-thinking-group-title--btn"
+                    :aria-expanded="chatGroupExpanded(group.key)"
+                    @click="toggleChatGroup(group.key)"
+                  >
+                    <span class="chat-thinking-bubble__icon">{{ group.icon }}</span>
+                    <span class="chat-thinking-bubble__name">{{ group.label }}</span>
+                    <span class="chat-thinking-group-count">{{ group.entries.length }}</span>
+                    <VIcon size="12" class="chat-thinking-bubble__chevron">
+                      {{ chatGroupExpanded(group.key) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                    </VIcon>
+                  </button>
+                  <template v-if="chatGroupExpanded(group.key)">
+                    <div
+                      v-for="(t, idx) in group.entries"
+                      :key="idx"
+                      class="chat-thinking-plate"
+                      :class="{
+                        'chat-thinking-plate--active': chatAgentStream.toolUses.value.length > 0 && t.at === chatAgentStream.toolUses.value[chatAgentStream.toolUses.value.length - 1].at,
+                        'chat-thinking-plate--done':   chatAgentStream.toolUses.value.length > 0 && t.at !== chatAgentStream.toolUses.value[chatAgentStream.toolUses.value.length - 1].at,
+                      }"
+                    >
+                      <span class="chat-thinking-plate__dot" aria-hidden="true"></span>
+                      <span class="chat-thinking-bubble__tool-name">{{ t.tool }}</span>
+                      <span v-if="t.descriptor" class="chat-thinking-bubble__tool-desc"> {{ t.descriptor }}</span>
+                      <span class="chat-thinking-plate__time">
+                        {{ new Date(t.at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) }}
+                        <template v-if="t.endAt"> · {{ chatFormatDuration(t.endAt - t.at) }}</template>
+                      </span>
+                    </div>
+                  </template>
+                </div>
+                <div v-if="chatAgentStream.substate.value === 'awaiting_input'" class="chat-thinking-plate chat-thinking-plate--awaiting">
+                  <span class="chat-thinking-plate__dot" aria-hidden="true"></span>
+                  <span>⏳ Ждёт ввод</span>
+                </div>
+                <div v-if="chatAgentStream.streamingDraft.value" class="chat-thinking-bubble__stream">{{ chatAgentStream.streamingDraft.value }}<span class="chat-thinking-bubble__caret">▍</span></div>
+                <div v-if="!chatAgentStream.toolUses.value.length && !chatAgentStream.streamingDraft.value" class="chat-thinking-bubble__waiting">
+                  <span class="chat-thinking-bubble__dots chat-thinking-bubble__dots--inline" aria-hidden="true"><span></span><span></span><span></span></span>
+                  <span>Ожидание событий стрима…</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div v-if="!conversations.activeConversation.value" class="empty-state">
             <p class="empty-state__title">Чат не выбран</p>
@@ -2282,7 +2557,7 @@ onBeforeUnmount(() => {
       <input ref="mediaPickerInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="handleFileSelect">
 
       <MessengerAgentChatWorkspace
-        v-if="activeConversationAgent && conversations.activeConversation.value && !detailsOpen && !composerMediaMenuVisible && !compactMobileHeaderMenuOpen"
+        v-if="activeConversationAgent && conversations.activeConversation.value && !detailsOpen"
         :agent-id="conversations.activeConversation.value.peerUserId"
         :agent-name="conversations.activeConversation.value.peerDisplayName"
         :agent-login="conversations.activeConversation.value.peerLogin"

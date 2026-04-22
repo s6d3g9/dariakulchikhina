@@ -10,6 +10,7 @@ export interface MessengerCliSession {
   archivedAt: string | null
   agentId: string | null
   agentDisplayName: string | null
+  agentProjectId: string | null
 }
 
 export const SESSION_KIND_META: Record<string, { label: string; icon: string; color: string; tier: number }> = {
@@ -62,7 +63,9 @@ export function useMessengerCliSessions() {
       sessions.value = res.sessions
       lastFetchedAt.value = Date.now()
     }
-    catch {}
+    catch (err) {
+      console.warn('[cli-sessions] refresh failed', err)
+    }
     finally {
       pending.value = false
     }
