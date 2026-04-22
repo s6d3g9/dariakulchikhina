@@ -64,3 +64,17 @@ Both feed the same session; output updates live on the dashboard and in the UI.
 | Agent run events (persisted) | PG `messenger_agent_run_events` | One row per event + edge; indexed by `agent_id` |
 | Agent run stream (live) | PG `messenger_agent_run_streams` | Output chunks, cursor-based pagination (see UI) |
 | Dashboard auth | `~/.claude-dashboard-auth` | Basic auth credentials; regenerate to rotate |
+
+## 8. Session telemetry (optional)
+
+To enable session telemetry logging, run the installer once:
+```bash
+bash ~/daria/scripts/ops/install-session-telemetry-hook.sh
+```
+
+This installs a `SessionStart` hook that appends `{session_id, cwd, timestamp, model}` as NDJSON to `~/log/claude-sessions.ndjson`. Use it to track which models are used across sessions:
+```bash
+jq -c 'select(.model=="claude-opus-4-7")' ~/log/claude-sessions.ndjson
+```
+
+Log rotation is not automated; manage `~/log/claude-sessions.ndjson` retention separately if needed.
