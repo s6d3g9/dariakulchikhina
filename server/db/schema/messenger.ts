@@ -204,3 +204,20 @@ export const messengerCliSessions = pgTable(
   },
   (t) => [index('messenger_cli_sessions_agent_status_idx').on(t.agentId, t.status)],
 )
+
+export const messengerAgentTaskCompletions = pgTable(
+  'messenger_agent_task_completions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    agentId: uuid('agent_id')
+      .notNull()
+      .references(() => messengerAgents.id),
+    slug: text('slug').notNull(),
+    commitSha: text('commit_sha').notNull(),
+    branch: text('branch').notNull(),
+    commitsAboveBase: integer('commits_above_base').notNull(),
+    gates: jsonb('gates').notNull().default('{}'),
+    createdAt: tstz('created_at').defaultNow().notNull(),
+  },
+  (t) => [index('messenger_agent_task_completions_agent_idx').on(t.agentId)],
+)
