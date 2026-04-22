@@ -6,6 +6,18 @@ import type { ProjectActionExecutePayload, ProjectActionId } from '../../feature
 import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
 import { getSessionKindMeta } from '../../entities/sessions/model/useMessengerCliSessions'
 
+const MODEL_OPTIONS = [
+  { value: 'claude-opus-4-7', label: 'Opus 4.7' },
+  { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6' },
+  { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5' },
+  { value: 'opus', label: 'Opus (alias)' },
+]
+const EFFORT_OPTIONS = [
+  { value: 'low' },
+  { value: 'medium' },
+  { value: 'high' },
+]
+
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
 }
@@ -1003,6 +1015,46 @@ function formatKlipyCategoryTag(query: string) {
     .toLowerCase()
 
   return normalized ? `#${normalized}` : '#klipy'
+}
+
+const activeAgentSession = computed(() => {
+  const agentId = conversations.activeConversation.value?.peerUserId
+  if (!agentId || !activeConversationAgent.value) return null
+  return cliSessionsModel.sessionForAgent(agentId)
+})
+
+const currentEffortMeta = computed(() => {
+  const effort = activeAgentSession.value?.effort || 'medium'
+  return EFFORT_OPTIONS.find(o => o.value === effort) ?? EFFORT_OPTIONS[1]
+})
+
+const currentModelMeta = computed(() => {
+  const model = activeAgentSession.value?.model || ''
+  return MODEL_OPTIONS.find(o => o.value === model) ?? { value: model, label: model }
+})
+
+async function onEffortSelect(effort: string) {
+  const session = activeAgentSession.value
+  if (!session || !['low', 'medium', 'high'].includes(effort)) return
+  try {
+    await cliSessionsModel.setEffort(session.slug, effort as 'low' | 'medium' | 'high')
+    await cliSessionsModel.refresh()
+  }
+  catch {
+    actionError.value = 'Не удалось изменить уровень усилия.'
+  }
+}
+
+async function onModelSelect(model: string) {
+  const session = activeAgentSession.value
+  if (!session || !model) return
+  try {
+    await cliSessionsModel.setModel(session.slug, model)
+    await cliSessionsModel.refresh()
+  }
+  catch {
+    actionError.value = 'Не удалось изменить модель.'
+  }
 }
 
 onMounted(async () => {
@@ -2308,6 +2360,45 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </template>
+      </div>
+
+      <!-- Agent model + effort bar — visible when chatting with a running CLI session -->
+      <div v-if="activeAgentSession" class="agent-model-bar">
+        <VMenu location="bottom start">
+          <template #activator="{ props: menuProps }">
+            <button class="agent-model-bar__btn" v-bind="menuProps" type="button">
+              <span class="agent-model-bar__label">{{ currentModelMeta.label || activeAgentSession.model }}</span>
+              <VIcon size="14">mdi-chevron-down</VIcon>
+            </button>
+          </template>
+          <VList density="compact">
+            <VListItem
+              v-for="opt in MODEL_OPTIONS"
+              :key="opt.value"
+              :title="opt.label"
+              :active="activeAgentSession.model === opt.value"
+              @click="onModelSelect(opt.value)"
+            />
+          </VList>
+        </VMenu>
+
+        <VMenu location="bottom start">
+          <template #activator="{ props: menuProps }">
+            <button class="agent-model-bar__btn" v-bind="menuProps" type="button">
+              <span class="agent-model-bar__label">{{ currentEffortMeta?.value || 'medium' }}</span>
+              <VIcon size="14">mdi-chevron-down</VIcon>
+            </button>
+          </template>
+          <VList density="compact">
+            <VListItem
+              v-for="opt in EFFORT_OPTIONS"
+              :key="opt.value"
+              :title="opt.value"
+              :active="(activeAgentSession.effort || 'medium') === opt.value"
+              @click="onEffortSelect(opt.value)"
+            />
+          </VList>
+        </VMenu>
       </div>
 
       <p v-if="actionError" class="auth-error">{{ actionError }}</p>
