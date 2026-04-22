@@ -99,7 +99,7 @@ const entryIdParams = z.object({ id: z.string().uuid(), entryId: z.string() })
 const connectorBody = z.object({
   type: z.string().min(1).max(100),
   label: z.string().min(1).max(200),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
   enabled: z.boolean().optional(),
   isDefault: z.boolean().optional(),
 })
@@ -108,19 +108,19 @@ const connectorPatch = connectorBody.partial()
 
 const skillUpsertBody = z.object({
   enabled: z.boolean().optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 })
 
 const pluginUpsertBody = z.object({
   enabled: z.boolean().optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 })
 
 const mcpBody = z.object({
   name: z.string().min(1).max(200),
   transport: z.string().min(1).max(50),
   endpoint: z.string().min(1).max(500),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
   enabled: z.boolean().optional(),
 })
 
@@ -131,7 +131,7 @@ const externalApiBody = z.object({
   baseUrl: z.string().url().max(500),
   openapiRef: z.string().max(500).nullish(),
   authType: z.enum(['none', 'bearer', 'apikey', 'basic']).optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
   enabled: z.boolean().optional(),
 })
 
@@ -155,24 +155,24 @@ const proposalSchema = z.object({
   connectors: z.array(z.object({
     type: z.string(),
     label: z.string(),
-    config: z.record(z.unknown()).optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
     enabled: z.boolean().optional(),
   })).default([]),
   skills: z.array(z.object({
     skillId: z.string(),
     enabled: z.boolean().optional(),
-    config: z.record(z.unknown()).optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
   })).default([]),
   plugins: z.array(z.object({
     pluginId: z.string(),
     enabled: z.boolean().optional(),
-    config: z.record(z.unknown()).optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
   })).default([]),
   mcp: z.array(z.object({
     name: z.string(),
     transport: z.string(),
     endpoint: z.string(),
-    config: z.record(z.unknown()).optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
     enabled: z.boolean().optional(),
   })).default([]),
   externalApis: z.array(z.object({
@@ -180,7 +180,7 @@ const proposalSchema = z.object({
     baseUrl: z.string(),
     openapiRef: z.string().nullish(),
     authType: z.string().optional(),
-    config: z.record(z.unknown()).optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
     enabled: z.boolean().optional(),
   })).default([]),
   agents: z.array(z.object({
@@ -258,7 +258,7 @@ function agentTypeDefaults(type: string): { name: string; model: string; skillBu
 // --- error helpers ---
 
 function zodErrorSummary(err: z.ZodError): string {
-  return err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+  return err.issues.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
 }
 
 // --- route registration ---
