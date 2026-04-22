@@ -2091,7 +2091,7 @@ onBeforeUnmount(() => {
             class="sess-nav__tab"
             :title="session.slug"
           >
-            <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+            <span class="sess-nav__dot" :class="session.agentId && cliSessionsModel.isAgentPulsing(session.agentId) ? 'sess-nav__dot--pulsing' : `sess-nav__dot--${session.status}`" />
             <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
             <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
           </div>
@@ -2104,7 +2104,7 @@ onBeforeUnmount(() => {
             class="sess-nav__tab"
             :title="session.slug"
           >
-            <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+            <span class="sess-nav__dot" :class="session.agentId && cliSessionsModel.isAgentPulsing(session.agentId) ? 'sess-nav__dot--pulsing' : `sess-nav__dot--${session.status}`" />
             <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
             <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
           </div>
@@ -2121,7 +2121,7 @@ onBeforeUnmount(() => {
               class="sess-nav__tab"
               :title="session.slug"
             >
-              <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+              <span class="sess-nav__dot" :class="session.agentId && cliSessionsModel.isAgentPulsing(session.agentId) ? 'sess-nav__dot--pulsing' : `sess-nav__dot--${session.status}`" />
               <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
               <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
             </div>

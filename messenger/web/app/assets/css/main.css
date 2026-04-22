@@ -7109,8 +7109,9 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   flex-shrink: 0;
   background: #4b5563;
 }
-.sess-nav__dot--running  { background: #7cc4ff; box-shadow: 0 0 4px #7cc4ff; animation: live-pulse 2s ease-in-out infinite; }
-.sess-nav__dot--done     { background: #4ade80; }
+.sess-nav__dot--pulsing  { background: #4ade80; box-shadow: 0 0 4px #4ade80; animation: live-pulse 2s ease-in-out infinite; }
+.sess-nav__dot--running  { background: #4ade80; }
+.sess-nav__dot--done     { background: #4b5563; }
 .sess-nav__dot--error    { background: #ef4444; }
 
 .sess-nav__name {

@@ -1,3 +1,38 @@
+import { buildMessengerWsUrl } from '../../../utils/messenger-url'
+
+// ── Streaming pulse tracker (module-level singleton, client-only) ─────────────
+const _lastStreamAt = new Map<string, number>()
+// Incremented every 500 ms so that `isAgentPulsing` re-evaluates reactively.
+const _streamTick = ref(0)
+const _agentWs = new Map<string, WebSocket>()
+let _tickStarted = false
+// Prevent setting up the session-list watcher more than once across composable calls.
+let _watchSetup = false
+
+function _ensureTick() {
+  if (_tickStarted || !import.meta.client) return
+  _tickStarted = true
+  setInterval(() => { _streamTick.value++ }, 500)
+}
+
+function _subscribeAgent(agentId: string, wsBaseUrl: string, token: string) {
+  if (_agentWs.has(agentId) || !import.meta.client) return
+  const wsUrl = buildMessengerWsUrl(wsBaseUrl, `/ws/agents/${agentId}/stream`)
+  wsUrl.searchParams.set('token', token)
+  const socket = new WebSocket(wsUrl.toString())
+  _agentWs.set(agentId, socket)
+  socket.addEventListener('message', () => { _lastStreamAt.set(agentId, Date.now()) })
+  socket.addEventListener('close', () => { _agentWs.delete(agentId) })
+  socket.addEventListener('error', () => { _agentWs.delete(agentId) })
+}
+
+function _unsubscribeAgent(agentId: string) {
+  _agentWs.get(agentId)?.close()
+  _agentWs.delete(agentId)
+  _lastStreamAt.delete(agentId)
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface MessengerCliSession {
   slug: string
   uuid: string
@@ -51,6 +86,32 @@ export function useMessengerCliSessions() {
     return byTier
   })
 
+  // Set up per-agent stream WS subscriptions once (client-only).
+  if (import.meta.client && !_watchSetup) {
+    _watchSetup = true
+    _ensureTick()
+    const config = useRuntimeConfig()
+    const auth = useMessengerAuth()
+    watch(runningSessions, (current: MessengerCliSession[], prev: MessengerCliSession[] | undefined) => {
+      const prevIds = new Set((prev ?? []).map((s: MessengerCliSession) => s.agentId).filter(Boolean) as string[])
+      const currIds = new Set(current.map((s: MessengerCliSession) => s.agentId).filter(Boolean) as string[])
+      for (const id of currIds) {
+        if (!prevIds.has(id) && auth.token.value) {
+          _subscribeAgent(id, String(config.public.messengerCoreBaseUrl), auth.token.value)
+        }
+      }
+      for (const id of prevIds) {
+        if (!currIds.has(id)) _unsubscribeAgent(id)
+      }
+    }, { immediate: true })
+  }
+
+  function isAgentPulsing(agentId: string): boolean {
+    // Reading _streamTick makes Vue re-evaluate this on every 500 ms tick.
+    void _streamTick.value
+    return Date.now() - (_lastStreamAt.get(agentId) ?? 0) < 3_000
+  }
+
   function sessionForAgent(agentId: string): MessengerCliSession | null {
     return sessions.value.find(s => s.agentId === agentId) ?? null
   }
@@ -68,5 +129,5 @@ export function useMessengerCliSessions() {
     }
   }
 
-  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh }
+  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, isAgentPulsing, refresh }
 }
