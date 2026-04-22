@@ -80,6 +80,13 @@ export function useAgentsApi() {
     })
   }
 
+  function patchCliSession(slug: string, body: { model?: string; effort?: 'low' | 'medium' | 'high' }) {
+    return auth.request<{ slug: string; model?: string; effort?: string }>(`/cli-sessions/${slug}`, {
+      method: 'PATCH',
+      body,
+    })
+  }
+
   return {
     listAgents,
     getAgentSettings,
@@ -94,5 +101,6 @@ export function useAgentsApi() {
     getAgentRun,
     listAgentEdgePayloads,
     listCliSessions,
+    patchCliSession,
   }
 }

@@ -6,6 +6,7 @@ export interface MessengerCliSession {
   model: string
   created: string
   kind: string
+  effort: string
   status: 'running' | 'done'
   archivedAt: string | null
   agentId: string | null
@@ -71,5 +72,13 @@ export function useMessengerCliSessions() {
     }
   }
 
-  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh }
+  async function setModel(slug: string, model: string) {
+    await api.patchCliSession(slug, { model })
+  }
+
+  async function setEffort(slug: string, effort: 'low' | 'medium' | 'high') {
+    await api.patchCliSession(slug, { effort })
+  }
+
+  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh, setModel, setEffort }
 }
