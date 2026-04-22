@@ -93,6 +93,10 @@ const envSchema = z.object({
   LIVEKIT_API_SECRET: z.string().trim().optional(),
   // Claude CLI — path to claude binary for agent subprocess spawning
   CLAUDE_BIN: z.string().optional(),
+  // Per-project secret encryption: 32-byte AES-256 key as 64 hex chars
+  MESSENGER_CORE_SECRETS_KEY: z.string().length(64).optional(),
+  // Service-to-service token for internal worker routes (e.g. /projects/:id/api-key)
+  MESSENGER_CORE_SERVICE_TOKEN: z.string().min(16).optional(),
 })
 
 export function readMessengerConfig() {
