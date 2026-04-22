@@ -259,26 +259,10 @@ const activeConversationAgent = computed(() => conversations.activeConversation.
 const chatSessNavVisible = computed(() =>
   activeConversationAgent.value && cliSessionsModel.runningSessions.value.length > 0,
 )
-// When the active conversation is bound to a project agent, derive that
-// project id so the session navigation is scoped to that project only.
-const currentAgentProjectId = computed<string | null>(() => {
-  const conv = conversations.activeConversation.value
-  if (!conv || conv.peerType !== 'agent') return null
-  const sess = cliSessionsModel.sessions.value.find(x => x.agentId === conv.peerUserId)
-  return sess?.agentProjectId ?? null
-})
-
-// Project-scoped slice of the global session hierarchy. When no project
-// context is detected, or when the filtered result is empty (no sessions
-// assigned to this project yet), fall back to the global hierarchy.
-const projectScopedHierarchy = computed(() => {
-  const all = cliSessionsModel.hierarchy.value
-  const projectId = currentAgentProjectId.value
-  if (!projectId) return all
-  const filtered = all.map(tier => tier.filter(sess => sess.agentProjectId === projectId)) as typeof all
-  const hasAny = filtered.some(tier => tier.length > 0)
-  return hasAny ? filtered : all
-})
+// Global session hierarchy — all sessions across all projects.
+// Project scoping was removed because sessions without agentProjectId
+// were never visible, hiding most workers and orchestrators.
+const projectScopedHierarchy = computed(() => cliSessionsModel.hierarchy.value)
 
 const chatWorkerGroups = computed(() => {
   const workers = projectScopedHierarchy.value[2] ?? []

@@ -539,6 +539,7 @@ export async function buildMessengerAgentReply(
   message: string,
   history: MessengerAgentReplyHistoryItem[] = [],
   runtimeHooks: MessengerAgentRuntimeHooks = {},
+  modelOverride?: string,
 ) {
   const agent = await findMessengerAgentById(agentId)
   if (!agent) {
@@ -670,11 +671,12 @@ export async function buildMessengerAgentReply(
   // out. Falls through to the external LLM path on any failure.
   if (normalizedMessage && agent.claudeSessionSlug) {
     try {
+      const effectiveModel = modelOverride ?? settings.model
       const text = await callClaudeSessionReply({
         slug: agent.claudeSessionSlug,
-        model: settings.model?.toLowerCase().includes('opus') ? 'opus'
-             : settings.model?.toLowerCase().includes('haiku') ? 'haiku'
-             : 'sonnet',
+        // Pass the full model ID so the CLI resolves it correctly.
+        // Short aliases ('opus'/'sonnet') map to older model generations.
+        model: effectiveModel ?? undefined,
         systemPrompt: agent.systemPrompt,
         history: history.slice(-8).map(h => ({ role: h.role, content: h.content })),
         message: normalizedMessage,
@@ -691,8 +693,9 @@ export async function buildMessengerAgentReply(
     }
   }
 
+  const resolvedModel = modelOverride ?? settings.model
   if (!normalizedMessage || !isMessengerAgentLlmConfigured({
-    model: settings.model,
+    model: resolvedModel,
     apiKey: settings.apiKey,
   })) {
     return buildReplyByTopic(agent, message)
@@ -702,7 +705,7 @@ export async function buildMessengerAgentReply(
     return await callMessengerAgentModel(
       buildAgentPromptMessages(agent, settings, normalizedMessage, history.slice(-8), connectedAgents, consultationNotes, knowledge),
       {
-        model: settings.model,
+        model: resolvedModel,
         apiKey: settings.apiKey,
       },
     )
