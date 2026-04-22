@@ -50,6 +50,13 @@
       "when": 1776630287195,
       "tag": "0006_yummy_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776886241305,
+      "tag": "0007_ancient_johnny_storm",
+      "breakpoints": true
     }
   ]
 }

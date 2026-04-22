@@ -13,13 +13,10 @@ import {
   type MessengerAgentSettingsRecord,
 } from './agent-settings-store.ts'
 import { resolveMessengerDataPath } from '../media/storage-paths.ts'
-import { readMessengerConfig } from '../config.ts'
+import { getEmbedding, getEmbeddingOrEmpty } from '../ai/embedding-client.ts'
 
-const _cfg = readMessengerConfig()
 const execFileAsync = promisify(execFile)
 const STORAGE_PATH = resolveMessengerDataPath('agent-knowledge.json')
-const OLLAMA_BASE = _cfg.GEMMA_URL || _cfg.OLLAMA_BASE_URL
-const EMBED_MODEL = _cfg.MESSENGER_EMBED_MODEL
 const MAX_SOURCE_BYTES = 256 * 1024
 const CHUNK_SIZE = 1400
 const CHUNK_OVERLAP = 220
@@ -405,37 +402,6 @@ function parseVectorPayload(raw: string): ParsedVectorEntry[] {
   })
 }
 
-async function getEmbedding(text: string) {
-  const response = await fetch(`${OLLAMA_BASE}/api/embed`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: EMBED_MODEL,
-      input: text.slice(0, 4000),
-    }),
-    signal: AbortSignal.timeout(30000),
-  })
-
-  if (!response.ok) {
-    throw new Error(`EMBED_HTTP_${response.status}`)
-  }
-
-  const payload = await response.json() as { embeddings?: number[][] }
-  const embedding = payload.embeddings?.[0]
-  if (!embedding?.length) {
-    throw new Error('EMBED_EMPTY_RESPONSE')
-  }
-
-  return embedding
-}
-
-async function getEmbeddingOrEmpty(text: string) {
-  try {
-    return await getEmbedding(text)
-  } catch {
-    return []
-  }
-}
 
 async function buildKnowledgeChunks(settings: MessengerAgentSettingsRecord, source: MessengerAgentKnowledgeSourceRecord) {
   ensureTextSourceAllowed(source)
