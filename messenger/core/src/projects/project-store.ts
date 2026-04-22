@@ -174,6 +174,53 @@ export async function updateProject(
   return { ok: true, project: updated[0]! }
 }
 
+export async function getProjectConfig(id: string): Promise<Record<string, unknown> | null> {
+  const db = useIngestDb()
+  const [row] = await db
+    .select({ config: messengerProjects.config })
+    .from(messengerProjects)
+    .where(and(eq(messengerProjects.id, id), isNull(messengerProjects.deletedAt)))
+    .limit(1)
+  if (!row) return null
+  return (row.config ?? {}) as Record<string, unknown>
+}
+
+export async function updateProjectApiKeyConfig(
+  id: string,
+  apiKeyPayload: { ciphertext: string; iv: string; tag: string; rotatedAt: string } | null,
+): Promise<boolean> {
+  const db = useIngestDb()
+  const [row] = await db
+    .select({ config: messengerProjects.config })
+    .from(messengerProjects)
+    .where(and(eq(messengerProjects.id, id), isNull(messengerProjects.deletedAt)))
+    .limit(1)
+  if (!row) return false
+
+  const currentConfig = (row.config ?? {}) as Record<string, unknown>
+  let newConfig: Record<string, unknown>
+  if (apiKeyPayload === null) {
+    const { anthropicApiKey: _removed, apiKeyRotatedAt: _removedAt, ...rest } = currentConfig
+    newConfig = rest
+  } else {
+    newConfig = {
+      ...currentConfig,
+      anthropicApiKey: {
+        ciphertext: apiKeyPayload.ciphertext,
+        iv: apiKeyPayload.iv,
+        tag: apiKeyPayload.tag,
+      },
+      apiKeyRotatedAt: apiKeyPayload.rotatedAt,
+    }
+  }
+
+  await db
+    .update(messengerProjects)
+    .set({ config: newConfig, updatedAt: new Date() })
+    .where(eq(messengerProjects.id, id))
+  return true
+}
+
 export async function softDeleteProject(
   id: string,
   ownerUserId: string,

@@ -51,11 +51,14 @@ import { eq, and, isNull } from 'drizzle-orm'
 import {
   createProject,
   findProjectById,
+  getProjectConfig,
   listProjects,
   updateProject,
+  updateProjectApiKeyConfig,
   softDeleteProject,
   getProjectWithCounts,
 } from './project-store.ts'
+import { encryptSecret, decryptSecret } from '../crypto/project-secrets.ts'
 import {
   ProjectForbiddenError,
   listConnectors, createConnector, updateConnector, deleteConnector,
@@ -91,6 +94,7 @@ const updateProjectBody = z.object({
   color: z.string().max(50).nullish(),
   slug: z.string().max(200).nullish(),
   version: z.number().int().positive(),
+  anthropicApiKey: z.string().max(300).nullable().optional(),
 })
 
 const projectIdParams = z.object({ id: z.string().uuid() })
@@ -324,11 +328,30 @@ export function registerProjectsRoutes(
     const parsed = updateProjectBody.safeParse(request.body)
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_PAYLOAD', details: zodErrorSummary(parsed.error) })
 
-    const result = await updateProject(params.data.id, payload.sub, parsed.data)
+    const { anthropicApiKey, ...projectFields } = parsed.data
+    const result = await updateProject(params.data.id, payload.sub, projectFields)
     if (!result.ok) {
       if (result.error === 'NOT_FOUND') return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
       return reply.code(409).send({ error: 'VERSION_CONFLICT' })
     }
+
+    if ('anthropicApiKey' in parsed.data) {
+      if (anthropicApiKey == null) {
+        await updateProjectApiKeyConfig(params.data.id, null)
+      } else {
+        const cfg = readMessengerConfig()
+        if (!cfg.MESSENGER_CORE_SECRETS_KEY) {
+          return reply.code(503).send({ error: 'SECRETS_KEY_NOT_CONFIGURED' })
+        }
+        const encrypted = encryptSecret(anthropicApiKey, cfg.MESSENGER_CORE_SECRETS_KEY)
+        await updateProjectApiKeyConfig(params.data.id, {
+          ...encrypted,
+          rotatedAt: new Date().toISOString(),
+        })
+      }
+    }
+
+    // Return project without anthropicApiKey — never echo plaintext
     return { project: result.project }
   })
 
@@ -343,6 +366,57 @@ export function registerProjectsRoutes(
     const result = await softDeleteProject(params.data.id, payload.sub)
     if (!result.ok) return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
     return { ok: true }
+  })
+
+  // --- API key status (session auth — no plaintext) ---
+
+  app.get<{ Params: { id: string } }>('/projects/:id/api-key-status', async (request, reply) => {
+    const payload = resolveSessionAuth(request)
+    if (!payload) return reply.code(401).send({ error: 'UNAUTHORIZED' })
+
+    const params = projectIdParams.safeParse(request.params)
+    if (!params.success) return reply.code(400).send({ error: 'INVALID_PARAMS' })
+
+    const found = await findProjectById(params.data.id, payload.sub)
+    if (!found.ok) return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+
+    const config = (found.project.config ?? {}) as Record<string, unknown>
+    const hasKey = typeof config.anthropicApiKey === 'object' && config.anthropicApiKey !== null
+    const lastRotatedAt = typeof config.apiKeyRotatedAt === 'string' ? config.apiKeyRotatedAt : null
+    return { configured: hasKey, lastRotatedAt }
+  })
+
+  // --- Internal route: plaintext key for workers (service-token auth) ---
+
+  app.get<{ Params: { id: string } }>('/projects/:id/api-key', async (request, reply) => {
+    const cfg = readMessengerConfig()
+    if (!cfg.MESSENGER_CORE_SERVICE_TOKEN) {
+      return reply.code(503).send({ error: 'SERVICE_TOKEN_NOT_CONFIGURED' })
+    }
+    const token = readBearerToken(request.headers.authorization ?? '')
+    if (!token || token !== cfg.MESSENGER_CORE_SERVICE_TOKEN) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const params = projectIdParams.safeParse(request.params)
+    if (!params.success) return reply.code(400).send({ error: 'INVALID_PARAMS' })
+
+    const projectConfig = await getProjectConfig(params.data.id)
+    if (!projectConfig) return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+
+    const encrypted = projectConfig.anthropicApiKey
+    if (!encrypted || typeof encrypted !== 'object') {
+      return reply.code(404).send({ error: 'API_KEY_NOT_SET' })
+    }
+    const enc = encrypted as { ciphertext?: string; iv?: string; tag?: string }
+    if (!enc.ciphertext || !enc.iv || !enc.tag) {
+      return reply.code(500).send({ error: 'INVALID_KEY_PAYLOAD' })
+    }
+    if (!cfg.MESSENGER_CORE_SECRETS_KEY) {
+      return reply.code(503).send({ error: 'SECRETS_KEY_NOT_CONFIGURED' })
+    }
+    const apiKey = decryptSecret(enc.ciphertext, enc.iv, enc.tag, cfg.MESSENGER_CORE_SECRETS_KEY)
+    return { apiKey }
   })
 
   // --- Connectors ---
