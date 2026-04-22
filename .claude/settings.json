@@ -97,5 +97,8 @@
       "Read(./admin2_id_ed25519)",
       "Read(./id_ed25519_oxo)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "project-knowledge"
+  ]
 }
