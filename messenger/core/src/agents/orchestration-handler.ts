@@ -1,7 +1,8 @@
-import { spawnSync as _spawnSync } from 'node:child_process'
+import { spawnSync as _spawnSync, execFile as _execFile } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import { promisify } from 'node:util'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
@@ -57,6 +58,18 @@ const createRunBody = z.object({
   model: z.string().optional(),
 })
 
+const SPAWN_KINDS = ['frontend-ui', 'backend-api', 'backend-module', 'db-migration', 'messenger-realtime', 'tests', 'docs'] as const
+
+const spawnSessionBody = z.object({
+  slug: z.string().regex(/^[a-z0-9-]{2,40}$/, 'slug must match /^[a-z0-9-]{2,40}$/'),
+  kind: z.enum(SPAWN_KINDS),
+  model: z.string().optional(),
+  workroom: z.string().optional(),
+  prompt: z.string().min(1, 'prompt is required'),
+  effort: z.enum(['low', 'medium', 'high']).optional(),
+  projectId: z.string().optional(),
+})
+
 const cliSessionBody = z.object({
   agentId: z.string().uuid(),
   workroomSlug: z.string().optional(),
@@ -67,14 +80,22 @@ const cliSessionBody = z.object({
   runId: z.string().uuid().optional(),
 })
 
+// --- helpers ---
+
+function resolveCliStateDir() {
+  // eslint-disable-next-line no-restricted-syntax
+  return process.env.DASHBOARD_STATE_DIR ?? join(homedir(), 'state/claude-sessions')
+}
+
 // --- route registration ---
 
 export function registerOrchestrationRoutes(
   app: FastifyInstance,
   broadcastToChannel: (channel: string, event: Record<string, unknown>) => void,
-  opts: { spawnSync?: typeof _spawnSync } = {},
+  opts: { spawnSync?: typeof _spawnSync; execFile?: typeof _execFile } = {},
 ) {
   const spawnSync = opts.spawnSync ?? _spawnSync
+  const execFileAsync = promisify(opts.execFile ?? _execFile)
   const db = useIngestDb()
 
   // POST /agents/:agentId/runs
@@ -231,8 +252,7 @@ export function registerOrchestrationRoutes(
       }
 
       const includeArchived = request.query.includeArchived === 'true' || request.query.includeArchived === '1'
-      const HOME = homedir()
-      const stateDir = process.env.DASHBOARD_STATE_DIR ?? join(HOME, 'state/claude-sessions')
+      const stateDir = resolveCliStateDir()
 
       type SessionRow = {
         slug: string
@@ -305,6 +325,66 @@ export function registerOrchestrationRoutes(
           agentId: agentBySlug.get(s.slug)?.id ?? null,
           agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
         })),
+      }
+    },
+  )
+
+  // POST /cli-sessions/spawn — spawn a new claude-session via CLI
+  app.post<{ Body: unknown }>(
+    '/cli-sessions/spawn',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const parsed = spawnSessionBody.safeParse(request.body)
+      if (!parsed.success) {
+        const detail: Record<string, string> = {}
+        for (const issue of parsed.error.issues) {
+          const key = issue.path.join('.') || issue.path[0]?.toString() || 'unknown'
+          detail[key] = issue.message
+        }
+        return reply.code(400).send({ error: 'INVALID_PAYLOAD', detail })
+      }
+
+      const { slug, kind, model, workroom, prompt, effort, projectId } = parsed.data
+
+      const stateDir = resolveCliStateDir()
+      try {
+        const content = readFileSync(join(stateDir, '.registry.tsv'), 'utf8')
+        const lines = content.trim().split('\n')
+        if (lines.length >= 2) {
+          const headers = (lines[0] ?? '').split('\t')
+          const slugIdx = headers.indexOf('slug')
+          if (slugIdx !== -1) {
+            for (const line of lines.slice(1)) {
+              if ((line.split('\t')[slugIdx] ?? '') === slug) {
+                return reply.code(409).send({ error: 'DUPLICATE_SLUG' })
+              }
+            }
+          }
+        }
+      }
+      catch {}
+
+      const args = [
+        'create', slug,
+        '--model', model ?? 'sonnet',
+        '--kind', kind,
+        '--effort', effort ?? 'medium',
+        ...(workroom ? ['--workroom', workroom] : []),
+        ...(projectId ? ['--project-id', projectId] : []),
+        '--prompt', prompt,
+      ]
+
+      try {
+        const { stdout } = await execFileAsync('claude-session', args, { timeout: 10_000 })
+        const result = JSON.parse(stdout.trim()) as { slug: string; uuid: string; window: string }
+        return reply.code(201).send({ slug: result.slug, uuid: result.uuid, window: result.window })
+      }
+      catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        return reply.code(500).send({ error: 'SPAWN_FAILED', detail: msg })
       }
     },
   )
