@@ -68,5 +68,32 @@ export function useMessengerCliSessions() {
     }
   }
 
-  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh }
+  async function spawnSession(body: {
+    slug: string
+    kind: string
+    model?: string
+    workroom?: string
+    prompt: string
+    effort?: 'low' | 'medium' | 'high'
+    projectId?: string
+  }) {
+    const result = await api.spawnCliSession(body)
+    const optimistic: MessengerCliSession = {
+      slug: result.slug,
+      uuid: result.uuid,
+      window: result.window,
+      workroom: body.workroom ?? '',
+      model: body.model ?? 'sonnet',
+      created: new Date().toISOString(),
+      kind: body.kind,
+      status: 'running',
+      archivedAt: null,
+      agentId: null,
+      agentDisplayName: null,
+    }
+    sessions.value = [optimistic, ...sessions.value.filter(s => s.slug !== result.slug)]
+    return result
+  }
+
+  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh, spawnSession }
 }
