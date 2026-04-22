@@ -2,6 +2,7 @@
 import type { MessengerAgentConnectionMode, MessengerAgentGraphNodeInput } from '../../entities/agents/model/useMessengerAgents'
 import type { MessengerConversationItem } from '../../entities/conversations/model/useMessengerConversations'
 import { getSessionKindMeta } from '../../entities/sessions/model/useMessengerCliSessions'
+import CreateSessionDialog from '../sess-nav/CreateSessionDialog.vue'
 
 const conversations = useMessengerConversations()
 const agentsModel = useMessengerAgents()
@@ -543,6 +544,7 @@ function createAgentFolderIfNeeded(agentId: string, displayName: string) {
 const subscriptionsModel = useMessengerSubscriptions()
 const cliSessions = useMessengerCliSessions()
 
+const showCreateSession = ref(false)
 const showSessionComposer = ref(false)
 const sessionComposerError = ref('')
 const sessionComposerPending = ref(false)
@@ -1344,14 +1346,23 @@ function formatChatPreview(chat: MessengerConversationItem) {
               <span class="sessions-directory__live-dot" />
               Живые сессии
             </p>
-            <VBtn
-              size="x-small"
-              variant="text"
-              icon="mdi-refresh"
-              :loading="cliSessions.pending.value"
-              title="Обновить"
-              @click="cliSessions.refresh()"
-            />
+            <div class="d-flex align-center gap-1">
+              <VBtn
+                size="x-small"
+                variant="text"
+                icon="mdi-plus"
+                title="Новая сессия"
+                @click="showCreateSession = true"
+              />
+              <VBtn
+                size="x-small"
+                variant="text"
+                icon="mdi-refresh"
+                :loading="cliSessions.pending.value"
+                title="Обновить"
+                @click="cliSessions.refresh()"
+              />
+            </div>
           </div>
 
           <!-- Hierarchy: composer → orchestrators → workers -->
@@ -1908,6 +1919,13 @@ function formatChatPreview(chat: MessengerConversationItem) {
         </VCardActions>
       </VCard>
     </VDialog>
+    <!-- Диалог: новая CLI-сессия -->
+    <CreateSessionDialog
+      v-if="agentsEnabled"
+      v-model="showCreateSession"
+      @spawned="cliSessions.refresh()"
+    />
+
     <!-- Диалог: Composer сессий -->
     <VDialog v-if="agentsEnabled" v-model="showSessionComposer" max-width="620" scrollable>
       <VCard>
