@@ -55,7 +55,40 @@ Both feed the same session; output updates live on the dashboard and in the UI.
 3. Verify the dashboard endpoint: `curl -s http://152.53.176.165:9090 -w "\nStatus: %{http_code}\n"` (should be 200)
 4. Any tmux sessions from before the reboot are lost — recreate them with `claude-session create`
 
-## 7. Data locations
+## 7. Silent-success guard (commit-count check)
+
+The queue daemon (`claude-queue-daemon`) verifies that a worker produced at least one commit above its base branch before marking a task as `done`. Workers that exit cleanly without committing are routed to `failed/` instead, preventing silent no-op runs from occupying pool slots undetected.
+
+**Outcomes written to `~/log/queue-daemon.log`:**
+
+| Outcome | Meaning |
+|---------|---------|
+| `outcome=done` | Worker committed ≥1 time; branch pushed to origin. |
+| `outcome=no_commits` | Worker exited cleanly but made 0 commits above base. Task moved to `failed/` with a `.no-commits.md` suffix; branch NOT pushed. |
+| `outcome=failed` | Worker logged an error or stalled. Task moved to `failed/`. |
+
+**Triage a no-commits task:**
+
+```bash
+# See what was requested:
+cat ~/state/queue/failed/<slug>.no-commits.md
+
+# Re-queue manually after fixing the prompt:
+cp ~/state/queue/failed/<slug>.no-commits.md ~/state/queue/pending/<slug>.md
+```
+
+**Daemon source-of-truth:**
+
+The canonical script lives at `daria/scripts/ops/claude-queue-daemon` (version-controlled).
+The running copy at `~/bin/claude-queue-daemon` should be kept in sync via:
+
+```bash
+ln -sf ~/daria/scripts/ops/claude-queue-daemon ~/bin/claude-queue-daemon
+```
+
+After updating the script in the repo, run the symlink command again to activate the new version.
+
+## 8. Data locations
 
 | What | Where | Notes |
 |------|-------|-------|

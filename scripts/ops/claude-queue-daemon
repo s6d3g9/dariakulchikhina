@@ -1,0 +1,279 @@
+#!/usr/bin/env bash
+# claude-queue-daemon — worker-pool scheduler for Claude CLI sessions.
+#
+# Watches ~/state/queue/pending/*.md, spawns a workroom + claude-session
+# for each, moves completed tasks to done/, frees pool slots, and optionally
+# auto-pushes the resulting git branch when lint+tsc are clean.
+#
+# Idempotent: safe to restart. State lives entirely under ~/state/queue/.
+#
+# Task file format (YAML frontmatter + markdown body):
+#
+#   ---
+#   id: 042-decompose-calls-e2ee
+#   model: sonnet          # sonnet | haiku | opus
+#   base_branch: main      # workroom base branch (default: main)
+#   verify:                # optional verify steps; defaults to lint+tsc
+#     - pnpm lint:errors
+#     - pnpm exec vue-tsc --noEmit 2>&1 | grep -v "tmp_\|communications-service" | head -50
+#   auto_push: true        # git push branch on clean done (default: true)
+#   priority: 50           # lower = first (default: 100)
+#   ---
+#
+#   # <task title>
+#
+#   <body becomes TASK.md in the workroom, fed to Claude>
+#
+# Pool size: $POOL_SIZE env var (default 8). Keep ≤ sessions your Max
+# subscription + server comfortably handles.
+
+set -euo pipefail
+
+POOL_SIZE="${POOL_SIZE:-8}"
+POLL_INTERVAL="${POLL_INTERVAL:-10}"           # seconds between iterations
+QUEUE_DIR="${QUEUE_DIR:-$HOME/state/queue}"
+BIN_WORKROOM="$HOME/bin/workroom"
+BIN_CLAUDE_SESSION="$HOME/bin/claude-session"
+LOG_FILE="$HOME/log/queue-daemon.log"
+
+mkdir -p "$QUEUE_DIR"/{pending,running,done,failed} "$(dirname "$LOG_FILE")"
+
+log() { echo "[$(date -Iseconds)] $*" | tee -a "$LOG_FILE" >&2; }
+
+# ──────────────── parse frontmatter (YAML) ────────────────
+# Returns: field=value on stdout (one per line)
+parse_frontmatter() {
+  local file="$1"
+  awk '
+    /^---$/ { n++; next }
+    n == 1 { print }
+    n >= 2 { exit }
+  ' "$file"
+}
+
+# Read a single scalar from frontmatter (or default)
+fm_get() {
+  local file="$1" key="$2" default="${3:-}"
+  local v
+  v=$(parse_frontmatter "$file" | awk -v k="$key" -F':' '$1 == k { sub(/^ +/,"",$2); print $2; exit }')
+  [ -n "$v" ] && echo "$v" || echo "$default"
+}
+
+# Extract the body (everything after the second ---)
+fm_body() {
+  local file="$1"
+  awk '
+    /^---$/ { n++; next }
+    n >= 2 { print }
+  ' "$file"
+}
+
+# ──────────────── session state inference ────────────────
+session_state() {
+  local slug="$1"
+  local log="$HOME/state/claude-sessions/${slug}.log"
+  [ -f "$log" ] || { echo "no-log"; return; }
+  local last
+  last=$(tail -n 1 "$log" 2>/dev/null)
+  if grep -q '"type":"result"' <<<"$last"; then
+    if grep -q '"is_error":true' <<<"$last"; then echo "error"; else echo "done"; fi
+    return
+  fi
+  local mtime now age
+  mtime=$(stat -c %Y "$log" 2>/dev/null || echo 0)
+  now=$(date +%s)
+  age=$(( now - mtime ))
+  if [ "$age" -lt 15 ]; then echo "running"
+  elif [ "$age" -lt 120 ]; then echo "idle"
+  else echo "stalled"; fi
+}
+
+# ──────────────── spawn a task ────────────────
+spawn_task() {
+  local task_file="$1"
+  local task_id task_slug model base workroom_slug
+
+  # Defense-in-depth: task_file MUST be a regular .md file in QUEUE_DIR/pending.
+  # If a caller somehow passes a bare name / directory / non-md path, bail.
+  if [ ! -f "$task_file" ] || [[ "$task_file" != "$QUEUE_DIR/pending/"*.md ]]; then
+    log "[spawn] refuse: not a pending .md file: $task_file"
+    return 1
+  fi
+
+  task_id=$(fm_get "$task_file" id "$(basename "$task_file" .md)")
+  model=$(fm_get "$task_file" model sonnet)
+  base=$(fm_get "$task_file" base_branch main)
+  local effort
+  effort=$(fm_get "$task_file" effort "")
+  # TASK.md may declare `kind:` to select the skill-bundle for the worker.
+  # Optional — claude-session infers a sensible default from the slug if omitted.
+  local kind
+  kind=$(fm_get "$task_file" kind "")
+  # Derive workroom slug: sanitize task_id to match [a-z0-9-]{2,31}
+  workroom_slug=$(echo "$task_id" | tr 'A-Z_' 'a-z-' | tr -cd 'a-z0-9-' | cut -c 1-31)
+  [ -z "$workroom_slug" ] && { log "bad task id: $task_id"; return 1; }
+
+  local session_slug="$workroom_slug"
+  # Session slug must also fit the 31-char regex; workroom_slug already does.
+
+  log "[spawn] task=$task_id model=$model workroom=$workroom_slug"
+
+  # Create workroom (idempotent)
+  if ! "$BIN_WORKROOM" list | grep -q "^$workroom_slug\b"; then
+    "$BIN_WORKROOM" create "$workroom_slug" "$base" >> "$LOG_FILE" 2>&1 || {
+      log "[spawn] workroom create failed for $workroom_slug"
+      mv "$task_file" "$QUEUE_DIR/failed/"
+      return 1
+    }
+  fi
+
+  # Write TASK.md into the workroom
+  local workroom_path="$HOME/workrooms/$workroom_slug"
+  fm_body "$task_file" > "$workroom_path/TASK.md"
+
+  # Spawn the session
+  local initial_prompt="Task: $task_id. Instructions in TASK.md in your workroom root. Read it fully and execute. Commit per logical step. Delete TASK.md before your final commit. When done, write a final report with: commit hashes, verify results, blockers if any."
+
+  local session_args=( create "$session_slug"
+                       --workroom "$workroom_slug"
+                       --model "$model"
+                       --prompt "$initial_prompt" )
+  [ -n "$effort" ] && session_args+=( --effort "$effort" )
+  [ -n "$kind" ] && session_args+=( --kind "$kind" )
+  "$BIN_CLAUDE_SESSION" "${session_args[@]}" >> "$LOG_FILE" 2>&1 || {
+    log "[spawn] claude-session failed for $session_slug"
+    mv "$task_file" "$QUEUE_DIR/failed/"
+    return 1
+  }
+
+  # Move to running/
+  mv "$task_file" "$QUEUE_DIR/running/"
+  log "[spawn] $task_id now running as $session_slug"
+}
+
+# ──────────────── archive session + remove workroom ────────────────
+# Shared cleanup step called for both done and no_commits outcomes.
+# Frees the workroom slot and moves session logs to archive/.
+_archive_session_and_remove_workroom() {
+  local workroom_slug="$1"
+  local workroom_path="$HOME/workrooms/$workroom_slug"
+  local session_slug="$workroom_slug"
+  if grep -q "^${session_slug}	" "$HOME/state/claude-sessions/.registry.tsv" 2>/dev/null; then
+    local arch_dir="$HOME/state/claude-sessions/archive"
+    mkdir -p "$arch_dir"
+    [ -f "$arch_dir/.registry.tsv" ] || \
+      printf 'slug\tuuid\twindow\tworkroom\tmodel\tcreated\tarchived_at\n' > "$arch_dir/.registry.tsv"
+    # Read session row, append to archive, drop from active registry.
+    local row
+    row=$(awk -v s="$session_slug" -F'\t' '$1==s {print; exit}' "$HOME/state/claude-sessions/.registry.tsv")
+    if [ -n "$row" ]; then
+      printf '%s\t%s\n' "$row" "$(date -Iseconds)" >> "$arch_dir/.registry.tsv"
+      awk -v s="$session_slug" -F'\t' '$1!=s' "$HOME/state/claude-sessions/.registry.tsv" \
+        > "$HOME/state/claude-sessions/.registry.tsv.tmp" \
+        && mv "$HOME/state/claude-sessions/.registry.tsv.tmp" "$HOME/state/claude-sessions/.registry.tsv"
+      # Move log + kill tmux window (session process has already exited)
+      [ -f "$HOME/state/claude-sessions/${session_slug}.log" ] && \
+        mv "$HOME/state/claude-sessions/${session_slug}.log" "$arch_dir/${session_slug}.log"
+      [ -f "$HOME/state/claude-sessions/${session_slug}.json" ] && \
+        mv "$HOME/state/claude-sessions/${session_slug}.json" "$arch_dir/${session_slug}.json"
+      tmux kill-window -t "cc:cc-${session_slug}" 2>/dev/null || true
+      log "[complete] auto-archived session $session_slug"
+    fi
+  fi
+  # Release the workroom slot: remove worktree + branch ref.
+  # For done tasks the branch is on origin; for no_commits the worktree
+  # is still removed so the slot is freed for the next task.
+  if [ -d "$workroom_path" ]; then
+    if "$HOME/bin/workroom" remove "$workroom_slug" >> "$LOG_FILE" 2>&1; then
+      log "[complete] removed workroom $workroom_slug"
+    else
+      log "[complete] workroom remove failed for $workroom_slug (slot may leak)"
+    fi
+  fi
+}
+
+# ──────────────── complete a task ────────────────
+complete_task() {
+  local task_file="$1" outcome="$2"   # outcome = done | failed
+  local task_id workroom_slug
+  task_id=$(fm_get "$task_file" id "$(basename "$task_file" .md)")
+  workroom_slug=$(echo "$task_id" | tr 'A-Z_' 'a-z-' | tr -cd 'a-z0-9-' | cut -c 1-31)
+  local workroom_path="$HOME/workrooms/$workroom_slug"
+
+  # ── Commit-count guard: worker must produce ≥1 commit above base ──────
+  # Check before push so a silent exit (0 commits) is caught and routed to
+  # failed/ instead of done/. The workroom is still archived to free the slot.
+  if [ "$outcome" = "done" ] && [ -d "$workroom_path" ]; then
+    local base_branch branch commits
+    base_branch=$(fm_get "$task_file" base_branch main)
+    branch="claude/workroom-$workroom_slug"
+    commits=$(git -C "$workroom_path" rev-list --count HEAD "^$base_branch" 2>/dev/null || echo 0)
+    if [ "$commits" -eq 0 ]; then
+      outcome=no_commits
+      log "[no-commits] slug=$workroom_slug base=$base_branch branch=$branch — worker exited without committing; moved to failed/."
+    fi
+  fi
+
+  log "[complete] $task_id outcome=$outcome"
+
+  if [ "$outcome" = "done" ]; then
+    local auto_push
+    auto_push=$(fm_get "$task_file" auto_push true)
+    if [ "$auto_push" = "true" ] && [ -d "$workroom_path" ]; then
+      local branch="claude/workroom-$workroom_slug"
+      if git -C "$workroom_path" push origin "$branch" >> "$LOG_FILE" 2>&1; then
+        log "[complete] pushed $branch"
+      else
+        log "[complete] push failed for $branch (may need rebase or auth)"
+      fi
+    fi
+    mv "$task_file" "$QUEUE_DIR/done/"
+    _archive_session_and_remove_workroom "$workroom_slug"
+  elif [ "$outcome" = "no_commits" ]; then
+    # Preserve task content in failed/ under a distinct name for operator triage.
+    mv "$task_file" "$QUEUE_DIR/failed/$(basename "$task_file" .md).no-commits.md"
+    _archive_session_and_remove_workroom "$workroom_slug"
+  else
+    mv "$task_file" "$QUEUE_DIR/failed/"
+  fi
+}
+
+# ──────────────── main loop ────────────────
+log "[daemon] starting, pool=$POOL_SIZE, poll=${POLL_INTERVAL}s, queue=$QUEUE_DIR"
+
+shopt -s nullglob  # empty globs become empty lists instead of literal "*.md"
+
+while :; do
+  # 1. Reap finished sessions from running/ (robust listing under set -e)
+  while IFS= read -r task_file; do
+    [ -n "$task_file" ] || continue
+    task_id=$(fm_get "$task_file" id "$(basename "$task_file" .md)")
+    workroom_slug=$(echo "$task_id" | tr 'A-Z_' 'a-z-' | tr -cd 'a-z0-9-' | cut -c 1-31)
+    state=$(session_state "$workroom_slug")
+    case "$state" in
+      done)    complete_task "$task_file" done ;;
+      error)   complete_task "$task_file" failed ;;
+      stalled) complete_task "$task_file" failed ;;
+      *)       : ;;
+    esac
+  done < <(find "$QUEUE_DIR/running" -maxdepth 1 -name '*.md' 2>/dev/null | sort)
+
+  # 2. Spawn while there are free slots
+  running_files=( "$QUEUE_DIR"/running/*.md )
+  running_count=${#running_files[@]}
+  free=$(( POOL_SIZE - running_count ))
+  if [ "$free" -gt 0 ]; then
+    # Sort pending by priority (frontmatter-prefix in name acts as ordering).
+    # Nullglob-safe array expansion: if no *.md exists the array is empty —
+    # we do NOT fall back to ls/find without args, which would surface CWD
+    # entries and cause spawn_task to try to move unrelated dirs like ~/bin,
+    # ~/daria, ~/workrooms into state/queue/running,failed (the disaster of
+    # 2026-04-19 13:38). See also the defense-in-depth guard in spawn_task.
+    pending_files=( "$QUEUE_DIR"/pending/*.md )
+    for task_file in "${pending_files[@]:0:$free}"; do
+      spawn_task "$task_file" || true
+    done
+  fi
+
+  sleep "$POLL_INTERVAL"
+done
