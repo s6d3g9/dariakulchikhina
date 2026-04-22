@@ -1,4 +1,5 @@
-import { spawnSync as _spawnSync } from 'node:child_process'
+import { spawnSync as _spawnSync, execFile as _execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
@@ -47,6 +48,9 @@ async function resolveIngestAuth(db: ReturnType<typeof useIngestDb>, authHeader:
     .limit(1)
   return agent ?? null
 }
+
+const execFileAsync = promisify(_execFile)
+const CLAUDE_SESSION_BIN = '/home/claudecode/bin/claude-session'
 
 // --- schemas ---
 
@@ -242,6 +246,7 @@ export function registerOrchestrationRoutes(
         model: string
         created: string
         kind: string
+        effort: string
         status: 'running' | 'done'
         archivedAt: string | null
       }
@@ -263,6 +268,7 @@ export function registerOrchestrationRoutes(
             model: obj.model ?? '',
             created: obj.created ?? '',
             kind: obj.kind ?? '',
+            effort: obj.effort ?? '',
             status: isArchive ? 'done' : 'running',
             archivedAt: obj.archived_at ?? null,
           }]
@@ -360,6 +366,42 @@ export function registerOrchestrationRoutes(
         .returning({ id: messengerCliSessions.id })
 
       return { id: inserted.id }
+    },
+  )
+
+  // PATCH /cli-sessions/:slug — update model and/or effort for a running session.
+  // Calls claude-session set-model / set-effort which updates the registry and kills
+  // the tmux window so the next send picks up the new flags via --resume.
+  const patchCliSessionBody = z.object({
+    model: z.string().optional(),
+    effort: z.enum(['low', 'medium', 'high']).optional(),
+  }).refine(d => d.model !== undefined || d.effort !== undefined, {
+    message: 'At least one of model or effort is required',
+  })
+
+  app.patch<{ Params: { slug: string } }>(
+    '/cli-sessions/:slug',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const { slug } = request.params
+      const parsed = patchCliSessionBody.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'INVALID_INPUT', issues: parsed.error.issues })
+      }
+
+      const { model, effort } = parsed.data
+
+      if (model) {
+        await execFileAsync(CLAUDE_SESSION_BIN, ['set-model', slug, model], { timeout: 10000 })
+      }
+      if (effort) {
+        await execFileAsync(CLAUDE_SESSION_BIN, ['set-effort', slug, effort], { timeout: 10000 })
+      }
+
+      return { slug, ...(model !== undefined && { model }), ...(effort !== undefined && { effort }) }
     },
   )
 }
