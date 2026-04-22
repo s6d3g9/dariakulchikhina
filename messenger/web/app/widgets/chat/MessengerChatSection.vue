@@ -269,12 +269,15 @@ const currentAgentProjectId = computed<string | null>(() => {
 })
 
 // Project-scoped slice of the global session hierarchy. When no project
-// context is detected we fall back to the global hierarchy (back-compat).
+// context is detected, or when the filtered result is empty (no sessions
+// assigned to this project yet), fall back to the global hierarchy.
 const projectScopedHierarchy = computed(() => {
   const all = cliSessionsModel.hierarchy.value
   const projectId = currentAgentProjectId.value
   if (!projectId) return all
-  return all.map(tier => tier.filter(sess => sess.agentProjectId === projectId)) as typeof all
+  const filtered = all.map(tier => tier.filter(sess => sess.agentProjectId === projectId)) as typeof all
+  const hasAny = filtered.some(tier => tier.length > 0)
+  return hasAny ? filtered : all
 })
 
 const chatWorkerGroups = computed(() => {
@@ -2105,9 +2108,10 @@ watch(() => activeConversationAgent.value, (value) => {
 
 // Trigger a session refresh once auth becomes ready (token may not be
 // available at setup time, so the immediate watcher above can silently 401).
+// { immediate: true } covers the case where auth is already ready on mount.
 watch(auth.ready, (ready) => {
   if (ready && activeConversationAgent.value) void cliSessionsModel.refresh()
-})
+}, { immediate: true })
 
 // Poll sessions every 20 s while an agent chat is active so the hierarchy
 // bar stays up-to-date without requiring a page reload.
