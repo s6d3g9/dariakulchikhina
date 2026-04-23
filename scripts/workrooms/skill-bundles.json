@@ -1,113 +1,108 @@
 {
   "$schema": "./skill-bundles.schema.json",
-  "description": "Which installed plugins are appropriate for each worker-kind. Used by claude-session wrapper to build per-session --plugin-dir bundles. Keys match TASK.md frontmatter `kind:` field. Extend without fear — unknown kinds fall through to 'default'.",
+  "description": "Worker-kind definitions: plugins, model routing, effort budget, and spawn rules. Used by claude-session wrapper and the project kernel to route tasks efficiently. Keys match TASK.md frontmatter `kind:` field.",
+
   "composer": {
-    "purpose": "User + assistant — strategy, triage, architecture discussion. Does not edit code directly.",
-    "plugins": [
-      "code-review",
-      "feature-dev",
-      "plugin-dev",
-      "example-skills",
-      "frontend-design"
-    ]
+    "purpose": "User-facing entry point — strategy, triage, delegation. Never edits code directly. Spawns orchestrators, balances load across the project.",
+    "model": "claude-opus-4-7",
+    "effort": "high",
+    "maxParallel": 1,
+    "plugins": ["code-review", "feature-dev", "plugin-dev", "example-skills", "frontend-design"]
   },
+
   "orchestrator": {
-    "purpose": "Decomposes requests into TASK.md files, routes them to workers by kind.",
-    "plugins": [
-      "feature-dev",
-      "code-review",
-      "commit-commands",
-      "plugin-dev"
-    ]
+    "purpose": "Decomposes tasks from composer into TASK.md files, routes them to the right worker kind, monitors progress. Max 2 per project.",
+    "model": "claude-sonnet-4-6",
+    "effort": "medium",
+    "maxParallel": 2,
+    "plugins": ["feature-dev", "code-review", "commit-commands", "plugin-dev"]
   },
+
   "frontend-ui": {
     "purpose": "Vue components, pages, widgets, FSD refactors.",
-    "plugins": [
-      "frontend-design",
-      "example-skills",
-      "code-review",
-      "commit-commands"
-    ]
+    "model": "claude-sonnet-4-6",
+    "effort": "medium",
+    "maxParallel": 2,
+    "plugins": ["frontend-design", "example-skills", "code-review", "commit-commands"]
   },
+
   "frontend-research": {
-    "purpose": "UX flows, user research synthesis, design handoff specs.",
-    "plugins": [
-      "frontend-design",
-      "example-skills",
-      "document-skills"
-    ]
+    "purpose": "UX flows, user research synthesis, design handoff specs. Read-only — no commits.",
+    "model": "claude-haiku-4-5-20251001",
+    "effort": "low",
+    "maxParallel": 3,
+    "plugins": ["frontend-design", "example-skills", "document-skills"]
   },
+
   "backend-api": {
     "purpose": "Nitro API handlers, thin-controllers, shared contracts.",
-    "plugins": [
-      "code-review",
-      "feature-dev",
-      "security-guidance",
-      "commit-commands"
-    ]
+    "model": "claude-sonnet-4-6",
+    "effort": "medium",
+    "maxParallel": 2,
+    "plugins": ["code-review", "feature-dev", "security-guidance", "commit-commands"]
   },
+
   "backend-module": {
     "purpose": "DDD-lite modules under server/modules/**, repository + service layer.",
-    "plugins": [
-      "feature-dev",
-      "code-review",
-      "security-guidance",
-      "commit-commands"
-    ]
+    "model": "claude-sonnet-4-6",
+    "effort": "medium",
+    "maxParallel": 2,
+    "plugins": ["feature-dev", "code-review", "security-guidance", "commit-commands"]
   },
+
   "db-migration": {
-    "purpose": "Drizzle schema split, server/db/schema/**, generated SQL review.",
-    "plugins": [
-      "code-review",
-      "security-guidance",
-      "commit-commands"
-    ]
+    "purpose": "Drizzle schema changes, server/db/schema/**, generated SQL review. High risk — max 1 at a time.",
+    "model": "claude-sonnet-4-6",
+    "effort": "medium",
+    "maxParallel": 1,
+    "plugins": ["code-review", "security-guidance", "commit-commands"]
   },
+
   "messenger-realtime": {
     "purpose": "messenger/core (Fastify, WS, E2EE), services/communications-service.",
-    "plugins": [
-      "feature-dev",
-      "code-review",
-      "security-guidance",
-      "commit-commands"
-    ]
+    "model": "claude-sonnet-4-6",
+    "effort": "medium",
+    "maxParallel": 1,
+    "plugins": ["feature-dev", "code-review", "security-guidance", "commit-commands"]
   },
+
   "tests": {
-    "purpose": "Unit / integration / smoke test suites.",
-    "plugins": [
-      "code-review",
-      "commit-commands"
-    ]
+    "purpose": "Unit / integration / smoke test suites. Cheap — use haiku.",
+    "model": "claude-haiku-4-5-20251001",
+    "effort": "low",
+    "maxParallel": 3,
+    "plugins": ["code-review", "commit-commands"]
   },
+
   "docs": {
-    "purpose": "architecture-v5 docs, runbooks, READMEs.",
-    "plugins": [
-      "document-skills",
-      "commit-commands"
-    ]
+    "purpose": "architecture-v5 docs, runbooks, READMEs. Cheap — use haiku.",
+    "model": "claude-haiku-4-5-20251001",
+    "effort": "low",
+    "maxParallel": 3,
+    "plugins": ["document-skills", "commit-commands"]
   },
+
   "incident": {
-    "purpose": "Production triage, hot-fix, postmortem.",
-    "plugins": [
-      "code-review",
-      "pr-review-toolkit",
-      "security-guidance",
-      "commit-commands"
-    ]
+    "purpose": "Production triage, hot-fix, postmortem. Opus — high stakes.",
+    "model": "claude-opus-4-7",
+    "effort": "high",
+    "maxParallel": 1,
+    "plugins": ["code-review", "pr-review-toolkit", "security-guidance", "commit-commands"]
   },
+
+  "lint-ratchet": {
+    "purpose": "Ratchet pnpm lint:errors to zero. Touch only lint-related fixes; never refactor behavior.",
+    "model": "claude-haiku-4-5-20251001",
+    "effort": "low",
+    "maxParallel": 4,
+    "plugins": ["code-review", "commit-commands", "security-guidance"]
+  },
+
   "default": {
     "purpose": "Fallback when no kind is set in TASK.md frontmatter.",
-    "plugins": [
-      "code-review",
-      "commit-commands"
-    ]
-  },
-  "lint-ratchet": {
-    "purpose": "Ratchet pnpm lint:errors to zero on a given module. Touch only lint-related fixes; never refactor behavior in the same task.",
-    "plugins": [
-      "code-review",
-      "commit-commands",
-      "security-guidance"
-    ]
+    "model": "claude-sonnet-4-6",
+    "effort": "medium",
+    "maxParallel": 2,
+    "plugins": ["code-review", "commit-commands"]
   }
 }
