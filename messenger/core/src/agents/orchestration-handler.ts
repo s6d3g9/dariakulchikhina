@@ -512,13 +512,37 @@ export function registerOrchestrationRoutes(
         }
       }
 
+      // A session is truly "running" when clicore2messenger has pushed an event
+      // within the last few minutes — not when its tmux window happens to still be
+      // alive (tmux keeps abandoned Claude processes forever). New sessions get a
+      // grace period before they're required to have produced events.
+      const ACTIVITY_WINDOW_MS = 3 * 60_000
+      const NEW_SESSION_GRACE_MS = 2 * 60_000
+      const now = Date.now()
       return {
         sessions: sessions.map(s => {
           const agentId = agentBySlug.get(s.slug)?.id ?? null
           const activity = agentId ? activityByAgent.get(agentId) ?? null : null
+          const tmuxDead = liveTmuxWindows.size > 0 && !liveTmuxWindows.has(s.window)
+          const dbStopped = stoppedSlugs.has(s.slug)
+          let computedStatus: 'running' | 'done' = s.status
+          if (s.status === 'running') {
+            if (tmuxDead || dbStopped) {
+              computedStatus = 'done'
+            }
+            else if (activity?.lastActivityAt) {
+              const age = now - new Date(activity.lastActivityAt).getTime()
+              computedStatus = age < ACTIVITY_WINDOW_MS ? 'running' : 'done'
+            }
+            else {
+              // No events yet — running only if the session is fresh
+              const createdAge = s.created ? now - new Date(s.created).getTime() : Number.POSITIVE_INFINITY
+              computedStatus = createdAge < NEW_SESSION_GRACE_MS ? 'running' : 'done'
+            }
+          }
           return {
             ...s,
-            status: (s.status === 'running' && (stoppedSlugs.has(s.slug) || (liveTmuxWindows.size > 0 && !liveTmuxWindows.has(s.window)))) ? 'done' as const : s.status,
+            status: computedStatus,
             agentId,
             agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
             agentProjectId: agentBySlug.get(s.slug)?.projectId ?? slugToMessengerProjectId.get(s.slug) ?? s.registryProjectId ?? null,
