@@ -10,7 +10,7 @@ test("post() calls fetch with /agents/:agentId/stream URL", async () => {
     return new Response(null, { status: 202 });
   };
 
-  await post("http://ex.test", "agent-42", "tok", { type: "delta", runId: "r1", text: "hi" });
+  await post("http://ex.test", "agent-42", "tok", { type: "delta", runId: "r1", delta: "hi" });
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, "http://ex.test/agents/agent-42/stream");

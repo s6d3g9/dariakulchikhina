@@ -11,8 +11,8 @@ test("first content line emits substate:running + delta", () => {
   const ctx = makeCtx();
   const events = copilotAdapter.parseLine("hello world", ctx);
   assert.equal(events.length, 2);
-  assert.deepEqual(events[0], { type: "substate", runId: "r1", value: "running" });
-  assert.deepEqual(events[1], { type: "delta", runId: "r1", text: "hello world" });
+  assert.deepEqual(events[0], { type: "substate", runId: "r1", substate: "running" });
+  assert.deepEqual(events[1], { type: "delta", runId: "r1", delta: "hello world" });
   assert.equal(ctx.state.finalText, "hello world");
 });
 
@@ -21,7 +21,7 @@ test("subsequent content line emits only delta (no substate)", () => {
   ctx.state.finalText = "hello world";
   const events = copilotAdapter.parseLine("second line", ctx);
   assert.equal(events.length, 1);
-  assert.deepEqual(events[0], { type: "delta", runId: "r1", text: "second line" });
+  assert.deepEqual(events[0], { type: "delta", runId: "r1", delta: "second line" });
 });
 
 test("progress line (starts with >) emits tool_use", () => {
@@ -31,8 +31,8 @@ test("progress line (starts with >) emits tool_use", () => {
   assert.deepEqual(events[0], {
     type: "tool_use",
     runId: "r1",
-    name: "copilot:progress",
-    inputSummary: "> fetching context",
+    tool: "copilot:progress",
+    input: "> fetching context",
   });
   assert.equal(ctx.state.finalText, "", "progress line should not accumulate into finalText");
 });

@@ -9,18 +9,18 @@ export const copilotAdapter: CliAdapter = {
 
     // Progress indicator lines — not content
     if (line.startsWith(">")) {
-      return [{ type: "tool_use", runId: ctx.runId, name: "copilot:progress", inputSummary: line }];
+      return [{ type: "tool_use", runId: ctx.runId, tool: "copilot:progress", input: line }];
     }
 
     const events: IngestEvent[] = [];
 
     if (!ctx.state.finalText) {
       // First content line — signal that copilot is streaming
-      events.push({ type: "substate", runId: ctx.runId, value: "running" });
+      events.push({ type: "substate", runId: ctx.runId, substate: "running" });
     }
 
     ctx.state.finalText += (ctx.state.finalText ? "\n" : "") + line;
-    events.push({ type: "delta", runId: ctx.runId, text: line });
+    events.push({ type: "delta", runId: ctx.runId, delta: line });
 
     return events;
   },
@@ -30,8 +30,6 @@ export const copilotAdapter: CliAdapter = {
       type: "complete",
       runId: ctx.runId,
       finalText: ctx.state.finalText.trim(),
-      totalTokens: 0,
-      durationMs: 0,
     }];
   },
 

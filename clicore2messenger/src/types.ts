@@ -4,7 +4,7 @@ export type IngestEvent =
   | { type: "substate"; runId: string; substate: string; message?: string }
   | { type: "delta"; runId: string; delta: string }
   | { type: "tool_use"; runId: string; tool: string; input?: unknown }
-  | { type: "tokens"; runId: string; tokenIn: number; tokenOut: number; costUsd?: number }
+  | { type: "tokens"; runId: string; tokenIn: number; tokenOut: number; costUsd?: number; cacheRead?: number; cacheWrite?: number }
   | { type: "complete"; runId: string; finalText?: string }
   | { type: "error"; runId: string; message: string; fatal?: boolean };
 

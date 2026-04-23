@@ -5,9 +5,19 @@ import type { CliAdapter, CliAdapterContext, IngestEvent } from "../types.ts";
 export const claudeAdapter: CliAdapter = {
   name: "claude",
 
-  finalize(_ctx: CliAdapterContext): IngestEvent[] {
-    // complete is emitted by the result event mapping; nothing to flush
-    return [];
+  finalize(ctx: CliAdapterContext): IngestEvent[] {
+    const state = ctx.state as ExtState;
+    const events: IngestEvent[] = [];
+    // Flush any tool_use that never got content_block_stop
+    if (state._pendingTool) {
+      const { tool, json } = state._pendingTool;
+      let input: unknown = undefined;
+      try { input = json ? JSON.parse(json) : undefined; } catch { input = undefined; }
+      events.push({ type: "tool_use", runId: ctx.runId, tool, input });
+      state._pendingTool = null;
+    }
+    events.push({ type: "complete", runId: ctx.runId, finalText: state.finalText || undefined });
+    return events;
   },
 
   parseLine(line: string, ctx: CliAdapterContext): IngestEvent[] {
@@ -19,7 +29,7 @@ export const claudeAdapter: CliAdapter = {
     } catch {
       return [];
     }
-    return mapCliEvent(raw, ctx.runId, ctx.state);
+    return mapCliEvent(raw, ctx.runId, ctx.state as ExtState);
   },
 
   spawnArgs(opts) {
@@ -39,11 +49,13 @@ export const claudeAdapter: CliAdapter = {
   },
 };
 
+type ExtState = { finalText: string; tokensIn: number; tokensOut: number; costUsd: number; _pendingTool?: { tool: string; json: string } | null };
+
 // Verbatim mapping logic from scripts/workrooms/claude-stream-bridge.ts
 function mapCliEvent(
   raw: unknown,
   runId: string,
-  state: { finalText: string; tokensIn: number; tokensOut: number; costUsd: number }
+  state: ExtState
 ): IngestEvent[] {
   if (typeof raw !== "object" || raw === null) return [];
   const ev = raw as Record<string, unknown>;
@@ -69,21 +81,33 @@ function mapCliEvent(
           const cb = se.content_block as Record<string, unknown> | undefined;
           if (cb?.type === "tool_use") {
             events.push({ type: "substate", runId, substate: "tool_call" });
-            const tool = String(cb.name ?? "unknown");
-            events.push({ type: "tool_use", runId, tool, input: cb.input });
+            state._pendingTool = { tool: String(cb.name ?? "unknown"), json: "" };
           }
           break;
         }
 
         case "content_block_delta": {
           const delta = se.delta as Record<string, unknown> | undefined;
-          if (delta?.type === "text_delta") {
+          if (delta?.type === "input_json_delta" && state._pendingTool) {
+            state._pendingTool.json += String(delta.partial_json ?? "");
+          } else if (delta?.type === "text_delta") {
             const text = String(delta.text ?? "");
             if (text) {
               state.finalText += text;
               events.push({ type: "substate", runId, substate: "streaming" });
               events.push({ type: "delta", runId, delta: text });
             }
+          }
+          break;
+        }
+
+        case "content_block_stop": {
+          if (state._pendingTool) {
+            const { tool, json } = state._pendingTool;
+            let input: unknown = undefined;
+            try { input = json ? JSON.parse(json) : undefined; } catch { input = undefined; }
+            events.push({ type: "tool_use", runId, tool, input });
+            state._pendingTool = null;
           }
           break;
         }
@@ -95,6 +119,8 @@ function mapCliEvent(
       const usage = ev.usage as Record<string, unknown> | undefined;
       const tokensIn = Number(usage?.input_tokens ?? 0);
       const tokensOut = Number(usage?.output_tokens ?? 0);
+      const cacheRead = Number(usage?.cache_read_input_tokens ?? 0);
+      const cacheWrite = Number(usage?.cache_creation_input_tokens ?? 0);
       const costUsd = Number(ev.total_cost_usd ?? 0);
       state.tokensIn = tokensIn;
       state.tokensOut = tokensOut;
@@ -102,7 +128,7 @@ function mapCliEvent(
       if (!state.finalText && typeof ev.result === "string") {
         state.finalText = ev.result;
       }
-      events.push({ type: "tokens", runId, tokenIn: tokensIn, tokenOut: tokensOut, costUsd });
+      events.push({ type: "tokens", runId, tokenIn: tokensIn, tokenOut: tokensOut, costUsd, cacheRead: cacheRead || undefined, cacheWrite: cacheWrite || undefined });
       break;
     }
 
