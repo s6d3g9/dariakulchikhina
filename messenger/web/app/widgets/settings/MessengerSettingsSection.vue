@@ -83,10 +83,10 @@ const activeProviderMeta = computed(() =>
 
 onMounted(() => {
   settingsModel.hydrate()
-  subscriptions.hydrate()
   settingsModel.settings.value.devices.keepSignedIn = auth.persistenceMode.value === 'local'
   if (auth.token.value) {
     void settingsModel.hydrateAiSettings()
+    void subscriptions.hydrate()
   }
 })
 
@@ -97,6 +97,7 @@ watch(() => settingsModel.settings.value.devices.keepSignedIn, (enabled) => {
 watch(() => auth.token.value, (nextToken) => {
   if (nextToken) {
     void settingsModel.hydrateAiSettings()
+    if (!subscriptions.ready.value) void subscriptions.hydrate()
   }
 })
 

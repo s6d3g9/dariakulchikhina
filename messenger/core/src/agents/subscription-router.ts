@@ -209,6 +209,31 @@ export async function upsertAgentModelRouting(
   }
 }
 
+export async function deleteSubscription(ownerUserId: string, subscriptionId: string): Promise<void> {
+  const db = useIngestDb()
+  await db
+    .update(messengerSubscriptions)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(messengerSubscriptions.id, subscriptionId),
+        eq(messengerSubscriptions.ownerUserId, ownerUserId),
+        isNull(messengerSubscriptions.deletedAt),
+      ),
+    )
+}
+
+export async function setDefaultSubscription(ownerUserId: string, subscriptionId: string): Promise<void> {
+  const db = useIngestDb()
+  const subs = await listUserSubscriptions(ownerUserId)
+  for (const sub of subs) {
+    await db
+      .update(messengerSubscriptions)
+      .set({ isDefault: sub.id === subscriptionId, updatedAt: new Date() })
+      .where(eq(messengerSubscriptions.id, sub.id))
+  }
+}
+
 export async function listUserSubscriptions(ownerUserId: string) {
   const db = useIngestDb()
   return db

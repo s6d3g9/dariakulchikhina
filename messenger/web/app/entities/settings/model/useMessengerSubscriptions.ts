@@ -159,12 +159,27 @@ export interface MessengerSubscriptionUsage {
   periodStart: string
 }
 
-const STORAGE_KEY = 'daria-messenger-subscriptions'
 const USAGE_STORAGE_KEY = 'daria-messenger-subscription-usage'
 
-function genId() {
-  return `sub-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
-}
+// Built-in subscriptions are always available, no API key needed.
+const BUILTIN_SUBSCRIPTIONS: MessengerSubscription[] = [
+  {
+    id: 'builtin-claude-code-cli',
+    provider: 'claude-code-cli',
+    label: 'Claude Code CLI (Anthropic)',
+    account: 's6d3g9@gmail.com',
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'builtin-github-copilot',
+    provider: 'github-copilot',
+    label: 'GitHub Copilot Pro+',
+    account: 's6d3g9',
+    isDefault: false,
+    createdAt: '2026-01-01T00:00:01.000Z',
+  },
+]
 
 function currentPeriodStart(): string {
   const now = new Date()
@@ -200,31 +215,11 @@ export function formatTokenCount(n: number): string {
   return `${n}`
 }
 
-function readStored(): MessengerSubscription[] {
-  if (!import.meta.client) return []
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-function writeStored(subs: MessengerSubscription[]) {
-  if (!import.meta.client) return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(subs))
-}
-
-function ensureDefaultExists(subs: MessengerSubscription[]): MessengerSubscription[] {
-  if (subs.length === 0 || subs.some(s => s.isDefault)) return subs
-  return subs.map((s, i) => ({ ...s, isDefault: i === 0 }))
-}
-
 export function useMessengerSubscriptions() {
+  const auth = useMessengerAuth()
   const subscriptions = useState<MessengerSubscription[]>('messenger-subscriptions', () => [])
   const ready = useState<boolean>('messenger-subscriptions-ready', () => false)
+  const pending = useState<boolean>('messenger-subscriptions-pending', () => false)
   const usageMap = useState<Record<string, MessengerSubscriptionUsage>>('messenger-sub-usage', () => ({}))
 
   function hydrateUsage() {
@@ -253,44 +248,28 @@ export function useMessengerSubscriptions() {
     writeUsageStored(usageMap.value)
   }
 
-  function hydrate() {
+  async function hydrate() {
     if (ready.value) return
-    let stored = readStored()
     hydrateUsage()
 
-    const BUILTIN_CLAUDE: MessengerSubscription = {
-      id: 'builtin-claude-code-cli',
-      provider: 'claude-code-cli',
-      label: 'Claude Code CLI (Anthropic)',
-      account: 's6d3g9@gmail.com',
-      isDefault: true,
-      createdAt: '2026-01-01T00:00:00.000Z',
-    }
-    const BUILTIN_COPILOT: MessengerSubscription = {
-      id: 'builtin-github-copilot',
-      provider: 'github-copilot',
-      label: 'GitHub Copilot Pro+',
-      account: 's6d3g9',
-      isDefault: false,
-      createdAt: '2026-01-01T00:00:01.000Z',
+    if (!auth.token.value) {
+      subscriptions.value = [...BUILTIN_SUBSCRIPTIONS]
+      ready.value = true
+      return
     }
 
-    if (stored.length === 0) {
-      stored = [BUILTIN_CLAUDE, BUILTIN_COPILOT]
-    } else {
-      // Migration: inject built-ins if missing
-      if (!stored.find(s => s.id === BUILTIN_CLAUDE.id)) {
-        stored = [BUILTIN_CLAUDE, ...stored]
-      }
-      if (!stored.find(s => s.id === BUILTIN_COPILOT.id)) {
-        stored = [...stored, BUILTIN_COPILOT]
-      }
+    pending.value = true
+    try {
+      const res = await auth.request<{ subscriptions: MessengerSubscription[] }>('/subscriptions', { method: 'GET' })
+      const dbSubs = res.subscriptions ?? []
+      // Always prepend built-ins; DB subscriptions don't include them
+      subscriptions.value = [...BUILTIN_SUBSCRIPTIONS, ...dbSubs]
+    } catch {
+      subscriptions.value = [...BUILTIN_SUBSCRIPTIONS]
+    } finally {
+      pending.value = false
+      ready.value = true
     }
-
-    stored = ensureDefaultExists(stored)
-    subscriptions.value = stored
-    writeStored(stored)
-    ready.value = true
   }
 
   const defaultSubscription = computed(() =>
@@ -306,44 +285,77 @@ export function useMessengerSubscriptions() {
   const modelsByProvider = (provider: MessengerSubscriptionProvider): MessengerSubscriptionModel[] =>
     SUBSCRIPTION_PROVIDERS.find(p => p.key === provider)?.models ?? []
 
-  function add(input: Omit<MessengerSubscription, 'id' | 'createdAt' | 'isDefault'>) {
-    const isFirst = subscriptions.value.length === 0
+  async function add(input: Omit<MessengerSubscription, 'id' | 'createdAt' | 'isDefault'> & { defaultModel?: string }) {
+    const providerMeta = SUBSCRIPTION_PROVIDERS.find(p => p.key === input.provider)
+    const defaultModel = input.defaultModel ?? providerMeta?.models[0]?.id ?? ''
+    const res = await auth.request<{ id: string }>('/subscriptions', {
+      method: 'POST',
+      body: {
+        provider: input.provider,
+        label: input.label,
+        account: input.account,
+        apiKey: input.apiKey ?? null,
+        defaultModel,
+        isDefault: false,
+      },
+    })
     const next: MessengerSubscription = {
-      ...input,
-      id: genId(),
-      isDefault: isFirst,
+      id: res.id,
+      provider: input.provider as MessengerSubscriptionProvider,
+      label: input.label,
+      account: input.account,
+      apiKey: input.apiKey,
+      isDefault: false,
       createdAt: new Date().toISOString(),
     }
     subscriptions.value = [...subscriptions.value, next]
-    writeStored(subscriptions.value)
   }
 
-  function update(id: string, patch: Partial<Pick<MessengerSubscription, 'label' | 'account' | 'apiKey'>>) {
-    subscriptions.value = subscriptions.value.map(s =>
-      s.id === id ? { ...s, ...patch } : s,
-    )
-    writeStored(subscriptions.value)
+  async function update(id: string, patch: Partial<Pick<MessengerSubscription, 'label' | 'account' | 'apiKey'>>) {
+    const existing = subscriptions.value.find(s => s.id === id)
+    if (!existing || id.startsWith('builtin-')) {
+      subscriptions.value = subscriptions.value.map(s => s.id === id ? { ...s, ...patch } : s)
+      return
+    }
+    const providerMeta = SUBSCRIPTION_PROVIDERS.find(p => p.key === existing.provider)
+    await auth.request(`/subscriptions/${id}`, {
+      method: 'PUT',
+      body: {
+        provider: existing.provider,
+        label: patch.label ?? existing.label,
+        account: patch.account ?? existing.account,
+        apiKey: patch.apiKey !== undefined ? patch.apiKey : existing.apiKey ?? null,
+        defaultModel: providerMeta?.models[0]?.id ?? 'claude-sonnet-4-6',
+        isDefault: existing.isDefault,
+      },
+    })
+    subscriptions.value = subscriptions.value.map(s => s.id === id ? { ...s, ...patch } : s)
   }
 
-  function remove(id: string) {
+  async function remove(id: string) {
     const wasDefault = subscriptions.value.find(s => s.id === id)?.isDefault ?? false
+    if (!id.startsWith('builtin-')) {
+      await auth.request(`/subscriptions/${id}`, { method: 'DELETE' })
+    }
     const remaining = subscriptions.value.filter(s => s.id !== id)
     if (wasDefault && remaining.length > 0) {
       remaining[0] = { ...remaining[0], isDefault: true }
     }
     subscriptions.value = remaining
-    writeStored(remaining)
   }
 
-  function setDefault(id: string) {
+  async function setDefault(id: string) {
+    if (!id.startsWith('builtin-')) {
+      await auth.request(`/subscriptions/${id}/default`, { method: 'PUT' })
+    }
     subscriptions.value = subscriptions.value.map(s => ({ ...s, isDefault: s.id === id }))
-    writeStored(subscriptions.value)
   }
 
   return {
     subscriptions,
     defaultSubscription,
     ready,
+    pending,
     usageMap,
     hydrate,
     providerOf,
