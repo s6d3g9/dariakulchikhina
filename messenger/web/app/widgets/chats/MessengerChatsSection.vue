@@ -2,6 +2,7 @@
 import type { MessengerAgentConnectionMode, MessengerAgentGraphNodeInput } from '../../entities/agents/model/useMessengerAgents'
 import type { MessengerConversationItem } from '../../entities/conversations/model/useMessengerConversations'
 import { getSessionKindMeta } from '../../entities/sessions/model/useMessengerCliSessions'
+import type { MessengerCliSession } from '../../entities/sessions/model/useMessengerCliSessions'
 
 const conversations = useMessengerConversations()
 const agentsModel = useMessengerAgents()
@@ -826,6 +827,18 @@ async function openAgentFromGallery(agentId: string) {
   }
 }
 
+function resolveParentLabel(session: MessengerCliSession): string {
+  if (!session.parentRunId) return ''
+  if (session.parentAgentId) {
+    const parentAgent = agentMap.value.get(session.parentAgentId)
+    if (parentAgent?.displayName) return parentAgent.displayName
+    const parentSession = cliSessions.sessionForAgent(session.parentAgentId)
+    if (parentSession?.agentDisplayName) return parentSession.agentDisplayName
+    if (parentSession?.slug) return parentSession.slug
+  }
+  return session.parentRunId.slice(-6)
+}
+
 async function openCliSession(agentId: string | null) {
   if (!agentId) return
   try {
@@ -1370,6 +1383,18 @@ function formatChatPreview(chat: MessengerConversationItem) {
                   <span class="cli-session-chip__name">{{ session.agentDisplayName || session.slug }}</span>
                   <span class="cli-session-chip__kind">{{ getSessionKindMeta(session.kind).label }}</span>
                   <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-chip__wr">{{ session.workroom }}</VChip>
+                  <span v-if="session.parentRunId" class="cli-session-chip__parent">↳ from {{ resolveParentLabel(session) }}</span>
+                  <VChip
+                    v-if="session.finishedAt"
+                    size="x-small"
+                    :color="session.runError ? 'error' : 'success'"
+                    variant="tonal"
+                    :title="(session.runError || session.runResult || '').slice(0, 240)"
+                  >{{ session.runError ? 'Error' : 'OK' }}</VChip>
+                  <span v-if="session.taskCompletionCount > 0" class="cli-session-chip__tasks">
+                    <VIcon size="12">mdi-source-commit</VIcon>
+                    {{ session.taskCompletionCount }}<template v-if="session.taskCompletionToday > 0"> (+{{ session.taskCompletionToday }} today)</template>
+                  </span>
                 </div>
               </div>
               <div v-if="tier.length && tierIdx < cliSessions.hierarchy.value.length - 1 && cliSessions.hierarchy.value.slice(tierIdx + 1).some(t => t.length)" class="cli-sessions-tier-arrow">
