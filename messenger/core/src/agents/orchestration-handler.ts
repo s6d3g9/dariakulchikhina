@@ -22,6 +22,9 @@ import {
   eq,
   and,
   isNull,
+  inArray,
+  sql,
+  desc,
 } from './ingest-db.ts'
 
 // --- auth helpers ---
@@ -317,12 +320,115 @@ export function registerOrchestrationRoutes(
         if (slug) agentBySlug.set(slug, { id: agent.id, name: agent.name, displayName })
       }
 
+      // Collect unique agentIds that have matching sessions
+      const uniqueAgentIds = [...new Set(
+        sessions
+          .map(s => agentBySlug.get(s.slug)?.id)
+          .filter((id): id is string => id !== undefined),
+      )]
+
+      // Signal 1 + 2: latest run per agent (DISTINCT ON pattern, one query)
+      type LatestRunInfo = {
+        agentId: string
+        runId: string
+        parentRunId: string | null
+        spawnedByAgentId: string | null
+        rootRunId: string | null
+        finishedAt: Date | null
+        result: string | null
+        error: string | null
+      }
+      const latestRunByAgent = new Map<string, LatestRunInfo>()
+      const childCountByRunId = new Map<string, number>()
+      // Signal 3: task completion counts
+      const taskCountByAgent = new Map<string, { total: number; today: number }>()
+
+      if (uniqueAgentIds.length > 0) {
+        try {
+          const latestRuns = await db
+            .selectDistinctOn([messengerAgentRuns.agentId], {
+              agentId: messengerAgentRuns.agentId,
+              runId: messengerAgentRuns.id,
+              parentRunId: messengerAgentRuns.parentRunId,
+              spawnedByAgentId: messengerAgentRuns.spawnedByAgentId,
+              rootRunId: messengerAgentRuns.rootRunId,
+              finishedAt: messengerAgentRuns.finishedAt,
+              result: sql<string | null>`LEFT(${messengerAgentRuns.result}, 240)`,
+              error: sql<string | null>`LEFT(${messengerAgentRuns.error}, 240)`,
+            })
+            .from(messengerAgentRuns)
+            .where(and(inArray(messengerAgentRuns.agentId, uniqueAgentIds), isNull(messengerAgentRuns.deletedAt)))
+            .orderBy(messengerAgentRuns.agentId, desc(messengerAgentRuns.createdAt))
+
+          for (const row of latestRuns) {
+            if (row.agentId) latestRunByAgent.set(row.agentId, row as LatestRunInfo)
+          }
+        }
+        catch {}
+
+        // Signal 1: child run counts for each latest run
+        const latestRunIds = [...latestRunByAgent.values()].map(r => r.runId)
+        if (latestRunIds.length > 0) {
+          try {
+            const childCounts = await db
+              .select({
+                parentRunId: messengerAgentRuns.parentRunId,
+                childCount: sql<number>`cast(count(*) as int)`,
+              })
+              .from(messengerAgentRuns)
+              .where(and(inArray(messengerAgentRuns.parentRunId, latestRunIds), isNull(messengerAgentRuns.deletedAt)))
+              .groupBy(messengerAgentRuns.parentRunId)
+
+            for (const row of childCounts) {
+              if (row.parentRunId) childCountByRunId.set(row.parentRunId, row.childCount)
+            }
+          }
+          catch {}
+        }
+
+        // Signal 3: all-time and today task completion counts
+        try {
+          const taskCounts = await db
+            .select({
+              agentId: messengerAgentTaskCompletions.agentId,
+              total: sql<number>`cast(count(*) as int)`,
+              today: sql<number>`cast(count(*) filter (where ${messengerAgentTaskCompletions.createdAt} >= date_trunc('day', now() at time zone 'UTC')) as int)`,
+            })
+            .from(messengerAgentTaskCompletions)
+            .where(inArray(messengerAgentTaskCompletions.agentId, uniqueAgentIds))
+            .groupBy(messengerAgentTaskCompletions.agentId)
+
+          for (const row of taskCounts) {
+            taskCountByAgent.set(row.agentId, { total: row.total, today: row.today })
+          }
+        }
+        catch {}
+      }
+
       return {
-        sessions: sessions.map(s => ({
-          ...s,
-          agentId: agentBySlug.get(s.slug)?.id ?? null,
-          agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
-        })),
+        sessions: sessions.map((s) => {
+          const agentId = agentBySlug.get(s.slug)?.id ?? null
+          const run = agentId ? latestRunByAgent.get(agentId) : undefined
+          const taskCounts = agentId ? taskCountByAgent.get(agentId) : undefined
+
+          return {
+            ...s,
+            agentId,
+            agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
+            // Signal 1 — spawn tree
+            parentRunId: run?.parentRunId ?? null,
+            parentAgentId: run?.spawnedByAgentId ?? null,
+            rootRunId: run?.rootRunId ?? null,
+            childRunCount: run != null ? (childCountByRunId.get(run.runId) ?? 0) : null,
+            // Signal 2 — final outcome (null while run is active)
+            finishedAt: run?.finishedAt ?? null,
+            runResult: (run?.finishedAt != null ? run.result : null) ?? null,
+            runError: (run?.finishedAt != null ? run.error : null) ?? null,
+            // Signal 3 — task completion
+            taskCompletionCount: taskCounts?.total ?? null,
+            taskCompletionToday: taskCounts?.today ?? null,
+          }
+        }),
       }
     },
   )

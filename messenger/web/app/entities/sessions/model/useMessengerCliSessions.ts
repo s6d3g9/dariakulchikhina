@@ -12,6 +12,15 @@ export interface MessengerCliSession {
   agentId: string | null
   agentDisplayName: string | null
   agentProjectId: string | null
+  parentRunId: string | null
+  parentAgentId: string | null
+  rootRunId: string | null
+  childRunCount: number
+  finishedAt: string | null
+  runResult: string | null
+  runError: string | null
+  taskCompletionCount: number
+  taskCompletionToday: number
 }
 
 export const SESSION_KIND_META: Record<string, { label: string; icon: string; color: string; tier: number }> = {
