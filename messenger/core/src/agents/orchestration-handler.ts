@@ -356,12 +356,33 @@ export function registerOrchestrationRoutes(
       catch {}
 
       const agentBySlug = new Map<string, { id: string; name: string; displayName: string; projectId: string | null }>()
+      const agentById = new Map<string, { id: string; name: string; projectId: string | null; config: unknown }>()
       for (const agent of allAgents) {
+        agentById.set(agent.id, agent)
         const cfg = (agent.config ?? {}) as Record<string, unknown>
         const slug = typeof cfg.claudeSessionSlug === 'string' ? cfg.claudeSessionSlug : null
         const displayName = typeof cfg.displayName === 'string' ? cfg.displayName : agent.name
         if (slug) agentBySlug.set(slug, { id: agent.id, name: agent.name, displayName, projectId: agent.projectId ?? null })
       }
+
+      // Fallback: map slug → agent via messenger_cli_sessions.agent_id for dynamic
+      // worker sessions that reuse the same agent across multiple runs (no static
+      // claudeSessionSlug config). The DB row is the source of truth for which
+      // agent actually spawned the session.
+      try {
+        const cliSessionAgents = await db
+          .select({ slug: messengerCliSessions.slug, agentId: messengerCliSessions.agentId })
+          .from(messengerCliSessions)
+          .where(isNull(messengerCliSessions.deletedAt))
+        for (const row of cliSessionAgents) {
+          if (!row.agentId || agentBySlug.has(row.slug)) continue
+          const agent = agentById.get(row.agentId)
+          if (!agent) continue
+          const cfg = (agent.config ?? {}) as Record<string, unknown>
+          const displayName = typeof cfg.displayName === 'string' ? cfg.displayName : agent.name
+          agentBySlug.set(row.slug, { id: agent.id, name: agent.name, displayName, projectId: agent.projectId ?? null })
+        }
+      } catch {}
 
       // Build slug → messenger_projects.id mapping via dashboard assignments
       // so sessions without a linked agent (workers) still resolve to a project.
@@ -527,12 +548,18 @@ export function registerOrchestrationRoutes(
           const dbStopped = stoppedSlugs.has(s.slug)
           let computedStatus: 'running' | 'done' = s.status
           if (s.status === 'running') {
-            if (tmuxDead || dbStopped) {
+            if (tmuxDead) {
               computedStatus = 'done'
             }
             else if (activity?.lastActivityAt) {
+              // Activity wins over dbStopped — short-lived --print sessions
+              // get PATCHed to stopped the moment Claude exits, but the user
+              // still needs a window to see them in the plate.
               const age = now - new Date(activity.lastActivityAt).getTime()
               computedStatus = age < ACTIVITY_WINDOW_MS ? 'running' : 'done'
+            }
+            else if (dbStopped) {
+              computedStatus = 'done'
             }
             else {
               // No events yet — running only if the session is fresh
