@@ -199,6 +199,7 @@ export const messengerCliSessions = pgTable(
     tmuxWindow: text('tmux_window'),
     startedAt: tstz('started_at'),
     stoppedAt: tstz('stopped_at'),
+    archivedAt: tstz('archived_at'),
     createdAt: tstz('created_at').defaultNow().notNull(),
     version: integer('version').default(1).notNull(),
     deletedAt: tstz('deleted_at'),

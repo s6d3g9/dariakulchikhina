@@ -420,17 +420,17 @@ export function registerOrchestrationRoutes(
       // (filesystem registry may still list them as running until archived)
       const runningSlugs = sessions.filter(s => s.status === 'running').map(s => s.slug)
       const stoppedSlugs = new Set<string>()
-      if (runningSlugs.length) {
-        try {
-          const dbSessions = await db
-            .select({ slug: messengerCliSessions.slug, status: messengerCliSessions.status })
-            .from(messengerCliSessions)
-            .where(and(isNull(messengerCliSessions.deletedAt)))
-          for (const row of dbSessions) {
-            if (row.status === 'stopped' && runningSlugs.includes(row.slug)) stoppedSlugs.add(row.slug)
-          }
-        } catch {}
-      }
+      const archivedAtBySlug = new Map<string, string>()
+      try {
+        const dbSessions = await db
+          .select({ slug: messengerCliSessions.slug, status: messengerCliSessions.status, archivedAt: messengerCliSessions.archivedAt })
+          .from(messengerCliSessions)
+          .where(and(isNull(messengerCliSessions.deletedAt)))
+        for (const row of dbSessions) {
+          if (row.status === 'stopped' && runningSlugs.includes(row.slug)) stoppedSlugs.add(row.slug)
+          if (row.archivedAt) archivedAtBySlug.set(row.slug, row.archivedAt instanceof Date ? row.archivedAt.toISOString() : String(row.archivedAt))
+        }
+      } catch {}
 
       // Per-session live activity: most-recent run + most-recent event per linked agent.
       // Uses DISTINCT ON for O(agents) instead of O(runs * events).
@@ -675,14 +675,15 @@ export function registerOrchestrationRoutes(
             // Signal 3 — task completion
             taskCompletionCount: taskCounts?.total ?? null,
             taskCompletionToday: taskCounts?.today ?? null,
+            archivedAt: archivedAtBySlug.get(s.slug) ?? null,
           }
         }),
       }
     },
   )
 
-  // PATCH /cli-sessions/:slug — change model (and effort when supported) from UI
-  app.patch<{ Params: { slug: string }, Body: { model?: string, effort?: string } }>(
+  // PATCH /cli-sessions/:slug — change model/effort from UI, or archive/unarchive
+  app.patch<{ Params: { slug: string }, Body: { model?: string, effort?: string, archived?: boolean } }>(
     '/cli-sessions/:slug',
     async (request, reply) => {
       if (!resolveSessionAuth(request)) {
@@ -691,14 +692,24 @@ export function registerOrchestrationRoutes(
 
       const { slug } = request.params
       const body = request.body ?? {}
-      const { model, effort } = body
+      const { model, effort, archived } = body
 
       if (!/^[a-z0-9-]{2,40}$/.test(slug)) {
         return reply.code(400).send({ error: 'INVALID_INPUT' })
       }
 
-      if (!model && !effort) {
+      if (model === undefined && effort === undefined && archived === undefined) {
         return reply.code(400).send({ error: 'INVALID_INPUT' })
+      }
+
+      // Handle archive toggle — DB-only, no filesystem check needed
+      if (archived !== undefined) {
+        const archivedAt = archived ? new Date() : null
+        await db
+          .update(messengerCliSessions)
+          .set({ archivedAt })
+          .where(and(eq(messengerCliSessions.slug, slug), isNull(messengerCliSessions.deletedAt)))
+        return { slug, archived }
       }
 
       const VALID_MODELS = ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'] as const
