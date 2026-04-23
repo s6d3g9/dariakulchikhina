@@ -11,6 +11,15 @@ export interface MessengerCliSession {
   agentId: string | null
   agentDisplayName: string | null
   agentProjectId: string | null
+  lastActivityAt: string | null
+  lastSubstate: string | null
+  lastTool: string | null
+  lastToolDescriptor: string | null
+  lastMessagePreview: string | null
+  runStatus: string | null
+  tokenInTotal: number
+  tokenOutTotal: number
+  costUsd: number
 }
 
 export const SESSION_KIND_META: Record<string, { label: string; icon: string; color: string; tier: number }> = {

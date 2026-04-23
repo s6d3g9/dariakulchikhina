@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { MessengerAgentConnectionMode, MessengerAgentGraphNodeInput } from '../../entities/agents/model/useMessengerAgents'
 import type { MessengerConversationItem } from '../../entities/conversations/model/useMessengerConversations'
-import { getSessionKindMeta } from '../../entities/sessions/model/useMessengerCliSessions'
+import { getSessionKindMeta, type MessengerCliSession } from '../../entities/sessions/model/useMessengerCliSessions'
 import CreateSessionDialog from '../sess-nav/CreateSessionDialog.vue'
 
 const conversations = useMessengerConversations()
@@ -543,6 +543,71 @@ function createAgentFolderIfNeeded(agentId: string, displayName: string) {
 // ── Сессии ────────────────────────────────────────────────────────────────────
 const subscriptionsModel = useMessengerSubscriptions()
 const cliSessions = useMessengerCliSessions()
+
+const SESSION_SUBSTATE_LABEL: Record<string, string> = {
+  idle: 'Готов',
+  thinking: 'Думает',
+  tool_call: 'Инструмент',
+  awaiting_input: 'Ждёт ввод',
+  streaming: 'Отвечает',
+  error: 'Ошибка',
+}
+
+function sessionSubstateLabel(session: MessengerCliSession): string {
+  if (session.runStatus === 'error') return 'Ошибка'
+  if (session.runStatus === 'done') return 'Готов'
+  const s = session.lastSubstate ?? ''
+  return SESSION_SUBSTATE_LABEL[s] ?? (s ? s : 'Ожидание')
+}
+
+function sessionIsLive(session: MessengerCliSession): boolean {
+  if (session.status !== 'running') return false
+  if (!session.lastActivityAt) return false
+  const age = Date.now() - new Date(session.lastActivityAt).getTime()
+  return age < 2 * 60_000 // active within last 2 minutes
+}
+
+function sessionRelativeTime(iso: string | null): string {
+  if (!iso) return ''
+  const diff = Date.now() - new Date(iso).getTime()
+  if (diff < 0) return 'только что'
+  const sec = Math.floor(diff / 1000)
+  if (sec < 30) return 'только что'
+  if (sec < 60) return `${sec}с назад`
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min}мин назад`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr}ч назад`
+  const day = Math.floor(hr / 24)
+  return `${day}д назад`
+}
+
+// Periodic tick so relative times re-render without requiring new activity.
+const sessionClockTick = ref(0)
+let sessionClockTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  sessionClockTimer = setInterval(() => { sessionClockTick.value++ }, 15_000)
+})
+onBeforeUnmount(() => {
+  if (sessionClockTimer) clearInterval(sessionClockTimer)
+})
+function sessionRelativeTimeReactive(iso: string | null): string {
+  void sessionClockTick.value // touch tick so Vue re-renders every 15s
+  return sessionRelativeTime(iso)
+}
+
+// Background refresh to keep session activity fresh (no WS subscription yet).
+let sessionRefreshTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  sessionRefreshTimer = setInterval(() => {
+    if (activeChatMode.value === 'sessions' && showSessionsDirectory.value) {
+      void cliSessions.refresh()
+    }
+  }, 10_000)
+})
+onBeforeUnmount(() => {
+  if (sessionRefreshTimer) clearInterval(sessionRefreshTimer)
+})
 
 const showCreateSession = ref(false)
 const showSessionComposer = ref(false)
@@ -1372,15 +1437,34 @@ function formatChatPreview(chat: MessengerConversationItem) {
                 <div
                   v-for="session in tier"
                   :key="session.slug"
-                  class="cli-session-chip"
-                  :class="`cli-session-chip--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
+                  class="cli-session-card"
+                  :class="{
+                    [`cli-session-card--${getSessionKindMeta(session.kind).color.replace('-', '_')}`]: true,
+                    'cli-session-card--live': sessionIsLive(session),
+                  }"
                   @click="openCliSession(session.agentId)"
                 >
-                  <span class="cli-session-chip__dot" />
-                  <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
-                  <span class="cli-session-chip__name">{{ session.agentDisplayName || session.slug }}</span>
-                  <span class="cli-session-chip__kind">{{ getSessionKindMeta(session.kind).label }}</span>
-                  <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-chip__wr">{{ session.workroom }}</VChip>
+                  <div class="cli-session-card__head">
+                    <span class="cli-session-card__dot" :class="{ 'cli-session-card__dot--live': sessionIsLive(session) }" />
+                    <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
+                    <span class="cli-session-card__name">{{ session.agentDisplayName || session.slug }}</span>
+                    <span class="cli-session-card__kind">{{ getSessionKindMeta(session.kind).label }}</span>
+                    <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-card__wr">{{ session.workroom }}</VChip>
+                  </div>
+                  <div class="cli-session-card__state">
+                    <span class="cli-session-card__substate">{{ sessionSubstateLabel(session) }}</span>
+                    <span v-if="session.lastTool" class="cli-session-card__tool">
+                      <VIcon size="10">mdi-tools</VIcon>
+                      {{ session.lastTool }}<span v-if="session.lastToolDescriptor" class="cli-session-card__tool-desc"> · {{ session.lastToolDescriptor }}</span>
+                    </span>
+                    <span v-if="session.lastActivityAt" class="cli-session-card__time">
+                      {{ sessionRelativeTimeReactive(session.lastActivityAt) }}
+                    </span>
+                  </div>
+                  <div v-if="session.tokenInTotal || session.tokenOutTotal" class="cli-session-card__meta">
+                    <span class="cli-session-card__meta-chip">🧠 {{ session.tokenInTotal }}↓/{{ session.tokenOutTotal }}↑</span>
+                    <span v-if="session.costUsd > 0" class="cli-session-card__meta-chip">💲 {{ session.costUsd.toFixed(3) }}</span>
+                  </div>
                 </div>
               </div>
               <div v-if="tier.length && tierIdx < cliSessions.hierarchy.value.length - 1 && cliSessions.hierarchy.value.slice(tierIdx + 1).some(t => t.length)" class="cli-sessions-tier-arrow">
@@ -1401,14 +1485,20 @@ function formatChatPreview(chat: MessengerConversationItem) {
               <div
                 v-for="session in cliSessions.doneSessions.value"
                 :key="session.slug"
-                class="cli-session-chip cli-session-chip--done"
-                :class="`cli-session-chip--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
+                class="cli-session-card cli-session-card--done"
+                :class="`cli-session-card--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
                 @click="openCliSession(session.agentId)"
               >
-                <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
-                <span class="cli-session-chip__name">{{ session.agentDisplayName || session.slug }}</span>
-                <span class="cli-session-chip__kind">{{ getSessionKindMeta(session.kind).label }}</span>
-                <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-chip__wr">{{ session.workroom }}</VChip>
+                <div class="cli-session-card__head">
+                  <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
+                  <span class="cli-session-card__name">{{ session.agentDisplayName || session.slug }}</span>
+                  <span class="cli-session-card__kind">{{ getSessionKindMeta(session.kind).label }}</span>
+                  <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-card__wr">{{ session.workroom }}</VChip>
+                </div>
+                <div v-if="session.lastActivityAt || session.tokenInTotal" class="cli-session-card__state">
+                  <span v-if="session.lastActivityAt" class="cli-session-card__time">{{ sessionRelativeTimeReactive(session.lastActivityAt) }}</span>
+                  <span v-if="session.tokenInTotal || session.tokenOutTotal" class="cli-session-card__meta-chip">🧠 {{ session.tokenInTotal }}↓/{{ session.tokenOutTotal }}↑</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1423,14 +1513,16 @@ function formatChatPreview(chat: MessengerConversationItem) {
               <div
                 v-for="session in cliSessions.archivedSessions.value"
                 :key="session.slug"
-                class="cli-session-chip cli-session-chip--archived"
-                :class="`cli-session-chip--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
+                class="cli-session-card cli-session-card--archived"
+                :class="`cli-session-card--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
                 @click="openCliSession(session.agentId)"
               >
-                <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
-                <span class="cli-session-chip__name">{{ session.agentDisplayName || session.slug }}</span>
-                <span class="cli-session-chip__kind">{{ getSessionKindMeta(session.kind).label }}</span>
-                <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-chip__wr">{{ session.workroom }}</VChip>
+                <div class="cli-session-card__head">
+                  <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
+                  <span class="cli-session-card__name">{{ session.agentDisplayName || session.slug }}</span>
+                  <span class="cli-session-card__kind">{{ getSessionKindMeta(session.kind).label }}</span>
+                  <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-card__wr">{{ session.workroom }}</VChip>
+                </div>
               </div>
             </div>
           </div>

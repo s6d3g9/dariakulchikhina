@@ -7055,6 +7055,138 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   padding: 12px 8px;
 }
 
+/* Rich session card — replaces plain chip for running/done sessions.
+   Shows: header (icon + name + kind + workroom), state row (substate +
+   current tool + relative time), meta row (tokens + cost). */
+.cli-session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px 7px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-surface-container), 0.8);
+  border: 1px solid rgba(var(--v-theme-outline-variant), 0.4);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  font-size: 12px;
+  min-width: 180px;
+  max-width: 280px;
+}
+.cli-session-card:hover {
+  background: rgba(var(--v-theme-primary), 0.08);
+  border-color: rgba(var(--v-theme-primary), 0.3);
+}
+.cli-session-card--live {
+  border-color: rgba(var(--v-theme-success), 0.45);
+  background: rgba(var(--v-theme-success), 0.05);
+}
+.cli-session-card__head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.cli-session-card__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-on-surface-variant));
+  flex-shrink: 0;
+  opacity: 0.4;
+}
+.cli-session-card__dot--live {
+  background: rgb(var(--v-theme-success));
+  opacity: 1;
+  animation: live-pulse 1.4s ease-in-out infinite;
+}
+.cli-session-card__name {
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+}
+.cli-session-card__kind {
+  font-size: 10px;
+  opacity: 0.6;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cli-session-card__wr {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.cli-session-card__state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  padding-left: 11px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.cli-session-card__substate {
+  font-weight: 500;
+  color: rgb(var(--v-theme-primary));
+  opacity: 0.85;
+}
+.cli-session-card--live .cli-session-card__substate {
+  color: rgb(var(--v-theme-success));
+  opacity: 1;
+}
+.cli-session-card__tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  background: rgba(var(--v-theme-primary), 0.08);
+  padding: 1px 6px;
+  border-radius: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.cli-session-card__tool-desc {
+  opacity: 0.65;
+}
+.cli-session-card__time {
+  margin-left: auto;
+  font-size: 9.5px;
+  opacity: 0.65;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cli-session-card__meta {
+  display: flex;
+  gap: 4px;
+  padding-left: 11px;
+  flex-wrap: wrap;
+}
+.cli-session-card__meta-chip {
+  font-size: 9.5px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  color: rgb(var(--v-theme-on-surface-variant));
+  white-space: nowrap;
+}
+.cli-session-card--done {
+  opacity: 0.78;
+  background: rgba(var(--v-theme-surface-container), 0.5);
+}
+.cli-session-card--archived {
+  background: transparent;
+  border-style: dashed;
+  border-color: rgba(var(--v-theme-outline-variant), 0.35);
+  opacity: 0.65;
+}
+.cli-session-card--archived:hover { opacity: 0.95; }
+
 /* Done / archived sections below the live hierarchy */
 .cli-sessions-group {
   display: flex;
