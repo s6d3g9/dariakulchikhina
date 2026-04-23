@@ -7208,6 +7208,37 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   gap: 4px;
 }
 .cli-sessions-group__icon { opacity: 0.6; }
+.cli-sessions-day-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.55;
+  margin: 4px 4px 2px;
+}
+.cli-session-card__archive-btn {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.cli-session-card:hover .cli-session-card__archive-btn {
+  opacity: 0.7;
+}
+.cli-session-card__archive-btn:hover {
+  opacity: 1 !important;
+}
+.cli-sessions-expander {
+  font-size: 11px;
+  color: rgb(var(--v-theme-primary));
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 4px 2px;
+  text-align: left;
+  opacity: 0.8;
+}
+.cli-sessions-expander:hover { opacity: 1; text-decoration: underline; }
 .cli-session-chip--done {
   background: rgba(var(--v-theme-surface-container), 0.55);
   opacity: 0.85;
