@@ -45,6 +45,7 @@ export interface MessagePayload {
     }
   }
   agentId?: string
+  runId?: string
 }
 
 export interface StoredMessageRow {
@@ -64,15 +65,28 @@ export function serializePayload(payload: MessagePayload): Buffer {
 }
 
 export function deserializePayload(ciphertext: Buffer): MessagePayload {
-  return JSON.parse(ciphertext.toString('utf8')) as MessagePayload
+  const text = ciphertext.toString('utf8')
+  try {
+    const parsed = JSON.parse(text) as unknown
+    // Legacy plaintext rows produced before the JSON-only fix may parse to a
+    // primitive (e.g. JSON.parse("4") === 4). Wrap them in a body envelope.
+    if (parsed === null || typeof parsed !== 'object') {
+      return { body: String(parsed), kind: 'text' } as MessagePayload
+    }
+    return parsed as MessagePayload
+  } catch {
+    // Truly raw text bytes (e.g. "OK") — JSON.parse throws, treat as body.
+    return { body: text, kind: 'text' } as MessagePayload
+  }
 }
 
 export function rowToMessengerMessageRecord(row: StoredMessageRow) {
+  // content_type=text/plain rows used to store raw bytes (fix-ws-stream).
+  // After insertMessage now always JSON-serializes, deserializePayload handles
+  // both shapes (with legacy fallback). One unified path.
   const payload = row.deletedAt
     ? { body: '', kind: 'text' as const }
-    : row.contentType === 'text/plain'
-      ? { body: row.ciphertext.toString('utf8'), kind: 'text' as const }
-      : deserializePayload(row.ciphertext)
+    : deserializePayload(row.ciphertext)
 
   const agentId = row.deletedAt ? undefined : (payload as MessagePayload).agentId
   const effectiveSenderId = agentId ?? row.senderUserId ?? ''
@@ -93,6 +107,8 @@ export function rowToMessengerMessageRecord(row: StoredMessageRow) {
     replyToMessageId: row.deletedAt ? undefined : (payload as MessagePayload).replyToMessageId,
     commentOnMessageId: row.deletedAt ? undefined : (payload as MessagePayload).commentOnMessageId,
     forwardedFrom: row.deletedAt ? undefined : (payload as MessagePayload).forwardedFrom,
+    runId: row.deletedAt ? undefined : (payload as MessagePayload).runId,
+    agentId: row.deletedAt ? undefined : (agentId as string | undefined),
   }
 }
 
@@ -118,9 +134,10 @@ export async function insertMessage(params: {
   plaintext?: boolean
 }): Promise<StoredMessageRow> {
   const db = useMessengerDb()
-  const ciphertext = params.plaintext
-    ? Buffer.from(params.payload.body, 'utf8')
-    : serializePayload(params.payload)
+  // NOTE: plaintext flag retained for back-compat in callers, but we ALWAYS
+  // JSON-serialize the payload so deserializePayload + markRead can read it
+  // back as an object. Without `encryptedBody`, body remains plaintext-readable.
+  const ciphertext = serializePayload(params.payload)
   const [row] = await db
     .insert(messengerMessages)
     .values({
@@ -273,6 +290,9 @@ export async function markConversationMessagesReadByUser(
     }
 
     const payload = deserializePayload(row.ciphertext)
+    // After Patch 2 deserializePayload always returns an object, but defensive
+    // guard for any future changes that might bypass it.
+    if (!payload || typeof payload !== 'object') continue
     if (payload.readAt) {
       continue
     }
