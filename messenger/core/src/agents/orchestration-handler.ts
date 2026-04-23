@@ -532,4 +532,58 @@ export function registerOrchestrationRoutes(
       return { slug, ...(model !== undefined && { model }), ...(effort !== undefined && { effort }) }
     },
   )
+
+  // POST /cli-sessions/:slug/compact — send /compact to the running tmux window.
+  app.post<{ Params: { slug: string } }>(
+    '/cli-sessions/:slug/compact',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const { slug } = request.params
+      const check = spawnSync('tmux', ['has-session', '-t', `cc:cc-${slug}`], { timeout: 2000 })
+      if (check.status !== 0) {
+        return reply.code(404).send({ error: 'SESSION_NOT_FOUND' })
+      }
+
+      _execFile('tmux', ['send-keys', '-t', `cc:cc-${slug}`, '/compact', 'Enter'], () => {})
+      return reply.code(204).send()
+    },
+  )
+
+  // DELETE /cli-sessions/:slug — kill the running claude-session and mark it done.
+  app.delete<{ Params: { slug: string } }>(
+    '/cli-sessions/:slug',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const { slug } = request.params
+
+      const [session] = await db
+        .select({ id: messengerCliSessions.id })
+        .from(messengerCliSessions)
+        .where(
+          and(
+            eq(messengerCliSessions.slug, slug),
+            isNull(messengerCliSessions.deletedAt),
+          ),
+        )
+        .limit(1)
+
+      if (!session) {
+        return reply.code(404).send({ error: 'SESSION_NOT_FOUND' })
+      }
+
+      const result = spawnSync(CLAUDE_SESSION_BIN, ['kill', slug], { encoding: 'utf-8' })
+
+      if (result.error || result.status !== 0) {
+        return reply.code(500).send({ error: 'EXEC_FAILED', stderr: result.stderr ?? '' })
+      }
+
+      return reply.code(204).send()
+    },
+  )
 }

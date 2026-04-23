@@ -106,6 +106,8 @@ const messageReactionOptions = ['👍', '❤️', '🔥', '😂', '👏', '😮'
 const securitySummary = ref<MessengerConversationSecuritySummary | null>(null)
 const securitySummaryPending = ref(false)
 const securitySummaryUpdatedAt = ref<string | null>(null)
+const killSessionPending = ref(false)
+const compactPending = ref(false)
 
 let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
 let composerResizeObserver: ResizeObserver | null = null
@@ -285,6 +287,12 @@ const chatWorkerGroups = computed(() => {
     groups.get(key)!.push(s)
   }
   return [...groups.entries()].map(([kind, sessions]) => ({ kind, sessions }))
+})
+
+const activeCliSession = computed(() => {
+  const peerId = conversations.activeConversation.value?.peerUserId
+  if (!peerId) return null
+  return cliSessionsModel.runningSessions.value.find(s => s.agentId === peerId) ?? null
 })
 
 // Open the chat for a session-bound agent when its chip is clicked.
@@ -2092,6 +2100,46 @@ function handleChatAreaPointerDown() {
   }
 }
 
+async function handleCompact() {
+  const session = activeCliSession.value
+  if (!session || conversations.messagePending.value || compactPending.value) {
+    return
+  }
+
+  copiedLabel.value = 'Compacting context…'
+  compactPending.value = true
+  try {
+    await cliSessionsModel.compactSession(session.slug)
+    copiedLabel.value = 'Compact sent'
+    setTimeout(() => {
+      if (copiedLabel.value === 'Compact sent') {
+        copiedLabel.value = ''
+      }
+    }, 2200)
+  }
+  catch {
+    copiedLabel.value = ''
+    actionError.value = 'Не удалось отправить /compact.'
+  }
+  finally {
+    compactPending.value = false
+  }
+}
+
+async function handleKillSession(slug: string) {
+  if (!confirm(`Kill session ${slug}?`)) return
+  killSessionPending.value = true
+  try {
+    await cliSessionsModel.killSession(slug)
+  }
+  catch (e) {
+    console.error('Failed to kill session:', e)
+  }
+  finally {
+    killSessionPending.value = false
+  }
+}
+
 async function handleRunStarted() {
   actionError.value = ''
   if (!draft.value.trim() || !conversations.activeConversation.value) {
@@ -2304,6 +2352,16 @@ onBeforeUnmount(() => {
 
       <!-- Session hierarchy bar — below chat header, agent conversations only -->
       <div v-if="chatSessNavVisible" class="sess-nav">
+        <div class="sess-nav__toolbar">
+          <button
+            class="sess-nav__compact-btn"
+            :disabled="!activeCliSession || conversations.messagePending.value || compactPending"
+            title="Send /compact to the active Claude session"
+            @click="handleCompact"
+          >
+            Compact
+          </button>
+        </div>
         <div v-if="projectScopedHierarchy[0]?.length" class="sess-nav__row sess-nav__row--composers">
           <span class="sess-nav__label">Composers</span>
           <div
@@ -2319,6 +2377,13 @@ onBeforeUnmount(() => {
             <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
             <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
             <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+            <button
+              v-if="session.status === 'running'"
+              class="sess-nav__kill"
+              :disabled="killSessionPending"
+              title="Kill session"
+              @click.stop="handleKillSession(session.slug)"
+            >×</button>
           </div>
         </div>
         <div v-if="projectScopedHierarchy[1]?.length" class="sess-nav__row sess-nav__row--orchestrators">
@@ -2336,6 +2401,13 @@ onBeforeUnmount(() => {
             <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
             <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
             <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+            <button
+              v-if="session.status === 'running'"
+              class="sess-nav__kill"
+              :disabled="killSessionPending"
+              title="Kill session"
+              @click.stop="handleKillSession(session.slug)"
+            >×</button>
           </div>
         </div>
         <template v-if="chatWorkerGroups.length">
@@ -2357,6 +2429,13 @@ onBeforeUnmount(() => {
               <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
               <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
               <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+              <button
+                v-if="session.status === 'running'"
+                class="sess-nav__kill"
+                :disabled="killSessionPending"
+                title="Kill session"
+                @click.stop="handleKillSession(session.slug)"
+              >×</button>
             </div>
           </div>
         </template>

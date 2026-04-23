@@ -102,6 +102,14 @@ export function useAgentsApi() {
     })
   }
 
+  function compactCliSession(slug: string) {
+    return auth.request<Record<string, never>>(`/cli-sessions/${encodeURIComponent(slug)}/compact`, { method: 'POST' })
+  }
+
+  function killCliSession(slug: string) {
+    return auth.request<void>(`/cli-sessions/${encodeURIComponent(slug)}`, { method: 'DELETE' })
+  }
+
   return {
     listAgents,
     getAgentSettings,
@@ -118,5 +126,7 @@ export function useAgentsApi() {
     listCliSessions,
     patchCliSession,
     spawnCliSession,
+    compactCliSession,
+    killCliSession,
   }
 }

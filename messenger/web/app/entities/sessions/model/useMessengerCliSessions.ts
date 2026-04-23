@@ -109,5 +109,26 @@ export function useMessengerCliSessions() {
     return result
   }
 
-  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh, setModel, setEffort, spawnSession }
+  async function compactSession(slug: string) {
+    await api.compactCliSession(slug)
+  }
+
+  async function killSession(slug: string) {
+    const removedIdx = sessions.value.findIndex(s => s.slug === slug)
+    if (removedIdx === -1) {
+      await api.killCliSession(slug)
+      return
+    }
+    const backup = sessions.value[removedIdx]
+    sessions.value.splice(removedIdx, 1)
+    try {
+      await api.killCliSession(slug)
+    }
+    catch (err) {
+      if (backup) sessions.value.splice(removedIdx, 0, backup)
+      throw err
+    }
+  }
+
+  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh, setModel, setEffort, spawnSession, compactSession, killSession }
 }
