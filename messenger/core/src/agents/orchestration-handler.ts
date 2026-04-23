@@ -539,8 +539,8 @@ export function registerOrchestrationRoutes(
       // within the last few minutes — not when its tmux window happens to still be
       // alive (tmux keeps abandoned Claude processes forever). New sessions get a
       // grace period before they're required to have produced events.
-      const ACTIVITY_WINDOW_MS = 3 * 60_000
-      const NEW_SESSION_GRACE_MS = 2 * 60_000
+      const ACTIVITY_WINDOW_MS = 15 * 60_000
+      const NEW_SESSION_GRACE_MS = 3 * 60_000
       const now = Date.now()
 
       // Signals 1/2/3 from clicore-integ: spawn tree, finish outcome, task completions.
