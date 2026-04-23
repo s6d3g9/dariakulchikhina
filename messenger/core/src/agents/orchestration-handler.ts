@@ -26,6 +26,7 @@ import {
   isNull,
   or,
   desc,
+  sql,
 } from './ingest-db.ts'
 
 const execFile = promisify(_execFile)
@@ -408,14 +409,130 @@ export function registerOrchestrationRoutes(
         } catch {}
       }
 
+      // Per-session live activity: most-recent run + most-recent event per linked agent.
+      // Uses DISTINCT ON for O(agents) instead of O(runs * events).
+      type Activity = {
+        lastActivityAt: string | null
+        lastSubstate: string | null
+        lastTool: string | null
+        lastToolDescriptor: string | null
+        lastMessagePreview: string | null
+        runStatus: string | null
+        tokenInTotal: number
+        tokenOutTotal: number
+        costUsd: number
+      }
+      const activityByAgent = new Map<string, Activity>()
+      const linkedAgentIds = Array.from(new Set(
+        sessions.flatMap(s => {
+          const id = agentBySlug.get(s.slug)?.id
+          return id ? [id] : []
+        }),
+      ))
+
+      if (linkedAgentIds.length) {
+        try {
+          const lastRunRows = await db.execute<{
+            agent_id: string
+            run_id: string
+            status: string
+            token_in_total: number
+            token_out_total: number
+            cost_usd: string
+          }>(sql`
+            SELECT DISTINCT ON (agent_id)
+              agent_id, id AS run_id, status,
+              token_in_total, token_out_total, cost_usd
+            FROM messenger_agent_runs
+            WHERE agent_id IN (${sql.join(linkedAgentIds.map(id => sql`${id}::uuid`), sql`, `)})
+            ORDER BY agent_id, created_at DESC
+          `)
+          const runRows = Array.isArray(lastRunRows) ? lastRunRows : (lastRunRows as { rows?: unknown[] }).rows ?? []
+          const runIdToAgent = new Map<string, string>()
+          for (const r of runRows as Array<{ agent_id: string; run_id: string; status: string; token_in_total: number; token_out_total: number; cost_usd: string }>) {
+            runIdToAgent.set(r.run_id, r.agent_id)
+            activityByAgent.set(r.agent_id, {
+              lastActivityAt: null,
+              lastSubstate: null,
+              lastTool: null,
+              lastToolDescriptor: null,
+              lastMessagePreview: null,
+              runStatus: r.status,
+              tokenInTotal: Number(r.token_in_total) || 0,
+              tokenOutTotal: Number(r.token_out_total) || 0,
+              costUsd: Number(r.cost_usd) || 0,
+            })
+          }
+
+          const runIds = Array.from(runIdToAgent.keys())
+          if (runIds.length) {
+            const lastEventRows = await db.execute<{
+              run_id: string
+              occurred_at: string
+              substate: string | null
+              message: string | null
+              payload: Record<string, unknown> | null
+            }>(sql`
+              SELECT DISTINCT ON (run_id)
+                run_id, occurred_at, substate, message, payload
+              FROM messenger_agent_run_events
+              WHERE run_id IN (${sql.join(runIds.map(id => sql`${id}::uuid`), sql`, `)})
+              ORDER BY run_id, occurred_at DESC
+            `)
+            const eventRows = Array.isArray(lastEventRows) ? lastEventRows : (lastEventRows as { rows?: unknown[] }).rows ?? []
+            for (const ev of eventRows as Array<{ run_id: string; occurred_at: string; substate: string | null; message: string | null; payload: Record<string, unknown> | null }>) {
+              const agentId = runIdToAgent.get(ev.run_id)
+              if (!agentId) continue
+              const activity = activityByAgent.get(agentId)
+              if (!activity) continue
+              activity.lastActivityAt = typeof ev.occurred_at === 'string'
+                ? ev.occurred_at
+                : (ev.occurred_at as Date | undefined)?.toISOString() ?? null
+              activity.lastSubstate = ev.substate
+              if (ev.payload && typeof ev.payload === 'object') {
+                const p = ev.payload as Record<string, unknown>
+                if (p.type === 'tool_use' && typeof p.tool === 'string') {
+                  activity.lastTool = p.tool
+                  const input = p.input as Record<string, unknown> | undefined
+                  activity.lastToolDescriptor =
+                    typeof input?.command === 'string' ? String(input.command).slice(0, 140) :
+                    typeof input?.file_path === 'string' ? String(input.file_path) :
+                    typeof input?.pattern === 'string' ? String(input.pattern).slice(0, 100) :
+                    null
+                }
+              }
+              if (typeof ev.message === 'string' && ev.message.trim()) {
+                activity.lastMessagePreview = ev.message.slice(0, 160)
+              }
+            }
+          }
+        }
+        catch (err) {
+          request.log?.warn?.({ err }, 'cli-sessions activity enrichment failed')
+        }
+      }
+
       return {
-        sessions: sessions.map(s => ({
-          ...s,
-          status: (s.status === 'running' && (stoppedSlugs.has(s.slug) || (liveTmuxWindows.size > 0 && !liveTmuxWindows.has(s.window)))) ? 'done' as const : s.status,
-          agentId: agentBySlug.get(s.slug)?.id ?? null,
-          agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
-          agentProjectId: agentBySlug.get(s.slug)?.projectId ?? slugToMessengerProjectId.get(s.slug) ?? s.registryProjectId ?? null,
-        })),
+        sessions: sessions.map(s => {
+          const agentId = agentBySlug.get(s.slug)?.id ?? null
+          const activity = agentId ? activityByAgent.get(agentId) ?? null : null
+          return {
+            ...s,
+            status: (s.status === 'running' && (stoppedSlugs.has(s.slug) || (liveTmuxWindows.size > 0 && !liveTmuxWindows.has(s.window)))) ? 'done' as const : s.status,
+            agentId,
+            agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
+            agentProjectId: agentBySlug.get(s.slug)?.projectId ?? slugToMessengerProjectId.get(s.slug) ?? s.registryProjectId ?? null,
+            lastActivityAt: activity?.lastActivityAt ?? null,
+            lastSubstate: activity?.lastSubstate ?? null,
+            lastTool: activity?.lastTool ?? null,
+            lastToolDescriptor: activity?.lastToolDescriptor ?? null,
+            lastMessagePreview: activity?.lastMessagePreview ?? null,
+            runStatus: activity?.runStatus ?? null,
+            tokenInTotal: activity?.tokenInTotal ?? 0,
+            tokenOutTotal: activity?.tokenOutTotal ?? 0,
+            costUsd: activity?.costUsd ?? 0,
+          }
+        }),
       }
     },
   )
