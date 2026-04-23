@@ -82,6 +82,11 @@ export function useMessengerCliSessions() {
     await refresh()
   }
 
+  async function archive(slug: string) {
+    await api.patchCliSession(slug, { archived: true })
+    await refresh()
+  }
+
   async function refresh(includeArchived = true) {
     pending.value = true
     try {
@@ -97,5 +102,5 @@ export function useMessengerCliSessions() {
     }
   }
 
-  return { sessions, runningSessions, doneSessions, archivedSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, setModel, refresh }
+  return { sessions, runningSessions, doneSessions, archivedSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, setModel, archive, refresh }
 }

@@ -544,6 +544,37 @@ function createAgentFolderIfNeeded(agentId: string, displayName: string) {
 const subscriptionsModel = useMessengerSubscriptions()
 const cliSessions = useMessengerCliSessions()
 
+const doneSessionsExpanded = ref(false)
+const DONE_SESSIONS_LIMIT = 10
+
+function doneDayLabel(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+  if (d.toDateString() === today.toDateString()) return 'Сегодня'
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера'
+  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+const doneSessionsByDay = computed(() => {
+  const sorted = [...cliSessions.doneSessions.value].sort((a, b) => {
+    const ta = new Date(a.finishedAt ?? a.lastActivityAt ?? a.created).getTime()
+    const tb = new Date(b.finishedAt ?? b.lastActivityAt ?? b.created).getTime()
+    return tb - ta
+  })
+  const visible = doneSessionsExpanded.value ? sorted : sorted.slice(0, DONE_SESSIONS_LIMIT)
+  const groups: Array<{ label: string; sessions: typeof sorted }> = []
+  for (const s of visible) {
+    const label = doneDayLabel(s.finishedAt ?? s.lastActivityAt ?? s.created)
+    let g = groups.find(gr => gr.label === label)
+    if (!g) { g = { label, sessions: [] }; groups.push(g) }
+    g.sessions.push(s)
+  }
+  return groups
+})
+
 const SESSION_SUBSTATE_LABEL: Record<string, string> = {
   idle: 'Готов',
   thinking: 'Думает',
@@ -1505,26 +1536,48 @@ function formatChatPreview(chat: MessengerConversationItem) {
           <!-- Done (finished but not archived) -->
           <div v-if="cliSessions.doneSessions.value.length" class="cli-sessions-group cli-sessions-group--done">
             <p class="cli-sessions-group__title">Завершённые ({{ cliSessions.doneSessions.value.length }})</p>
-            <div class="cli-sessions-tier">
-              <div
-                v-for="session in cliSessions.doneSessions.value"
-                :key="session.slug"
-                class="cli-session-card cli-session-card--done"
-                :class="`cli-session-card--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
-                @click="openCliSession(session.agentId)"
-              >
-                <div class="cli-session-card__head">
-                  <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
-                  <span class="cli-session-card__name">{{ session.agentDisplayName || session.slug }}</span>
-                  <span class="cli-session-card__kind">{{ getSessionKindMeta(session.kind).label }}</span>
-                  <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-card__wr">{{ session.workroom }}</VChip>
-                </div>
-                <div v-if="session.lastActivityAt || session.tokenInTotal" class="cli-session-card__state">
-                  <span v-if="session.lastActivityAt" class="cli-session-card__time">{{ sessionRelativeTimeReactive(session.lastActivityAt) }}</span>
-                  <span v-if="session.tokenInTotal || session.tokenOutTotal" class="cli-session-card__meta-chip">🧠 {{ session.tokenInTotal }}↓/{{ session.tokenOutTotal }}↑</span>
+            <template v-for="dayGroup in doneSessionsByDay" :key="dayGroup.label">
+              <p v-if="dayGroup.label" class="cli-sessions-day-label">{{ dayGroup.label }}</p>
+              <div class="cli-sessions-tier">
+                <div
+                  v-for="session in dayGroup.sessions"
+                  :key="session.slug"
+                  class="cli-session-card cli-session-card--done"
+                  :class="`cli-session-card--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
+                  @click="openCliSession(session.agentId)"
+                >
+                  <div class="cli-session-card__head">
+                    <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
+                    <span class="cli-session-card__name">{{ session.agentDisplayName || session.slug }}</span>
+                    <span class="cli-session-card__kind">{{ getSessionKindMeta(session.kind).label }}</span>
+                    <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-card__wr">{{ session.workroom }}</VChip>
+                    <VBtn
+                      icon
+                      size="x-small"
+                      variant="text"
+                      density="compact"
+                      class="cli-session-card__archive-btn"
+                      title="Архивировать"
+                      @click.stop="cliSessions.archive(session.slug)"
+                    >
+                      <VIcon size="14">mdi-archive-outline</VIcon>
+                    </VBtn>
+                  </div>
+                  <div v-if="session.lastActivityAt || session.tokenInTotal" class="cli-session-card__state">
+                    <span v-if="session.lastActivityAt" class="cli-session-card__time">{{ sessionRelativeTimeReactive(session.lastActivityAt) }}</span>
+                    <span v-if="session.tokenInTotal || session.tokenOutTotal" class="cli-session-card__meta-chip">🧠 {{ session.tokenInTotal }}↓/{{ session.tokenOutTotal }}↑</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
+            <button
+              v-if="cliSessions.doneSessions.value.length > DONE_SESSIONS_LIMIT"
+              type="button"
+              class="cli-sessions-expander"
+              @click="doneSessionsExpanded = !doneSessionsExpanded"
+            >
+              {{ doneSessionsExpanded ? 'Скрыть' : `Показать все ${cliSessions.doneSessions.value.length}` }}
+            </button>
           </div>
 
           <!-- Archived -->

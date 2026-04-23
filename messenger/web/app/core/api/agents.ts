@@ -80,7 +80,7 @@ export function useAgentsApi() {
     })
   }
 
-  function patchCliSession(slug: string, payload: { model: string }) {
+  function patchCliSession(slug: string, payload: { model?: string; archived?: boolean }) {
     return auth.request<void>(`/cli-sessions/${slug}`, {
       method: 'PATCH',
       body: payload,
