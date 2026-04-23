@@ -75,12 +75,11 @@ async function main() {
   const base = `http://127.0.0.1:${(address as { port: number }).port}`
 
   async function req(method: string, path: string, body?: unknown, auth?: string) {
+    const headers: Record<string, string> = { Authorization: auth ?? `Bearer ${sessionToken}` }
+    if (body !== undefined) headers['Content-Type'] = 'application/json'
     const res = await fetch(`${base}${path}`, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: auth ?? `Bearer ${sessionToken}`,
-      },
+      headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
     return { status: res.status, body: await res.json() as Record<string, unknown> }

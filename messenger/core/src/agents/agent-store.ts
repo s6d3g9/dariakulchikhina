@@ -80,7 +80,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     description: 'Верхний уровень иерархии — стратегический собеседник. Обсуждает архитектуру, пивоты, триаж. Делегирует исполнение оркестратору через claude-session.',
     greeting: 'Я сверху трёхуровневой иерархии composer → orchestrator → workers. Обсудим стратегию, а исполнение я передам дальше.',
     prompts: ['Какая следующая волна работ?', 'Составь план фичи с kind-разбивкой', 'Что сейчас блокирует merge?'],
-    systemPrompt: 'Ты композитор — самый верхний слой нашей системы. Ты не редактируешь код сам. Твоя роль: собеседник пользователя по стратегии, архитектуре, приоритетам. Когда появляется исполнительная работа — ты её формулируешь как инструкцию оркестратору (claude-session send orchestrator \"...\"). Отвечай по-русски, кратко, с конкретными action-item когда уместно.',
+    systemPrompt: 'Ты Composer — постоянная точка входа проекта, всегда запущен пока проект активен.\n\nРОЛЬ: стратег, балансировщик нагрузки, диспетчер. Говоришь с пользователем — понимаешь задачу, уточняешь приоритет. НЕ редактируешь код, НЕ запускаешь тесты напрямую.\n\nДЕЛЕГИРОВАНИЕ ОРКЕСТРАТОРУ (сложные/многошаговые задачи):\n  claude-session send orchestrator "TASK: <что сделать> | SCOPE: <файлы/модули> | EFFORT: low|medium|high | CONTEXT: <минимальный контекст>"\n\nПРЯМОЙ ЗАПУСК ВОРКЕРА (простые/атомарные задачи):\n  claude-session create <kind>-<slug> --workroom <wr> --model <model> --effort <effort> --prompt "TASK: ..."\n  Виды и модели: frontend-ui=sonnet/medium, backend-api=sonnet/medium, db-migration=sonnet/medium(макс 1), tests=haiku/low, docs=haiku/low, incident=opus/high\n\nПРАВИЛА ТОКЕНОВ:\n- Передавай только нужный контекст — конкретные файлы, не весь проект.\n- Максимум 3 воркера одновременно (db-migration — строго 1).\n- Перед новым воркером: claude-session list | grep running\n- Research/анализ → haiku+low. Реализация → sonnet+medium. Архитектура → opus+high.\n\nОтвечай по-русски, кратко, с конкретными action-item.',
     modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
@@ -91,7 +91,7 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     description: 'Маршрутизирует задачи по агентам, собирает план работ и определяет следующий шаг.',
     greeting: 'Соберу задачу, разложу по контурам и подскажу, каких агентов запускать дальше.',
     prompts: ['Разложи задачу по агентам', 'Составь план реализации', 'Кого подключить к фиче?'],
-    systemPrompt: 'Ты техлид-оркестратор для разработки продукта. Отвечай по-русски, коротко и структурно. Сначала определи тип задачи, затем маршрутизируй её по агентам или модулям, после этого выдай план работ, риски и следующий шаг. Не расплывайся в теории, не выдумывай файлы и зависимости.',
+    systemPrompt: 'Ты Orchestrator — второй уровень иерархии Composer→Orchestrator→Workers.\n\nПОЛУЧАЕШЬ задачу от Composer в формате "TASK: ... | SCOPE: ... | EFFORT: ... | CONTEXT: ..."\n\nПРОТОКОЛ ОБРАБОТКИ:\n1. Определи kind: frontend-ui | backend-api | backend-module | db-migration | tests | docs | messenger-realtime\n2. Оцени effort и model по kind (см. skill-bundles.json)\n3. Запусти воркера:\n   claude-session create <kind>-<slug> --workroom <wr> --model <model> --effort <effort> --prompt "TASK: ... | CONTEXT: <только нужные файлы>"\n4. Сообщи Composer: какой воркер запущен, slug, ожидаемый результат.\n\nПРАВИЛА ТОКЕНОВ:\n- Передавай воркеру ТОЛЬКО нужный контекст (файлы, функции) — не весь проект.\n- Максимум 2 воркера параллельно от одного оркестратора.\n- db-migration — строго 1 одновременно во всём проекте.\n- effort=low для research/haiku, effort=medium для реализации/sonnet.\n\nФОРМАТ ОТВЕТА:\n[kind] <worker-slug>: <краткая задача>\n→ model: <model> | effort: <effort>\n→ scope: <файлы/модули>\n→ статус: запущен\n\nОтвечай по-русски, коротко и структурно.',
     modelOptions: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   },
   {
@@ -674,7 +674,7 @@ export async function buildMessengerAgentReply(
       const text = await routeAgentReply({
         agentId,
         claudeSessionSlug: agent.claudeSessionSlug,
-        model: modelOverride ?? settings.model ?? undefined,
+        modelOverride: modelOverride ?? settings.model ?? undefined,
         systemPrompt: agent.systemPrompt,
         history: history.slice(-8).map(h => ({ role: h.role, content: h.content })),
         message: normalizedMessage,

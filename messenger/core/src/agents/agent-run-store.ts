@@ -17,6 +17,7 @@ import {
   or,
   desc,
   lte,
+  asc,
 } from './ingest-db.ts'
 import { encodeCursor, decodeCursor } from '../shared/cursor.ts'
 
@@ -393,8 +394,12 @@ export async function updateTotals(
 export async function findRunningCliSessionForAgent(agentId: string): Promise<{ id: string; slug: string; agentId: string } | null> {
   const db = useIngestDb()
 
-  // First try the DB table (populated when sessions are created with --agent-id)
-  const [dbSession] = await db
+  // First try the DB table (populated when sessions are created with --agent-id).
+  // We select ALL running rows (not just one) because a prior crash / manual
+  // test can leave zombies — we must skip any slug that no longer exists in
+  // the on-disk .registry.tsv. Returning a zombie causes claude-session send
+  // to fail with "no such session" and the dispatch silently drops.
+  const dbSessions = await db
     .select({ id: messengerCliSessions.id, slug: messengerCliSessions.slug, agentId: messengerCliSessions.agentId })
     .from(messengerCliSessions)
     .where(and(
@@ -402,8 +407,22 @@ export async function findRunningCliSessionForAgent(agentId: string): Promise<{ 
       eq(messengerCliSessions.status, 'running'),
       isNull(messengerCliSessions.deletedAt),
     ))
-    .limit(1)
-  if (dbSession) return dbSession
+
+  if (dbSessions.length > 0) {
+    const stateDir = process.env.DASHBOARD_STATE_DIR ?? join(homedir(), 'state/claude-sessions')
+    let liveSlugs = new Set<string>()
+    try {
+      const content = readFileSync(join(stateDir, '.registry.tsv'), 'utf8')
+      for (const line of content.split('\n').slice(1)) {
+        const slug = line.split('\t')[0]
+        if (slug) liveSlugs.add(slug)
+      }
+    } catch {}
+    for (const sess of dbSessions) {
+      if (liveSlugs.has(sess.slug)) return sess
+    }
+    // No DB sessions matched any live slug — all zombies. Fall through to TSV fallback.
+  }
 
   // Fall back to the TSV registry (sessions created without --agent-id)
   const [agentRow] = await db

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { useIngestDb, messengerAgents, messengerAgentRuns, messengerAgentRunEvents, eq, and, isNull, sql } from './ingest-db.ts'
+import { useIngestDb, messengerAgents, messengerAgentRuns, messengerAgentRunEvents, messengerCliSessions, eq, and, isNull, sql } from './ingest-db.ts'
 import { addAgentMessageToConversation, findConversationById } from '../conversations/conversation-store.ts'
 import { findMessengerAgentById } from './agent-store.ts'
 import { isCliAgent } from './agent-run-store.ts'
@@ -23,6 +23,8 @@ const tokensSchema = z.object({
   tokenIn: z.number().int().nonnegative(),
   tokenOut: z.number().int().nonnegative(),
   costUsd: z.number().nonnegative().optional(),
+  cacheRead: z.number().int().nonnegative().optional(),
+  cacheWrite: z.number().int().nonnegative().optional(),
 })
 const completeSchema = z.object({ ...baseEvent, type: z.literal('complete'), finalText: z.string().optional() })
 const errorSchema = z.object({ ...baseEvent, type: z.literal('error'), message: z.string(), fatal: z.boolean().optional() })
@@ -109,15 +111,25 @@ async function persistEvent(
       .set({ status: 'running', startedAt: new Date() })
       .where(eq(messengerAgentRuns.id, event.runId))
   } else if (event.type === 'complete') {
+    const now = new Date()
     await db
       .update(messengerAgentRuns)
-      .set({ status: 'completed', finishedAt: new Date(), result: event.finalText ?? null })
+      .set({ status: 'completed', finishedAt: now, result: event.finalText ?? null })
       .where(eq(messengerAgentRuns.id, event.runId))
+    await db
+      .update(messengerCliSessions)
+      .set({ status: 'stopped', stoppedAt: now })
+      .where(and(eq(messengerCliSessions.runId, event.runId), isNull(messengerCliSessions.deletedAt)))
   } else if (event.type === 'error') {
+    const now = new Date()
     await db
       .update(messengerAgentRuns)
-      .set({ status: 'failed', finishedAt: new Date(), error: event.message })
+      .set({ status: 'failed', finishedAt: now, error: event.message })
       .where(eq(messengerAgentRuns.id, event.runId))
+    await db
+      .update(messengerCliSessions)
+      .set({ status: 'stopped', stoppedAt: now })
+      .where(and(eq(messengerCliSessions.runId, event.runId), isNull(messengerCliSessions.deletedAt)))
   } else if (event.type === 'tokens') {
     const costIncrement = event.costUsd?.toFixed(8) ?? '0'
     await db
@@ -248,9 +260,8 @@ export function registerIngestRoutes(
 
       try {
         const { eventId: persistedEventId, run } = await persistEvent(db, agentId, event)
-        broadcastToChannel(`agent-stream:${agentId}`, { ...event, persistedEventId })
         const substate = event.type === 'substate' ? event.substate : undefined
-        broadcastToChannel(`agent-tree:${run.rootRunId}`, {
+        const agentTreePayload = {
           runId: event.runId,
           parentRunId: run.parentRunId,
           status: run.status,
@@ -258,16 +269,22 @@ export function registerIngestRoutes(
           tokenInTotal: run.tokenInTotal,
           tokenOutTotal: run.tokenOutTotal,
           costUsd: run.costUsd,
-        })
+        }
 
         if (event.type === 'complete' && event.finalText && run.conversationId) {
+          // Save agent message to conversation BEFORE broadcasting complete so that
+          // loadMessages() triggered by the frontend on receiving complete always
+          // finds the message already in the DB (no race condition).
           try {
             const [agent, cliAgent] = await Promise.all([
               findMessengerAgentById(agentId),
               isCliAgent(agentId),
             ])
             if (agent) {
-              await addAgentMessageToConversation(run.conversationId, agent, event.finalText, { plaintext: cliAgent })
+              // Store only the final text; reasoning/tool-use trace lives in
+              // run events and is fetched on-demand by the message UI when the
+              // user expands the plate attached to this message.
+              await addAgentMessageToConversation(run.conversationId, agent, event.finalText, { plaintext: cliAgent, runId: event.runId })
               if (emitToUsers) {
                 const conversation = await findConversationById(run.conversationId)
                 if (conversation) {
@@ -282,6 +299,10 @@ export function registerIngestRoutes(
             request.log.warn(err2, 'ingest: failed to save agent reply to conversation')
           }
         }
+
+        // Broadcast after message is saved so frontend loadMessages() sees it immediately
+        broadcastToChannel(`agent-stream:${agentId}`, { ...event, persistedEventId })
+        broadcastToChannel(`agent-tree:${run.rootRunId}`, agentTreePayload)
 
         return { persistedEventId }
       } catch (err: unknown) {

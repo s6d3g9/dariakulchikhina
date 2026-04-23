@@ -99,7 +99,7 @@ async function main() {
     const detail = r3.body.project as Record<string, unknown>
     assert(typeof detail.counts === 'object' && detail.counts !== null, 'detail has counts')
     const counts = detail.counts as Record<string, number>
-    assert(counts.connectors === 0, 'connectors count starts at 0')
+    assert(counts.connectors === 1, `connectors has default claude-cli connector, got ${counts.connectors}`)
     assert(counts.agents === 0, 'agents count starts at 0')
 
     // 4. PATCH /projects/:id — update (OCC)

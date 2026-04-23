@@ -3,6 +3,7 @@ import { promisify } from 'node:util'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import { randomUUID } from 'node:crypto'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
@@ -13,16 +14,21 @@ import {
   listMessengerAgentRunEventsPaginated,
   updateMessengerAgentRunStatus,
 } from './agent-run-store.ts'
+// eslint-disable-next-line no-restricted-imports
+import { messengerProjects } from '../../../../server/db/schema/messenger-projects.ts'
 import {
   useIngestDb,
   messengerAgents,
   messengerCliSessions,
   messengerAgentRuns,
-  messengerAgentTaskCompletions,
   eq,
   and,
   isNull,
+  or,
+  desc,
 } from './ingest-db.ts'
+
+const execFile = promisify(_execFile)
 
 // --- auth helpers ---
 
@@ -50,8 +56,10 @@ async function resolveIngestAuth(db: ReturnType<typeof useIngestDb>, authHeader:
   return agent ?? null
 }
 
-const execFileAsync = promisify(_execFile)
-const CLAUDE_SESSION_BIN = '/home/claudecode/bin/claude-session'
+function getStateDir() {
+  const HOME = homedir()
+  return process.env.DASHBOARD_STATE_DIR ?? join(HOME, 'state/claude-sessions')
+}
 
 // --- schemas ---
 
@@ -67,32 +75,9 @@ const cliSessionBody = z.object({
   workroomSlug: z.string().optional(),
   model: z.string(),
   tmuxWindow: z.string(),
-  claudeSessionUuid: z.string(),
-  logPath: z.string(),
+  claudeSessionUuid: z.string().optional(),
+  logPath: z.string().optional(),
   runId: z.string().uuid().optional(),
-})
-
-const SPAWN_KINDS = ['frontend-ui', 'backend-api', 'backend-module', 'db-migration', 'messenger-realtime', 'tests', 'docs'] as const
-
-const spawnSessionBody = z.object({
-  slug: z.string().regex(/^[a-z0-9-]{2,40}$/, 'slug must match /^[a-z0-9-]{2,40}$/'),
-  kind: z.enum(SPAWN_KINDS),
-  model: z.string().optional(),
-  workroom: z.string().optional(),
-  prompt: z.string().min(1, 'prompt is required'),
-  effort: z.enum(['low', 'medium', 'high']).optional(),
-  projectId: z.string().optional(),
-})
-
-const taskCompleteBody = z.object({
-  slug: z.string().min(1),
-  commitSha: z.string().regex(/^[0-9a-f]{40}$/, 'commitSha must be a 40-char hex string'),
-  branch: z.string().min(1),
-  commitsAboveBase: z.number().int().nonnegative(),
-  gates: z.record(z.object({
-    status: z.enum(['pass', 'fail']),
-    detail: z.string().optional(),
-  })).default({}),
 })
 
 // --- route registration ---
@@ -129,12 +114,45 @@ export function registerOrchestrationRoutes(
       const { parentRunId, prompt, model } = parsed.data
       const runId = await createMessengerAgentRun({ agentId, parentRunId, prompt, model })
 
+      // Generate a placeholder slug — real one is patched by claude-session via
+      // POST /cli-sessions when the tmux window is created.
+      const placeholderSlug = 'run-' + runId.slice(0, 8)
       const [session] = await db
         .insert(messengerCliSessions)
-        .values({ agentId, runId, status: 'pending', model: model ?? null })
+        .values({ agentId, runId, slug: placeholderSlug, status: 'pending', model: model ?? null })
         .returning({ id: messengerCliSessions.id })
 
       return { runId, cliSessionId: session.id }
+    },
+  )
+
+  // GET /agents/:agentId/active-run — latest non-completed run for an agent.
+  // UI calls this on mount/open to restore the thinking indicator after a page
+  // reload while the agent is still processing.
+  app.get<{ Params: { agentId: string } }>(
+    '/agents/:agentId/active-run',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+      const { agentId } = request.params
+      const [run] = await db
+        .select({
+          id: messengerAgentRuns.id,
+          status: messengerAgentRuns.status,
+          prompt: messengerAgentRuns.prompt,
+          createdAt: messengerAgentRuns.createdAt,
+          conversationId: messengerAgentRuns.conversationId,
+        })
+        .from(messengerAgentRuns)
+        .where(and(
+          eq(messengerAgentRuns.agentId, agentId),
+          isNull(messengerAgentRuns.deletedAt),
+          or(eq(messengerAgentRuns.status, 'pending'), eq(messengerAgentRuns.status, 'running')),
+        ))
+        .orderBy(desc(messengerAgentRuns.createdAt))
+        .limit(1)
+      return { run: run ?? null }
     },
   )
 
@@ -179,6 +197,10 @@ export function registerOrchestrationRoutes(
       }
 
       await updateMessengerAgentRunStatus(runId, 'cancelled')
+      await db
+        .update(messengerCliSessions)
+        .set({ status: 'stopped', stoppedAt: new Date() })
+        .where(and(eq(messengerCliSessions.runId, runId), isNull(messengerCliSessions.deletedAt)))
 
       broadcastToChannel(`agent-stream:${agentId}`, {
         type: 'substate',
@@ -259,8 +281,7 @@ export function registerOrchestrationRoutes(
       }
 
       const includeArchived = request.query.includeArchived === 'true' || request.query.includeArchived === '1'
-      const HOME = homedir()
-      const stateDir = process.env.DASHBOARD_STATE_DIR ?? join(HOME, 'state/claude-sessions')
+      const stateDir = getStateDir()
 
       type SessionRow = {
         slug: string
@@ -268,9 +289,9 @@ export function registerOrchestrationRoutes(
         window: string
         workroom: string
         model: string
+        registryProjectId: string | null
         created: string
         kind: string
-        effort: string
         status: 'running' | 'done'
         archivedAt: string | null
       }
@@ -292,12 +313,24 @@ export function registerOrchestrationRoutes(
             model: obj.model ?? '',
             created: obj.created ?? '',
             kind: obj.kind ?? '',
-            effort: obj.effort ?? '',
+            registryProjectId: obj.project_id || null,
             status: isArchive ? 'done' : 'running',
             archivedAt: obj.archived_at ?? null,
           }]
         })
       }
+
+      // Live tmux window names — registry entries without a window are zombies
+      let liveTmuxWindows: Set<string> = new Set()
+      try {
+        const { execFileSync } = await import('node:child_process')
+        const out = execFileSync('tmux', ['list-windows', '-t', 'cc', '-F', '#{window_name}'], {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        })
+        liveTmuxWindows = new Set(out.trim().split('\n').filter(Boolean))
+      }
+      catch {}
 
       const sessions: SessionRow[] = []
       try {
@@ -313,54 +346,117 @@ export function registerOrchestrationRoutes(
       }
 
       // Map slugs → agent records via config.claudeSessionSlug
-      let allAgents: Array<{ id: string; name: string; config: unknown }> = []
+      let allAgents: Array<{ id: string; name: string; projectId: string | null; config: unknown }> = []
       try {
-        allAgents = await db.select({ id: messengerAgents.id, name: messengerAgents.name, config: messengerAgents.config })
+        allAgents = await db.select({ id: messengerAgents.id, name: messengerAgents.name, projectId: messengerAgents.projectId, config: messengerAgents.config })
           .from(messengerAgents)
           .where(isNull(messengerAgents.deletedAt))
       }
       catch {}
 
-      const agentBySlug = new Map<string, { id: string; name: string; displayName: string }>()
+      const agentBySlug = new Map<string, { id: string; name: string; displayName: string; projectId: string | null }>()
       for (const agent of allAgents) {
         const cfg = (agent.config ?? {}) as Record<string, unknown>
         const slug = typeof cfg.claudeSessionSlug === 'string' ? cfg.claudeSessionSlug : null
         const displayName = typeof cfg.displayName === 'string' ? cfg.displayName : agent.name
-        if (slug) agentBySlug.set(slug, { id: agent.id, name: agent.name, displayName })
+        if (slug) agentBySlug.set(slug, { id: agent.id, name: agent.name, displayName, projectId: agent.projectId ?? null })
+      }
+
+      // Build slug → messenger_projects.id mapping via dashboard assignments
+      // so sessions without a linked agent (workers) still resolve to a project.
+      const slugToMessengerProjectId = new Map<string, string>()
+      try {
+        const dashboardStateRaw = readFileSync(join(stateDir, '.projects.json'), 'utf8')
+        const dashboardState = JSON.parse(dashboardStateRaw) as {
+          projects?: Array<{ id: string; name: string }>
+          assignments?: Record<string, string>
+        }
+        const dashboardProjects = dashboardState.projects ?? []
+        const assignments = dashboardState.assignments ?? {}
+
+        const allMessengerProjects = await db
+          .select({ id: messengerProjects.id, name: messengerProjects.name })
+          .from(messengerProjects)
+          .where(isNull(messengerProjects.deletedAt))
+        const nameToMessengerId = new Map<string, string>()
+        for (const mp of allMessengerProjects) nameToMessengerId.set(mp.name, mp.id)
+
+        const dashboardIdToMessengerId = new Map<string, string>()
+        for (const dp of dashboardProjects) {
+          const messengerId = nameToMessengerId.get(dp.name)
+          if (messengerId) dashboardIdToMessengerId.set(dp.id, messengerId)
+        }
+        for (const [slug, dashboardProjectId] of Object.entries(assignments)) {
+          const messengerId = dashboardIdToMessengerId.get(dashboardProjectId)
+          if (messengerId) slugToMessengerProjectId.set(slug, messengerId)
+        }
+      } catch {}
+
+      // Override status for sessions the DB marks as stopped
+      // (filesystem registry may still list them as running until archived)
+      const runningSlugs = sessions.filter(s => s.status === 'running').map(s => s.slug)
+      const stoppedSlugs = new Set<string>()
+      if (runningSlugs.length) {
+        try {
+          const dbSessions = await db
+            .select({ slug: messengerCliSessions.slug, status: messengerCliSessions.status })
+            .from(messengerCliSessions)
+            .where(and(isNull(messengerCliSessions.deletedAt)))
+          for (const row of dbSessions) {
+            if (row.status === 'stopped' && runningSlugs.includes(row.slug)) stoppedSlugs.add(row.slug)
+          }
+        } catch {}
       }
 
       return {
         sessions: sessions.map(s => ({
           ...s,
+          status: (s.status === 'running' && (stoppedSlugs.has(s.slug) || (liveTmuxWindows.size > 0 && !liveTmuxWindows.has(s.window)))) ? 'done' as const : s.status,
           agentId: agentBySlug.get(s.slug)?.id ?? null,
           agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
+          agentProjectId: agentBySlug.get(s.slug)?.projectId ?? slugToMessengerProjectId.get(s.slug) ?? s.registryProjectId ?? null,
         })),
       }
     },
   )
 
-  // POST /cli-sessions/spawn — spawn a new claude-session via CLI
-  app.post<{ Body: unknown }>(
-    '/cli-sessions/spawn',
+  // PATCH /cli-sessions/:slug — change model (and effort when supported) from UI
+  app.patch<{ Params: { slug: string }, Body: { model?: string, effort?: string } }>(
+    '/cli-sessions/:slug',
     async (request, reply) => {
       if (!resolveSessionAuth(request)) {
         return reply.code(401).send({ error: 'UNAUTHORIZED' })
       }
 
-      const parsed = spawnSessionBody.safeParse(request.body)
-      if (!parsed.success) {
-        const detail: Record<string, string> = {}
-        for (const issue of parsed.error.issues) {
-          const key = issue.path.join('.') || issue.path[0]?.toString() || 'unknown'
-          detail[key] = issue.message
-        }
-        return reply.code(400).send({ error: 'INVALID_PAYLOAD', detail })
+      const { slug } = request.params
+      const body = request.body ?? {}
+      const { model, effort } = body
+
+      if (!/^[a-z0-9-]{2,40}$/.test(slug)) {
+        return reply.code(400).send({ error: 'INVALID_INPUT' })
       }
 
-      const { slug, kind, model, workroom, prompt, effort, projectId } = parsed.data
+      if (!model && !effort) {
+        return reply.code(400).send({ error: 'INVALID_INPUT' })
+      }
 
-      // eslint-disable-next-line no-restricted-syntax
-      const stateDir = process.env.DASHBOARD_STATE_DIR ?? join(homedir(), 'state/claude-sessions')
+      const VALID_MODELS = ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'] as const
+      if (model !== undefined && !VALID_MODELS.includes(model as typeof VALID_MODELS[number])) {
+        return reply.code(400).send({ error: 'INVALID_INPUT' })
+      }
+
+      const VALID_EFFORTS = ['low', 'medium', 'high'] as const
+      if (effort !== undefined && !VALID_EFFORTS.includes(effort as typeof VALID_EFFORTS[number])) {
+        return reply.code(400).send({ error: 'INVALID_INPUT' })
+      }
+
+      // TODO: claude-session binary does not yet support set-effort; implement once available
+      if (!model && effort) {
+        return reply.code(501).send({ error: 'NOT_IMPLEMENTED' })
+      }
+
+      const stateDir = getStateDir()
+      let slugFound = false
       try {
         const content = readFileSync(join(stateDir, '.registry.tsv'), 'utf8')
         const lines = content.trim().split('\n')
@@ -368,78 +464,19 @@ export function registerOrchestrationRoutes(
           const headers = (lines[0] ?? '').split('\t')
           const slugIdx = headers.indexOf('slug')
           if (slugIdx !== -1) {
-            for (const line of lines.slice(1)) {
-              if ((line.split('\t')[slugIdx] ?? '') === slug) {
-                return reply.code(409).send({ error: 'DUPLICATE_SLUG' })
-              }
-            }
+            slugFound = lines.slice(1).some(line => line.split('\t')[slugIdx] === slug)
           }
         }
       }
       catch {}
 
-      const args = [
-        'create', slug,
-        '--model', model ?? 'sonnet',
-        '--kind', kind,
-        '--effort', effort ?? 'medium',
-        ...(workroom ? ['--workroom', workroom] : []),
-        ...(projectId ? ['--project-id', projectId] : []),
-        '--prompt', prompt,
-      ]
-
-      try {
-        const { stdout } = await execFileAsync(CLAUDE_SESSION_BIN, args, { timeout: 10_000 })
-        // claude-session.sh cmd_create emits: "[create] slug=X uuid=Y window=Z model=... workroom=... kind=..."
-        const m = stdout.match(/slug=(\S+)\s+uuid=(\S+)\s+window=(\S+)/)
-        if (!m) {
-          return reply.code(500).send({ error: 'SPAWN_FAILED', detail: 'could not parse CLI output', stdout })
-        }
-        return reply.code(201).send({ slug: m[1], uuid: m[2], window: m[3] })
-      }
-      catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        return reply.code(500).send({ error: 'SPAWN_FAILED', detail: msg })
-      }
-    },
-  )
-
-  // POST /agents/:agentId/task-complete — worker self-reports completion
-  app.post<{ Params: { agentId: string } }>(
-    '/agents/:agentId/task-complete',
-    async (request, reply) => {
-      if (!resolveSessionAuth(request)) {
-        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      if (!slugFound) {
+        return reply.code(404).send({ error: 'NOT_FOUND' })
       }
 
-      const { agentId } = request.params
-      const [agent] = await db
-        .select({ id: messengerAgents.id })
-        .from(messengerAgents)
-        .where(and(eq(messengerAgents.id, agentId), isNull(messengerAgents.deletedAt)))
-        .limit(1)
-      if (!agent) return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
+      await execFile('/home/claudecode/bin/claude-session', ['set-model', slug, model!], { timeout: 10000 })
 
-      const parsed = taskCompleteBody.safeParse(request.body)
-      if (!parsed.success) {
-        return reply.code(400).send({ error: 'INVALID_PAYLOAD', issues: parsed.error.issues })
-      }
-
-      const { slug, commitSha, branch, commitsAboveBase, gates } = parsed.data
-
-      const [session] = await db
-        .select({ id: messengerCliSessions.id })
-        .from(messengerCliSessions)
-        .where(and(eq(messengerCliSessions.slug, slug), isNull(messengerCliSessions.deletedAt)))
-        .limit(1)
-      if (!session) return reply.code(400).send({ error: 'SLUG_NOT_FOUND' })
-
-      const [inserted] = await db
-        .insert(messengerAgentTaskCompletions)
-        .values({ agentId, slug, commitSha, branch, commitsAboveBase, gates })
-        .returning()
-
-      return reply.code(201).send(inserted)
+      return { slug, model, effort }
     },
   )
 
@@ -452,7 +489,7 @@ export function registerOrchestrationRoutes(
         return reply.code(400).send({ error: 'INVALID_PAYLOAD', issues: parsed.error.issues })
       }
 
-      const { agentId, workroomSlug, model, tmuxWindow, claudeSessionUuid, logPath, runId } = parsed.data
+      const { agentId, workroomSlug, model, tmuxWindow, runId } = parsed.data
 
       const agent = await resolveIngestAuth(db, request.headers.authorization, agentId)
       if (!agent) return reply.code(401).send({ error: 'UNAUTHORIZED' })
@@ -473,7 +510,7 @@ export function registerOrchestrationRoutes(
         if (existing) {
           await db
             .update(messengerCliSessions)
-            .set({ workroomSlug: workroomSlug ?? null, model, tmuxWindow, claudeSessionUuid, logPath, status: 'running', updatedAt: new Date() })
+            .set({ model, tmuxWindow, status: 'running' })
             .where(eq(messengerCliSessions.id, existing.id))
           return { id: existing.id }
         }
@@ -484,106 +521,15 @@ export function registerOrchestrationRoutes(
         .values({
           agentId,
           runId: runId ?? null,
-          workroomSlug: workroomSlug ?? null,
+          slug: workroomSlug ?? randomUUID(),
+          workroom: workroomSlug ?? null,
           model,
           tmuxWindow,
-          claudeSessionUuid,
-          logPath,
           status: 'running',
         })
         .returning({ id: messengerCliSessions.id })
 
       return { id: inserted.id }
-    },
-  )
-
-  // PATCH /cli-sessions/:slug — update model and/or effort for a running session.
-  // Calls claude-session set-model / set-effort which updates the registry and kills
-  // the tmux window so the next send picks up the new flags via --resume.
-  const patchCliSessionBody = z.object({
-    model: z.string().optional(),
-    effort: z.enum(['low', 'medium', 'high']).optional(),
-  }).refine(d => d.model !== undefined || d.effort !== undefined, {
-    message: 'At least one of model or effort is required',
-  })
-
-  app.patch<{ Params: { slug: string } }>(
-    '/cli-sessions/:slug',
-    async (request, reply) => {
-      if (!resolveSessionAuth(request)) {
-        return reply.code(401).send({ error: 'UNAUTHORIZED' })
-      }
-
-      const { slug } = request.params
-      const parsed = patchCliSessionBody.safeParse(request.body)
-      if (!parsed.success) {
-        return reply.code(400).send({ error: 'INVALID_INPUT', issues: parsed.error.issues })
-      }
-
-      const { model, effort } = parsed.data
-
-      if (model) {
-        await execFileAsync(CLAUDE_SESSION_BIN, ['set-model', slug, model], { timeout: 10000 })
-      }
-      if (effort) {
-        await execFileAsync(CLAUDE_SESSION_BIN, ['set-effort', slug, effort], { timeout: 10000 })
-      }
-
-      return { slug, ...(model !== undefined && { model }), ...(effort !== undefined && { effort }) }
-    },
-  )
-
-  // POST /cli-sessions/:slug/compact — send /compact to the running tmux window.
-  app.post<{ Params: { slug: string } }>(
-    '/cli-sessions/:slug/compact',
-    async (request, reply) => {
-      if (!resolveSessionAuth(request)) {
-        return reply.code(401).send({ error: 'UNAUTHORIZED' })
-      }
-
-      const { slug } = request.params
-      const check = spawnSync('tmux', ['has-session', '-t', `cc:cc-${slug}`], { timeout: 2000 })
-      if (check.status !== 0) {
-        return reply.code(404).send({ error: 'SESSION_NOT_FOUND' })
-      }
-
-      _execFile('tmux', ['send-keys', '-t', `cc:cc-${slug}`, '/compact', 'Enter'], () => {})
-      return reply.code(204).send()
-    },
-  )
-
-  // DELETE /cli-sessions/:slug — kill the running claude-session and mark it done.
-  app.delete<{ Params: { slug: string } }>(
-    '/cli-sessions/:slug',
-    async (request, reply) => {
-      if (!resolveSessionAuth(request)) {
-        return reply.code(401).send({ error: 'UNAUTHORIZED' })
-      }
-
-      const { slug } = request.params
-
-      const [session] = await db
-        .select({ id: messengerCliSessions.id })
-        .from(messengerCliSessions)
-        .where(
-          and(
-            eq(messengerCliSessions.slug, slug),
-            isNull(messengerCliSessions.deletedAt),
-          ),
-        )
-        .limit(1)
-
-      if (!session) {
-        return reply.code(404).send({ error: 'SESSION_NOT_FOUND' })
-      }
-
-      const result = spawnSync(CLAUDE_SESSION_BIN, ['kill', slug], { encoding: 'utf-8' })
-
-      if (result.error || result.status !== 0) {
-        return reply.code(500).send({ error: 'EXEC_FAILED', stderr: result.stderr ?? '' })
-      }
-
-      return reply.code(204).send()
     },
   )
 }

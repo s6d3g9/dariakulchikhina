@@ -89,7 +89,7 @@ export function callClaudeSessionReply(opts: CallOptions): Promise<string> {
     const row = findClaudeSessionBySlug(opts.slug)
     if (!existsSync(CLAUDE_BIN)) return reject(new Error(`claude CLI not found at ${CLAUDE_BIN}`))
 
-    const model = opts.model || row?.model || 'sonnet'
+    const model = opts.model || row?.model || 'claude-sonnet-4-6'
     const cwd = row?.workroom ? join(HOME, 'workrooms', row.workroom) : HOME
 
     const args = [

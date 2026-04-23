@@ -26,10 +26,11 @@ import { appendMessengerAgentRunEvent, createRun, findRunningCliSessionForAgent,
 import { buildMessengerAgentReply, findMessengerAgentById, listMessengerAgents } from '../agents/agent-store.ts'
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from '../auth/auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
-import { addAgentMessageToConversation, addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateAgentConversation, findOrCreateDirectConversation, findOrCreateSecretConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages, toggleReactionInConversation } from '../conversations/conversation-store.ts'
+import { addAgentMessageToConversation, addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateAgentConversation, findOrCreateDirectConversation, findOrCreateSecretConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages, toggleReactionInConversation, updateConversationPolicyModel } from '../conversations/conversation-store.ts'
 import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from '../contacts/contact-store.ts'
 import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } from '../crypto/crypto-store.ts'
 import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, buildMessengerProjectSyncBrief, deleteMessengerProject, deleteMessengerProjectAgreement, deleteMessengerProjectCabinetLink, deleteMessengerProjectSubject, getMessengerProject, listMessengerProjectTemplates, listMessengerProjects, upsertMessengerProject, upsertMessengerProjectAgreement, upsertMessengerProjectCabinetLink, upsertMessengerProjectSubject } from '../project-engine/project-engine-store.ts'
+import { listMessages } from '../conversations/message-store.ts'
 import { readMessengerConfig } from '../config.ts'
 import { registerIngestRoutes } from '../agents/ingest-handler.ts'
 import { registerManifestRoutes } from '../integrations/manifest-handler.ts'
@@ -39,6 +40,7 @@ import { registerProjectKnowledgeRoutes } from '../projects/knowledge/knowledge-
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from '../media/media-store.ts'
 import { hasMessengerTranscriptionHttpBackend, isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from '../transcription/transcription-service.ts'
 import { getMessengerUserAiSettings, updateMessengerUserAiSettings } from '../profile/user-ai-settings-store.ts'
+import { listUserSubscriptions, upsertSubscription, deleteSubscription, setDefaultSubscription } from '../agents/subscription-router.ts'
 
 function isMessengerCorsOriginAllowed(origin: string, allowedOrigins: string[]) {
   if (allowedOrigins.includes(origin)) {
@@ -74,6 +76,32 @@ function isMessengerCorsOriginAllowed(origin: string, allowedOrigins: string[]) 
   })
 }
 
+const SENSITIVE_LOG_QUERY_KEYS = new Set([
+  'token',
+  'access_token',
+  'accessToken',
+  'authToken',
+  'auth_token',
+  'jwt',
+])
+
+function redactSensitiveQueryParams(url: string | undefined): string | undefined {
+  if (!url) return url
+  const queryIdx = url.indexOf('?')
+  if (queryIdx === -1) return url
+  const path = url.slice(0, queryIdx)
+  const parts = url.slice(queryIdx + 1).split('&').map((part) => {
+    const eqIdx = part.indexOf('=')
+    if (eqIdx === -1) return part
+    const key = part.slice(0, eqIdx)
+    if (SENSITIVE_LOG_QUERY_KEYS.has(key)) {
+      return `${key}=***REDACTED***`
+    }
+    return part
+  })
+  return `${path}?${parts.join('&')}`
+}
+
 export async function createMessengerServer() {
   const config = readMessengerConfig()
   const allowedCorsOrigins = config.MESSENGER_CORE_CORS_ORIGIN
@@ -83,6 +111,17 @@ export async function createMessengerServer() {
   const app = Fastify({
     logger: {
       level: config.MESSENGER_CORE_LOG_LEVEL,
+      serializers: {
+        req(request: FastifyRequest) {
+          return {
+            method: request.method,
+            url: redactSensitiveQueryParams(request.url),
+            host: request.host,
+            remoteAddress: request.ip,
+            remotePort: request.socket?.remotePort,
+          }
+        },
+      },
     },
   })
 
@@ -335,7 +374,7 @@ export async function createMessengerServer() {
     graphPosition: z.object({
       x: z.number().int().min(0).max(5000),
       y: z.number().int().min(0).max(5000),
-    }).optional(),
+    }).nullable().optional(),
   })
   const agentGraphSchema = z.object({
     graph: z.record(z.string().trim().min(1).max(120), z.object({
@@ -595,7 +634,7 @@ export async function createMessengerServer() {
     conversationId: z.string().uuid(),
     senderUserId: z.string().trim().min(1).max(120),
     senderDisplayName: z.string().trim().min(1).max(80),
-    body: z.string().trim().max(4000).optional().default(''),
+    body: z.string().trim().max(100000).optional().default(''),
     encryptedBody: encryptedPayloadSchema.optional(),
     kind: z.enum(['text', 'file']),
     attachment: z.object({
@@ -607,7 +646,7 @@ export async function createMessengerServer() {
     }).optional(),
   })
   const messageSchema = z.object({
-    body: z.string().trim().max(4000).optional(),
+    body: z.string().trim().max(100000).optional(),
     encryptedBody: encryptedPayloadSchema.optional(),
     replyToMessageId: messageIdSchema.optional(),
     commentOnMessageId: messageIdSchema.optional(),
@@ -627,7 +666,7 @@ export async function createMessengerServer() {
     }
   })
   const editMessageSchema = z.object({
-    body: z.string().trim().max(4000).optional(),
+    body: z.string().trim().max(100000).optional(),
     encryptedBody: encryptedPayloadSchema.optional(),
   }).superRefine((value, ctx) => {
     const hasBody = Boolean(value.body?.trim())
@@ -1621,6 +1660,67 @@ export async function createMessengerServer() {
     }
   })
 
+  // ---------------------------------------------------------------------------
+  // Subscriptions (AI provider accounts)
+  // ---------------------------------------------------------------------------
+
+  const subscriptionBodySchema = z.object({
+    id: z.string().uuid().optional(),
+    provider: z.string().trim().min(1).max(60),
+    label: z.string().trim().min(1).max(120),
+    account: z.string().trim().max(255).optional().default(''),
+    apiKey: z.string().trim().max(2048).optional().nullable(),
+    defaultModel: z.string().trim().min(1).max(120),
+    isDefault: z.boolean().optional().default(false),
+    config: z.record(z.unknown()).optional().default({}),
+  })
+
+  const subscriptionIdSchema = z.object({ id: z.string().uuid() })
+
+  app.get('/subscriptions', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    const subs = await listUserSubscriptions(session.user.id)
+    return { subscriptions: subs }
+  })
+
+  app.post('/subscriptions', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    const parsed = subscriptionBodySchema.safeParse(request.body)
+    if (!parsed.success) return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    const id = await upsertSubscription(session.user.id, parsed.data)
+    return { id }
+  })
+
+  app.put('/subscriptions/:id', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    const parsedId = subscriptionIdSchema.safeParse(request.params)
+    const parsed = subscriptionBodySchema.safeParse(request.body)
+    if (!parsedId.success || !parsed.success) return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    const id = await upsertSubscription(session.user.id, { ...parsed.data, id: parsedId.data.id })
+    return { id }
+  })
+
+  app.put('/subscriptions/:id/default', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    const parsedId = subscriptionIdSchema.safeParse(request.params)
+    if (!parsedId.success) return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    await setDefaultSubscription(session.user.id, parsedId.data.id)
+    return { ok: true }
+  })
+
+  app.delete('/subscriptions/:id', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    const parsedId = subscriptionIdSchema.safeParse(request.params)
+    if (!parsedId.success) return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    await deleteSubscription(session.user.id, parsedId.data.id)
+    return { ok: true }
+  })
+
   app.get('/agents/:agentId/knowledge', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -2086,6 +2186,34 @@ export async function createMessengerServer() {
   })
 
 
+  app.patch('/conversations/:conversationId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = conversationParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const body = z.object({ model: z.string().optional() }).safeParse(request.body)
+    if (!body.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    try {
+      if (body.data.model !== undefined) {
+        await updateConversationPolicyModel(parsedParams.data.conversationId, session.user, body.data.model)
+      }
+      return { ok: true }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'CONVERSATION_NOT_FOUND') return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+      if (error instanceof Error && error.message === 'CONVERSATION_FORBIDDEN') return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+      throw error
+    }
+  })
+
   app.delete('/conversations/:conversationId', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -2249,6 +2377,7 @@ export async function createMessengerServer() {
     const parsedParams = conversationParamsSchema.safeParse(request.params)
     const parsedBody = messageSchema.safeParse(request.body)
     if (!parsedParams.success || !parsedBody.success) {
+      
       return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
     }
 
@@ -2322,15 +2451,42 @@ export async function createMessengerServer() {
             }
             const messageBody = parsedBody.data.body || parsedBody.data.forwardedFrom?.body || ''
             const runningCliSession = await findRunningCliSessionForAgent(agent.id)
-            if (runningCliSession && messageBody) {
+
+            // Collect recent image attachments uploaded by the user (last 2 min)
+            let recentImageNote = ''
+            try {
+              const cutoff = Date.now() - 120_000
+              const { items: recentMsgs } = await listMessages(conversation.id, { limit: 20 })
+              const imagePaths = recentMsgs
+                .filter(m =>
+                  m.kind === 'file' &&
+                  m.attachment?.mimeType?.startsWith('image/') &&
+                  new Date(m.createdAt).getTime() > cutoff &&
+                  m.senderUserId !== agent.id,
+                )
+                .map(m => join(MESSENGER_UPLOADS_ROOT, m.attachment!.url.replace(/^\/uploads\//, '')))
+              if (imagePaths.length) {
+                recentImageNote = imagePaths
+                  .map(p => `[Image attached by user — use Read tool to view it: ${p}]`)
+                  .join('\n')
+              }
+            } catch {
+              // best-effort
+            }
+
+            const effectivePrompt = recentImageNote
+              ? (messageBody ? `${messageBody}\n\n${recentImageNote}` : recentImageNote)
+              : messageBody
+
+            if (runningCliSession && effectivePrompt) {
               const ingestToken = await getAgentIngestToken(agent.id)
               const coreConfig = readMessengerConfig()
               const messengerCoreUrl = `http://localhost:${coreConfig.MESSENGER_CORE_PORT}`
               if (ingestToken) {
-                const { runId } = await createRun({ agentId: agent.id, conversationId: conversation.id, prompt: messageBody })
+                const { runId } = await createRun({ agentId: agent.id, conversationId: conversation.id, prompt: effectivePrompt })
                 const claudeSessionBin = join(homedir(), 'bin/claude-session')
                 execFileAsync(claudeSessionBin, [
-                  'send', runningCliSession.slug, messageBody,
+                  'send', runningCliSession.slug, effectivePrompt,
                   '--agent-id', agent.id,
                   '--run-id', runId,
                   '--messenger-core-url', messengerCoreUrl,
@@ -2355,6 +2511,7 @@ export async function createMessengerServer() {
                   {
                     onTrace: emitAgentTrace,
                   },
+                  conversation.policy?.model,
                 )
                 await addAgentMessageToConversation(conversation.id, agent, replyBody)
                 await emitAgentTrace({
@@ -2638,6 +2795,32 @@ export async function createMessengerServer() {
           conversationId: conversation.id,
           timestamp: new Date().toISOString(),
         })
+
+        // Forward image attachments to CLI agent immediately (image-only sends have no text message)
+        if (stored.mimeType.startsWith('image/') && conversation.userBId) {
+          const agentForConv = await findMessengerAgentById(conversation.userBId)
+          if (agentForConv) {
+            const runningCliSession = await findRunningCliSessionForAgent(agentForConv.id)
+            if (runningCliSession) {
+              const ingestToken = await getAgentIngestToken(agentForConv.id)
+              const coreConfig = readMessengerConfig()
+              const messengerCoreUrl = `http://localhost:${coreConfig.MESSENGER_CORE_PORT}`
+              if (ingestToken) {
+                const diskPath = join(MESSENGER_UPLOADS_ROOT, stored.url.replace(/^\/uploads\//, ''))
+                const prompt = `[Image attached by user — use Read tool to view it: ${diskPath}]`
+                const { runId } = await createRun({ agentId: agentForConv.id, conversationId: conversation.id, prompt })
+                const claudeSessionBin = join(homedir(), 'bin/claude-session')
+                execFileAsync(claudeSessionBin, [
+                  'send', runningCliSession.slug, prompt,
+                  '--agent-id', agentForConv.id,
+                  '--run-id', runId,
+                  '--messenger-core-url', messengerCoreUrl,
+                  '--ingest-token', ingestToken,
+                ]).catch((err: unknown) => app.log.warn(err, 'claude-session send (image) failed'))
+              }
+            }
+          }
+        }
       }
 
       return { message }

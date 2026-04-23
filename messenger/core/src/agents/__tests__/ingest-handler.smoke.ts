@@ -103,7 +103,7 @@ async function main() {
     assert(run?.status === 'completed', `expected run status=completed, got ${run?.status}`)
 
     // Assert WS broadcasts fired
-    assert(broadcasted.length === 4, `expected 4 broadcasts, got ${broadcasted.length}`)
+    assert(broadcasted.length === 8, `expected 8 broadcasts, got ${broadcasted.length}`)
 
     // Auth rejection
     const bad = await fetch(`${baseUrl}/agents/${agentId}/stream`, {
@@ -117,7 +117,7 @@ async function main() {
     const r404 = await post({ type: 'delta', runId: randomUUID(), delta: 'x' })
     assert(r404.status === 404, `expected 404 on unknown runId, got ${r404.status}`)
 
-    console.log('PASS: ingest smoke — 4 events persisted, run=completed, broadcasts=4')
+    console.log('PASS: ingest smoke — 4 events persisted, run=completed, broadcasts=8 (agent-stream + agent-tree per event)')
   } finally {
     await app.close()
     // Cleanup (cascade: events deleted with run)
