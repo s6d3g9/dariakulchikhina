@@ -6,7 +6,6 @@ export interface MessengerCliSession {
   model: string
   created: string
   kind: string
-  effort: string
   status: 'running' | 'done'
   archivedAt: string | null
   agentId: string | null
@@ -42,12 +41,13 @@ export function useMessengerCliSessions() {
   const runningSessions = computed(() => sessions.value.filter(s => s.status === 'running'))
   const doneSessions = computed(() => sessions.value.filter(s => s.status === 'done'))
 
-  // Hierarchy: tier 0 = composers, tier 1 = orchestrators, tier 2+ = workers
+  // Hierarchy: tier 0 = composers (always shown), tier 1/2 = only when running
   const hierarchy = computed(() => {
     const byTier: MessengerCliSession[][] = [[], [], []]
     for (const s of sessions.value) {
       const meta = getSessionKindMeta(s.kind)
       const tier = Math.min(meta.tier, 2)
+      if (tier > 0 && s.status !== 'running') continue
       byTier[tier]!.push(s)
     }
     return byTier
@@ -55,6 +55,11 @@ export function useMessengerCliSessions() {
 
   function sessionForAgent(agentId: string): MessengerCliSession | null {
     return sessions.value.find(s => s.agentId === agentId) ?? null
+  }
+
+  async function setModel(slug: string, model: string) {
+    await api.patchCliSession(slug, { model })
+    await refresh()
   }
 
   async function refresh(includeArchived = false) {
@@ -72,63 +77,5 @@ export function useMessengerCliSessions() {
     }
   }
 
-  async function setModel(slug: string, model: string) {
-    await api.patchCliSession(slug, { model })
-  }
-
-  async function setEffort(slug: string, effort: 'low' | 'medium' | 'high') {
-    await api.patchCliSession(slug, { effort })
-  }
-
-  async function spawnSession(body: {
-    slug: string
-    kind: string
-    model?: string
-    workroom?: string
-    prompt: string
-    effort?: 'low' | 'medium' | 'high'
-    projectId?: string
-  }) {
-    const result = await api.spawnCliSession(body)
-    const optimistic: MessengerCliSession = {
-      slug: result.slug,
-      uuid: result.uuid,
-      window: result.window,
-      workroom: body.workroom ?? '',
-      model: body.model ?? 'sonnet',
-      created: new Date().toISOString(),
-      kind: body.kind,
-      effort: body.effort ?? 'medium',
-      status: 'running',
-      archivedAt: null,
-      agentId: null,
-      agentDisplayName: null,
-      agentProjectId: body.projectId ?? null,
-    }
-    sessions.value = [optimistic, ...sessions.value.filter(s => s.slug !== result.slug)]
-    return result
-  }
-
-  async function compactSession(slug: string) {
-    await api.compactCliSession(slug)
-  }
-
-  async function killSession(slug: string) {
-    const removedIdx = sessions.value.findIndex(s => s.slug === slug)
-    if (removedIdx === -1) {
-      await api.killCliSession(slug)
-      return
-    }
-    const backup = sessions.value[removedIdx]
-    sessions.value.splice(removedIdx, 1)
-    try {
-      await api.killCliSession(slug)
-    }
-    catch (err) {
-      if (backup) sessions.value.splice(removedIdx, 0, backup)
-      throw err
-    }
-  }
-
-  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, refresh, setModel, setEffort, spawnSession, compactSession, killSession }
+  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, setModel, refresh }
 }

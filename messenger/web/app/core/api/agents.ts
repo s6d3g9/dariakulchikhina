@@ -15,7 +15,7 @@ export function useAgentsApi() {
     return auth.request<{ settings: MessengerAgentSettings }>(`/agents/${agentId}/settings`, { method: 'GET' })
   }
 
-  function putAgentSettings(agentId: string, payload: Pick<MessengerAgentSettings, 'model' | 'apiKey' | 'ssh' | 'knowledge' | 'connections' | 'graphPosition'>) {
+  function putAgentSettings(agentId: string, payload: Pick<MessengerAgentSettings, 'subscriptionId' | 'model' | 'effort' | 'apiKey' | 'ssh' | 'knowledge' | 'connections' | 'graphPosition'>) {
     return auth.request<{ settings: MessengerAgentSettings }>(`/agents/${agentId}/settings`, {
       method: 'PUT',
       body: payload,
@@ -80,34 +80,25 @@ export function useAgentsApi() {
     })
   }
 
-  function patchCliSession(slug: string, body: { model?: string; effort?: 'low' | 'medium' | 'high' }) {
-    return auth.request<{ slug: string; model?: string; effort?: string }>(`/cli-sessions/${slug}`, {
+  function patchCliSession(slug: string, payload: { model: string }) {
+    return auth.request<void>(`/cli-sessions/${slug}`, {
       method: 'PATCH',
-      body,
+      body: payload,
     })
   }
 
-  function spawnCliSession(body: {
-    slug: string
-    kind: string
-    model?: string
-    workroom?: string
-    prompt: string
-    effort?: 'low' | 'medium' | 'high'
-    projectId?: string
-  }) {
-    return auth.request<{ slug: string; uuid: string; window: string }>('/cli-sessions/spawn', {
-      method: 'POST',
-      body,
-    })
+  function getAgentActiveRun(agentId: string) {
+    return auth.request<{ run: { id: string; status: string; prompt: string | null; createdAt: string; conversationId: string | null } | null }>(
+      `/agents/${agentId}/active-run`,
+      { method: 'GET' },
+    )
   }
 
-  function compactCliSession(slug: string) {
-    return auth.request<Record<string, never>>(`/cli-sessions/${encodeURIComponent(slug)}/compact`, { method: 'POST' })
-  }
-
-  function killCliSession(slug: string) {
-    return auth.request<void>(`/cli-sessions/${encodeURIComponent(slug)}`, { method: 'DELETE' })
+  function getAgentRunEvents(agentId: string, runId: string, cursor?: string, limit = 200) {
+    return auth.request<{ items: Array<{ id: string; occurredAt: string; payload: Record<string, unknown> | null }>; nextCursor: string | null }>(
+      `/agents/${agentId}/runs/${runId}/events`,
+      { method: 'GET', query: { cursor, limit } },
+    )
   }
 
   return {
@@ -125,8 +116,7 @@ export function useAgentsApi() {
     listAgentEdgePayloads,
     listCliSessions,
     patchCliSession,
-    spawnCliSession,
-    compactCliSession,
-    killCliSession,
+    getAgentActiveRun,
+    getAgentRunEvents,
   }
 }
