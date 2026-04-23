@@ -183,6 +183,7 @@ defineExpose({
           autocapitalize="sentences"
           spellcheck="false"
           @input="emit('update:draft', ($event.target as HTMLTextAreaElement).value); emit('input')"
+          @keydown="onCEKeydown"
           @focus="emit('focus')"
           @blur="emit('blur')"
         />
@@ -212,21 +213,11 @@ defineExpose({
             <MessengerIcon name="paperclip" :size="22" />
           </VBtn>
 
+          <!-- Agent-composer "Запустить" button removed: it posted to /agents/:id/runs
+               which is a separate (incomplete) pipeline. ALL chats now use the
+               unified primary-action path which sends through /conversations/:id/messages
+               and the backend dispatches to the CLI session. Icon-only design. -->
           <VBtn
-            v-if="props.isAgentComposer"
-            type="button"
-            class="composer-btn composer-btn--inside composer-btn--primary"
-            variant="flat"
-            color="primary"
-            :disabled="!props.activeConversation || props.messagePending || !props.draft.trim()"
-            aria-label="Запустить"
-            @click="emit('run-started', {})"
-          >
-            Запустить
-          </VBtn>
-
-          <VBtn
-            v-else
             type="button"
             class="composer-btn composer-btn--inside composer-btn--primary"
             :class="{ 'composer-btn--recording': props.isRecording }"
