@@ -79,6 +79,71 @@ const composerAgent = computed(() =>
 // composer's conversation, messages.value reflects that thread.
 const messages = computed(() => conversations.messages.value)
 
+// --- Thinking indicator: pulsing bubble while waiting for agent reply -----
+const awaitingReply = ref(false)
+const lastUserSentAt = ref<number>(0)
+
+// Restore thinking bubble across page reloads: probe active-run for this agent.
+const agentsApi = useAgentsApi()
+async function probeActiveRun() {
+  if (!composerAgentId.value) return
+  try {
+    const resp = await agentsApi.getAgentActiveRun(composerAgentId.value)
+    if (resp.run) {
+      awaitingReply.value = true
+      lastUserSentAt.value = new Date(resp.run.createdAt).getTime()
+    }
+  } catch {}
+}
+watch(composerAgentId, async (newId) => {
+  if (newId) await probeActiveRun()
+})
+onMounted(() => { void probeActiveRun() })
+
+// Model name shown in the mini-caption of the thinking bubble.
+const composerModelLabel = computed(() => {
+  const a = composerAgent.value as unknown as { model?: string; settings?: { model?: string } } | null
+  return a?.settings?.model || a?.model || 'sonnet'
+})
+
+// Live reasoning stream (WS-backed). Active only while composerAgentId is set.
+const composerAgentIdRef = computed(() => composerAgentId.value || '')
+const agentStream = useMessengerAgentStream(composerAgentIdRef as any)
+const reasoningExpanded = ref(false)
+const { groups: aidevGroups, distinctFiles: aidevDistinctFiles, formatDuration: aidevFormatDuration } = useReasoningGroups(agentStream.toolUses as any)
+const aidevRunDuration = computed(() => {
+  const start = agentStream.runStartedAt.value
+  if (!start) return ''
+  return aidevFormatDuration(Date.now() - start)
+})
+
+const substateLabel = computed(() => {
+  const s = agentStream.substate.value as string
+  return ({
+    idle: 'Готов',
+    thinking: 'Думает…',
+    tool_call: 'Запускает инструменты…',
+    awaiting_input: 'Ждёт ввод',
+    streaming: 'Отвечает…',
+    error: 'Ошибка',
+  } as Record<string, string>)[s] || 'Работает…'
+})
+
+function toggleReasoning() { reasoningExpanded.value = !reasoningExpanded.value }
+
+// When a new agent message arrives after our last send, clear the indicator.
+watch(messages, (list) => {
+  if (!awaitingReply.value) return
+  for (let i = list.length - 1; i >= 0; i--) {
+    const m = list[i] as unknown as { own?: boolean; createdAt?: string }
+    const ts = m?.createdAt ? new Date(m.createdAt).getTime() : 0
+    if (m?.own === false && ts >= lastUserSentAt.value - 500) {
+      awaitingReply.value = false
+      return
+    }
+  }
+}, { deep: true })
+
 async function ensureOpen() {
   if (!composerAgentId.value) return
   try {
@@ -121,6 +186,8 @@ async function send() {
   sendError.value = ''
   try {
     await conversations.sendMessage(body)
+    awaitingReply.value = true
+    lastUserSentAt.value = Date.now()
     draft.value = ''
     await nextTick()
     scrollToBottom(true)
@@ -189,15 +256,8 @@ function formatTime(iso: string) {
           <VIcon size="16" class="mr-1">mdi-robot-outline</VIcon>
           {{ (composerAgent as any)?.displayName || (composerAgent as any)?.name || sessionComposer?.agentDisplayName || 'Composer' }}
         </span>
-        <VBtn
-          size="x-small"
-          variant="tonal"
-          color="primary"
-          prepend-icon="mdi-open-in-new"
-          @click="conversations.activeConversationId.value && navigation.openConversation(conversations.activeConversationId.value)"
-        >
-          Открыть чат
-        </VBtn>
+        <!-- "Открыть чат" removed: navigating to global Chat section unscopes the project view.
+             The full chat is rendered inline below this header. -->
       </div>
       <div ref="scrollerEl" class="aidev-composer-tab__scroller">
         <div v-if="messages.length === 0" class="aidev-composer-tab__intro">
@@ -224,6 +284,74 @@ function formatTime(iso: string) {
             </div>
             <div class="aidev-composer-tab__msg-time">
               {{ formatTime((m as any).createdAt || (m as any).sentAt) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Thinking indicator: expandable bubble with live reasoning -->
+        <div
+          v-if="awaitingReply"
+          class="aidev-composer-tab__msg aidev-composer-tab__msg--thinking"
+          aria-live="polite"
+          aria-label="Агент думает"
+        >
+          <div class="aidev-composer-tab__msg-bubble aidev-composer-tab__thinking-bubble">
+            <button
+              type="button"
+              class="aidev-composer-tab__thinking-header aidev-composer-tab__thinking-header--btn"
+              :aria-expanded="reasoningExpanded"
+              @click="toggleReasoning"
+            >
+              <VIcon size="14" class="aidev-composer-tab__thinking-icon">mdi-robot-outline</VIcon>
+              <span class="aidev-composer-tab__thinking-name">
+                {{ (composerAgent as any)?.displayName || (composerAgent as any)?.name || 'Composer' }}
+              </span>
+              <span class="aidev-composer-tab__thinking-model">· {{ composerModelLabel }}</span>
+              <span class="aidev-composer-tab__thinking-state">· {{ substateLabel }}</span>
+              <VIcon size="14" class="aidev-composer-tab__thinking-chevron">
+                {{ reasoningExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+              </VIcon>
+            </button>
+
+            <div v-if="!reasoningExpanded" class="aidev-composer-tab__thinking-dots" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+
+            <div v-else class="aidev-composer-tab__thinking-expand">
+              <div v-if="aidevRunDuration || agentStream.tokenCount.value.total" class="aidev-composer-tab__thinking-meta">
+                <span v-if="aidevRunDuration" class="aidev-composer-tab__thinking-meta-chip" title="Длительность">⏱ {{ aidevRunDuration }}</span>
+                <span v-if="agentStream.tokenCount.value.total" class="aidev-composer-tab__thinking-meta-chip" title="Токены in/out">🧠 {{ agentStream.tokenCount.value.input }}↓ / {{ agentStream.tokenCount.value.output }}↑</span>
+                <span v-if="agentStream.tokenCount.value.contextPct" class="aidev-composer-tab__thinking-meta-chip" title="Контекст">📊 {{ agentStream.tokenCount.value.contextPct }}%</span>
+                <span v-if="aidevDistinctFiles.length" class="aidev-composer-tab__thinking-meta-chip" title="Файлов задействовано">📁 {{ aidevDistinctFiles.length }}</span>
+              </div>
+              <div v-for="group in aidevGroups" :key="group.key" class="aidev-composer-tab__thinking-group">
+                <div class="aidev-composer-tab__thinking-group-title">
+                  {{ group.icon }} {{ group.label }}
+                  <span class="aidev-composer-tab__thinking-group-count">{{ group.entries.length }}</span>
+                </div>
+                <div
+                  v-for="(t, idx) in group.entries"
+                  :key="idx"
+                  class="aidev-composer-tab__thinking-plate"
+                  :class="{
+                    'aidev-composer-tab__thinking-plate--active': agentStream.toolUses.value.length > 0 && t.at === agentStream.toolUses.value[agentStream.toolUses.value.length - 1].at,
+                    'aidev-composer-tab__thinking-plate--done':   agentStream.toolUses.value.length > 0 && t.at !== agentStream.toolUses.value[agentStream.toolUses.value.length - 1].at,
+                  }"
+                >
+                  <span class="aidev-composer-tab__thinking-plate-dot" aria-hidden="true"></span>
+                  <span class="aidev-composer-tab__thinking-tool-name">{{ t.tool }}</span>
+                  <span v-if="t.descriptor" class="aidev-composer-tab__thinking-tool-desc"> {{ t.descriptor }}</span>
+                </div>
+              </div>
+              <div v-if="agentStream.substate.value === 'awaiting_input'" class="aidev-composer-tab__thinking-plate aidev-composer-tab__thinking-plate--awaiting">
+                <span class="aidev-composer-tab__thinking-plate-dot" aria-hidden="true"></span>
+                <span>⏳ Ждёт ввод</span>
+              </div>
+              <div v-if="agentStream.streamingDraft.value" class="aidev-composer-tab__thinking-stream">{{ agentStream.streamingDraft.value }}<span class="aidev-composer-tab__thinking-caret">▍</span></div>
+              <div v-if="!agentStream.toolUses.value.length && !agentStream.streamingDraft.value" class="aidev-composer-tab__thinking-waiting">
+                <span class="aidev-composer-tab__thinking-dots aidev-composer-tab__thinking-dots--inline" aria-hidden="true"><span></span><span></span><span></span></span>
+                <span class="aidev-composer-tab__thinking-waiting-text">Ожидание событий стрима…</span>
+              </div>
             </div>
           </div>
         </div>
@@ -351,6 +479,188 @@ function formatTime(iso: string) {
   font-size: 12px;
   color: rgb(var(--v-theme-on-surface-variant));
   max-width: 420px;
+}
+
+/* Expandable thinking bubble additions */
+.aidev-composer-tab__thinking-header--btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+.aidev-composer-tab__thinking-state {
+  font-size: 10px;
+  font-weight: 400;
+  color: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.75;
+  font-style: italic;
+}
+.aidev-composer-tab__thinking-chevron { margin-left: auto; opacity: 0.6; }
+.aidev-composer-tab__thinking-expand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px 0 2px;
+  border-top: 1px solid rgba(var(--v-theme-primary), 0.2);
+  margin-top: 4px;
+}
+.aidev-composer-tab__thinking-tool {
+  font-size: 11px;
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+/* Inner plate: each tool_use / awaiting op as a mini-card */
+.aidev-composer-tab__thinking-plate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  background: rgba(var(--v-theme-surface-variant), 0.4);
+  border: 1px solid rgba(var(--v-theme-primary), 0.15);
+  transition: opacity 300ms ease, background 300ms ease, border-color 300ms ease;
+}
+.aidev-composer-tab__thinking-plate--active {
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-color: rgba(var(--v-theme-primary), 0.45);
+  animation: aidev-inner-plate-pulse 1.4s ease-in-out infinite;
+}
+.aidev-composer-tab__thinking-plate--done {
+  opacity: 0.55;
+}
+.aidev-composer-tab__thinking-plate--awaiting {
+  background: rgba(var(--v-theme-warning, 255 176 32), 0.1);
+  border-color: rgba(var(--v-theme-warning, 255 176 32), 0.45);
+  animation: aidev-inner-plate-pulse 1.2s ease-in-out infinite;
+}
+.aidev-composer-tab__thinking-plate-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-primary));
+  flex-shrink: 0;
+}
+.aidev-composer-tab__thinking-plate--active .aidev-composer-tab__thinking-plate-dot {
+  animation: aidev-inner-plate-dot-pulse 0.9s ease-in-out infinite;
+}
+.aidev-composer-tab__thinking-plate--done .aidev-composer-tab__thinking-plate-dot {
+  background: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.5;
+}
+.aidev-composer-tab__thinking-plate--awaiting .aidev-composer-tab__thinking-plate-dot {
+  background: rgb(var(--v-theme-warning, 255 176 32));
+  animation: aidev-inner-plate-dot-pulse 0.9s ease-in-out infinite;
+}
+@keyframes aidev-inner-plate-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--v-theme-primary), 0.25); }
+  50%      { box-shadow: 0 0 0 4px rgba(var(--v-theme-primary), 0.08); }
+}
+@keyframes aidev-inner-plate-dot-pulse {
+  0%, 100% { transform: scale(0.8); opacity: 0.7; }
+  50%      { transform: scale(1.15); opacity: 1;   }
+}
+.aidev-composer-tab__thinking-tool-name {
+  font-weight: 600;
+  color: rgb(var(--v-theme-primary));
+}
+.aidev-composer-tab__thinking-tool-desc {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  word-break: break-all;
+}
+.aidev-composer-tab__thinking-stream {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgb(var(--v-theme-on-surface));
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.aidev-composer-tab__thinking-caret {
+  display: inline-block;
+  animation: aidev-thinking-caret 1s steps(2) infinite;
+  color: rgb(var(--v-theme-primary));
+}
+@keyframes aidev-thinking-caret {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+.aidev-composer-tab__thinking-meta { display: flex; gap: 6px; flex-wrap: wrap; padding-bottom: 4px; border-bottom: 1px dashed rgba(var(--v-theme-primary), 0.2); margin-bottom: 4px; }
+.aidev-composer-tab__thinking-meta-chip { font-size: 10.5px; padding: 2px 7px; border-radius: 8px; background: rgba(var(--v-theme-primary), 0.08); color: rgb(var(--v-theme-on-surface)); font-weight: 500; }
+.aidev-composer-tab__thinking-group { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+.aidev-composer-tab__thinking-group-title { font-size: 10.5px; font-weight: 600; color: rgb(var(--v-theme-on-surface-variant)); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px; padding-bottom: 2px; }
+.aidev-composer-tab__thinking-group-count { font-size: 9.5px; padding: 1px 6px; border-radius: 6px; background: rgba(var(--v-theme-primary), 0.15); color: rgb(var(--v-theme-primary)); font-weight: 600; }
+.aidev-composer-tab__thinking-waiting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+.aidev-composer-tab__thinking-dots--inline { height: 8px; }
+.aidev-composer-tab__thinking-dots--inline span { width: 4px; height: 4px; }
+
+/* Thinking indicator bubble — pulsing dots while agent is working */
+.aidev-composer-tab__msg--thinking .aidev-composer-tab__msg-bubble {
+  background: rgba(var(--v-theme-primary), 0.08);
+  border: 1px dashed rgba(var(--v-theme-primary), 0.35);
+  animation: aidev-thinking-pulse 1.6s ease-in-out infinite;
+}
+.aidev-composer-tab__thinking-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+.aidev-composer-tab__thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface));
+}
+.aidev-composer-tab__thinking-icon { opacity: 0.75; }
+.aidev-composer-tab__thinking-name { font-weight: 600; }
+.aidev-composer-tab__thinking-model {
+  font-size: 10px;
+  font-weight: 400;
+  color: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.85;
+}
+.aidev-composer-tab__thinking-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  height: 10px;
+}
+.aidev-composer-tab__thinking-dots span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgb(var(--v-theme-primary));
+  opacity: 0.4;
+  animation: aidev-thinking-dot 1.2s ease-in-out infinite both;
+}
+.aidev-composer-tab__thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+.aidev-composer-tab__thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes aidev-thinking-dot {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
+  40%           { opacity: 1;   transform: scale(1.15); }
+}
+@keyframes aidev-thinking-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--v-theme-primary), 0.25); }
+  50%      { box-shadow: 0 0 0 6px rgba(var(--v-theme-primary), 0.05); }
 }
 
 .aidev-composer-tab__msg {

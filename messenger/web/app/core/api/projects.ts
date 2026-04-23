@@ -5,6 +5,7 @@ import type { MessengerProjectAgent } from '../../entities/agents/model/useMesse
 import type { BootstrapProposal } from '../../features/composer-bootstrap/model/useComposerBootstrap'
 import type { SkillBundle, MessengerProjectSkill } from '../../entities/skills/model/useMessengerSkills'
 import type { InstalledPlugin, MessengerProjectPlugin } from '../../entities/plugins/model/useMessengerPlugins'
+import type { MessengerConnector } from '../../entities/connectors/model/useMessengerConnectors'
 
 export function useProjectsApi() {
   const auth = useMessengerAuth()
@@ -60,6 +61,24 @@ export function useProjectsApi() {
 
   function pingMcpServer(projectId: string, entryId: string) {
     return auth.request<McpPingResult>(`/projects/${projectId}/mcp/${entryId}/ping`, { method: 'POST' })
+  }
+
+  // ── Connectors ─────────────────────────────────────────────────────────────
+
+  function listConnectors(projectId: string) {
+    return auth.request<{ connectors: MessengerConnector[] }>(`/projects/${projectId}/connectors`, { method: 'GET' })
+  }
+
+  function createConnector(projectId: string, body: { type: string; label: string; config?: Record<string, unknown>; enabled?: boolean; isDefault?: boolean }) {
+    return auth.request<{ connector: MessengerConnector }>(`/projects/${projectId}/connectors`, { method: 'POST', body })
+  }
+
+  function updateConnector(projectId: string, entryId: string, body: Partial<{ type: string; label: string; config: Record<string, unknown>; enabled: boolean; isDefault: boolean }>) {
+    return auth.request<{ connector: MessengerConnector }>(`/projects/${projectId}/connectors/${entryId}`, { method: 'PATCH', body })
+  }
+
+  function deleteConnector(projectId: string, entryId: string) {
+    return auth.request<{ ok: true }>(`/projects/${projectId}/connectors/${entryId}`, { method: 'DELETE' })
   }
 
   // ── External APIs ──────────────────────────────────────────────────────────
@@ -157,6 +176,10 @@ export function useProjectsApi() {
     updateMcpServer,
     deleteMcpServer,
     pingMcpServer,
+    listConnectors,
+    createConnector,
+    updateConnector,
+    deleteConnector,
     listExternalApis,
     createExternalApi,
     updateExternalApi,
