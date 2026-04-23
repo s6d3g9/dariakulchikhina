@@ -87,6 +87,21 @@ export function useAgentsApi() {
     })
   }
 
+  function spawnCliSession(body: {
+    slug: string
+    kind: string
+    model?: string
+    workroom?: string
+    prompt: string
+    effort?: 'low' | 'medium' | 'high'
+    projectId?: string
+  }) {
+    return auth.request<{ slug: string; uuid: string; window: string }>('/cli-sessions/spawn', {
+      method: 'POST',
+      body,
+    })
+  }
+
   return {
     listAgents,
     getAgentSettings,
@@ -102,5 +117,6 @@ export function useAgentsApi() {
     listAgentEdgePayloads,
     listCliSessions,
     patchCliSession,
+    spawnCliSession,
   }
 }

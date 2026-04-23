@@ -72,6 +72,18 @@ const cliSessionBody = z.object({
   runId: z.string().uuid().optional(),
 })
 
+const SPAWN_KINDS = ['frontend-ui', 'backend-api', 'backend-module', 'db-migration', 'messenger-realtime', 'tests', 'docs'] as const
+
+const spawnSessionBody = z.object({
+  slug: z.string().regex(/^[a-z0-9-]{2,40}$/, 'slug must match /^[a-z0-9-]{2,40}$/'),
+  kind: z.enum(SPAWN_KINDS),
+  model: z.string().optional(),
+  workroom: z.string().optional(),
+  prompt: z.string().min(1, 'prompt is required'),
+  effort: z.enum(['low', 'medium', 'high']).optional(),
+  projectId: z.string().optional(),
+})
+
 const taskCompleteBody = z.object({
   slug: z.string().min(1),
   commitSha: z.string().regex(/^[0-9a-f]{40}$/, 'commitSha must be a 40-char hex string'),
@@ -323,6 +335,71 @@ export function registerOrchestrationRoutes(
           agentId: agentBySlug.get(s.slug)?.id ?? null,
           agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
         })),
+      }
+    },
+  )
+
+  // POST /cli-sessions/spawn — spawn a new claude-session via CLI
+  app.post<{ Body: unknown }>(
+    '/cli-sessions/spawn',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const parsed = spawnSessionBody.safeParse(request.body)
+      if (!parsed.success) {
+        const detail: Record<string, string> = {}
+        for (const issue of parsed.error.issues) {
+          const key = issue.path.join('.') || issue.path[0]?.toString() || 'unknown'
+          detail[key] = issue.message
+        }
+        return reply.code(400).send({ error: 'INVALID_PAYLOAD', detail })
+      }
+
+      const { slug, kind, model, workroom, prompt, effort, projectId } = parsed.data
+
+      // eslint-disable-next-line no-restricted-syntax
+      const stateDir = process.env.DASHBOARD_STATE_DIR ?? join(homedir(), 'state/claude-sessions')
+      try {
+        const content = readFileSync(join(stateDir, '.registry.tsv'), 'utf8')
+        const lines = content.trim().split('\n')
+        if (lines.length >= 2) {
+          const headers = (lines[0] ?? '').split('\t')
+          const slugIdx = headers.indexOf('slug')
+          if (slugIdx !== -1) {
+            for (const line of lines.slice(1)) {
+              if ((line.split('\t')[slugIdx] ?? '') === slug) {
+                return reply.code(409).send({ error: 'DUPLICATE_SLUG' })
+              }
+            }
+          }
+        }
+      }
+      catch {}
+
+      const args = [
+        'create', slug,
+        '--model', model ?? 'sonnet',
+        '--kind', kind,
+        '--effort', effort ?? 'medium',
+        ...(workroom ? ['--workroom', workroom] : []),
+        ...(projectId ? ['--project-id', projectId] : []),
+        '--prompt', prompt,
+      ]
+
+      try {
+        const { stdout } = await execFileAsync(CLAUDE_SESSION_BIN, args, { timeout: 10_000 })
+        // claude-session.sh cmd_create emits: "[create] slug=X uuid=Y window=Z model=... workroom=... kind=..."
+        const m = stdout.match(/slug=(\S+)\s+uuid=(\S+)\s+window=(\S+)/)
+        if (!m) {
+          return reply.code(500).send({ error: 'SPAWN_FAILED', detail: 'could not parse CLI output', stdout })
+        }
+        return reply.code(201).send({ slug: m[1], uuid: m[2], window: m[3] })
+      }
+      catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        return reply.code(500).send({ error: 'SPAWN_FAILED', detail: msg })
       }
     },
   )
