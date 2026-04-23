@@ -7055,6 +7055,45 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   padding: 12px 8px;
 }
 
+/* Done / archived sections below the live hierarchy */
+.cli-sessions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px 4px 6px;
+  margin-top: 2px;
+}
+.cli-sessions-group__title {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.75;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cli-sessions-group__icon { opacity: 0.6; }
+.cli-session-chip--done {
+  background: rgba(var(--v-theme-surface-container), 0.55);
+  opacity: 0.85;
+}
+.cli-session-chip--done .cli-session-chip__kind,
+.cli-session-chip--done .cli-session-chip__name {
+  opacity: 0.78;
+}
+.cli-session-chip--archived {
+  background: transparent;
+  border-style: dashed;
+  border-color: rgba(var(--v-theme-outline-variant), 0.35);
+  opacity: 0.65;
+}
+.cli-session-chip--archived:hover {
+  opacity: 0.95;
+}
+
 @keyframes live-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }

@@ -38,16 +38,18 @@ export function useMessengerCliSessions() {
   const pending = useState<boolean>('messenger-cli-sessions-pending', () => false)
   const lastFetchedAt = useState<number>('messenger-cli-sessions-fetched', () => 0)
 
-  const runningSessions = computed(() => sessions.value.filter(s => s.status === 'running'))
-  const doneSessions = computed(() => sessions.value.filter(s => s.status === 'done'))
+  const runningSessions = computed(() => sessions.value.filter(s => s.status === 'running' && !s.archivedAt))
+  const doneSessions = computed(() => sessions.value.filter(s => s.status === 'done' && !s.archivedAt))
+  const archivedSessions = computed(() => sessions.value.filter(s => Boolean(s.archivedAt)))
 
-  // Hierarchy: tier 0 = composers (always shown), tier 1/2 = only when running
+  // Live hierarchy (tier 0 = composers, tier 1 = orchestrators, tier 2 = workers) —
+  // shows ONLY running non-archived sessions. Done and archived sessions surface in
+  // their own lists so the user can see real work across both states.
   const hierarchy = computed(() => {
     const byTier: MessengerCliSession[][] = [[], [], []]
-    for (const s of sessions.value) {
+    for (const s of runningSessions.value) {
       const meta = getSessionKindMeta(s.kind)
       const tier = Math.min(meta.tier, 2)
-      if (tier > 0 && s.status !== 'running') continue
       byTier[tier]!.push(s)
     }
     return byTier
@@ -62,7 +64,7 @@ export function useMessengerCliSessions() {
     await refresh()
   }
 
-  async function refresh(includeArchived = false) {
+  async function refresh(includeArchived = true) {
     pending.value = true
     try {
       const res = await api.listCliSessions(includeArchived)
@@ -77,5 +79,5 @@ export function useMessengerCliSessions() {
     }
   }
 
-  return { sessions, runningSessions, doneSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, setModel, refresh }
+  return { sessions, runningSessions, doneSessions, archivedSessions, hierarchy, pending, lastFetchedAt, sessionForAgent, setModel, refresh }
 }

@@ -1365,7 +1365,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
             </div>
           </div>
 
-          <!-- Hierarchy: composer → orchestrators → workers -->
+          <!-- Live hierarchy: composer → orchestrators → workers (running only) -->
           <div v-if="cliSessions.runningSessions.value.length" class="cli-sessions-hierarchy">
             <template v-for="(tier, tierIdx) in cliSessions.hierarchy.value" :key="tierIdx">
               <div v-if="tier.length" class="cli-sessions-tier">
@@ -1389,9 +1389,50 @@ function formatChatPreview(chat: MessengerConversationItem) {
             </template>
           </div>
 
-          <div v-else-if="!cliSessions.pending.value" class="empty-state empty-state--compact">
+          <div v-else-if="!cliSessions.pending.value && !cliSessions.doneSessions.value.length && !cliSessions.archivedSessions.value.length" class="empty-state empty-state--compact">
             <p class="empty-state__title">Нет активных сессий.</p>
             <p class="empty-state__hint">Запустите сессию через <code>claude-session create &lt;slug&gt;</code></p>
+          </div>
+
+          <!-- Done (finished but not archived) -->
+          <div v-if="cliSessions.doneSessions.value.length" class="cli-sessions-group cli-sessions-group--done">
+            <p class="cli-sessions-group__title">Завершённые ({{ cliSessions.doneSessions.value.length }})</p>
+            <div class="cli-sessions-tier">
+              <div
+                v-for="session in cliSessions.doneSessions.value"
+                :key="session.slug"
+                class="cli-session-chip cli-session-chip--done"
+                :class="`cli-session-chip--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
+                @click="openCliSession(session.agentId)"
+              >
+                <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
+                <span class="cli-session-chip__name">{{ session.agentDisplayName || session.slug }}</span>
+                <span class="cli-session-chip__kind">{{ getSessionKindMeta(session.kind).label }}</span>
+                <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-chip__wr">{{ session.workroom }}</VChip>
+              </div>
+            </div>
+          </div>
+
+          <!-- Archived -->
+          <div v-if="cliSessions.archivedSessions.value.length" class="cli-sessions-group cli-sessions-group--archived">
+            <p class="cli-sessions-group__title">
+              <VIcon size="12" class="cli-sessions-group__icon">mdi-archive-outline</VIcon>
+              Архив ({{ cliSessions.archivedSessions.value.length }})
+            </p>
+            <div class="cli-sessions-tier">
+              <div
+                v-for="session in cliSessions.archivedSessions.value"
+                :key="session.slug"
+                class="cli-session-chip cli-session-chip--archived"
+                :class="`cli-session-chip--${getSessionKindMeta(session.kind).color.replace('-', '_')}`"
+                @click="openCliSession(session.agentId)"
+              >
+                <VIcon size="14" :color="getSessionKindMeta(session.kind).color">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
+                <span class="cli-session-chip__name">{{ session.agentDisplayName || session.slug }}</span>
+                <span class="cli-session-chip__kind">{{ getSessionKindMeta(session.kind).label }}</span>
+                <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-chip__wr">{{ session.workroom }}</VChip>
+              </div>
+            </div>
           </div>
         </div>
 
