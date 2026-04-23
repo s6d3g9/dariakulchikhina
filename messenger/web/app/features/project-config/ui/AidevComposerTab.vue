@@ -367,6 +367,7 @@ function formatTime(iso: string) {
       </VAlert>
 
       <div class="aidev-composer-tab__composer">
+        <MessengerComposerCapabilitiesBar :project-id="project.id" />
         <MessengerDockField>
           <textarea
             ref="inputEl"
