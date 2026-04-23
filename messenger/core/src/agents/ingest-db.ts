@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-restricted-imports
 import { drizzle } from 'drizzle-orm/postgres-js'
 // eslint-disable-next-line no-restricted-imports
-import { eq, and, isNull, sql, gt, lt, lte, or, desc, asc } from 'drizzle-orm'
+import { eq, and, isNull, sql, gt, lt, lte, or, desc, asc, inArray } from 'drizzle-orm'
 // eslint-disable-next-line no-restricted-imports
 import postgres from 'postgres'
 // eslint-disable-next-line no-restricted-imports
@@ -28,7 +28,7 @@ export {
   messengerProjectSkills,
   messengerProjectPlugins,
   messengerAgentTaskCompletions,
-  eq, and, isNull, sql, gt, lt, lte, or, desc, asc,
+  eq, and, isNull, sql, gt, lt, lte, or, desc, asc, inArray,
 }
 
 const schema = {
