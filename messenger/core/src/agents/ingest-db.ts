@@ -14,6 +14,7 @@ import {
   messengerAgentModelRouting,
   messengerProjectSkills,
   messengerProjectPlugins,
+  messengerAgentTaskCompletions,
 } from '../../../../server/db/schema/messenger.ts'
 import { readMessengerConfig } from '../config.ts'
 
@@ -26,6 +27,7 @@ export {
   messengerAgentModelRouting,
   messengerProjectSkills,
   messengerProjectPlugins,
+  messengerAgentTaskCompletions,
   eq, and, isNull, sql, gt, lt, lte, or, desc, asc,
 }
 
@@ -38,6 +40,7 @@ const schema = {
   messengerAgentModelRouting,
   messengerProjectSkills,
   messengerProjectPlugins,
+  messengerAgentTaskCompletions,
 }
 export type IngestDb = ReturnType<typeof drizzle<typeof schema>>
 

@@ -543,6 +543,95 @@ cmd_doctor() {
   echo "[doctor] done"
 }
 
+# --- report-done ---
+# Report task completion to messenger core.
+# Usage: claude-session report-done <slug> [--workroom <wr>] [--agent-id <uuid>]
+#        [--messenger-core-url <url>] [--auth-secret <secret>]
+cmd_report_done() {
+  local slug="${1:-}"; shift || true
+  [[ -n "${slug}" ]] || die "slug required"
+
+  local workroom="" agent_id=""
+  local messenger_url="${MESSENGER_CORE_URL:-}"
+  local auth_secret="${MESSENGER_CORE_AUTH_SECRET:-messenger-dev-secret}"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --workroom)           workroom="$2"; shift 2;;
+      --agent-id)           agent_id="$2"; shift 2;;
+      --messenger-core-url) messenger_url="$2"; shift 2;;
+      --auth-secret)        auth_secret="$2"; shift 2;;
+      *) die "unknown flag: $1";;
+    esac
+  done
+
+  if [[ -z "${workroom}" ]]; then
+    workroom=$(registry_col "${slug}" 4) || true
+  fi
+
+  local cwd="${HOME}"
+  if [[ -n "${workroom}" ]]; then
+    cwd="${HOME}/workrooms/${workroom}"
+    [[ -d "${cwd}" ]] || die "workroom '${workroom}' not found at ${cwd}"
+  fi
+
+  local commit_sha branch commits_above_base
+  commit_sha=$(git -C "${cwd}" rev-parse HEAD 2>/dev/null) || die "git rev-parse HEAD failed in ${cwd}"
+  branch=$(git -C "${cwd}" branch --show-current 2>/dev/null) || die "git branch --show-current failed in ${cwd}"
+  commits_above_base=$(git -C "${cwd}" rev-list --count HEAD ^origin/main 2>/dev/null) || commits_above_base=0
+
+  if [[ "${commits_above_base}" -eq 0 ]]; then
+    echo "no commits above origin/main; not reporting done" >&2
+    exit 1
+  fi
+
+  [[ -n "${agent_id}" ]] || die "--agent-id required"
+  [[ -n "${messenger_url}" ]] || die "MESSENGER_CORE_URL not set (or pass --messenger-core-url)"
+
+  local token
+  token=$(
+    local payload_json; payload_json=$(printf '{"sub":"worker","login":"worker","displayName":"Worker Service","exp":%d}' "$(( $(date +%s) + 86400 ))")
+    local payload; payload=$(printf '%s' "${payload_json}" | base64 -w0 | tr '+/' '-_' | tr -d '=')
+    local sig; sig=$(printf '%s' "${payload}" | openssl dgst -sha256 -hmac "${auth_secret}" -binary | base64 -w0 | tr '+/' '-_' | tr -d '=')
+    printf '%s.%s' "${payload}" "${sig}"
+  )
+
+  local body
+  body=$(printf '{"slug":%s,"commitSha":%s,"branch":%s,"commitsAboveBase":%d,"gates":{}}' \
+    "$(printf '%s' "${slug}"        | jq -Rs .)" \
+    "$(printf '%s' "${commit_sha}"  | jq -Rs .)" \
+    "$(printf '%s' "${branch}"      | jq -Rs .)" \
+    "${commits_above_base}")
+
+  local attempt=1 max_attempts=3 delay=2
+  while [[ "${attempt}" -le "${max_attempts}" ]]; do
+    local http_resp http_body http_code
+    http_resp=$(curl -sS -w '\n%{http_code}' -X POST \
+      -H "Authorization: Bearer ${token}" \
+      -H 'Content-Type: application/json' \
+      -d "${body}" \
+      "${messenger_url%/}/agents/${agent_id}/task-complete" 2>&1) || http_resp="\n000"
+    http_code=$(printf '%s' "${http_resp}" | tail -n1)
+    http_body=$(printf '%s' "${http_resp}" | head -n-1)
+
+    if [[ "${http_code}" =~ ^2 ]]; then
+      echo "[report-done] slug=${slug} sha=${commit_sha} branch=${branch} commits=${commits_above_base}"
+      echo "[report-done] response: ${http_body}"
+      return 0
+    fi
+
+    echo "[report-done] attempt ${attempt}/${max_attempts} HTTP ${http_code}: ${http_body}" >&2
+    if [[ "${attempt}" -lt "${max_attempts}" ]]; then
+      sleep "${delay}"
+      delay=$(( delay * 2 ))
+    fi
+    (( attempt++ )) || true
+  done
+
+  echo "[report-done] all ${max_attempts} attempts failed" >&2
+  exit 2
+}
+
 # --- help ---
 cmd_help() { sed -n '2,42p' "$0"; }
 
@@ -560,6 +649,7 @@ case "${cmd}" in
   doctor) cmd_doctor "$@";;
   set-model) cmd_set_model "$@";;
   set-effort) cmd_set_effort "$@";;
+  report-done) cmd_report_done "$@";;
   help|-h|--help) cmd_help;;
   *) die "unknown command: ${cmd}. See --help";;
 esac

@@ -18,6 +18,7 @@ import {
   messengerAgents,
   messengerCliSessions,
   messengerAgentRuns,
+  messengerAgentTaskCompletions,
   eq,
   and,
   isNull,
@@ -69,6 +70,17 @@ const cliSessionBody = z.object({
   claudeSessionUuid: z.string(),
   logPath: z.string(),
   runId: z.string().uuid().optional(),
+})
+
+const taskCompleteBody = z.object({
+  slug: z.string().min(1),
+  commitSha: z.string().regex(/^[0-9a-f]{40}$/, 'commitSha must be a 40-char hex string'),
+  branch: z.string().min(1),
+  commitsAboveBase: z.number().int().nonnegative(),
+  gates: z.record(z.object({
+    status: z.enum(['pass', 'fail']),
+    detail: z.string().optional(),
+  })).default({}),
 })
 
 // --- route registration ---
@@ -312,6 +324,45 @@ export function registerOrchestrationRoutes(
           agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
         })),
       }
+    },
+  )
+
+  // POST /agents/:agentId/task-complete — worker self-reports completion
+  app.post<{ Params: { agentId: string } }>(
+    '/agents/:agentId/task-complete',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+
+      const { agentId } = request.params
+      const [agent] = await db
+        .select({ id: messengerAgents.id })
+        .from(messengerAgents)
+        .where(and(eq(messengerAgents.id, agentId), isNull(messengerAgents.deletedAt)))
+        .limit(1)
+      if (!agent) return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
+
+      const parsed = taskCompleteBody.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'INVALID_PAYLOAD', issues: parsed.error.issues })
+      }
+
+      const { slug, commitSha, branch, commitsAboveBase, gates } = parsed.data
+
+      const [session] = await db
+        .select({ id: messengerCliSessions.id })
+        .from(messengerCliSessions)
+        .where(and(eq(messengerCliSessions.slug, slug), isNull(messengerCliSessions.deletedAt)))
+        .limit(1)
+      if (!session) return reply.code(400).send({ error: 'SLUG_NOT_FOUND' })
+
+      const [inserted] = await db
+        .insert(messengerAgentTaskCompletions)
+        .values({ agentId, slug, commitSha, branch, commitsAboveBase, gates })
+        .returning()
+
+      return reply.code(201).send(inserted)
     },
   )
 
