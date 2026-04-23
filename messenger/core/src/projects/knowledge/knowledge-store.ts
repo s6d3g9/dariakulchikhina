@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 // eslint-disable-next-line no-restricted-imports
 import postgres from 'postgres'
 // eslint-disable-next-line no-restricted-imports
-import { messengerProjectKnowledgeChunks } from '../../../../../../server/db/schema/messenger-project-knowledge.ts'
+import { messengerProjectKnowledgeChunks } from '../../../../../server/db/schema/messenger-project-knowledge.ts'
 // eslint-disable-next-line no-restricted-imports
 import { eq, and, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'

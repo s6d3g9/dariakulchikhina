@@ -1,0 +1,128 @@
+version: "1.1"
+
+accounts:
+  - id: daria-admin
+    provider: anthropic
+    label: "Daria Admin Account"
+    envKey: CLAUDE_API_KEY
+
+subsystems:
+  - id: messenger-core
+    label: "Messenger Core (Fastify/WS)"
+    process: messenger-core
+    port: 4300
+    envVars:
+      - MESSENGER_CORE_AUTH_SECRET
+      - MESSENGER_CORE_DATABASE_URL
+    stateFiles:
+      - messenger/core/node_modules/.package-lock.json
+
+  - id: messenger-web
+    label: "Messenger Web (Nuxt)"
+    process: messenger-web
+    port: 4301
+
+  - id: main-nuxt
+    label: "Main Nuxt App"
+    process: nuxt
+    port: 3000
+    envVars:
+      - DATABASE_URL
+
+  - id: communications-service
+    label: "Communications Service (E2EE)"
+    process: communications-service
+    port: 4310
+
+connections:
+  - from: messenger-core
+    to: main-nuxt
+    protocol: rest
+    description: "Ticket-based WS auth + REST API calls"
+
+  - from: messenger-web
+    to: messenger-core
+    protocol: websocket
+    description: "Realtime chat, agent streams"
+
+todos:
+  - id: manifest-ui
+    title: "Integrations manifest UI page"
+    status: pending
+    taskRef: T4.2
+
+  - id: strict-mode
+    title: "Fail-on-drift strict mode flag"
+    status: pending
+    taskRef: T4.3
+
+agents:
+  - id: composer
+    label: "Composer"
+    model: claude-sonnet-4-6
+    skillBundle: composer
+
+  - id: orchestrator
+    label: "Orchestrator"
+    model: claude-sonnet-4-6
+    skillBundle: orchestrator
+
+models:
+  - id: claude-sonnet-4-6
+    provider: anthropic
+    displayName: "Claude Sonnet 4.6"
+    envKey: CLAUDE_API_KEY
+
+  - id: claude-haiku-4-5
+    provider: anthropic
+    displayName: "Claude Haiku 4.5"
+    envKey: CLAUDE_API_KEY
+
+services:
+  - id: postgres
+    label: "PostgreSQL 16 (pgvector)"
+    host: localhost
+    port: 5433
+    envVars:
+      - DATABASE_URL
+
+  - id: redis
+    label: "Redis 7 (dev)"
+    host: localhost
+    port: 6380
+
+tools:
+  - id: claude-session
+    label: "Claude Session CLI Dispatcher"
+    binaryPath: "~/bin/claude-session"
+    stateFiles:
+      - "~/state/claude-sessions"
+
+storage:
+  - id: uploads
+    label: "Messenger media uploads"
+    envKey: MESSENGER_CORE_DATA_DIR
+    description: "Local filesystem; path resolved from MESSENGER_CORE_DATA_DIR"
+
+webhooks:
+  - id: agent-ingest
+    label: "Agent run event ingest"
+    endpoint: /agents/:id/ingest
+    auth: bearer-token
+
+monitoring:
+  - id: health
+    label: "Messenger Core health"
+    endpoint: /health
+    interval: 30s
+
+permissions:
+  - id: user-scope
+    label: "Authenticated user"
+    description: "Can read manifest, conversations, contacts, projects"
+
+deployment:
+  - id: pm2-messenger-core
+    label: "PM2 messenger-core process"
+    stateFiles:
+      - logs/messenger-core.log
