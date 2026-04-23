@@ -35,6 +35,8 @@ import { readMessengerConfig } from '../config.ts'
 import { registerIngestRoutes } from '../agents/ingest-handler.ts'
 import { registerManifestRoutes } from '../integrations/manifest-handler.ts'
 import { registerOrchestrationRoutes } from '../agents/orchestration-handler.ts'
+import { startAutoArchive } from '../agents/auto-archive-sessions.ts'
+import { useIngestDb } from '../agents/ingest-db.ts'
 import { registerProjectsRoutes } from '../projects/projects-handler.ts'
 import { registerProjectKnowledgeRoutes } from '../projects/knowledge/knowledge-handler.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from '../media/media-store.ts'
@@ -3387,6 +3389,8 @@ export async function createMessengerServer() {
   registerProjectsRoutes(app, broadcastToChannel)
   registerProjectKnowledgeRoutes(app)
   registerManifestRoutes(app)
+
+  startAutoArchive(useIngestDb(), app.log)
 
   return app
 }
