@@ -4,6 +4,7 @@ import { callMessengerAgentModel, isMessengerAgentLlmConfigured, type MessengerA
 import { callClaudeSessionReply } from './claude-cli-reply.ts'
 import { routeAgentReply } from './subscription-router.ts'
 import { useIngestDb, messengerAgents, eq, and, isNull } from './ingest-db.ts'
+import { AGENT_TEMPLATES, getAgentTemplate } from './agent-templates.ts'
 
 export interface MessengerAgentRecord {
   id: string

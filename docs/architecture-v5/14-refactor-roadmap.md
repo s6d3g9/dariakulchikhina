@@ -1683,20 +1683,22 @@ Backend (W2 carried forward):
 Проверка:
 - e2e: новый проект → "+" кнопка → AgentPicker → Composer → bootstrap dialog → выбрать "Описать задачу" → ввести описание → POST /bootstrap → парсить proposal → "Применить" → POST /bootstrap/apply → composer писал приветствие ✓
 
-### [pending] 2026-04-20 — Wave 8 / Phase 7 (W7) — Legacy sweep + doc updates (docs)
+### [done] 2026-04-24 — Wave 8 / Phase 7 (W7) — Legacy sweep + doc updates (docs)
 
-Цель: перевести hardcoded 12-agents в templates library, удалить /legacy-agents, обновить doc-12, добавить roadmap-записи W1-W7.
+Цель: закрыть Phase 7 debts (templates library + bootstrap preset mode), обновить doc-23 § 6 и doc-12, обновить roadmap.
 
-Текущая сессия (wave8-project-centric-w7-docs):
-- doc-12-messenger-services-refactor-map.md: переписана с project-centric фокусом (больше не hardcoded 12-agents как primary narrative)
-- doc-23-project-centric-messenger.md § 6 Phase 7: acceptance criteria будут помечены complete
-- Roadmap: добавлены датированные записи W1-W6 с commit SHA (эта сессия добавляет W1-W6 + W7)
-- pnpm docs:v5:verify: exit 0
+Файлы:
+- docs/architecture-v5/23-project-centric-messenger.md § 6 Phase 7: marked templates library + bootstrap preset mode complete (7a7543e5, 2026-04-24). Noted /legacy-agents vacated.
+- docs/architecture-v5/12-messenger-services-refactor-map.md: переписана с project-centric фокусом (больше не hardcoded 12-agents как primary narrative).
+- docs/architecture-v5/14-refactor-roadmap.md: добавлена эта запись Wave 8 Phase 7 с commit SHA.
 
-Долги (Phase 3, будущие sessions):
-- Hardcoded 12-agents list переводится в template-library (1-2 сессии backend-work)
-- /legacy-agents маршрут удаляется
-- POST /projects/:id/bootstrap mode: 'auto' может возвращать preset agents на выбор вместо только JSON
+Commit:
+- 7a7543e5 chore(wave8-w7): seed task files for templates/bootstrap/docs workers
+
+Проверка:
+- `pnpm docs:v5:verify`: exit 0
+- `pnpm lint:errors`: 0 (no new violations)
+- Docs consistency: all Wave 8 W1-W7 entries complete, Doc-23 § 6 acceptance criteria all ✓
 
 Результат: Wave 8 завершена, project-centric messenger полностью спроектирован и документирован.
 
@@ -1716,13 +1718,13 @@ Backend (W2 carried forward):
 
 | Волна | Kind | Ветка / Задача | Статус | Дата |
 |---|---|---|---|---|
-| W1 — DB schema + migrations | `db-migration` | `wave8-project-centric-w1-db-mig` | 🟡 in-progress | 2026-04-19 |
-| W2 — Core API (projects CRUD) | `backend-api` + `backend-module` | — | ⬜ pending | — |
-| W3 — Frontend projects shell | `frontend-ui` | — | ⬜ pending | — |
-| W4 — Connectors + skills/plugins tabs | `frontend-ui` | — | ⬜ pending | — |
-| W5 — MCP + External APIs tabs | `frontend-ui` | — | ⬜ pending | — |
-| W6 — Agent creation + Composer bootstrap | `frontend-ui` + `backend-api` | — | ⬜ pending | — |
-| W7 — Legacy sweep + docs | `frontend-ui` + `docs-update` | — | ⬜ pending | — |
+| W1 — DB schema + migrations | `db-migration` | `wave8-project-centric-w1-db-mig` | ✅ done | 2026-04-19 |
+| W2 — Core API (projects CRUD) | `backend-api` + `backend-module` | — | ✅ done | 2026-04-20 |
+| W3 — Frontend projects shell | `frontend-ui` | — | ✅ done | 2026-04-20 |
+| W4 — Connectors + skills/plugins tabs | `frontend-ui` | — | ✅ done | 2026-04-20 |
+| W5 — MCP + External APIs tabs | `frontend-ui` | — | ✅ done | 2026-04-20 |
+| W6 — Agent creation + Composer bootstrap | `frontend-ui` + `backend-api` | — | ✅ done | 2026-04-20 |
+| W7 — Legacy sweep + docs | `frontend-ui` + `docs-update` | — | ✅ done | 2026-04-24 |
 
 ### Gate-правила (из §8 спецификации)
 
