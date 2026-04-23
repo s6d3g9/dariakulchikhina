@@ -15,6 +15,7 @@ import type { AgentSubstate } from '../../entities/agents/model/useMessengerAgen
 import AgentRunTree from '../../features/agent-run-tree/ui/AgentRunTree.vue'
 import { SUBSCRIPTION_PROVIDERS } from '../../entities/settings/model/useMessengerSubscriptions'
 import type { MessengerSubscriptionModel } from '../../entities/settings/model/useMessengerSubscriptions'
+import { useConversationsApi } from '../../core/api/conversations'
 
 type AgentWorkspaceSectionKey = 'overview' | 'settings' | 'knowledge' | 'links' | 'runs' | 'graph' | 'explorer'
 
@@ -32,6 +33,8 @@ const emit = defineEmits<{
 
 const navigation = useMessengerConversationState()
 const agentsModel = useMessengerAgents()
+const conversationsModel = useMessengerConversations()
+const conversationsApi = useConversationsApi()
 const subscriptionsModel = useMessengerSubscriptions()
 const runtime = useMessengerAgentRuntime()
 const runsModel = useMessengerAgentRuns()
@@ -180,6 +183,7 @@ const showEffortSelector = computed(() =>
 )
 const normalizedLogin = computed(() => props.agentLogin.replace(/^@/, '').trim())
 const resolvedAgent = computed<MessengerAgentItem | null>(() => agentsModel.agents.value.find(item => item.id === props.agentId || item.login === normalizedLogin.value) ?? null)
+const currentConversation = computed(() => conversationsModel.conversations.value.find(c => c.id === props.conversationId) ?? null)
 const runtimeState = computed(() => {
   const agent = resolvedAgent.value
   if (!agent) {
@@ -423,7 +427,7 @@ function serializeKnowledgeSources(sources: MessengerAgentKnowledgeSource[]) {
 
 function syncSettingsDraft() {
   settingsDraft.subscriptionId = resolvedAgent.value?.settings.subscriptionId || 'builtin-claude-code-cli'
-  settingsDraft.model = resolvedAgent.value?.settings.model || 'claude-sonnet-4-6'
+  settingsDraft.model = currentConversation.value?.policy?.model || resolvedAgent.value?.settings.model || 'claude-sonnet-4-6'
   settingsDraft.effort = (resolvedAgent.value?.settings.effort as any) || 'medium'
   settingsDraft.apiKey = resolvedAgent.value?.settings.apiKey || ''
   settingsDraft.ssh.host = resolvedAgent.value?.settings.ssh.host || ''
@@ -454,6 +458,7 @@ watch(() => resolvedAgent.value?.id, () => {
 }, { immediate: true })
 
 watch(() => props.conversationId, () => {
+  settingsDraft.model = currentConversation.value?.policy?.model || resolvedAgent.value?.settings.model || 'claude-sonnet-4-6'
   activeSection.value = 'overview'
   searchDraft.value = ''
   searchOpen.value = false
@@ -633,6 +638,10 @@ async function handleSubscriptionChange(value: string) {
 
 async function handleModelChange(value: string) {
   settingsDraft.model = value
+  if (props.conversationId) {
+    await conversationsApi.patchConversation(props.conversationId, { model: value })
+    return
+  }
   if (!resolvedAgent.value || resolvedAgent.value.settings.model === value) return
   await saveSettings(currentPayload())
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MessengerConversationMessage } from '../../../entities/conversations/model/useMessengerConversations'
+import MessengerMessageReasoningPlate from './MessengerMessageReasoningPlate.vue'
 
 export interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -346,6 +347,11 @@ onBeforeUnmount(() => {
     </div>
     <div v-else class="message-bubble__content">
       <p class="message-bubble__text">{{ entry.body }}</p>
+      <MessengerMessageReasoningPlate
+        v-if="entry.agentId && entry.runId"
+        :agent-id="entry.agentId"
+        :run-id="entry.runId"
+      />
       <div class="message-bubble__meta-row">
         <span class="message-bubble__time message-bubble__time--sent">{{ sentTime }}</span>
         <span v-if="metaStatus" class="message-bubble__status">{{ metaStatus }}</span>
