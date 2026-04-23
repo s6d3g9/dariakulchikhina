@@ -17,6 +17,7 @@ import websocket from '@fastify/websocket'
 import { z } from 'zod'
 
 import { getMessengerAgentSettings, resolveMessengerAgentWorkspacePath, updateMessengerAgentGraph, updateMessengerAgentSettings } from '../agents/agent-settings-store.ts'
+import { listAgentTemplates } from '../agents/agent-templates.ts'
 import { getMessengerAgentKnowledgeStatus, reindexMessengerAgentKnowledge } from '../agents/agent-knowledge-store.ts'
 import { getMessengerAgentKnowledgePreset } from '../agents/agent-knowledge-presets.ts'
 import { isMessengerAgentLlmConfigured } from '../agents/agent-llm.ts'
@@ -515,7 +516,8 @@ export async function createMessengerServer() {
     agreements: z.array(projectAgreementSchema).max(128).default([]),
   })
   const projectBootstrapSchema = z.object({
-    templateId: z.string().trim().min(1).max(160),
+    mode: z.enum(['preset', 'template']).optional(),
+    templateId: z.string().trim().min(1).max(160).optional(),
     slug: z.string().trim().min(1).max(160).optional(),
     label: z.string().trim().min(1).max(160).optional(),
     description: z.string().trim().max(4000).optional(),
@@ -945,13 +947,22 @@ export async function createMessengerServer() {
       return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
     }
 
-    const projectDraft = buildMessengerProjectFromTemplate(parsedBody.data.templateId, {
-      slug: parsedBody.data.slug,
-      label: parsedBody.data.label,
-      description: parsedBody.data.description,
-      repositoryId: parsedBody.data.repositoryId,
-      rootPath: parsedBody.data.rootPath,
-      defaultBranch: parsedBody.data.defaultBranch,
+    if (parsedBody.data.mode === 'preset') {
+      return reply.code(200).send({ ok: true, mode: 'preset', templates: listAgentTemplates() })
+    }
+
+    const { templateId, slug, label, description, repositoryId, rootPath, defaultBranch } = parsedBody.data
+    if (!templateId) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const projectDraft = buildMessengerProjectFromTemplate(templateId, {
+      slug,
+      label,
+      description,
+      repositoryId,
+      rootPath,
+      defaultBranch,
     })
     if (!projectDraft) {
       return reply.code(404).send({ error: 'TEMPLATE_NOT_FOUND' })
