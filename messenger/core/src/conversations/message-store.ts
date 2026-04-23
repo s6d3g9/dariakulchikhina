@@ -74,8 +74,8 @@ export function rowToMessengerMessageRecord(row: StoredMessageRow) {
       ? { body: row.ciphertext.toString('utf8'), kind: 'text' as const }
       : deserializePayload(row.ciphertext)
 
-  const agentId = !row.deletedAt && (deserializePayload(row.ciphertext) as MessagePayload).agentId
-  const effectiveSenderId = (agentId as string | undefined) ?? row.senderUserId ?? ''
+  const agentId = row.deletedAt ? undefined : (payload as MessagePayload).agentId
+  const effectiveSenderId = agentId ?? row.senderUserId ?? ''
 
   return {
     id: row.id,
