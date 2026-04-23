@@ -64,6 +64,7 @@ export interface MessengerAgentSettings {
 
 export interface MessengerAgentItem {
   id: string
+  projectId: string | null
   login: string
   displayName: string
   description: string

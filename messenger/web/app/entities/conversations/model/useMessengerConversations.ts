@@ -7,6 +7,7 @@ interface MessengerConversationPolicy {
   callsSecurityMode: 'webrtc-only' | 'beta-e2ee'
   allowForwardOut: boolean
   hideListPreview: boolean
+  model?: string
 }
 
 export interface MessengerConversationItem {
@@ -114,6 +115,8 @@ export interface MessengerConversationMessage {
   replyTo?: MessengerMessageRelationPreview
   commentOn?: MessengerMessageRelationPreview
   forwardedFrom?: MessengerForwardedMessagePreview
+  runId?: string
+  agentId?: string
 }
 
 function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: string; size: number; url: string } }>(

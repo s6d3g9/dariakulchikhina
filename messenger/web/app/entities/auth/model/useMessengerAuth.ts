@@ -174,13 +174,26 @@ export function useMessengerAuth() {
   async function login(payload: { login: string; password: string }) {
     const response = await authLogin(payload)
     acceptAuth(response)
-    await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
+    try {
+      await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
+    } catch (err) {
+      // Device-identity crypto requires a secure context (HTTPS or localhost).
+      // On plain HTTP deployments window.crypto.subtle is undefined and this
+      // throws "Cannot read properties of undefined". CLI-agent chats bypass
+      // e2e encryption (per fix-ws-stream merge), so the user can still use
+      // the messenger; only user-to-user encrypted chats will degrade.
+      console.warn("[auth] device-identity setup failed, continuing without crypto:", err)
+    }
   }
 
   async function register(payload: { login: string; password: string; displayName: string }) {
     const response = await authRegister(payload)
     acceptAuth(response)
-    await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
+    try {
+      await useMessengerCrypto().ensureDeviceIdentity(response.user.id)
+    } catch (err) {
+      console.warn("[auth] device-identity setup failed, continuing without crypto:", err)
+    }
   }
 
   function logout() {

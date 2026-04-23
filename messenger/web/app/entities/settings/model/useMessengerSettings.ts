@@ -369,6 +369,7 @@ export function useMessengerSettings() {
   const aiSettingsReady = useState<boolean>('messenger-ai-settings-ready', () => false)
   const aiSettingsPending = useState<boolean>('messenger-ai-settings-pending', () => false)
   const aiSettingsError = useState<string>('messenger-ai-settings-error', () => '')
+  const aiLastPersistedPayload = useState<string | null>('messenger-ai-last-persisted', () => null)
   const ready = useState<boolean>('messenger-settings-ready', () => false)
   const systemPrefersDark = useState<boolean>('messenger-settings-system-prefers-dark', () => false)
   const activeSection = useState<MessengerSettingsSectionKey>('messenger-settings-section', () => 'profile')
@@ -635,6 +636,7 @@ export function useMessengerSettings() {
         transcriptionApi: Boolean(response.configured?.transcriptionApi),
       }
       normalizeAiProviderSelections()
+      aiLastPersistedPayload.value = JSON.stringify(mergeMessengerAiSettings(aiSettings.value))
       aiSettingsReady.value = true
     } catch {
       aiSettingsError.value = 'Не удалось загрузить настройки транскрибации и API-разбора.'
@@ -648,11 +650,17 @@ export function useMessengerSettings() {
       return
     }
 
+    const payload = mergeMessengerAiSettings(aiSettings.value)
+    const payloadKey = JSON.stringify(payload)
+    if (aiLastPersistedPayload.value === payloadKey) {
+      return
+    }
+
     aiSettingsPending.value = true
     aiSettingsError.value = ''
 
     try {
-      const response = await putAiSettings(mergeMessengerAiSettings(aiSettings.value))
+      const response = await putAiSettings(payload)
 
       aiSettings.value = mergeMessengerAiSettings(response.settings)
       aiModelOptions.value = mergeMessengerAiModelOptions(response.modelOptions)
@@ -663,6 +671,7 @@ export function useMessengerSettings() {
         transcriptionApi: Boolean(response.configured?.transcriptionApi),
       }
       normalizeAiProviderSelections()
+      aiLastPersistedPayload.value = JSON.stringify(mergeMessengerAiSettings(aiSettings.value))
       aiSettingsReady.value = true
     } catch {
       aiSettingsError.value = 'Не удалось сохранить настройки транскрибации и API-разбора.'
