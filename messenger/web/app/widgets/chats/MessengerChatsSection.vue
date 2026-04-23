@@ -893,6 +893,18 @@ async function openAgentFromGallery(agentId: string) {
   }
 }
 
+function resolveParentLabel(session: MessengerCliSession): string {
+  if (!session.parentRunId) return ''
+  if (session.parentAgentId) {
+    const parentAgent = agentMap.value.get(session.parentAgentId)
+    if (parentAgent?.displayName) return parentAgent.displayName
+    const parentSession = cliSessions.sessionForAgent(session.parentAgentId)
+    if (parentSession?.agentDisplayName) return parentSession.agentDisplayName
+    if (parentSession?.slug) return parentSession.slug
+  }
+  return session.parentRunId.slice(-6)
+}
+
 async function openCliSession(agentId: string | null) {
   if (!agentId) return
   try {
@@ -1450,6 +1462,18 @@ function formatChatPreview(chat: MessengerConversationItem) {
                     <span class="cli-session-card__name">{{ session.agentDisplayName || session.slug }}</span>
                     <span class="cli-session-card__kind">{{ getSessionKindMeta(session.kind).label }}</span>
                     <VChip v-if="session.workroom" size="x-small" variant="text" class="cli-session-card__wr">{{ session.workroom }}</VChip>
+                    <span v-if="session.parentRunId" class="cli-session-card__parent">↳ from {{ resolveParentLabel(session) }}</span>
+                    <VChip
+                      v-if="session.finishedAt"
+                      size="x-small"
+                      :color="session.runError ? 'error' : 'success'"
+                      variant="tonal"
+                      :title="(session.runError || session.runResult || '').slice(0, 240)"
+                    >{{ session.runError ? 'Error' : 'OK' }}</VChip>
+                    <span v-if="session.taskCompletionCount && session.taskCompletionCount > 0" class="cli-session-card__tasks">
+                      <VIcon size="12">mdi-source-commit</VIcon>
+                      {{ session.taskCompletionCount }}<template v-if="session.taskCompletionToday && session.taskCompletionToday > 0"> (+{{ session.taskCompletionToday }} today)</template>
+                    </span>
                   </div>
                   <div class="cli-session-card__state">
                     <span class="cli-session-card__substate">{{ sessionSubstateLabel(session) }}</span>

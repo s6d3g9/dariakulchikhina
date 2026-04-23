@@ -20,6 +20,15 @@ export interface MessengerCliSession {
   tokenInTotal: number
   tokenOutTotal: number
   costUsd: number
+  parentRunId: string | null
+  parentAgentId: string | null
+  rootRunId: string | null
+  childRunCount: number | null
+  finishedAt: string | null
+  runResult: string | null
+  runError: string | null
+  taskCompletionCount: number | null
+  taskCompletionToday: number | null
 }
 
 export const SESSION_KIND_META: Record<string, { label: string; icon: string; color: string; tier: number }> = {

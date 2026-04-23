@@ -21,12 +21,14 @@ import {
   messengerAgents,
   messengerCliSessions,
   messengerAgentRuns,
+  messengerAgentTaskCompletions,
   eq,
   and,
   isNull,
   or,
   desc,
   sql,
+  inArray,
 } from './ingest-db.ts'
 
 const execFile = promisify(_execFile)
@@ -540,10 +542,89 @@ export function registerOrchestrationRoutes(
       const ACTIVITY_WINDOW_MS = 3 * 60_000
       const NEW_SESSION_GRACE_MS = 2 * 60_000
       const now = Date.now()
+
+      // Signals 1/2/3 from clicore-integ: spawn tree, finish outcome, task completions.
+      // Keyed by agentId; reuses linkedAgentIds from activity enrichment above.
+      type LatestRunInfo = {
+        agentId: string
+        runId: string
+        parentRunId: string | null
+        spawnedByAgentId: string | null
+        rootRunId: string | null
+        finishedAt: Date | null
+        result: string | null
+        error: string | null
+      }
+      const latestRunByAgent = new Map<string, LatestRunInfo>()
+      const childCountByRunId = new Map<string, number>()
+      const taskCountByAgent = new Map<string, { total: number; today: number }>()
+
+      if (linkedAgentIds.length > 0) {
+        try {
+          const latestRuns = await db
+            .selectDistinctOn([messengerAgentRuns.agentId], {
+              agentId: messengerAgentRuns.agentId,
+              runId: messengerAgentRuns.id,
+              parentRunId: messengerAgentRuns.parentRunId,
+              spawnedByAgentId: messengerAgentRuns.spawnedByAgentId,
+              rootRunId: messengerAgentRuns.rootRunId,
+              finishedAt: messengerAgentRuns.finishedAt,
+              result: sql<string | null>`LEFT(${messengerAgentRuns.result}, 240)`,
+              error: sql<string | null>`LEFT(${messengerAgentRuns.error}, 240)`,
+            })
+            .from(messengerAgentRuns)
+            .where(and(inArray(messengerAgentRuns.agentId, linkedAgentIds), isNull(messengerAgentRuns.deletedAt)))
+            .orderBy(messengerAgentRuns.agentId, desc(messengerAgentRuns.createdAt))
+
+          for (const row of latestRuns) {
+            if (row.agentId) latestRunByAgent.set(row.agentId, row as LatestRunInfo)
+          }
+        }
+        catch {}
+
+        const latestRunIds = [...latestRunByAgent.values()].map(r => r.runId)
+        if (latestRunIds.length > 0) {
+          try {
+            const childCounts = await db
+              .select({
+                parentRunId: messengerAgentRuns.parentRunId,
+                childCount: sql<number>`cast(count(*) as int)`,
+              })
+              .from(messengerAgentRuns)
+              .where(and(inArray(messengerAgentRuns.parentRunId, latestRunIds), isNull(messengerAgentRuns.deletedAt)))
+              .groupBy(messengerAgentRuns.parentRunId)
+
+            for (const row of childCounts) {
+              if (row.parentRunId) childCountByRunId.set(row.parentRunId, row.childCount)
+            }
+          }
+          catch {}
+        }
+
+        try {
+          const taskCounts = await db
+            .select({
+              agentId: messengerAgentTaskCompletions.agentId,
+              total: sql<number>`cast(count(*) as int)`,
+              today: sql<number>`cast(count(*) filter (where ${messengerAgentTaskCompletions.createdAt} >= date_trunc('day', now() at time zone 'UTC')) as int)`,
+            })
+            .from(messengerAgentTaskCompletions)
+            .where(inArray(messengerAgentTaskCompletions.agentId, linkedAgentIds))
+            .groupBy(messengerAgentTaskCompletions.agentId)
+
+          for (const row of taskCounts) {
+            taskCountByAgent.set(row.agentId, { total: row.total, today: row.today })
+          }
+        }
+        catch {}
+      }
+
       return {
         sessions: sessions.map(s => {
           const agentId = agentBySlug.get(s.slug)?.id ?? null
           const activity = agentId ? activityByAgent.get(agentId) ?? null : null
+          const run = agentId ? latestRunByAgent.get(agentId) : undefined
+          const taskCounts = agentId ? taskCountByAgent.get(agentId) : undefined
           const tmuxDead = liveTmuxWindows.size > 0 && !liveTmuxWindows.has(s.window)
           const dbStopped = stoppedSlugs.has(s.slug)
           let computedStatus: 'running' | 'done' = s.status
@@ -582,6 +663,18 @@ export function registerOrchestrationRoutes(
             tokenInTotal: activity?.tokenInTotal ?? 0,
             tokenOutTotal: activity?.tokenOutTotal ?? 0,
             costUsd: activity?.costUsd ?? 0,
+            // Signal 1 — spawn tree
+            parentRunId: run?.parentRunId ?? null,
+            parentAgentId: run?.spawnedByAgentId ?? null,
+            rootRunId: run?.rootRunId ?? null,
+            childRunCount: run != null ? (childCountByRunId.get(run.runId) ?? 0) : null,
+            // Signal 2 — final outcome (null while run is active)
+            finishedAt: run?.finishedAt ?? null,
+            runResult: (run?.finishedAt != null ? run.result : null) ?? null,
+            runError: (run?.finishedAt != null ? run.error : null) ?? null,
+            // Signal 3 — task completion
+            taskCompletionCount: taskCounts?.total ?? null,
+            taskCompletionToday: taskCounts?.today ?? null,
           }
         }),
       }
