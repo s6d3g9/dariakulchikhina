@@ -48,6 +48,10 @@ export function useConversationsApi() {
     })
   }
 
+  function patchConversation(conversationId: string, body: { model?: string }) {
+    return auth.request(`/conversations/${conversationId}`, { method: 'PATCH', body })
+  }
+
   function deleteConversation(conversationId: string) {
     return auth.request(`/conversations/${conversationId}`, { method: 'DELETE' })
   }
@@ -86,6 +90,7 @@ export function useConversationsApi() {
     createAgentConversation,
     getMessages,
     postMessage,
+    patchConversation,
     deleteConversation,
     uploadAttachment,
     patchMessage,

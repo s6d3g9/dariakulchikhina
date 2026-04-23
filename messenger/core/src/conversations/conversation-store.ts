@@ -68,6 +68,7 @@ export interface MessengerConversationPolicy {
   callsSecurityMode: 'webrtc-only' | 'beta-e2ee'
   allowForwardOut: boolean
   hideListPreview: boolean
+  model?: string
 }
 
 export interface MessengerConversationRecord {
@@ -193,6 +194,8 @@ export interface ConversationMessageOverviewItem {
     senderDisplayName: string
     attachment?: { name: string; mimeType: string; size: number; url: string; encryptedFile?: MessengerEncryptedBinaryPayload }
   }
+  runId?: string
+  agentId?: string
 }
 
 type ConvPolicyRow = MessengerConversationPolicy & {
@@ -565,6 +568,8 @@ export async function listMessagesForConversation(conversationId: string, actor:
           attachment: commentOn.deletedAt ? undefined : commentOn.attachment,
         } : undefined,
         forwardedFrom: message.forwardedFrom,
+        runId: (message as unknown as { runId?: string }).runId,
+        agentId: (message as unknown as { agentId?: string }).agentId,
       } satisfies ConversationMessageOverviewItem
     }),
   )
@@ -629,16 +634,21 @@ export async function addAgentMessageToConversation(
   conversationId: string,
   agent: MessengerAgentRecord,
   body: string,
-  options?: { plaintext?: boolean },
+  options?: { plaintext?: boolean; runId?: string },
 ): Promise<MessengerMessageRecord> {
   const conversation = await findConversationById(conversationId)
   if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  // rowToConversationRecord pulls policy._agentId into userBId and strips it
+  // from policy, so the agent identity lives in userBId for kind='agent'.
   if (conversation.kind !== 'agent' || conversation.userBId !== agent.id) throw new Error('CONVERSATION_FORBIDDEN')
+
+  const payload: Record<string, unknown> = { body: body.trim(), kind: 'text', agentId: agent.id }
+  if (options?.runId) payload.runId = options.runId
 
   const row = await insertMessage({
     conversationId,
     senderUserId: null,
-    payload: { body: body.trim(), kind: 'text', agentId: agent.id },
+    payload: payload as never,
     plaintext: options?.plaintext,
   })
   await updateConversationTimestamp(conversationId)
@@ -870,4 +880,19 @@ export async function saveConversationKeyPackages(
     .where(eq(messengerConversations.id, conversationId))
 
   return encryption
+}
+
+export async function updateConversationPolicyModel(conversationId: string, actor: MessengerUserRecord, model: string): Promise<void> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
+
+  const db = useMessengerDb()
+  const convRow = await db.select().from(messengerConversations).where(eq(messengerConversations.id, conversationId)).limit(1).then(rows => rows[0])
+  if (!convRow) throw new Error('CONVERSATION_NOT_FOUND')
+
+  const stored = (convRow.policy ?? {}) as ConvPolicyRow
+  await db.update(messengerConversations)
+    .set({ policy: { ...stored, model }, version: convRow.version + 1 })
+    .where(eq(messengerConversations.id, conversationId))
 }

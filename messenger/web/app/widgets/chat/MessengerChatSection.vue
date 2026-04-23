@@ -6,24 +6,13 @@ import type { ProjectActionExecutePayload, ProjectActionId } from '../../feature
 import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
 import { getSessionKindMeta } from '../../entities/sessions/model/useMessengerCliSessions'
 
-const MODEL_OPTIONS = [
-  { value: 'claude-opus-4-7', label: 'Opus 4.7' },
-  { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6' },
-  { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5' },
-  { value: 'opus', label: 'Opus (alias)' },
-]
-const EFFORT_OPTIONS = [
-  { value: 'low' },
-  { value: 'medium' },
-  { value: 'high' },
-]
-
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
 }
 
 const conversations = useMessengerConversations()
 const auth = useMessengerAuth()
+const agentsModel = useMessengerAgents()
 const cliSessionsModel = useMessengerCliSessions()
 const contacts = useMessengerContacts()
 const messengerCrypto = useMessengerCrypto()
@@ -106,8 +95,6 @@ const messageReactionOptions = ['👍', '❤️', '🔥', '😂', '👏', '😮'
 const securitySummary = ref<MessengerConversationSecuritySummary | null>(null)
 const securitySummaryPending = ref(false)
 const securitySummaryUpdatedAt = ref<string | null>(null)
-const killSessionPending = ref(false)
-const compactPending = ref(false)
 
 let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
 let composerResizeObserver: ResizeObserver | null = null
@@ -269,14 +256,66 @@ const activePeerAvatar = computed(() => {
 const activeConversationPolicy = computed(() => conversations.activeConversation.value?.policy ?? null)
 const activeConversationSecret = computed(() => Boolean(conversations.activeConversation.value?.secret))
 const activeConversationAgent = computed(() => conversations.activeConversation.value?.peerType === 'agent')
+const activeAgentProjectId = computed(() => {
+  if (!activeConversationAgent.value) return null
+  const agentId = conversations.activeConversation.value?.peerUserId
+  if (!agentId) return null
+  // agentsModel only holds global (non-project) agents — project agents are filtered out
+  // server-side. Use sessions data as the authoritative projectId source.
+  const fromSession = cliSessionsModel.sessions.value.find(s => s.agentId === agentId)?.agentProjectId
+  if (fromSession) return fromSession
+  return agentsModel.agents.value.find(a => a.id === agentId)?.projectId ?? null
+})
+
+const sessNavCollapsed = ref(true)
+
+const MODEL_OPTIONS = [
+  { label: 'Opus 4.7',   value: 'claude-opus-4-7',           icon: 'mdi-brain',   color: 'primary' },
+  { label: 'Sonnet 4.6', value: 'claude-sonnet-4-6',         icon: 'mdi-waveform', color: 'info' },
+  { label: 'Haiku 4.5',  value: 'claude-haiku-4-5-20251001', icon: 'mdi-feather', color: 'success' },
+] as const
+
+const modelMenuOpen = ref(false)
+const modelSetPending = ref(false)
+const modelSetError = ref('')
+
+const currentModelMeta = computed(() => {
+  const model = activeAgentSession.value?.model
+  return MODEL_OPTIONS.find(o => o.value === model) ?? MODEL_OPTIONS[1]
+})
+
+async function onModelSelect(model: string) {
+  const sess = activeAgentSession.value
+  if (!sess) return
+  modelSetPending.value = true
+  modelSetError.value = ''
+  try {
+    await cliSessionsModel.setModel(sess.slug, model)
+  }
+  catch {
+    modelSetError.value = 'Не удалось сменить модель'
+    setTimeout(() => { modelSetError.value = '' }, 3000)
+  }
+  finally {
+    modelSetPending.value = false
+  }
+}
+
+const projectScopedHierarchy = computed(() => {
+  const projectId = activeAgentProjectId.value
+  const activeAgentId = conversations.activeConversation.value?.peerUserId
+  if (!projectId && !activeAgentId) return cliSessionsModel.hierarchy.value
+  return cliSessionsModel.hierarchy.value.map(tier =>
+    tier.filter(s =>
+      !projectId || s.agentProjectId === projectId || s.agentId === activeAgentId,
+    ),
+  )
+})
 
 const chatSessNavVisible = computed(() =>
-  activeConversationAgent.value && cliSessionsModel.runningSessions.value.length > 0,
+  activeConversationAgent.value
+  && projectScopedHierarchy.value.some(tier => tier.length > 0),
 )
-// Global session hierarchy — all sessions across all projects.
-// Project scoping was removed because sessions without agentProjectId
-// were never visible, hiding most workers and orchestrators.
-const projectScopedHierarchy = computed(() => cliSessionsModel.hierarchy.value)
 
 const chatWorkerGroups = computed(() => {
   const workers = projectScopedHierarchy.value[2] ?? []
@@ -289,11 +328,13 @@ const chatWorkerGroups = computed(() => {
   return [...groups.entries()].map(([kind, sessions]) => ({ kind, sessions }))
 })
 
-const activeCliSession = computed(() => {
-  const peerId = conversations.activeConversation.value?.peerUserId
-  if (!peerId) return null
-  return cliSessionsModel.runningSessions.value.find(s => s.agentId === peerId) ?? null
-})
+// Returns the correct dot class: pulsing only when this agent is actively replying.
+function sessNavDotClass(sess: { status: string; agentId: string | null }) {
+  if (sess.status !== 'running') return 'sess-nav__dot--done'
+  const isActiveAgent = sess.agentId === conversations.activeConversation.value?.peerUserId
+  if (isActiveAgent && awaitingAgentReply.value) return 'sess-nav__dot--active'
+  return 'sess-nav__dot--running'
+}
 
 // Open the chat for a session-bound agent when its chip is clicked.
 async function onSessionChipClick(sess: { agentId: string | null }) {
@@ -1023,46 +1064,6 @@ function formatKlipyCategoryTag(query: string) {
     .toLowerCase()
 
   return normalized ? `#${normalized}` : '#klipy'
-}
-
-const activeAgentSession = computed(() => {
-  const agentId = conversations.activeConversation.value?.peerUserId
-  if (!agentId || !activeConversationAgent.value) return null
-  return cliSessionsModel.sessionForAgent(agentId)
-})
-
-const currentEffortMeta = computed(() => {
-  const effort = activeAgentSession.value?.effort || 'medium'
-  return EFFORT_OPTIONS.find(o => o.value === effort) ?? EFFORT_OPTIONS[1]
-})
-
-const currentModelMeta = computed(() => {
-  const model = activeAgentSession.value?.model || ''
-  return MODEL_OPTIONS.find(o => o.value === model) ?? { value: model, label: model }
-})
-
-async function onEffortSelect(effort: string) {
-  const session = activeAgentSession.value
-  if (!session || !['low', 'medium', 'high'].includes(effort)) return
-  try {
-    await cliSessionsModel.setEffort(session.slug, effort as 'low' | 'medium' | 'high')
-    await cliSessionsModel.refresh()
-  }
-  catch {
-    actionError.value = 'Не удалось изменить уровень усилия.'
-  }
-}
-
-async function onModelSelect(model: string) {
-  const session = activeAgentSession.value
-  if (!session || !model) return
-  try {
-    await cliSessionsModel.setModel(session.slug, model)
-    await cliSessionsModel.refresh()
-  }
-  catch {
-    actionError.value = 'Не удалось изменить модель.'
-  }
 }
 
 onMounted(async () => {
@@ -2100,46 +2101,6 @@ function handleChatAreaPointerDown() {
   }
 }
 
-async function handleCompact() {
-  const session = activeCliSession.value
-  if (!session || conversations.messagePending.value || compactPending.value) {
-    return
-  }
-
-  copiedLabel.value = 'Compacting context…'
-  compactPending.value = true
-  try {
-    await cliSessionsModel.compactSession(session.slug)
-    copiedLabel.value = 'Compact sent'
-    setTimeout(() => {
-      if (copiedLabel.value === 'Compact sent') {
-        copiedLabel.value = ''
-      }
-    }, 2200)
-  }
-  catch {
-    copiedLabel.value = ''
-    actionError.value = 'Не удалось отправить /compact.'
-  }
-  finally {
-    compactPending.value = false
-  }
-}
-
-async function handleKillSession(slug: string) {
-  if (!confirm(`Kill session ${slug}?`)) return
-  killSessionPending.value = true
-  try {
-    await cliSessionsModel.killSession(slug)
-  }
-  catch (e) {
-    console.error('Failed to kill session:', e)
-  }
-  finally {
-    killSessionPending.value = false
-  }
-}
-
 async function handleRunStarted() {
   actionError.value = ''
   if (!draft.value.trim() || !conversations.activeConversation.value) {
@@ -2329,6 +2290,33 @@ onBeforeUnmount(() => {
         @pointerdown="handleChatAreaPointerDown"
       />
 
+      <!-- Model selector bar — CLI-agent conversations with a session only -->
+      <div v-if="activeAgentSession" class="agent-model-bar">
+        <VMenu v-model="modelMenuOpen" location="bottom start" :close-on-content-click="true">
+          <template #activator="{ props: menuProps }">
+            <button class="agent-model-chip" v-bind="menuProps" :disabled="modelSetPending">
+              <VIcon :color="currentModelMeta?.color" size="13">{{ currentModelMeta?.icon }}</VIcon>
+              <span>{{ currentModelMeta?.label }}</span>
+              <VIcon size="11" class="agent-model-chip__chevron">mdi-chevron-down</VIcon>
+            </button>
+          </template>
+          <VList class="agent-model-list" density="compact" bg-color="#0b0e12">
+            <VListItem
+              v-for="opt in MODEL_OPTIONS"
+              :key="opt.value"
+              :disabled="modelSetPending || activeAgentSession.model === opt.value"
+              @click="onModelSelect(opt.value)"
+            >
+              <template #prepend>
+                <VIcon :color="opt.color" size="16" class="mr-2">{{ opt.icon }}</VIcon>
+              </template>
+              <VListItemTitle>{{ opt.label }}</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
+        <span v-if="modelSetError" class="agent-model-bar__error">{{ modelSetError }}</span>
+      </div>
+
       <!-- Context window + cache metrics bar — agent conversations only -->
       <div v-if="activeConversationAgent && chatAgentStream.tokenCount.value.total > 0" class="ctx-bar">
         <div class="ctx-bar__track">
@@ -2352,132 +2340,89 @@ onBeforeUnmount(() => {
 
       <!-- Session hierarchy bar — below chat header, agent conversations only -->
       <div v-if="chatSessNavVisible" class="sess-nav">
-        <div class="sess-nav__toolbar">
-          <button
-            class="sess-nav__compact-btn"
-            :disabled="!activeCliSession || conversations.messagePending.value || compactPending"
-            title="Send /compact to the active Claude session"
-            @click="handleCompact"
-          >
-            Compact
-          </button>
-        </div>
-        <div v-if="projectScopedHierarchy[0]?.length" class="sess-nav__row sess-nav__row--composers">
-          <span class="sess-nav__label">Composers</span>
-          <div
-            v-for="session in projectScopedHierarchy[0]"
-            :key="session.slug"
-            class="sess-nav__tab"
-            :title="session.slug"
-            :role="session.agentId ? 'button' : undefined"
-            :tabindex="session.agentId ? 0 : undefined"
-            :style="session.agentId ? 'cursor: pointer;' : undefined"
-            @click="onSessionChipClick(session)"
-          >
-            <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
-            <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
-            <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
-            <button
-              v-if="session.status === 'running'"
-              class="sess-nav__kill"
-              :disabled="killSessionPending"
-              title="Kill session"
-              @click.stop="handleKillSession(session.slug)"
-            >×</button>
-          </div>
-        </div>
-        <div v-if="projectScopedHierarchy[1]?.length" class="sess-nav__row sess-nav__row--orchestrators">
-          <span class="sess-nav__label">Orchestrators</span>
-          <div
-            v-for="session in projectScopedHierarchy[1]"
-            :key="session.slug"
-            class="sess-nav__tab"
-            :title="session.slug"
-            :role="session.agentId ? 'button' : undefined"
-            :tabindex="session.agentId ? 0 : undefined"
-            :style="session.agentId ? 'cursor: pointer;' : undefined"
-            @click="onSessionChipClick(session)"
-          >
-            <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
-            <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
-            <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
-            <button
-              v-if="session.status === 'running'"
-              class="sess-nav__kill"
-              :disabled="killSessionPending"
-              title="Kill session"
-              @click.stop="handleKillSession(session.slug)"
-            >×</button>
-          </div>
-        </div>
-        <template v-if="chatWorkerGroups.length">
-          <div class="sess-nav__row sess-nav__row--workers">
-            <span class="sess-nav__label">Workers</span>
-          </div>
-          <div v-for="group in chatWorkerGroups" :key="group.kind" class="sess-nav__row sess-nav__row--wg">
-            <span class="sess-nav__wg-label">{{ getSessionKindMeta(group.kind).label }}</span>
+        <button
+          type="button"
+          class="sess-nav__header"
+          :title="sessNavCollapsed ? 'Развернуть сессии' : 'Свернуть сессии'"
+          @click="sessNavCollapsed = !sessNavCollapsed"
+        >
+          <VIcon size="11" class="sess-nav__header-icon">mdi-layers-outline</VIcon>
+          <span class="sess-nav__title">
+            Sessions
+            <span class="sess-nav__count">{{ projectScopedHierarchy.flat().length }}</span>
+          </span>
+          <VIcon size="13" class="sess-nav__chevron">{{ sessNavCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</VIcon>
+        </button>
+        <template v-if="!sessNavCollapsed">
+          <div v-if="projectScopedHierarchy[0]?.length" class="sess-nav__row sess-nav__row--composers">
+            <span class="sess-nav__label">Composers</span>
             <div
-              v-for="session in group.sessions"
+              v-for="session in projectScopedHierarchy[0]"
               :key="session.slug"
               class="sess-nav__tab"
+              :class="{ 'sess-nav__tab--running': session.status === 'running', 'sess-nav__tab--active': sessNavDotClass(session) === 'sess-nav__dot--active' }"
               :title="session.slug"
               :role="session.agentId ? 'button' : undefined"
               :tabindex="session.agentId ? 0 : undefined"
               :style="session.agentId ? 'cursor: pointer;' : undefined"
               @click="onSessionChipClick(session)"
             >
-              <span class="sess-nav__dot" :class="`sess-nav__dot--${session.status}`" />
+              <span
+                class="sess-nav__dot"
+                :class="sessNavDotClass(session)"
+              />
               <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
               <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
-              <button
-                v-if="session.status === 'running'"
-                class="sess-nav__kill"
-                :disabled="killSessionPending"
-                title="Kill session"
-                @click.stop="handleKillSession(session.slug)"
-              >×</button>
             </div>
           </div>
+          <div v-if="projectScopedHierarchy[1]?.length" class="sess-nav__row sess-nav__row--orchestrators">
+            <span class="sess-nav__label">Orchestrators</span>
+            <div
+              v-for="session in projectScopedHierarchy[1]"
+              :key="session.slug"
+              class="sess-nav__tab"
+              :class="{ 'sess-nav__tab--running': session.status === 'running', 'sess-nav__tab--active': sessNavDotClass(session) === 'sess-nav__dot--active' }"
+              :title="session.slug"
+              :role="session.agentId ? 'button' : undefined"
+              :tabindex="session.agentId ? 0 : undefined"
+              :style="session.agentId ? 'cursor: pointer;' : undefined"
+              @click="onSessionChipClick(session)"
+            >
+              <span
+                class="sess-nav__dot"
+                :class="sessNavDotClass(session)"
+              />
+              <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
+              <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+            </div>
+          </div>
+          <template v-if="chatWorkerGroups.length">
+            <div class="sess-nav__row sess-nav__row--workers">
+              <span class="sess-nav__label">Workers</span>
+            </div>
+            <div v-for="group in chatWorkerGroups" :key="group.kind" class="sess-nav__row sess-nav__row--wg">
+              <span class="sess-nav__wg-label">{{ getSessionKindMeta(group.kind).label }}</span>
+              <div
+                v-for="session in group.sessions"
+                :key="session.slug"
+                class="sess-nav__tab"
+                :class="{ 'sess-nav__tab--running': session.status === 'running', 'sess-nav__tab--active': sessNavDotClass(session) === 'sess-nav__dot--active' }"
+                :title="session.slug"
+                :role="session.agentId ? 'button' : undefined"
+                :tabindex="session.agentId ? 0 : undefined"
+                :style="session.agentId ? 'cursor: pointer;' : undefined"
+                @click="onSessionChipClick(session)"
+              >
+                <span
+                  class="sess-nav__dot"
+                  :class="sessNavDotClass(session)"
+                />
+                <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
+                <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+              </div>
+            </div>
+          </template>
         </template>
-      </div>
-
-      <!-- Agent model + effort bar — visible when chatting with a running CLI session -->
-      <div v-if="activeAgentSession" class="agent-model-bar">
-        <VMenu location="bottom start">
-          <template #activator="{ props: menuProps }">
-            <button class="agent-model-bar__btn" v-bind="menuProps" type="button">
-              <span class="agent-model-bar__label">{{ currentModelMeta.label || activeAgentSession.model }}</span>
-              <VIcon size="14">mdi-chevron-down</VIcon>
-            </button>
-          </template>
-          <VList density="compact">
-            <VListItem
-              v-for="opt in MODEL_OPTIONS"
-              :key="opt.value"
-              :title="opt.label"
-              :active="activeAgentSession.model === opt.value"
-              @click="onModelSelect(opt.value)"
-            />
-          </VList>
-        </VMenu>
-
-        <VMenu location="bottom start">
-          <template #activator="{ props: menuProps }">
-            <button class="agent-model-bar__btn" v-bind="menuProps" type="button">
-              <span class="agent-model-bar__label">{{ currentEffortMeta?.value || 'medium' }}</span>
-              <VIcon size="14">mdi-chevron-down</VIcon>
-            </button>
-          </template>
-          <VList density="compact">
-            <VListItem
-              v-for="opt in EFFORT_OPTIONS"
-              :key="opt.value"
-              :title="opt.value"
-              :active="(activeAgentSession.effort || 'medium') === opt.value"
-              @click="onEffortSelect(opt.value)"
-            />
-          </VList>
-        </VMenu>
       </div>
 
       <p v-if="actionError" class="auth-error">{{ actionError }}</p>
@@ -2724,6 +2669,7 @@ onBeforeUnmount(() => {
         @update:collapsed="agentWorkspaceCollapsed = $event"
       />
 
+
       <MessengerChatComposerDock
         ref="composerDockRef"
         :visible="Boolean(conversations.activeConversation.value) && !detailsOpen && !composerMediaMenuVisible"
@@ -2796,3 +2742,44 @@ onBeforeUnmount(() => {
     </section>
   </section>
 </template>
+
+<style>
+.agent-model-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  background: #0b0e12;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+
+.agent-model-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.7);
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 120ms, border-color 120ms;
+  user-select: none;
+}
+.agent-model-chip:hover:not(:disabled) {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.2);
+}
+.agent-model-chip:disabled { opacity: .5; cursor: default; }
+
+.agent-model-chip__chevron { opacity: .5; }
+
+.agent-model-list { min-width: 180px; }
+
+.agent-model-bar__error {
+  font-size: 11px;
+  color: #ef4444;
+}
+</style>
