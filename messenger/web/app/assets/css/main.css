@@ -1016,6 +1016,32 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   color: rgb(var(--v-theme-warning));
 }
 
+/* ── Host session (self-monitor) row ─────────────────────── */
+.chat-row--host-session {
+  border-left: 3px solid rgb(var(--v-theme-tertiary));
+  background: color-mix(in srgb, rgb(var(--v-theme-tertiary)) 6%, transparent);
+}
+
+.chat-row--host-session:hover::before {
+  opacity: 0.12;
+}
+
+.chat-row__host-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: rgb(var(--v-theme-on-tertiary-container));
+  background: rgb(var(--v-theme-tertiary-container));
+  white-space: nowrap;
+}
+
 /* ── Contact Row ─────────────────────────────────────────── */
 .contact-row {
   min-height: 72px;

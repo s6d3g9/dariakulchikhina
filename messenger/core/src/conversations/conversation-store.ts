@@ -135,6 +135,7 @@ export interface ConversationOverviewItem {
   peerLogin: string
   peerType: MessengerPeerType
   peerDescription?: string
+  peerAgentKind?: string
   updatedAt: string
   policy: MessengerConversationPolicy
   lastMessage: {
@@ -328,13 +329,13 @@ async function resolvePeer(
   conversation: MessengerConversationRecord,
   actorId: string,
   users: MessengerUserRecord[],
-): Promise<{ id: string; displayName: string; login: string; peerType: MessengerPeerType; description?: string } | null> {
+): Promise<{ id: string; displayName: string; login: string; peerType: MessengerPeerType; description?: string; agentKind?: string } | null> {
   const peerId = conversation.userAId === actorId ? conversation.userBId : conversation.userAId
 
   if (conversation.kind === 'agent') {
     const agent = await findMessengerAgentById(peerId)
     if (!agent) return null
-    return { id: agent.id, displayName: agent.displayName, login: agent.login, peerType: 'agent', description: agent.description }
+    return { id: agent.id, displayName: agent.displayName, login: agent.login, peerType: 'agent', description: agent.description, agentKind: agent.agentKind }
   }
 
   const peer = users.find(u => u.id === peerId)
@@ -504,6 +505,7 @@ export async function listConversationsForUser(user: MessengerUserRecord, users:
           peerLogin: peer.login,
           peerType: peer.peerType,
           peerDescription: peer.description,
+          peerAgentKind: peer.agentKind,
           updatedAt: lastMsgRecord?.createdAt || conversation.updatedAt,
           policy,
           lastMessage: lastMsgRecord

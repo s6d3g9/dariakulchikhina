@@ -44,8 +44,15 @@ const statusDotClass = computed(() => {
 </script>
 
 <template>
-  <div class="run-node" :style="{ paddingLeft: `${(depth ?? 0) * 12}px` }">
-    <div class="run-node__pill" role="button" tabindex="0" @click="emit('open-run', node.runId)" @keydown.enter="emit('open-run', node.runId)">
+  <div class="run-node" :class="{ 'run-node--child': (depth ?? 0) > 0 }" :style="{ paddingLeft: `${(depth ?? 0) * 14}px` }">
+    <div
+      class="run-node__pill"
+      :class="[`run-node__pill--${node.status}`]"
+      role="button"
+      tabindex="0"
+      @click="emit('open-run', node.runId)"
+      @keydown.enter="emit('open-run', node.runId)"
+    >
       <span class="run-node__dot" :class="statusDotClass" aria-hidden="true" />
       <span v-if="node.model" class="run-node__badge">{{ node.model }}</span>
       <span v-if="tokenLabel" class="run-node__meta">{{ tokenLabel }}</span>
@@ -73,3 +80,122 @@ const statusDotClass = computed(() => {
     />
   </div>
 </template>
+
+<style scoped>
+.run-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.run-node--child::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 12%, transparent);
+}
+
+.run-node__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-surface-container));
+  border: 1px solid color-mix(in srgb, rgb(var(--v-theme-outline)) 28%, transparent);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.2;
+  color: rgb(var(--v-theme-on-surface));
+  transition: background-color 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.run-node__pill:hover {
+  background: rgb(var(--v-theme-surface-container-high));
+  border-color: color-mix(in srgb, rgb(var(--v-theme-outline)) 55%, transparent);
+}
+
+.run-node__pill:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
+
+.run-node__pill--running {
+  border-color: color-mix(in srgb, rgb(var(--v-theme-primary)) 45%, transparent);
+  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 8%, rgb(var(--v-theme-surface-container)));
+}
+
+.run-node__pill--failed {
+  border-color: color-mix(in srgb, rgb(var(--v-theme-error)) 50%, transparent);
+  background: color-mix(in srgb, rgb(var(--v-theme-error)) 7%, rgb(var(--v-theme-surface-container)));
+}
+
+.run-node__dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-outline));
+}
+
+.run-node__dot--running {
+  background: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-primary)) 55%, transparent);
+  animation: run-node-pulse 1.6s ease-in-out infinite;
+}
+
+.run-node__dot--completed {
+  background: rgb(var(--v-theme-success, 76 175 80));
+}
+
+.run-node__dot--failed {
+  background: rgb(var(--v-theme-error));
+}
+
+@keyframes run-node-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-primary)) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 6px color-mix(in srgb, rgb(var(--v-theme-primary)) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-primary)) 0%, transparent); }
+}
+
+.run-node__badge {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 10%, transparent);
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.run-node__meta {
+  font-size: 11px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  white-space: nowrap;
+}
+
+.run-node__meta--substate {
+  font-style: italic;
+}
+
+.run-node__cancel {
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, rgb(var(--v-theme-error)) 50%, transparent);
+  background: transparent;
+  color: rgb(var(--v-theme-error));
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.run-node__cancel:hover {
+  background: color-mix(in srgb, rgb(var(--v-theme-error)) 12%, transparent);
+}
+</style>

@@ -441,16 +441,21 @@ const filteredConversations = computed(() => {
     ? peopleConversations.value
     : agentConversations.value
 
-  if (activeFolderKey.value === 'all') {
-    return source
-  }
+  const folder = activeFolderKey.value === 'all'
+    ? null
+    : visibleFolders.value.find(item => item.key === activeFolderKey.value) ?? null
+  const base = folder ? source.filter(chat => folder.chatIds.includes(chat.id)) : source
 
-  const folder = visibleFolders.value.find(item => item.key === activeFolderKey.value)
-  if (!folder) {
-    return source
+  // Pin the host-session agent (live tail of this Claude Code host) at the
+  // top of the agent list so it's always one click away.
+  if (activeChatMode.value !== 'agents') return base
+  const pinned: typeof base = []
+  const rest: typeof base = []
+  for (const chat of base) {
+    if (chat.peerAgentKind === 'host-session') pinned.push(chat)
+    else rest.push(chat)
   }
-
-  return source.filter(chat => folder.chatIds.includes(chat.id))
+  return [...pinned, ...rest]
 })
 
 const systemDirectoryCards = computed<AgentSystemCard[]>(() => systemFolders.value
@@ -1733,11 +1738,14 @@ function formatChatPreview(chat: MessengerConversationItem) {
         <VListItem
           v-for="chat in filteredConversations"
           :key="chat.id"
-          class="chat-row"
           data-hold-actions-root="true"
-          :class="{
-            'list-item--hold-open': holdActions.activeItemId.value === chat.id,
-          }"
+          :class="[
+            'chat-row',
+            {
+              'list-item--hold-open': holdActions.activeItemId.value === chat.id,
+              'chat-row--host-session': chat.peerAgentKind === 'host-session',
+            },
+          ]"
           @click="openChat(chat.id)"
           @mousedown.left="startHold(chat.id, $event)"
           @mouseup="holdActions.cancelHold()"
@@ -1749,14 +1757,20 @@ function formatChatPreview(chat: MessengerConversationItem) {
           @contextmenu.prevent="holdActions.open(chat.id)"
         >
           <template #prepend>
-            <VAvatar color="primary" variant="tonal" size="48">
-              {{ resolveChatAvatar(chat.peerDisplayName) }}
+            <VAvatar
+              :color="chat.peerAgentKind === 'host-session' ? 'tertiary' : 'primary'"
+              variant="tonal"
+              size="48"
+            >
+              <VIcon v-if="chat.peerAgentKind === 'host-session'">mdi-console-line</VIcon>
+              <template v-else>{{ resolveChatAvatar(chat.peerDisplayName) }}</template>
             </VAvatar>
           </template>
           <template #title>
             <div class="chat-row__titlebar">
               <div class="chat-row__titlemain">
                 <span class="title-small chat-row__display-name">{{ chat.peerDisplayName }}</span>
+                <span v-if="chat.peerAgentKind === 'host-session'" class="chat-row__host-badge" title="Live tail этой сессии Claude Code">ты сам</span>
                 <MessengerIcon v-if="chat.secret" class="chat-secret-marker" name="shield" :size="14" aria-hidden="true" />
               </div>
 

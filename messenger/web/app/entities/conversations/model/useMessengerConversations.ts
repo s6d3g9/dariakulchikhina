@@ -19,6 +19,7 @@ export interface MessengerConversationItem {
   peerLogin: string
   peerType: 'user' | 'agent'
   peerDescription?: string
+  peerAgentKind?: string
   updatedAt: string
   policy: MessengerConversationPolicy
   lastMessage: {

@@ -24,6 +24,12 @@ export interface MessengerAgentRecord {
    * external LLM (if configured) → hardcoded template reply.
    */
   claudeSessionSlug?: string
+  /**
+   * Optional marker surfaced from the JSONB config.type column so the
+   * messenger UI can distinguish special agents (e.g. `host-session` —
+   * the live tail of this Claude Code host session).
+   */
+  agentKind?: string
 }
 
 interface MessengerAgentReplyHistoryItem {
@@ -238,6 +244,7 @@ function agentRowToRecord(row: {
     prompts: Array.isArray(cfg.prompts) ? cfg.prompts : [],
     systemPrompt: typeof cfg.systemPrompt === 'string' ? cfg.systemPrompt : '',
     modelOptions: Array.isArray(cfg.modelOptions) ? cfg.modelOptions : [],
+    agentKind: typeof cfg.type === 'string' ? cfg.type : undefined,
   }
 }
 
