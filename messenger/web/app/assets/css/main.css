@@ -3188,6 +3188,9 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 .chat-header__agent-btn--active {
   box-shadow: 0 0 0 1px color-mix(in srgb, rgb(var(--v-theme-primary)) 42%, transparent);
 }
+.chat-header__peer--active {
+  background: color-mix(in srgb, rgb(var(--v-theme-on-secondary-container)) 8%, transparent) !important;
+}
 .chat-header__agent-btn-badge {
   position: absolute;
   top: 2px;
@@ -3336,6 +3339,41 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   height: 1px;
   background: rgb(var(--v-theme-outline-variant));
   margin: 6px 12px;
+}
+
+.chat-header-sheet__contact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px;
+}
+
+.chat-header-sheet__contact-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px 8px;
+}
+
+.chat-header-sheet__contact-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.chat-header-sheet__contact-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgb(var(--v-theme-on-surface));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-header-sheet__contact-caption {
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .chat-header-sheet__monitor {

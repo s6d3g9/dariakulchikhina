@@ -72,7 +72,7 @@ const emit = defineEmits<{
 }>()
 
 const overflowMenuOpen = ref(false)
-type HeaderSheetKind = 'model' | 'monitor' | 'overflow' | null
+type HeaderSheetKind = 'model' | 'monitor' | 'overflow' | 'contact' | null
 const headerSheetKind = ref<HeaderSheetKind>(null)
 const isHeaderSheetOpen = computed(() => headerSheetKind.value !== null)
 
@@ -168,9 +168,12 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
         <VBtn
           type="button"
           class="chat-header__peer"
+          :class="{ 'chat-header__peer--active': headerSheetKind === 'contact' }"
           variant="text"
           :disabled="disabled"
-          @click="emit('toggle-details')"
+          :aria-expanded="headerSheetKind === 'contact'"
+          aria-controls="chat-header-sheet"
+          @click="callVisible ? emit('toggle-details') : toggleHeaderSheet('contact')"
         >
           <VAvatar color="primary" variant="tonal" size="36">{{ peerAvatar }}</VAvatar>
           <div class="chat-header__peer-meta ml-2">
@@ -433,7 +436,51 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
       @update:model-value="headerSheetKind = $event"
     >
       <template #default="{ kind, close }">
-        <div v-if="kind === 'model'" class="chat-header-sheet__list">
+        <div v-if="kind === 'contact'" class="chat-header-sheet__contact">
+          <div class="chat-header-sheet__contact-hero">
+            <VAvatar color="primary" variant="tonal" size="64">{{ peerAvatar }}</VAvatar>
+            <div class="chat-header-sheet__contact-meta">
+              <span class="chat-header-sheet__contact-name title-medium">
+                <span>{{ peerName }}</span>
+                <MessengerIcon
+                  v-if="conversationSecret"
+                  class="chat-secret-marker"
+                  name="shield"
+                  :size="14"
+                  aria-hidden="true"
+                />
+              </span>
+              <span v-if="agentModelLabel" class="chat-header-sheet__contact-caption label-small">
+                {{ agentModelLabel }}
+              </span>
+            </div>
+          </div>
+          <div class="chat-header-sheet__list">
+            <button type="button" class="chat-header-sheet__row" @click="emit('toggle-details'); close()">
+              <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-magnify</VIcon>
+              <span class="chat-header-sheet__row-label">Поиск в переписке</span>
+            </button>
+            <button type="button" class="chat-header-sheet__row" @click="emit('toggle-details'); close()">
+              <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-image-multiple-outline</VIcon>
+              <span class="chat-header-sheet__row-label">Медиа и файлы</span>
+            </button>
+            <div class="chat-header-sheet__divider" aria-hidden="true" />
+            <button type="button" class="chat-header-sheet__row">
+              <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-bell-off-outline</VIcon>
+              <span class="chat-header-sheet__row-label">Отключить уведомления</span>
+            </button>
+            <button type="button" class="chat-header-sheet__row">
+              <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-broom</VIcon>
+              <span class="chat-header-sheet__row-label">Очистить историю</span>
+            </button>
+            <button type="button" class="chat-header-sheet__row chat-header-sheet__row--danger">
+              <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-account-cancel-outline</VIcon>
+              <span class="chat-header-sheet__row-label">Заблокировать</span>
+            </button>
+          </div>
+        </div>
+
+        <div v-else-if="kind === 'model'" class="chat-header-sheet__list">
           <button
             v-for="opt in agentModelOptions"
             :key="opt.value"

@@ -182,7 +182,7 @@
 | `popup.bottom-sheet` | мобильный action-sheet | `VBottomSheet` + `VCard` | `inset` |
 | `popup.panel` | floating panel composer'а (aidev, search, project actions) | кастомный `<div>` с `position: absolute` | radius `lg`, тень `level-2`, backdrop-blur |
 | `popup.sheet` | большой docked sheet (call analysis, agent workspace) | кастомный `<aside>` | radius `lg` сверху, тень `level-3` |
-| `popup.header-sheet` | расширение верхней капсулы вниз (модель / мониторинг / overflow в шапке) | кастомный `<section>`, anchored к `.chat-header` | см. § 4.3.1 |
+| `popup.header-sheet` | расширение верхней капсулы вниз (модель / мониторинг / overflow / контакт) | кастомный `<section>`, anchored к `.chat-header` | см. § 4.3.1 |
 
 **Запрещено:**
 - Свой backdrop / scrim — только через `VDialog`/`VOverlay` или unified `--ds-scrim`.
@@ -224,7 +224,12 @@
 
 **Состояние и переключение**
 
-- Sheet хранит активный триггер (`'model' | 'monitor' | 'overflow' | null`).
+- Sheet хранит активный триггер (`'model' | 'monitor' | 'overflow' | 'contact' | null`).
+  Триггер `'contact'` открывается кликом по `.chat-header__peer` (имя/аватар
+  собеседника) и показывает карточку контакта (hero: avatar + name + secret-marker,
+  ниже список действий: Поиск, Медиа, Уведомления, Очистить, Заблокировать).
+  В состоянии звонка клик по peer-кнопке падает в legacy `toggle-details` (галерея),
+  чтобы не конфликтовать с overlay звонка.
   В шапке у активного триггера-кнопки visual-state `--active` (tonal-фон,
   тот же что в существующих `--active` правилах).
 - Открытие нового триггера, когда sheet уже открыт другим:
