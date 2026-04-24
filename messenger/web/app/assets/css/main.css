@@ -3049,6 +3049,29 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   white-space: nowrap;
 }
 
+.chat-header__section-chip-caret {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  opacity: 0.7;
+  transition: transform var(--messenger-motion-duration-short) ease;
+}
+
+.chat-header__section-chip--open {
+  background: rgba(var(--v-theme-on-secondary-container), 0.12);
+}
+
+.chat-header__section-menu {
+  min-width: 220px;
+  border-radius: 14px;
+  padding: 6px;
+}
+
+.chat-header__section-menu .v-list-item {
+  border-radius: 10px;
+  min-height: 40px;
+}
+
 .chat-header__peer {
   display: flex;
   align-items: center;

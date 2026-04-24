@@ -40,6 +40,7 @@ const props = withDefaults(defineProps<{
   agentModelPending?: boolean
   monitorPanelOpen?: boolean
   monitorSessionCount?: number
+  sectionMenuItems?: ReadonlyArray<{ key: string; title: string; icon: string; active?: boolean }>
 }>(), {
   floating: false,
   showBackButton: true,
@@ -55,6 +56,7 @@ const props = withDefaults(defineProps<{
   agentModelPending: false,
   monitorPanelOpen: false,
   monitorSessionCount: 0,
+  sectionMenuItems: () => [],
 })
 
 const emit = defineEmits<{
@@ -75,10 +77,12 @@ const emit = defineEmits<{
   'update:overflow-menu-open': [open: boolean]
   'select-agent-model': [value: string]
   'toggle-monitor-panel': []
+  'navigate-section': [key: string]
 }>()
 
 const overflowMenuOpen = ref(false)
 const agentModelMenuOpen = ref(false)
+const sectionMenuOpen = ref(false)
 
 watch(overflowMenuOpen, (open) => {
   emit('update:overflow-menu-open', open)
@@ -140,8 +144,46 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
   <header class="chat-header" :class="{ 'chat-header--call-visible': callVisible, 'chat-header--floating': floating }">
     <div class="chat-header__toolbar" :class="{ 'chat-header__toolbar--no-back': !showBackButton }">
       <div v-if="showBackButton" class="chat-header__nav-group">
+        <VMenu
+          v-if="sectionChipVisible && sectionMenuItems.length > 0"
+          v-model="sectionMenuOpen"
+          location="bottom start"
+          offset="8"
+          :close-on-content-click="true"
+        >
+          <template #activator="{ props: menuProps }">
+            <button
+              type="button"
+              class="chat-header__section-chip"
+              :class="{ 'chat-header__section-chip--open': sectionMenuOpen }"
+              :aria-label="`Открыть список разделов. Текущий раздел: ${sectionChipLabel}`"
+              :title="sectionChipLabel"
+              v-bind="menuProps"
+            >
+              <VIcon :size="24" class="chat-header__section-chip-icon">{{ sectionChipIcon }}</VIcon>
+              <span class="chat-header__section-chip-label">{{ sectionChipLabel }}</span>
+              <VIcon :size="14" class="chat-header__section-chip-caret" aria-hidden="true">
+                {{ sectionMenuOpen ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+              </VIcon>
+            </button>
+          </template>
+          <VList class="chat-header__section-menu" density="comfortable" nav bg-color="surface-container-highest">
+            <VListItem
+              v-for="item in sectionMenuItems"
+              :key="item.key"
+              :active="item.active"
+              :disabled="item.active"
+              @click="emit('navigate-section', item.key)"
+            >
+              <template #prepend>
+                <VIcon :size="18" class="mr-2">{{ item.icon }}</VIcon>
+              </template>
+              <VListItemTitle>{{ item.title }}</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
         <button
-          v-if="sectionChipVisible"
+          v-else-if="sectionChipVisible"
           type="button"
           class="chat-header__section-chip"
           :aria-label="`Вернуться к разделу ${sectionChipLabel}`"
