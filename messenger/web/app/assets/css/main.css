@@ -2832,7 +2832,7 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   display: flex;
   align-items: center;
   height: 64px;
-  padding: 0 4px;
+  padding: 4px 8px;
   flex-shrink: 0;
   background: var(--messenger-header-plate);
   border-bottom: none;
@@ -2904,28 +2904,51 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   color: rgb(var(--v-theme-success));
 }
 
-/* chat-header M3 sub-elements */
+/* chat-header M3 sub-elements — single compound "capsule" button look */
 .chat-header__toolbar {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   width: 100%;
-  height: 64px;
-  gap: 4px;
+  height: 56px;
+  gap: 0;
   position: relative;
   z-index: 1;
+  background: rgb(var(--v-theme-secondary-container));
+  color: rgb(var(--v-theme-on-secondary-container));
+  border-radius: 28px;
+  padding: 4px 6px;
+  box-sizing: border-box;
 }
 
 .chat-header__toolbar--no-back {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.chat-header--call-visible .chat-header__toolbar {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  height: 64px;
+  gap: 4px;
+}
+
 .chat-header__main-rail {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   overflow: hidden;
+  border-inline-start: 1px solid rgba(var(--v-theme-on-secondary-container), 0.22);
+  padding-inline-start: 6px;
+  margin-inline-start: 2px;
+}
+
+.chat-header__toolbar--no-back .chat-header__main-rail,
+.chat-header--call-visible .chat-header__main-rail {
+  border-inline-start: 0;
+  padding-inline-start: 0;
+  margin-inline-start: 0;
 }
 
 .chat-header__toolbar > .chat-header__back {
@@ -2946,6 +2969,13 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   margin-inline-start: auto;
   flex-wrap: nowrap;
   white-space: nowrap;
+  border-inline-start: 1px solid rgba(var(--v-theme-on-secondary-container), 0.22);
+  padding-inline-start: 4px;
+}
+
+.chat-header--call-visible .chat-header__toolbar-actions {
+  border-inline-start: 0;
+  padding-inline-start: 0;
 }
 
 .chat-header__toolbar-actions--call {
@@ -2980,13 +3010,13 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 56px;
-  padding: 8px 12px;
+  gap: 2px;
+  min-height: 48px;
+  padding: 4px 10px;
   border: 0;
-  border-radius: var(--messenger-nav-indicator-radius);
-  background: rgb(var(--v-theme-secondary-container));
-  color: rgb(var(--v-theme-on-secondary-container));
+  border-radius: 22px 6px 6px 22px;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
   transition:
     color var(--messenger-motion-duration-short) ease,
@@ -2994,11 +3024,7 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 }
 
 .chat-header__section-chip:hover {
-  background: color-mix(
-    in srgb,
-    rgb(var(--v-theme-secondary-container)) 88%,
-    rgb(var(--v-theme-on-secondary-container)) 12%
-  );
+  background: rgba(var(--v-theme-on-secondary-container), 0.08);
 }
 
 .chat-header__section-chip:focus-visible {
@@ -3068,6 +3094,10 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+
+.chat-header--call-visible .chat-header__peer-name {
   color: rgb(var(--v-theme-on-surface));
 }
 
@@ -3323,8 +3353,31 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 
 @media (max-width: 420px) {
   .chat-header__toolbar {
-    gap: 2px;
+    gap: 0;
+    height: 52px;
+    border-radius: 26px;
+    padding: 3px 4px;
+  }
+
+  .chat-header--call-visible .chat-header__toolbar {
     height: 60px;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .chat-header__section-chip {
+    min-height: 44px;
+    padding: 3px 8px;
+  }
+
+  .chat-header__main-rail {
+    padding-inline-start: 4px;
+    margin-inline-start: 1px;
+    gap: 2px;
+  }
+
+  .chat-header__toolbar-actions {
+    padding-inline-start: 3px;
   }
 
   .chat-header__peer {
