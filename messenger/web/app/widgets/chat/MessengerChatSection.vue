@@ -351,7 +351,7 @@ function onSelectAidevTab(tab: string | null) {
 
 onMounted(() => { void projectsModel.refresh() })
 
-const sessNavCollapsed = ref(false)
+const sessNavCollapsed = ref(true)
 
 // Live-ticking "now" for elapsed-time counters rendered in session capsules.
 // 1s cadence is fine — the counters read in H:MM:SS so sub-second updates
@@ -536,7 +536,6 @@ const MODEL_OPTIONS = [
   { label: 'Haiku 4.5',  value: 'claude-haiku-4-5-20251001', icon: 'mdi-feather', color: 'success' },
 ] as const
 
-const modelMenuOpen = ref(false)
 const modelSetPending = ref(false)
 const modelSetError = ref('')
 
@@ -2603,6 +2602,15 @@ onBeforeUnmount(() => {
         :show-call-actions="Boolean(conversations.activeConversation.value) && !activeConversationAgent"
         :can-switch-camera="calls.canSwitchCamera.value"
         :section-chip-visible="isDesktop"
+        :show-agent-extras="Boolean(activeAgentSession)"
+        :agent-model-options="MODEL_OPTIONS"
+        :agent-model-current-value="activeAgentSession?.model"
+        :agent-model-icon="currentModelMeta?.icon"
+        :agent-model-color="currentModelMeta?.color"
+        :agent-model-label="currentModelMeta?.label"
+        :agent-model-pending="modelSetPending"
+        :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
+        :monitor-session-count="sessionTokenSummary.sessionCount"
         @toggle-details="toggleDetails"
         @toggle-audio-call="toggleAudioCall"
         @toggle-call-analysis="toggleCallAnalysis"
@@ -2618,34 +2626,14 @@ onBeforeUnmount(() => {
         @hangup-call="calls.hangupCall()"
         @back="navigation.openSection('chats')"
         @update:overflow-menu-open="headerOverflowMenuOpen = $event"
+        @select-agent-model="onModelSelect($event)"
+        @toggle-monitor-panel="sessNavCollapsed = !sessNavCollapsed"
         @pointerdown="handleChatAreaPointerDown"
       />
 
-      <!-- Model selector bar — CLI-agent conversations with a session only -->
-      <div v-if="activeAgentSession" class="agent-model-bar">
-        <VMenu v-model="modelMenuOpen" location="bottom start" :close-on-content-click="true">
-          <template #activator="{ props: menuProps }">
-            <button class="agent-model-chip" v-bind="menuProps" :disabled="modelSetPending">
-              <VIcon :color="currentModelMeta?.color" size="13">{{ currentModelMeta?.icon }}</VIcon>
-              <span>{{ currentModelMeta?.label }}</span>
-              <VIcon size="11" class="agent-model-chip__chevron">mdi-chevron-down</VIcon>
-            </button>
-          </template>
-          <VList class="agent-model-list" density="compact" bg-color="#0b0e12">
-            <VListItem
-              v-for="opt in MODEL_OPTIONS"
-              :key="opt.value"
-              :disabled="modelSetPending || activeAgentSession.model === opt.value"
-              @click="onModelSelect(opt.value)"
-            >
-              <template #prepend>
-                <VIcon :color="opt.color" size="16" class="mr-2">{{ opt.icon }}</VIcon>
-              </template>
-              <VListItemTitle>{{ opt.label }}</VListItemTitle>
-            </VListItem>
-          </VList>
-        </VMenu>
-        <span v-if="modelSetError" class="agent-model-bar__error">{{ modelSetError }}</span>
+      <!-- Model selector moved to MessengerChatHeader round button -->
+      <div v-if="modelSetError" class="agent-model-bar agent-model-bar--error-only">
+        <span class="agent-model-bar__error">{{ modelSetError }}</span>
       </div>
 
       <!-- Context window + cache metrics bar — agent conversations only -->
@@ -2669,14 +2657,9 @@ onBeforeUnmount(() => {
         </template>
       </div>
 
-      <!-- Session hierarchy bar — below chat header, agent conversations only -->
-      <div v-if="chatSessNavVisible" class="sess-nav">
-        <button
-          type="button"
-          class="sess-nav__header"
-          :title="sessNavCollapsed ? 'Развернуть сессии' : 'Свернуть сессии'"
-          @click="sessNavCollapsed = !sessNavCollapsed"
-        >
+      <!-- Session hierarchy bar — drops from the chat header monitor button -->
+      <div v-if="chatSessNavVisible && !sessNavCollapsed" class="sess-nav sess-nav--header-drop">
+        <div class="sess-nav__summary-row">
           <VIcon size="11" class="sess-nav__header-icon">mdi-layers-outline</VIcon>
           <span class="sess-nav__title">
             Sessions
@@ -2692,9 +2675,8 @@ onBeforeUnmount(() => {
           <span v-if="sessionTokenSummary.totalCost > 0" class="sess-nav__summary sess-nav__summary--cost" title="Стоимость">
             ${{ sessionTokenSummary.totalCost.toFixed(2) }}
           </span>
-          <VIcon size="13" class="sess-nav__chevron">{{ sessNavCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</VIcon>
-        </button>
-        <template v-if="!sessNavCollapsed">
+        </div>
+        <template v-if="true">
          <div ref="sessNavBodyRef" class="sess-nav__body">
           <svg
             v-if="sessNavEdges.length"
@@ -3488,6 +3470,11 @@ onBeforeUnmount(() => {
   background: #0b0e12;
   border-bottom: 1px solid rgba(255,255,255,.06);
   flex-shrink: 0;
+}
+.agent-model-bar--error-only {
+  padding: 2px 14px;
+  background: transparent;
+  border-bottom: 0;
 }
 
 .agent-model-chip {

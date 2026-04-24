@@ -31,12 +31,30 @@ const props = withDefaults(defineProps<{
   sectionChipVisible?: boolean
   sectionChipLabel?: string
   sectionChipIcon?: string
+  showAgentExtras?: boolean
+  agentModelOptions?: ReadonlyArray<{ label: string; value: string; icon: string; color: string }>
+  agentModelCurrentValue?: string
+  agentModelIcon?: string
+  agentModelColor?: string
+  agentModelLabel?: string
+  agentModelPending?: boolean
+  monitorPanelOpen?: boolean
+  monitorSessionCount?: number
 }>(), {
   floating: false,
   showBackButton: true,
   sectionChipVisible: false,
   sectionChipLabel: 'Чат',
   sectionChipIcon: 'mdi-message-outline',
+  showAgentExtras: false,
+  agentModelOptions: () => [],
+  agentModelCurrentValue: '',
+  agentModelIcon: 'mdi-brain',
+  agentModelColor: 'primary',
+  agentModelLabel: '',
+  agentModelPending: false,
+  monitorPanelOpen: false,
+  monitorSessionCount: 0,
 })
 
 const emit = defineEmits<{
@@ -55,9 +73,12 @@ const emit = defineEmits<{
   'hangup-call': []
   'back': []
   'update:overflow-menu-open': [open: boolean]
+  'select-agent-model': [value: string]
+  'toggle-monitor-panel': []
 }>()
 
 const overflowMenuOpen = ref(false)
+const agentModelMenuOpen = ref(false)
 
 watch(overflowMenuOpen, (open) => {
   emit('update:overflow-menu-open', open)
@@ -318,6 +339,58 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
           <template v-else>
             <div class="chat-header__call-inline chat-header__call-inline--idle">
               <div class="chat-header__call-primary chat-header__call-primary--idle">
+                <VMenu
+                  v-if="showAgentExtras"
+                  v-model="agentModelMenuOpen"
+                  location="bottom end"
+                  offset="8"
+                  :close-on-content-click="true"
+                >
+                  <template #activator="{ props: menuProps }">
+                    <VBtn
+                      type="button"
+                      class="chat-header__icon-btn chat-header__agent-btn"
+                      :class="{ 'chat-header__agent-btn--active': agentModelMenuOpen }"
+                      icon
+                      variant="text"
+                      :aria-label="agentModelLabel ? `Модель: ${agentModelLabel}` : 'Выбор модели'"
+                      :title="agentModelLabel ? `Модель: ${agentModelLabel}` : 'Выбор модели'"
+                      :disabled="agentModelPending"
+                      v-bind="menuProps"
+                    >
+                      <VIcon :color="agentModelColor">{{ agentModelIcon }}</VIcon>
+                    </VBtn>
+                  </template>
+                  <VList class="chat-header__agent-menu" density="compact" nav bg-color="surface-container-highest">
+                    <VListItem
+                      v-for="opt in agentModelOptions"
+                      :key="opt.value"
+                      :disabled="agentModelPending || opt.value === agentModelCurrentValue"
+                      :active="opt.value === agentModelCurrentValue"
+                      @click="emit('select-agent-model', opt.value)"
+                    >
+                      <template #prepend>
+                        <VIcon :color="opt.color" size="16" class="mr-2">{{ opt.icon }}</VIcon>
+                      </template>
+                      <VListItemTitle>{{ opt.label }}</VListItemTitle>
+                    </VListItem>
+                  </VList>
+                </VMenu>
+                <VBtn
+                  v-if="showAgentExtras"
+                  type="button"
+                  class="chat-header__icon-btn chat-header__agent-btn"
+                  :class="{ 'chat-header__agent-btn--active': monitorPanelOpen }"
+                  icon
+                  :variant="monitorPanelOpen ? 'tonal' : 'text'"
+                  :color="monitorPanelOpen ? 'primary' : undefined"
+                  :aria-label="monitorPanelOpen ? 'Скрыть мониторинг сессий' : 'Показать мониторинг сессий'"
+                  :title="monitorPanelOpen ? 'Скрыть мониторинг сессий' : 'Показать мониторинг сессий'"
+                  @click="emit('toggle-monitor-panel')"
+                >
+                  <VIcon>mdi-layers-outline</VIcon>
+                  <span v-if="monitorSessionCount > 0" class="chat-header__agent-btn-badge" aria-hidden="true">{{ monitorSessionCount }}</span>
+                </VBtn>
                 <VBtn
                   v-if="showCallActions && showCallAnalysis"
                   type="button"
