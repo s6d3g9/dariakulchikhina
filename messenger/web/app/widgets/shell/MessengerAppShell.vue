@@ -80,6 +80,15 @@ const showBottomNav = computed(() =>
   !navigation.mediaSheetOpen.value && !calls.analysisPanelOpen.value,
 )
 
+// M3 adaptive navigation: <600 → bar, 600–1199 → rail, ≥1200 → drawer.
+// Vuetify 4 lg-threshold is 1280px — use raw width to pin the M3 1200px breakpoint.
+const navMode = computed<'bar' | 'rail' | 'drawer'>(() => {
+  const w = display.width.value
+  if (w >= 1200) return 'drawer'
+  if (w >= 600) return 'rail'
+  return 'bar'
+})
+
 // Активный раздел для VBottomNavigation
 const navValue = computed<MessengerSectionKey>({
   get: () => {
@@ -154,8 +163,15 @@ async function logout() {
       :data-messenger-detached-call="detachedCallHeaderVisible ? 'open' : 'closed'"
     >
       <div class="messenger-workspace">
+        <MessengerNavigationDrawer
+          v-if="navMode === 'drawer'"
+          :model-value="navValue"
+          :sections="sections"
+          :chat-disabled="chatDisabled"
+          @update:model-value="openNavSection"
+        />
         <MessengerNavigationRail
-          v-if="display.smAndUp.value"
+          v-else-if="navMode === 'rail'"
           :model-value="navValue"
           :sections="sections"
           :chat-disabled="chatDisabled"
@@ -192,7 +208,7 @@ async function logout() {
 
       <!-- Bottom Navigation Bar (кастомный, не VBottomNavigation — чтобы оставался в flex-потоке) -->
       <MessengerNavigationBar
-        v-if="!display.smAndUp.value"
+        v-if="navMode === 'bar'"
         v-show="showBottomNav"
         :model-value="navValue"
         :sections="sections"

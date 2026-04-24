@@ -186,6 +186,8 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-bottom-bar-radius: 10px;
   --messenger-agent-workspace-dock-height: 40px;
   --messenger-nav-rail-width: 80px;
+  --messenger-nav-drawer-width: 256px;
+  --messenger-nav-drawer-indicator-height: 56px;
   --messenger-nav-indicator-width: 56px;
   --messenger-nav-indicator-height: 32px;
   --messenger-nav-indicator-radius: 16px;
@@ -334,6 +336,91 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   text-align: center;
   letter-spacing: 0.02em;
   max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── M3 Navigation Drawer (desktop ≥ 1200px) ────────────────── */
+.messenger-nav-drawer {
+  --messenger-nav-indicator-height: 56px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: var(--messenger-nav-drawer-width);
+  padding: 12px 12px;
+  gap: 2px;
+  background: rgb(var(--v-theme-surface));
+  border-right: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.messenger-nav-drawer__indicator {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 0;
+  height: var(--messenger-nav-indicator-height);
+  border-radius: 28px;
+  background: rgb(var(--v-theme-secondary-container));
+  pointer-events: none;
+  z-index: 0;
+  transition:
+    transform var(--messenger-motion-duration-standard) var(--messenger-motion-easing-emphasized-decelerate),
+    opacity var(--messenger-motion-duration-short) ease;
+  will-change: transform;
+}
+
+.messenger-nav-drawer__item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 28px;
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: color var(--messenger-motion-duration-short) ease;
+}
+
+.messenger-nav-drawer__item:hover {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.messenger-nav-drawer__item:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.messenger-nav-drawer__item--active {
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+
+.messenger-nav-drawer__item:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
+
+.messenger-nav-drawer__icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.messenger-nav-drawer__label {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
