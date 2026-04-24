@@ -663,30 +663,25 @@ async function submitExtForm() {
       </VTabsWindowItem>
     </VTabsWindow>
 
-    <!-- Sub-tabs row (icon-only, at bottom, above global bottom-nav).
-         Hidden when this component is mounted inside an external tab control
-         (e.g. chat composer AIDev overlay) to avoid a duplicate tab bar. -->
-    <div v-if="!props.hideTabs" class="section-tabs-row project-config-tabs__nav-row">
-      <VTabs
-        v-model="activeTab"
-        class="section-tabs project-config-tabs__nav"
-        bg-color="surface-container"
-        color="primary"
-        density="compact"
-        show-arrows
-        grow
-      >
-        <VTab
+    <!-- Sub-tabs row: compact chip bar, visually identical to the AIDev bar
+         in the chat composer. Hidden when mounted inside an external tab
+         control (chat composer overlay) to avoid a duplicate bar. -->
+    <div v-if="!props.hideTabs" class="pctabs-bar" role="toolbar" aria-label="Разделы проектной рабочей области">
+      <div class="pctabs-bar__scroll">
+        <button
           v-for="tab in tabs"
           :key="tab.key"
-          :value="tab.key"
-          :aria-label="tab.label"
+          type="button"
+          class="pctabs-chip"
+          :class="{ 'pctabs-chip--active': activeTab === tab.key }"
           :title="tab.label"
-          class="project-config-tabs__tab"
+          :aria-pressed="activeTab === tab.key"
+          @click="activeTab = tab.key"
         >
-          <VIcon>{{ tab.icon }}</VIcon>
-        </VTab>
-      </VTabs>
+          <VIcon :size="13" class="pctabs-chip__icon">{{ tab.icon }}</VIcon>
+          <span class="pctabs-chip__label">{{ tab.label }}</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -700,17 +695,64 @@ async function submitExtForm() {
   overflow: hidden;
 }
 
-.project-config-tabs__nav-row {
+/* Chip bar — must match .aidev-bar / .ws-chip-bar 1-to-1 (same height,
+ * size, design). If you change these tokens, update the other two bars. */
+.pctabs-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0;
+  padding: 4px 6px 6px;
+  background: transparent;
+  border: 0;
 }
-.project-config-tabs__nav {
-  flex-shrink: 0;
-}
-.project-config-tabs__tab {
+.pctabs-bar__scroll {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex: 1;
   min-width: 0;
+  mask-image: linear-gradient(to right,
+    transparent 0,
+    #000 10px,
+    #000 calc(100% - 10px),
+    transparent 100%);
 }
+.pctabs-bar__scroll::-webkit-scrollbar { display: none; }
+.pctabs-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 120ms ease;
+}
+.pctabs-chip:hover {
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  color: rgb(var(--v-theme-on-surface));
+}
+.pctabs-chip:active { transform: scale(0.97); }
+.pctabs-chip--active {
+  background: rgb(var(--v-theme-secondary-container));
+  border-color: transparent;
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+.pctabs-chip__icon { opacity: 0.8; flex-shrink: 0; }
+.pctabs-chip:hover .pctabs-chip__icon { opacity: 0.95; }
+.pctabs-chip--active .pctabs-chip__icon { opacity: 1; }
+.pctabs-chip__label { line-height: 1; }
 
 .project-config-tabs__panels {
   flex: 1;
