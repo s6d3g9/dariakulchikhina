@@ -190,7 +190,7 @@ must return zero on PR-ready branches.
 
 Overrides: Nuxt middleware/plugins/pages/layouts, `*.config.ts`, and `scripts/**` are relaxed (framework contracts or one-shot helpers).
 
-Current baseline (captured at lint setup): **220 errors** — 207 of them are fat API handlers in `server/api/**` importing Drizzle. They form the next refactor wave's backlog.
+Current baseline (captured 2026-04-20): **10 errors** — mostly `process.env` access in `messenger/**` and `clicore2messenger/` (out-of-scope per v5.3 architecture). Fat API handlers in `server/api/**` have been resolved. Per-module status: see `docs/architecture-v5/11-backend-shared-refactor-map.md`.
 
 ## Deploy rules
 
