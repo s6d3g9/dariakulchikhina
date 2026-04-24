@@ -177,6 +177,9 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-dock-height: calc(var(--messenger-dock-line-height) + (var(--messenger-dock-padding-y) * 2));
   --messenger-dock-radius: 21px;
   --messenger-chat-header-height: 64px;
+  /* Solid plate color shared by .chat-header and sidebar top-strip so the
+   * header reads as one edge-to-edge band with no compositing mismatch. */
+  --messenger-header-plate: color-mix(in srgb, rgb(var(--v-theme-primary)) 5%, rgb(var(--v-theme-surface)));
   --messenger-bottom-bar-height: 44px;
   --messenger-bottom-bar-active-height: var(--messenger-bottom-bar-height);
   --messenger-bottom-bar-effective-height: calc(var(--messenger-bottom-bar-height) + var(--messenger-safe-bottom));
@@ -266,28 +269,17 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   width: var(--messenger-nav-rail-width);
   padding: 12px 6px;
   gap: 4px;
-  /* Top strip tint matches .chat-header so the sidebar's top 64px merges
-   * seamlessly with the header, forming a single edge-to-edge plate. */
+  /* Top strip uses the same solid --messenger-header-plate as .chat-header
+   * so the sidebar top 64px and the chat header read as one edge-to-edge
+   * plate, with no color seam or vertical divider between them. */
   background:
     linear-gradient(
       to bottom,
-      rgba(var(--v-theme-primary), 0.05) 0,
-      rgba(var(--v-theme-primary), 0.05) var(--messenger-chat-header-height),
-      transparent var(--messenger-chat-header-height)
-    ),
-    rgb(var(--v-theme-surface));
+      var(--messenger-header-plate) 0,
+      var(--messenger-header-plate) var(--messenger-chat-header-height),
+      rgb(var(--v-theme-surface)) var(--messenger-chat-header-height)
+    );
   flex-shrink: 0;
-}
-
-.messenger-nav-rail::after {
-  content: '';
-  position: absolute;
-  top: var(--messenger-chat-header-height);
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background: rgba(var(--v-theme-on-surface), 0.08);
-  pointer-events: none;
 }
 
 .messenger-nav-rail__indicator {
@@ -369,29 +361,18 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   width: var(--messenger-nav-drawer-width);
   padding: 12px 12px;
   gap: 2px;
-  /* Top strip tint matches .chat-header so the sidebar's top 64px merges
-   * seamlessly with the header, forming a single edge-to-edge plate. */
+  /* Top strip uses the same solid --messenger-header-plate as .chat-header
+   * so the sidebar top 64px and the chat header read as one edge-to-edge
+   * plate, with no color seam or vertical divider between them. */
   background:
     linear-gradient(
       to bottom,
-      rgba(var(--v-theme-primary), 0.05) 0,
-      rgba(var(--v-theme-primary), 0.05) var(--messenger-chat-header-height),
-      transparent var(--messenger-chat-header-height)
-    ),
-    rgb(var(--v-theme-surface));
+      var(--messenger-header-plate) 0,
+      var(--messenger-header-plate) var(--messenger-chat-header-height),
+      rgb(var(--v-theme-surface)) var(--messenger-chat-header-height)
+    );
   flex-shrink: 0;
   overflow-y: auto;
-}
-
-.messenger-nav-drawer::after {
-  content: '';
-  position: absolute;
-  top: var(--messenger-chat-header-height);
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background: rgba(var(--v-theme-on-surface), 0.08);
-  pointer-events: none;
 }
 
 .messenger-nav-drawer__indicator {
@@ -2790,8 +2771,8 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   height: 64px;
   padding: 0 4px;
   flex-shrink: 0;
-  background: rgba(var(--v-theme-primary), 0.05);
-  border-bottom: 1px dashed rgba(var(--v-theme-primary), 0.18);
+  background: var(--messenger-header-plate);
+  border-bottom: none;
   position: sticky;
   top: var(--messenger-viewport-offset-top, 0px);
   z-index: 30;
