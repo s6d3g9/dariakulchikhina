@@ -2880,51 +2880,42 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   flex-shrink: 0;
 }
 
-/* Desktop: section chip + back button share a single pill so the header
- * reads as one continuous plate: [Чат|←] [Avatar+Name] [⋮]. The chip is
- * mounted by the parent via sectionChipVisible and normally hidden on
- * mobile widths where the back arrow alone is enough. */
+/* Desktop: the section chip is the actual left-rail "Чат" button plate
+ * migrated into the header, placed beside the back arrow. Tokens mirror
+ * .messenger-nav-rail__item--active so the chip reads as a continuation
+ * of the sidebar rather than a separate breadcrumb. */
 .chat-header__nav-group {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   flex-shrink: 0;
 }
 
-.chat-header__nav-group--with-chip {
-  gap: 0;
-  padding: 2px;
-  border-radius: 999px;
-  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 5%, transparent);
-  border: 1px solid color-mix(in srgb, rgb(var(--v-theme-outline)) 25%, transparent);
-}
-
-.chat-header__nav-group--with-chip > .chat-header__back {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  border-radius: 999px !important;
-}
-
 .chat-header__section-chip {
+  position: relative;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px 6px 10px;
+  justify-content: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 8px 12px;
   border: 0;
-  background: transparent;
-  color: rgb(var(--v-theme-on-surface-variant));
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0;
+  border-radius: var(--messenger-nav-indicator-radius);
+  background: rgb(var(--v-theme-secondary-container));
+  color: rgb(var(--v-theme-on-secondary-container));
   cursor: pointer;
-  border-radius: 999px;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition:
+    color var(--messenger-motion-duration-short) ease,
+    background-color var(--messenger-motion-duration-short) ease;
 }
 
 .chat-header__section-chip:hover {
-  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 8%, transparent);
-  color: rgb(var(--v-theme-on-surface));
+  background: color-mix(
+    in srgb,
+    rgb(var(--v-theme-secondary-container)) 88%,
+    rgb(var(--v-theme-on-secondary-container)) 12%
+  );
 }
 
 .chat-header__section-chip:focus-visible {
@@ -2933,12 +2924,19 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 }
 
 .chat-header__section-chip-icon {
-  opacity: 0.8;
+  font-size: 24px;
   flex-shrink: 0;
 }
 
 .chat-header__section-chip-label {
-  line-height: 1;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

@@ -36,7 +36,7 @@ const props = withDefaults(defineProps<{
   showBackButton: true,
   sectionChipVisible: false,
   sectionChipLabel: 'Чат',
-  sectionChipIcon: 'mdi-chat-processing-outline',
+  sectionChipIcon: 'mdi-message-outline',
 })
 
 const emit = defineEmits<{
@@ -118,7 +118,7 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
 <template>
   <header class="chat-header" :class="{ 'chat-header--call-visible': callVisible, 'chat-header--floating': floating }">
     <div class="chat-header__toolbar" :class="{ 'chat-header__toolbar--no-back': !showBackButton }">
-      <div v-if="showBackButton" class="chat-header__nav-group" :class="{ 'chat-header__nav-group--with-chip': sectionChipVisible }">
+      <div v-if="showBackButton" class="chat-header__nav-group">
         <button
           v-if="sectionChipVisible"
           type="button"
@@ -127,7 +127,7 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
           :title="sectionChipLabel"
           @click="emit('back')"
         >
-          <VIcon :size="14" class="chat-header__section-chip-icon">{{ sectionChipIcon }}</VIcon>
+          <VIcon :size="24" class="chat-header__section-chip-icon">{{ sectionChipIcon }}</VIcon>
           <span class="chat-header__section-chip-label">{{ sectionChipLabel }}</span>
         </button>
 
