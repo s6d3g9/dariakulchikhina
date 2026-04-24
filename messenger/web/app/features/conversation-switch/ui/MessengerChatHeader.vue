@@ -70,6 +70,7 @@ const emit = defineEmits<{
   'select-agent-model': [value: string]
   'toggle-monitor-panel': []
   'open-shared-gallery': [section?: 'photos' | 'stickers' | 'documents' | 'links' | 'keys']
+  'open-chat-search': []
 }>()
 
 const overflowMenuOpen = ref(false)
@@ -460,6 +461,14 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
             <button
               type="button"
               class="chat-header-sheet__row"
+              @click="emit('open-chat-search'); close()"
+            >
+              <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-magnify</VIcon>
+              <span class="chat-header-sheet__row-label">Поиск в переписке</span>
+            </button>
+            <button
+              type="button"
+              class="chat-header-sheet__row"
               @click="emit('open-shared-gallery', 'photos'); close()"
             >
               <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-image-multiple-outline</VIcon>
@@ -543,6 +552,14 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
         </div>
 
         <div v-else-if="kind === 'overflow'" class="chat-header-sheet__list">
+          <button
+            type="button"
+            class="chat-header-sheet__row"
+            @click="emit('open-chat-search'); close()"
+          >
+            <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-magnify</VIcon>
+            <span class="chat-header-sheet__row-label">Поиск в переписке</span>
+          </button>
           <button
             type="button"
             class="chat-header-sheet__row"

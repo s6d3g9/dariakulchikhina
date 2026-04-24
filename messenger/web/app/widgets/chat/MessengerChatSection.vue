@@ -1991,6 +1991,29 @@ async function handleDesktopDrop(event: DragEvent) {
 type SharedGallerySection = 'photos' | 'stickers' | 'documents' | 'links' | 'keys'
 const requestedGallerySection = ref<SharedGallerySection | null>(null)
 
+const chatSearch = useChatSearch(conversations.messages)
+
+watch(() => chatSearch.currentMessageId.value, async (id) => {
+  if (!id) return
+  const ok = await scrollMessageIntoView(id, 'smooth')
+  if (!ok) return
+  const el = messageListEl.value?.querySelector<HTMLElement>(`[data-message-id="${id}"]`)
+  if (!el) return
+  el.classList.remove('message-bubble--search-flash')
+  void el.offsetWidth
+  el.classList.add('message-bubble--search-flash')
+  window.setTimeout(() => el.classList.remove('message-bubble--search-flash'), 1400)
+})
+
+watch(() => conversations.activeConversationId.value, () => {
+  if (chatSearch.open.value) chatSearch.close()
+})
+
+function openChatSearch() {
+  if (!conversations.activeConversation.value) return
+  chatSearch.openSearch()
+}
+
 function toggleDetails() {
   if (!conversations.activeConversation.value) {
     return
@@ -2621,6 +2644,7 @@ onBeforeUnmount(() => {
         :monitor-session-count="sessionTokenSummary.sessionCount"
         @toggle-details="toggleDetails"
         @open-shared-gallery="openSharedGallery"
+        @open-chat-search="openChatSearch"
         @toggle-audio-call="toggleAudioCall"
         @toggle-call-analysis="toggleCallAnalysis"
         @toggle-transcription="toggleCallTranscription"
@@ -2959,6 +2983,20 @@ onBeforeUnmount(() => {
           <p class="chat-dropzone__title">Перетащите файлы сюда</p>
           <p class="chat-dropzone__hint">Файлы отправятся прямо в текущий чат</p>
         </div>
+
+        <Transition name="chat-search-bar">
+          <MessengerChatSearchBar
+            v-if="chatSearch.open.value"
+            v-model="chatSearch.query.value"
+            :position-label="chatSearch.positionLabel.value"
+            :has-matches="chatSearch.matchCount.value > 0"
+            :has-query="chatSearch.query.value.trim().length > 0"
+            class="chat-search-bar--docked"
+            @prev="chatSearch.prev"
+            @next="chatSearch.next"
+            @close="chatSearch.close"
+          />
+        </Transition>
 
         <div ref="messageListEl" class="message-list message-list--chat-scroll">
           <MessengerMessageThread
