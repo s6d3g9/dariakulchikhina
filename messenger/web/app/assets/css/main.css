@@ -2880,6 +2880,68 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   flex-shrink: 0;
 }
 
+/* Desktop: section chip + back button share a single pill so the header
+ * reads as one continuous plate: [Чат|←] [Avatar+Name] [⋮]. The chip is
+ * mounted by the parent via sectionChipVisible and normally hidden on
+ * mobile widths where the back arrow alone is enough. */
+.chat-header__nav-group {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.chat-header__nav-group--with-chip {
+  gap: 0;
+  padding: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 5%, transparent);
+  border: 1px solid color-mix(in srgb, rgb(var(--v-theme-outline)) 25%, transparent);
+}
+
+.chat-header__nav-group--with-chip > .chat-header__back {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  border-radius: 999px !important;
+}
+
+.chat-header__section-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 10px;
+  border: 0;
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.chat-header__section-chip:hover {
+  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 8%, transparent);
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.chat-header__section-chip:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
+
+.chat-header__section-chip-icon {
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.chat-header__section-chip-label {
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .chat-header__peer {
   display: flex;
   align-items: center;
