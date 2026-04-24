@@ -12,21 +12,21 @@
 ## API -> Modules
 
 ### Auth
-- server/api/auth/login.post.ts -> server/modules/auth/admin-auth.service.ts
-- server/api/auth/register.post.ts -> server/modules/auth/admin-auth.service.ts
-- server/api/auth/recover.post.ts -> server/modules/auth/admin-recovery.service.ts
-- server/api/auth/me.get.ts -> server/modules/auth/session.service.ts
-- server/api/auth/logout.post.ts -> server/modules/auth/session.service.ts
-- server/api/auth/client-login.post.ts -> server/modules/auth/client-auth.service.ts
-- server/api/auth/client-register.post.ts -> server/modules/auth/client-auth.service.ts
-- server/api/auth/client-recover.post.ts -> server/modules/auth/client-auth.service.ts
-- server/api/auth/client-id-logout.post.ts -> server/modules/auth/session.service.ts
-- server/api/auth/client-open.get.ts -> server/modules/auth/client-auth.service.ts
-- server/api/auth/contractor-login.post.ts -> server/modules/auth/contractor-auth.service.ts
-- server/api/auth/contractor-register.post.ts -> server/modules/auth/contractor-auth.service.ts
-- server/api/auth/contractor-recover.post.ts -> server/modules/auth/contractor-auth.service.ts
-- server/api/auth/contractor-logout.post.ts -> server/modules/auth/session.service.ts
-- server/api/auth/csrf.get.ts -> server/api/auth/csrf.get.ts  (2-liner, no DB, stays)
+- server/api/auth/login.post.ts -> server/modules/auth/admin-auth.service.ts ✓ done 2026-04-20
+- server/api/auth/register.post.ts -> server/modules/auth/admin-auth.service.ts ✓ done 2026-04-20
+- server/api/auth/recover.post.ts -> server/modules/auth/admin-recovery.service.ts ✓ done 2026-04-20
+- server/api/auth/me.get.ts -> server/modules/auth/session.service.ts ✓ done 2026-04-20
+- server/api/auth/logout.post.ts -> server/modules/auth/session.service.ts ✓ done 2026-04-20
+- server/api/auth/client-login.post.ts -> server/modules/auth/client-auth.service.ts ✓ done 2026-04-20
+- server/api/auth/client-register.post.ts -> server/modules/auth/client-auth.service.ts ✓ done 2026-04-20
+- server/api/auth/client-recover.post.ts -> server/modules/auth/client-auth.service.ts ✓ done 2026-04-20
+- server/api/auth/client-id-logout.post.ts -> server/modules/auth/session.service.ts ✓ done 2026-04-20
+- server/api/auth/client-open.get.ts -> server/modules/auth/client-auth.service.ts ✓ done 2026-04-20
+- server/api/auth/contractor-login.post.ts -> server/modules/auth/contractor-auth.service.ts ✓ done 2026-04-20
+- server/api/auth/contractor-register.post.ts -> server/modules/auth/contractor-auth.service.ts ✓ done 2026-04-20
+- server/api/auth/contractor-recover.post.ts -> server/modules/auth/contractor-auth.service.ts ✓ done 2026-04-20
+- server/api/auth/contractor-logout.post.ts -> server/modules/auth/session.service.ts ✓ done 2026-04-20
+- server/api/auth/csrf.get.ts -> server/api/auth/csrf.get.ts  (2-liner, no DB, stays) ✓ done 2026-04-20
 
 ### Admin + settings
 - server/api/admin/search.get.ts -> server/modules/admin/admin-search.service.ts ✓ done 2026-04-20
