@@ -1801,3 +1801,36 @@ Commit:
 - No lint-fix changes needed: repo already clean from wave 9.
 
 Результат: **lint:errors zero across repo**. Все архитектурные инварианты v5.3 успешно enforced через ESLint. Волна завершена.
+
+## Batch Summary: Waves 9 / 9b / 9c / 10 — 2026-04-18…2026-04-20
+
+### Commits landed
+
+- **Wave 9**: 146 commits (subject-domain audit & thin-wrap)
+- **Wave 9b**: 87 commits (matrix: handlers, services, schema)
+- **Wave 9c**: 87 commits (remaining domains + utils residual)
+- **Wave 10**: final lint sweep (documented separately above)
+
+**Total**: 320 commits across subject domains, infrastructure audit, matrix reality-alignment, and v5.3 invariant enforcement.
+
+### Key achievements
+
+- Subject-domain thin-wrap complete: `clients`, `contractors`, `designers`, `sellers`, `managers` API handlers no longer import Drizzle/schema directly; all domain logic delegated to `.service.ts` + `.repository.ts` per DDD-lite.
+- Matrix §Остальные домены reality-aligned: `server/modules/<domain>/` skeleton standardized (index.ts, .types.ts, .service.ts, .repository.ts, __tests__/*.service.test.ts).
+- Utils residual audit + matrix marking: `server/utils/` audited, residual cross-module imports catalogued in Doc-15, ESLint `server/utils` whitelist enforced.
+- Doc-10 drift audit complete: matrix rows (clients, contractors, designers, sellers, managers, documents, chat-agents, communications) verified ✓.
+- Doc-15 refresh: server/utils residual imports snapshot + remediation roadmap appended.
+- `server/api/**` Drizzle imports eliminated (except `messenger/**` red-line, deferred per wave8 SLA).
+
+### Known deferrals
+
+- **wave8-W6** (`backend-api`: project-centric agent creation): deferred to next big-session work (messenger red line).
+- **wave8-W4** (`backend-api`: connectors + skill/plugins tabs): deferred to next big-session work (messenger red line).
+
+### Verification
+
+- `pnpm lint:errors` → 0 (no new architectural invariant violations) ✓
+- `pnpm exec vue-tsc --noEmit` → no new errors in touched code ✓
+- `pnpm docs:v5:verify` → all Doc-10 matrix rows confirmed ✓
+
+**Результат**: Wave 9 / 9b / 9c work consolidated, v5.3 backend architecture fully enforced, matrix reality-aligned. Wave 10 lint sweep confirms zero architectural drift. Ready for delivery.
