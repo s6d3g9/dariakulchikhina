@@ -1763,9 +1763,9 @@ async function openWorkspaceFile(path: string) {
 }
 .ws-chip:active { transform: scale(0.97); }
 .ws-chip--active {
-  background: rgba(var(--v-theme-primary), 0.16);
-  border-color: rgba(var(--v-theme-primary), 0.38);
-  color: rgb(var(--v-theme-primary));
+  background: rgb(var(--v-theme-secondary-container));
+  border-color: transparent;
+  color: rgb(var(--v-theme-on-secondary-container));
 }
 .ws-chip__icon { opacity: 0.8; flex-shrink: 0; }
 .ws-chip:hover .ws-chip__icon { opacity: 0.95; }

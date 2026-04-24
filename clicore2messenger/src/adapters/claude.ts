@@ -212,11 +212,3 @@ function mapCliEvent(
   return events;
 }
 
-function summarise(input: unknown): string {
-  try {
-    const compact = JSON.stringify(input) ?? "";
-    return compact.length > 120 ? compact.slice(0, 117) + "..." : compact;
-  } catch {
-    return "";
-  }
-}

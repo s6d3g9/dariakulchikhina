@@ -110,9 +110,9 @@ function onClick(key: string, active: boolean) {
 }
 .aidev-chip:active { transform: scale(0.97); }
 .aidev-chip--active {
-  background: rgba(var(--v-theme-primary), 0.16);
-  border-color: rgba(var(--v-theme-primary), 0.38);
-  color: rgb(var(--v-theme-primary));
+  background: rgb(var(--v-theme-secondary-container));
+  border-color: transparent;
+  color: rgb(var(--v-theme-on-secondary-container));
 }
 .aidev-chip__icon { opacity: 0.8; flex-shrink: 0; }
 .aidev-chip:hover .aidev-chip__icon { opacity: 0.95; }
