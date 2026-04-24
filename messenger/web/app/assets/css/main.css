@@ -1025,6 +1025,17 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 .chats-fab:active { transform: scale(0.96); }
 
 /* ── Folder Chips Bar ────────────────────────────────────── */
+/* Canonical M3 FilterChip selected state — shared across chip families. */
+.messenger-chip--active,
+.ws-chip--active,
+.aidev-chip--active,
+.chats-submenu-chip--active,
+.chats-folder-chip--active {
+  background: rgb(var(--v-theme-secondary-container));
+  color: rgb(var(--v-theme-on-secondary-container));
+  border-color: transparent;
+}
+
 .chats-submenu-bar {
   display: flex;
   align-items: center;
@@ -1054,13 +1065,6 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   white-space: nowrap;
   transition: background 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
   flex-shrink: 0;
-}
-
-.chats-submenu-chip--active {
-  border-color: rgba(var(--v-theme-primary), 0.92);
-  background: rgba(var(--v-theme-primary), 0.14);
-  color: rgb(var(--v-theme-primary));
-  box-shadow: 0 8px 18px rgba(var(--v-theme-primary), 0.14);
 }
 
 .chats-submenu-chip:hover:not(.chats-submenu-chip--active) {
@@ -1096,11 +1100,6 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   white-space: nowrap;
   transition: background 150ms ease, color 150ms ease;
   flex-shrink: 0;
-}
-
-.chats-folder-chip--active {
-  background: rgb(var(--v-theme-secondary-container));
-  color: rgb(var(--v-theme-on-secondary-container));
 }
 
 .chats-folder-chip:hover:not(.chats-folder-chip--active) {
