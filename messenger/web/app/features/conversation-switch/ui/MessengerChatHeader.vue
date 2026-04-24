@@ -72,10 +72,28 @@ const emit = defineEmits<{
 }>()
 
 const overflowMenuOpen = ref(false)
-const agentModelMenuOpen = ref(false)
+type HeaderSheetKind = 'model' | 'monitor' | 'overflow' | null
+const headerSheetKind = ref<HeaderSheetKind>(null)
+const isHeaderSheetOpen = computed(() => headerSheetKind.value !== null)
 
-watch(overflowMenuOpen, (open) => {
+const isOverflowOpen = computed(() =>
+  overflowMenuOpen.value || headerSheetKind.value === 'overflow',
+)
+
+watch(isOverflowOpen, (open) => {
   emit('update:overflow-menu-open', open)
+})
+
+function toggleHeaderSheet(kind: Exclude<HeaderSheetKind, null>) {
+  headerSheetKind.value = headerSheetKind.value === kind ? null : kind
+}
+
+function closeHeaderSheet() {
+  headerSheetKind.value = null
+}
+
+watch(() => props.callVisible, (visible) => {
+  if (visible) closeHeaderSheet()
 })
 
 const hasVideoCallControls = computed(() => Boolean(
@@ -131,8 +149,8 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
 </script>
 
 <template>
-  <header class="chat-header" :class="{ 'chat-header--call-visible': callVisible, 'chat-header--floating': floating }">
-    <div class="chat-header__toolbar" :class="{ 'chat-header__toolbar--no-back': !showBackButton }">
+  <header class="chat-header" :class="{ 'chat-header--call-visible': callVisible, 'chat-header--floating': floating, 'chat-header--sheet-open': isHeaderSheetOpen }">
+    <div class="chat-header__toolbar" :class="{ 'chat-header__toolbar--no-back': !showBackButton, 'chat-header__toolbar--sheet-open': isHeaderSheetOpen }">
       <div v-if="showBackButton" class="chat-header__nav-group">
         <VBtn
           type="button"
@@ -321,54 +339,35 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
           <template v-else>
             <div class="chat-header__call-inline chat-header__call-inline--idle">
               <div class="chat-header__call-primary chat-header__call-primary--idle">
-                <VMenu
-                  v-if="showAgentExtras"
-                  v-model="agentModelMenuOpen"
-                  location="bottom end"
-                  offset="8"
-                  :close-on-content-click="true"
-                >
-                  <template #activator="{ props: menuProps }">
-                    <VBtn
-                      type="button"
-                      class="chat-header__icon-btn chat-header__agent-btn"
-                      :class="{ 'chat-header__agent-btn--active': agentModelMenuOpen }"
-                      icon
-                      variant="text"
-                      :aria-label="agentModelLabel ? `Модель: ${agentModelLabel}` : 'Выбор модели'"
-                      :title="agentModelLabel ? `Модель: ${agentModelLabel}` : 'Выбор модели'"
-                      :disabled="agentModelPending"
-                      v-bind="menuProps"
-                    >
-                      <VIcon :color="agentModelColor">{{ agentModelIcon }}</VIcon>
-                    </VBtn>
-                  </template>
-                  <VList class="chat-header__agent-menu" density="compact" nav bg-color="surface-container-highest">
-                    <VListItem
-                      v-for="opt in agentModelOptions"
-                      :key="opt.value"
-                      :disabled="agentModelPending || opt.value === agentModelCurrentValue"
-                      :active="opt.value === agentModelCurrentValue"
-                      @click="emit('select-agent-model', opt.value)"
-                    >
-                      <template #prepend>
-                        <VIcon :color="opt.color" size="16" class="mr-2">{{ opt.icon }}</VIcon>
-                      </template>
-                      <VListItemTitle>{{ opt.label }}</VListItemTitle>
-                    </VListItem>
-                  </VList>
-                </VMenu>
                 <VBtn
                   v-if="showAgentExtras"
                   type="button"
                   class="chat-header__icon-btn chat-header__agent-btn"
-                  :class="{ 'chat-header__agent-btn--active': monitorPanelOpen }"
+                  :class="{ 'chat-header__agent-btn--active': headerSheetKind === 'model' }"
                   icon
-                  :variant="monitorPanelOpen ? 'tonal' : 'text'"
-                  :color="monitorPanelOpen ? 'primary' : undefined"
-                  :aria-label="monitorPanelOpen ? 'Скрыть мониторинг сессий' : 'Показать мониторинг сессий'"
-                  :title="monitorPanelOpen ? 'Скрыть мониторинг сессий' : 'Показать мониторинг сессий'"
-                  @click="emit('toggle-monitor-panel')"
+                  variant="text"
+                  :aria-label="agentModelLabel ? `Модель: ${agentModelLabel}` : 'Выбор модели'"
+                  :title="agentModelLabel ? `Модель: ${agentModelLabel}` : 'Выбор модели'"
+                  :aria-expanded="headerSheetKind === 'model'"
+                  aria-controls="chat-header-sheet"
+                  :disabled="agentModelPending"
+                  @click="toggleHeaderSheet('model')"
+                >
+                  <VIcon :color="agentModelColor">{{ agentModelIcon }}</VIcon>
+                </VBtn>
+                <VBtn
+                  v-if="showAgentExtras"
+                  type="button"
+                  class="chat-header__icon-btn chat-header__agent-btn"
+                  :class="{ 'chat-header__agent-btn--active': headerSheetKind === 'monitor' || monitorPanelOpen }"
+                  icon
+                  :variant="headerSheetKind === 'monitor' ? 'tonal' : 'text'"
+                  :color="headerSheetKind === 'monitor' ? 'primary' : undefined"
+                  aria-label="Мониторинг сессий"
+                  title="Мониторинг сессий"
+                  :aria-expanded="headerSheetKind === 'monitor'"
+                  aria-controls="chat-header-sheet"
+                  @click="toggleHeaderSheet('monitor')"
                 >
                   <VIcon>mdi-layers-outline</VIcon>
                   <span v-if="monitorSessionCount > 0" class="chat-header__agent-btn-badge" aria-hidden="true">{{ monitorSessionCount }}</span>
@@ -408,25 +407,94 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
                 >
                   <VIcon>mdi-video</VIcon>
                 </VBtn>
-                <VMenu v-model="overflowMenuOpen" location="bottom end">
-                  <template #activator="{ props: menuProps }">
-                    <VBtn type="button" class="chat-header__icon-btn" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
-                      <VIcon>mdi-dots-vertical</VIcon>
-                    </VBtn>
-                  </template>
-                  <VList bg-color="surface-container-highest" density="comfortable" nav>
-                    <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
-                    <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
-                    <VDivider class="my-1" />
-                    <VListItem prepend-icon="mdi-account-cancel-outline" title="Заблокировать" />
-                    <VListItem prepend-icon="mdi-delete-outline" title="Удалить диалог" class="text-error" />
-                  </VList>
-                </VMenu>
+                <VBtn
+                  type="button"
+                  class="chat-header__icon-btn"
+                  :class="{ 'chat-header__agent-btn--active': headerSheetKind === 'overflow' }"
+                  icon
+                  variant="text"
+                  aria-label="Дополнительно"
+                  :aria-expanded="headerSheetKind === 'overflow'"
+                  aria-controls="chat-header-sheet"
+                  @click="toggleHeaderSheet('overflow')"
+                >
+                  <VIcon>mdi-dots-vertical</VIcon>
+                </VBtn>
               </div>
             </div>
           </template>
         </div>
       </div>
     </div>
+
+    <MessengerHeaderSheet
+      id="chat-header-sheet"
+      :model-value="headerSheetKind"
+      @update:model-value="headerSheetKind = $event"
+    >
+      <template #default="{ kind, close }">
+        <div v-if="kind === 'model'" class="chat-header-sheet__list">
+          <button
+            v-for="opt in agentModelOptions"
+            :key="opt.value"
+            type="button"
+            class="chat-header-sheet__row"
+            :class="{ 'chat-header-sheet__row--active': opt.value === agentModelCurrentValue }"
+            :disabled="agentModelPending || opt.value === agentModelCurrentValue"
+            @click="emit('select-agent-model', opt.value); close()"
+          >
+            <VIcon :color="opt.color" :size="20" class="chat-header-sheet__row-icon">{{ opt.icon }}</VIcon>
+            <span class="chat-header-sheet__row-label">{{ opt.label }}</span>
+            <VIcon
+              v-if="opt.value === agentModelCurrentValue"
+              :size="18"
+              class="chat-header-sheet__row-check"
+              color="primary"
+            >mdi-check</VIcon>
+          </button>
+        </div>
+
+        <div v-else-if="kind === 'monitor'" class="chat-header-sheet__monitor">
+          <div class="chat-header-sheet__monitor-summary">
+            <span class="chat-header-sheet__monitor-count">{{ monitorSessionCount }}</span>
+            <span class="chat-header-sheet__monitor-caption">
+              {{ monitorSessionCount === 1 ? 'активная сессия' : 'активных сессий' }}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="chat-header-sheet__monitor-action"
+            @click="emit('toggle-monitor-panel'); close()"
+          >
+            <VIcon :size="20" class="chat-header-sheet__row-icon">
+              {{ monitorPanelOpen ? 'mdi-eye-off-outline' : 'mdi-layers-outline' }}
+            </VIcon>
+            <span class="chat-header-sheet__row-label">
+              {{ monitorPanelOpen ? 'Скрыть боковую панель' : 'Развернуть полную панель' }}
+            </span>
+          </button>
+        </div>
+
+        <div v-else-if="kind === 'overflow'" class="chat-header-sheet__list">
+          <button type="button" class="chat-header-sheet__row" @click="emit('toggle-details'); close()">
+            <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-magnify</VIcon>
+            <span class="chat-header-sheet__row-label">Поиск в переписке</span>
+          </button>
+          <button type="button" class="chat-header-sheet__row" @click="emit('toggle-details'); close()">
+            <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-image-multiple-outline</VIcon>
+            <span class="chat-header-sheet__row-label">Медиа и файлы</span>
+          </button>
+          <div class="chat-header-sheet__divider" aria-hidden="true" />
+          <button type="button" class="chat-header-sheet__row">
+            <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-account-cancel-outline</VIcon>
+            <span class="chat-header-sheet__row-label">Заблокировать</span>
+          </button>
+          <button type="button" class="chat-header-sheet__row chat-header-sheet__row--danger">
+            <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-delete-outline</VIcon>
+            <span class="chat-header-sheet__row-label">Удалить диалог</span>
+          </button>
+        </div>
+      </template>
+    </MessengerHeaderSheet>
   </header>
 </template>
