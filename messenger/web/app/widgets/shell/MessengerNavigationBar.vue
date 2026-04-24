@@ -19,6 +19,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: MessengerSectionKey): void
+  (e: 'open-drawer'): void
 }>()
 
 const barEl = ref<HTMLElement | null>(null)
@@ -45,6 +46,16 @@ function selectSection(section: SectionItem) {
     class="messenger-bottom-nav"
     aria-label="Основная навигация"
   >
+    <VBtn
+      icon
+      variant="text"
+      size="small"
+      aria-label="Открыть меню"
+      class="messenger-nav-bar__hamburger"
+      @click="emit('open-drawer')"
+    >
+      <VIcon>mdi-menu</VIcon>
+    </VBtn>
     <div
       class="messenger-bottom-nav__indicator"
       aria-hidden="true"

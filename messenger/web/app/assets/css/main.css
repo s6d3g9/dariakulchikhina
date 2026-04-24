@@ -477,6 +477,26 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   color: rgb(var(--v-theme-on-secondary-container));
 }
 
+.messenger-nav-bar__hamburger {
+  flex-shrink: 0;
+  margin-right: 4px;
+  width: var(--messenger-bottom-bar-button-height) !important;
+  height: var(--messenger-bottom-bar-button-height) !important;
+  min-width: var(--messenger-bottom-bar-button-height) !important;
+  border-radius: var(--messenger-bottom-bar-radius);
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+/* Mobile modal NavigationDrawer — hosted inside VNavigationDrawer temporary. */
+.messenger-mobile-drawer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgb(var(--v-theme-surface));
+  border-right: 0;
+}
+
 .messenger-bottom-nav__indicator {
   position: absolute;
   top: 5px;
