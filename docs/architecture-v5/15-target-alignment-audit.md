@@ -1,6 +1,6 @@
 # 15. Target Alignment Audit
 
-Date: 2026-04-20
+Last refresh: 2026-04-20
 Scope: сверка документов 09-14 с фактической структурой репозитория после завершенных batch-рефакторингов (Wave 0-6 в основном закрыты, Wave 5 API-facade в активной работе).
 
 ## Как читать этот аудит
@@ -23,7 +23,7 @@ Status: Aligned
 - `services/communications-service/src/**` разложен (`auth`, `store`, `config.ts`, `index.ts`, `types.ts`).
 
 Что остаётся:
-- отдельные фрагменты доменной логики в `server/utils/**` ещё не полностью растащены по `server/modules/**`.
+- ✓ closed 2026-04-20: доменная логика перенесена в `server/modules/**`; `server/utils/**` теперь содержит только infrastructure-утилиты (`errors.ts`, `logger.ts`, `security-headers.ts`, `body.ts`, `query.ts` и др.) — это целевое состояние.
 
 ## 10. Frontend refactor map
 
@@ -49,7 +49,7 @@ Status: Aligned (matrix 11 closed).
 - `server/api/**` содержит 0 handlers импортирующих `drizzle-orm` или `~/server/db/schema` (thin-wrap complete).
 
 Что остаётся:
-- остаточная доменная логика в `server/utils/**`.
+- ✓ closed 2026-04-20: `server/utils/**` содержит только infrastructure-утилиты; доменная логика в `server/modules/**`.
 
 ## 12. Messenger + Services refactor map
 
@@ -74,10 +74,35 @@ Status: Aligned
 
 Roadmap log содержит 80+ завершённых batch-этапов и остаётся единственным источником истины по фактическому прогрессу.
 
+## New gaps (2026-04-20)
+
+Сравнение с целевым деревом из `09-target-repository-tree.md` по фактическому состоянию `ls -F` выявило следующие расхождения:
+
+### Целевые пути, отсутствующие в факте (target → actual missing)
+
+| Target path | Статус |
+|---|---|
+| `app/entities/directories/` | отсутствует — сущность директорий не создана |
+| `app/features/admin-search/` | отсутствует — фича поиска в admin не вынесена в отдельный слой |
+| `app/features/auth/` | отсутствует — auth-фича не вынесена в `app/features/` |
+| `app/widgets/client-cabinet/` | отсутствует — кабинет клиента не выделен в отдельный виджет |
+| `app/widgets/project-cabinet/` | отсутствует — кабинет проекта не выделен в отдельный виджет |
+| `server/modules/suggest/` | отсутствует — suggest-домен остаётся только на уровне `server/api/suggest/` без модульного фасада |
+
+### Фактические пути, отсутствующие в target (actual → target extra)
+
+| Actual path | Примечание |
+|---|---|
+| `app/widgets/projects/` | нет в target — возможно замена/дополнение к `project-cabinet/` |
+| `server/api/agents/` | нет в target — добавлен после фиксации doc-09 |
+| `server/api/geocode/` | нет в target — добавлен после фиксации doc-09 |
+| `server/api/suggestions.get.ts` | нет в target — loose файл вне `suggest/` директории |
+| `server/api/upload.post.ts` | нет в target — loose файл вне именованной директории |
+
 ## Priority gaps
 
-None — all v5 architectural requirements are satisfied.
+Выявлено 6 missing-target-path gap'ов (см. таблицу выше). Из них приоритетен `server/modules/suggest/` (нарушение DDD-lite: domain-логика через API-handler без модульного фасада). Остальные — frontend structural gaps, не нарушающие архитектурных инвариантов ESLint.
 
 ## Verdict
 
-The v5 architecture is fully implemented across the main app, messenger, and communications-service. All 47 frontend moves are complete, backend modules contain all target domains with 0 drizzle-orm imports in `server/api/**`, and the three-runtime isolation constraint is enforced. Document alignment across all target specs (09-14) is confirmed.
+The v5 architecture is fully implemented across the main app, messenger, and communications-service. All 47 frontend moves are complete, the three-runtime isolation constraint is enforced. Six structural gaps remain versus the doc-09 target tree: five missing FSD directories (`entities/directories/`, `features/admin-search/`, `features/auth/`, `widgets/client-cabinet/`, `widgets/project-cabinet/`) and one missing DDD module facade (`server/modules/suggest/`). These are Wave backlog items, not merge blockers.
