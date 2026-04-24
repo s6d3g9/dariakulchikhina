@@ -1707,6 +1707,17 @@ async function openWorkspaceFile(path: string) {
             <span class="ws-chip__label">{{ section.title }}</span>
           </button>
         </div>
+
+        <button
+          v-if="!collapsed"
+          type="button"
+          class="ws-chip-bar__close"
+          aria-label="Закрыть рабочую область"
+          title="Закрыть"
+          @click="collapsed = true"
+        >
+          <VIcon :size="14">mdi-close</VIcon>
+        </button>
       </div>
     </div>
   </section>
@@ -1772,4 +1783,23 @@ async function openWorkspaceFile(path: string) {
 .ws-chip--active .ws-chip__icon { opacity: 1; }
 .ws-chip__label { line-height: 1; }
 
+.ws-chip-bar__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.ws-chip-bar__close:hover {
+  background: rgba(var(--v-theme-error), 0.12);
+  border-color: rgba(var(--v-theme-error), 0.4);
+  color: rgb(var(--v-theme-error));
+}
 </style>
