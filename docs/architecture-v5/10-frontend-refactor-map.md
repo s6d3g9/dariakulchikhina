@@ -109,3 +109,121 @@
 - Что уже достигнуто: выполнен безопасный widget-shell cutover для ключевых CRM admin-страниц и создан базовый слой `app/widgets/**` для project/cabinets/gallery/documents.
 - Что еще не доведено до полного match: системное наполнение `app/shared/ui/**`, перенос primary-flow в `app/features/**`, снятие оставшихся bridge-зависимостей на legacy `app/components/**`.
 - Критерий завершения этого документа: страницы остаются route-shell, бизнес-UI живет в `features/widgets/entities/shared` без legacy fallback.
+
+## Drift audit (2026-04-20)
+
+Audit run against actual `app/` tree on 2026-04-20.
+
+**Counts:** landed: 47 | pending: 19 | stale: 0
+
+### Shared UI (10 rows)
+
+| Target path | Status |
+|---|---|
+| `app/shared/ui/surfaces/GlassSurface.vue` | ✓ landed 2026-04-20 |
+| `app/shared/ui/buttons/GlassButton.vue` | ✓ landed 2026-04-20 |
+| `app/shared/ui/forms/GlassInput.vue` | ✓ landed 2026-04-20 |
+| `app/shared/ui/overlays/GlassModal.vue` | ✓ landed 2026-04-20 |
+| `app/shared/ui/navigation/GlassNavigation.vue` | ✓ landed 2026-04-20 |
+| `app/shared/ui/forms/AppAddressInput.vue` | ✓ landed 2026-04-20 |
+| `app/shared/ui/forms/AppAutocomplete.vue` | ✓ landed 2026-04-20 |
+| `app/shared/ui/forms/AppDatePicker.vue` | ✓ landed 2026-04-20 |
+| `app/shared/ui/feedback/CabAutosaveStatus.vue` | ✓ landed 2026-04-20 |
+| `app/shared/ui/feedback/CabSectionHeader.vue` | ✓ landed 2026-04-20 |
+
+### Навигация и shell (10 rows)
+
+| Target path | Status |
+|---|---|
+| `app/entities/admin-navigation/ui/AdminNestedNav.vue` | ✓ landed 2026-04-20 |
+| `app/entities/admin-navigation/model/useAdminNav.ts` | ✓ landed 2026-04-20 |
+| `app/widgets/shells/AdminEntityCabinetShell.vue` | ✓ landed 2026-04-20 |
+| `app/widgets/shells/AdminEntityEmptyState.vue` | ✓ landed 2026-04-20 |
+| `app/widgets/shells/AdminEntityHeader.vue` | ✓ landed 2026-04-20 |
+| `app/widgets/shells/AdminEntityHero.vue` | ✓ landed 2026-04-20 |
+| `app/widgets/shells/AdminEntityPageShell.vue` | ✓ landed 2026-04-20 |
+| `app/features/entity-create/ui/AdminEntityCreateCard.vue` | ✓ landed 2026-04-20 |
+| `app/features/page-content/ui/AdminPageContent.vue` | ✓ landed 2026-04-20 |
+| `app/features/page-content/ui/ClientPageContent.vue` | ✓ landed 2026-04-20 |
+
+### Design system (14 rows)
+
+| Target path | Status |
+|---|---|
+| `app/features/ui-editor/ui/UIDesignPanel.vue` | ✓ landed 2026-04-20 |
+| `app/entities/app-blueprint/ui/UIAppBlueprintBuilder.vue` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/ui/UIDesignModulesMatrix.vue` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/ui/UIDesignVisibilityRules.vue` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/ui/Wipe2Renderer.vue` | ✓ landed 2026-04-20 |
+| `app/entities/app-blueprint/model/useAppBlueprintCatalog.ts` | ✓ landed 2026-04-20 |
+| `app/entities/app-blueprint/model/useAppBlueprintRuntime.ts` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/model/useDesignModules.ts` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/model/useDesignSystem.ts` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/model/useEditMode.ts` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/model/useElementAlignment.ts` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/model/useElementVisibility.ts` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/model/useUITheme.ts` | ✓ landed 2026-04-20 |
+| `app/entities/design-system/model/useWipe2.ts` | ✓ landed 2026-04-20 |
+
+### Галерея, материалы, коммуникации (13 rows)
+
+| Target path | Status |
+|---|---|
+| `app/widgets/gallery/AdminGallery.vue` | ✓ landed 2026-04-20 |
+| `app/entities/gallery/ui/GalleryFilterBar.vue` | ✓ landed 2026-04-20 |
+| `app/entities/gallery/ui/GalleryLightbox.vue` | ✓ landed 2026-04-20 |
+| `app/entities/gallery/ui/GalleryMasonry.vue` | ✓ landed 2026-04-20 |
+| `app/entities/gallery/model/useGallery.ts` | ✓ landed 2026-04-20 |
+| `app/widgets/materials/AdminMaterials.vue` | ✓ landed 2026-04-20 |
+| `app/entities/materials/ui/MaterialPropertyEditor.vue` | ✓ landed 2026-04-20 |
+| `app/entities/materials/ui/MaterialPropertyPanel.vue` | ✓ landed 2026-04-20 |
+| `app/entities/communications/ui/ProjectCommunicationsPanel.vue` | ✓ landed 2026-04-20 |
+| `app/entities/communications/model/useProjectCommunicationsBootstrap.ts` | ✓ landed 2026-04-20 |
+| `app/entities/communications/model/useStandaloneCommunicationsBootstrap.ts` | ✓ landed 2026-04-20 |
+| `app/entities/agents/model/useAgentRegistry.ts` | ✓ landed 2026-04-20 |
+| `app/entities/agents/model/useAgentSettings.ts` | ✓ landed 2026-04-20 |
+
+### Wildcard groups
+
+| Doc target | Status |
+|---|---|
+| `app/widgets/phases/{initiation,concept,working-project,procurement,construction,commissioning}/**` | ✓ landed 2026-04-20 — all 6 subdirs present |
+| `app/widgets/client-cabinet/**` | path drift — landed as `app/widgets/cabinets/client/` (not counted in pending/stale) |
+
+### Новые frontend-файлы первого этапа (19 rows — pending)
+
+These are net-new files (no legacy source). All 19 targets are absent.
+
+| Target path | Status |
+|---|---|
+| `app/widgets/admin-dashboard/AdminProjectsDashboard.vue` | pending |
+| `app/widgets/registries/ClientsRegistryWorkspace.vue` | pending |
+| `app/widgets/registries/ContractorsRegistryWorkspace.vue` | pending |
+| `app/widgets/registries/DesignersRegistryWorkspace.vue` | pending |
+| `app/widgets/registries/ManagersRegistryWorkspace.vue` | pending |
+| `app/widgets/registries/SellersRegistryWorkspace.vue` | pending |
+| `app/widgets/agents/AgentRegistryWorkspace.vue` | pending |
+| `app/widgets/contractor-cabinet/ContractorCabinetShell.vue` | pending |
+| `app/widgets/contractor-cabinet/ContractorProfileSection.vue` | pending |
+| `app/widgets/contractor-cabinet/ContractorDocumentsSection.vue` | pending |
+| `app/widgets/contractor-cabinet/ContractorWorkItemsSection.vue` | pending |
+| `app/widgets/contractor-cabinet/ContractorStaffSection.vue` | pending |
+| `app/features/auth/admin/ui/AdminLoginForm.vue` | pending |
+| `app/features/auth/client/ui/ClientLoginForm.vue` | pending |
+| `app/features/auth/client/ui/ClientRecoverForm.vue` | pending |
+| `app/features/auth/client/ui/ClientRegisterForm.vue` | pending |
+| `app/features/auth/contractor/ui/ContractorLoginForm.vue` | pending |
+| `app/features/auth/contractor/ui/ContractorRecoverForm.vue` | pending |
+| `app/features/auth/contractor/ui/ContractorRegisterForm.vue` | pending |
+
+### FSD import direction invariants
+
+Verified in `eslint.config.mjs` (lines 367, 395, 417):
+
+```
+367: // FSD direction: entities cannot import from widgets/features/pages
+395: // FSD direction: widgets cannot import from pages
+417: // FSD direction: features cannot import from widgets/pages
+```
+
+Rules are present and enforced as hard errors. Wording unchanged from baseline.

@@ -29,7 +29,8 @@
 22. [Skill Bundles — per-kind плагины для воркеров](./22-skill-bundles.md)
 23. [Project-Centric Messenger — проекты, коннекторы, скилы, MCP, bootstrap composer](./23-project-centric-messenger.md)
 28. [Code Excellence — эволюция паттернов модулей до идеала](./28-code-excellence-plan.md)
-24. [Arch Audit: Project-Centric Messenger (2026-04-20)](./24-arch-audit-2026-04-20.md)
+24. [AIDev Module — Project-Centric Dev Flow inside Messenger](./24-aidev-module.md)
+24b. [Arch Audit: Project-Centric Messenger (2026-04-20)](./24-arch-audit-2026-04-20.md)
 25. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
 
 ## Операционные шаблоны

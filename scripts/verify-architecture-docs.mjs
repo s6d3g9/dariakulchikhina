@@ -215,6 +215,7 @@ const SERVER_UTILS_ALLOWED = new Set([
   'query.ts',
   'request-context.ts',
   'security-headers.ts',
+  'define-endpoint.ts',
 ])
 
 function checkServerUtilsWhitelist() {
