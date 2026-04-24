@@ -453,6 +453,24 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   overflow: hidden;
 }
 
+.messenger-section-stack {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header--section {
+  flex-shrink: 0;
+}
+
+.chat-header__main-rail--section {
+  border-inline-start: 0;
+  padding-inline-start: 0;
+  margin-inline-start: 0;
+}
+
 /* ── Bottom Navigation Bar (кастомный <nav>, остаётся в flex-потоке) ── */
 .messenger-bottom-nav {
   /* 64×32dp pill indicator matches M3 NavigationBar active-indicator. */

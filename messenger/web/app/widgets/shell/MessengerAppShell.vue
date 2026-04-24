@@ -80,12 +80,13 @@ const showBottomNav = computed(() =>
   !navigation.mediaSheetOpen.value && !calls.analysisPanelOpen.value,
 )
 
-// M3 adaptive navigation: <600 → bar, 600–1199 → rail, ≥1200 → drawer.
-// Vuetify 4 lg-threshold is 1280px — use raw width to pin the M3 1200px breakpoint.
-const navMode = computed<'bar' | 'rail' | 'drawer'>(() => {
+// The left nav-rail and persistent drawer were removed in favour of a
+// unified capsule header that lives on top of every section and exposes
+// the section switcher as a dropdown. Below 600px the bottom navigation
+// bar stays — on phones you want the thumb target, not another menu tap.
+const navMode = computed<'bar' | 'none'>(() => {
   const w = display.width.value
-  if (w >= 1200) return 'drawer'
-  if (w >= 600) return 'rail'
+  if (w >= 600) return 'none'
   return 'bar'
 })
 
@@ -170,43 +171,49 @@ async function logout() {
       :data-messenger-detached-call="detachedCallHeaderVisible ? 'open' : 'closed'"
     >
       <div class="messenger-workspace">
-        <MessengerNavigationDrawer
-          v-if="navMode === 'drawer'"
-          :model-value="navValue"
-          :sections="sections"
-          :chat-disabled="chatDisabled"
-          @update:model-value="openNavSection"
-        />
-        <MessengerNavigationRail
-          v-else-if="navMode === 'rail'"
-          :model-value="navValue"
-          :sections="sections"
-          :chat-disabled="chatDisabled"
-          @update:model-value="openNavSection"
-        />
-
-        <!-- Активная секция (v-show сохраняет стейт при переключении) -->
+        <!-- Активная секция (v-show сохраняет стейт при переключении).
+             Chat uses its own rich capsule header (MessengerChatHeader);
+             other sections get a shared dropdown capsule on top. -->
         <div class="messenger-section-wrap">
           <MessengerChatSection
             v-show="navigation.activeSection.value === 'chat'"
           />
-          <MessengerChatsSection
+          <div
             v-show="navigation.activeSection.value === 'chats'"
-          />
-          <MessengerContactsSection
+            class="messenger-section-stack"
+          >
+            <MessengerSectionCapsule section-key="chats" />
+            <MessengerChatsSection />
+          </div>
+          <div
             v-show="navigation.activeSection.value === 'contacts'"
-          />
-          <MessengerAgentsSection
+            class="messenger-section-stack"
+          >
+            <MessengerSectionCapsule section-key="contacts" />
+            <MessengerContactsSection />
+          </div>
+          <div
             v-if="agentsEnabled"
             v-show="navigation.activeSection.value === 'agents'"
-          />
-          <MessengerAidevSection
+            class="messenger-section-stack"
+          >
+            <MessengerSectionCapsule section-key="agents" />
+            <MessengerAgentsSection />
+          </div>
+          <div
             v-show="navigation.activeSection.value === 'aidev'"
-          />
-          <MessengerSettingsSection
+            class="messenger-section-stack"
+          >
+            <MessengerSectionCapsule section-key="aidev" />
+            <MessengerAidevSection />
+          </div>
+          <div
             v-show="navigation.activeSection.value === 'settings'"
-            @logout="logout"
-          />
+            class="messenger-section-stack"
+          >
+            <MessengerSectionCapsule section-key="settings" />
+            <MessengerSettingsSection @logout="logout" />
+          </div>
         </div>
       </div>
 
