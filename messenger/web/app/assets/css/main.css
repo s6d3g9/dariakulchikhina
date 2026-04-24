@@ -786,22 +786,24 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 
 .agent-chat-workspace__sheet {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(100% - 1px);
-  z-index: 1;
-  min-height: 0;
-  height: max(260px, calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px)));
-  max-height: calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px));
+  inset-inline: 0;
+  bottom: calc(100% + 8px);
+  width: 100%;
+  /* Same sizing/framing as .composer-aidev-panel so workspace and AIDev
+   * overlays are the same floating sheet across all breakpoints, fitting
+   * between the top header and the bottom chip bar on mobile. */
+  height: clamp(260px, 58vh, 560px);
+  max-height: calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px) - 16px);
+  z-index: 35;
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  /* Match .chat-aidev-overlay — same container framing so workspace sheet
-   * and aidev overlay read as one visual standard. */
-  background: rgb(var(--v-theme-surface-container));
-  border: 0;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+  background: rgb(var(--v-theme-surface-container-low));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
 }
 
 .agent-chat-workspace--collapsed .agent-chat-workspace__dock {
@@ -939,8 +941,11 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 
 @media (max-width: 767px) {
   .agent-chat-workspace__sheet {
-    height: max(220px, calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px)));
-    max-height: calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px));
+    /* Mobile: keep clamp behavior of .composer-aidev-panel but allow the
+     * sheet to stretch up to just below the top header, so Обзор/Настройки/
+     * etc. fill the available space between header and bottom chip bar. */
+    height: clamp(240px, 62vh, 520px);
+    max-height: calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px) - 12px);
   }
 }
 
@@ -6762,13 +6767,14 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
 
 .agent-chat-workspace-sheet-enter-active,
 .agent-chat-workspace-sheet-leave-active {
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity 220ms ease, transform 220ms ease;
+  transform-origin: center bottom;
 }
 
 .agent-chat-workspace-sheet-enter-from,
 .agent-chat-workspace-sheet-leave-to {
   opacity: 0;
-  transform: translateY(14px);
+  transform: translateY(14px) scale(0.985);
 }
 
 .chrome-reveal-enter-active { transition: opacity 150ms ease, transform 150ms ease; }
