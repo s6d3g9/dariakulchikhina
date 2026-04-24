@@ -266,9 +266,28 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   width: var(--messenger-nav-rail-width);
   padding: 12px 6px;
   gap: 4px;
-  background: rgb(var(--v-theme-surface));
-  border-right: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  /* Top strip tint matches .chat-header so the sidebar's top 64px merges
+   * seamlessly with the header, forming a single edge-to-edge plate. */
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(var(--v-theme-primary), 0.05) 0,
+      rgba(var(--v-theme-primary), 0.05) var(--messenger-chat-header-height),
+      transparent var(--messenger-chat-header-height)
+    ),
+    rgb(var(--v-theme-surface));
   flex-shrink: 0;
+}
+
+.messenger-nav-rail::after {
+  content: '';
+  position: absolute;
+  top: var(--messenger-chat-header-height);
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  pointer-events: none;
 }
 
 .messenger-nav-rail__indicator {
@@ -350,10 +369,29 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   width: var(--messenger-nav-drawer-width);
   padding: 12px 12px;
   gap: 2px;
-  background: rgb(var(--v-theme-surface));
-  border-right: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  /* Top strip tint matches .chat-header so the sidebar's top 64px merges
+   * seamlessly with the header, forming a single edge-to-edge plate. */
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(var(--v-theme-primary), 0.05) 0,
+      rgba(var(--v-theme-primary), 0.05) var(--messenger-chat-header-height),
+      transparent var(--messenger-chat-header-height)
+    ),
+    rgb(var(--v-theme-surface));
   flex-shrink: 0;
   overflow-y: auto;
+}
+
+.messenger-nav-drawer::after {
+  content: '';
+  position: absolute;
+  top: var(--messenger-chat-header-height);
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  pointer-events: none;
 }
 
 .messenger-nav-drawer__indicator {
