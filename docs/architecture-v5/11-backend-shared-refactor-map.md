@@ -104,7 +104,17 @@
 ### Geocode
 - server/api/geocode/address.get.ts -> server/api/geocode/address.get.ts  (thin handler, external provider proxy) ✓ done 2026-04-20
 
-- server/api/chat/ -> server/modules/chat/
+### Chat
+- server/api/chat/profile.put.ts -> server/modules/chat/chat-users.service.ts ✓ done 2026-04-20
+- server/api/chat/auth/login.post.ts -> server/modules/chat/chat-users.service.ts ✓ done 2026-04-20
+- server/api/chat/auth/logout.post.ts -> server/modules/chat/chat-users.service.ts ✓ done 2026-04-20
+- server/api/chat/auth/me.get.ts -> server/modules/chat/chat-users.service.ts ✓ done 2026-04-20
+- server/api/chat/auth/register.post.ts -> server/modules/chat/chat-users.service.ts ✓ done 2026-04-20
+- server/api/chat/communications/bootstrap.get.ts -> server/modules/chat/chat-communications.service.ts ✓ done 2026-04-20
+- server/api/chat/contacts/index.get.ts -> server/modules/chat/chat-users.service.ts ✓ done 2026-04-20
+- server/api/chat/contacts/invite.post.ts -> server/modules/chat/chat-users.service.ts ✓ done 2026-04-20
+- server/api/chat/contacts/respond.post.ts -> server/modules/chat/chat-users.service.ts ✓ done 2026-04-20
+- server/api/chat/users/index.get.ts -> server/modules/chat/chat-users.service.ts ✓ done 2026-04-20
 
 ### AI handlers
 - server/api/ai/document-stream.post.ts -> server/modules/ai/ (ai.service, rag.service) ✓ done 2026-04-20
