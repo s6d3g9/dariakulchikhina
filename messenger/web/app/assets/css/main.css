@@ -2932,9 +2932,9 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   flex-shrink: 0;
 }
 
-.chat-header__main-rail > .chat-header__peer,
-.chat-header__main-rail > .chat-header__toolbar-actions {
+.chat-header__main-rail > .chat-header__peer {
   min-width: 0;
+  flex: 1 1 0;
 }
 
 .chat-header__toolbar-actions {
@@ -2942,15 +2942,16 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
-  min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .chat-header__toolbar-actions--call {
   overflow: hidden;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   max-width: none;
-  min-width: 0;
   padding: 0;
   border-radius: 0;
   background: transparent;
@@ -3027,7 +3028,7 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   align-items: center;
   gap: 8px;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   padding: 4px 8px;
   border-radius: 12px;
   text-transform: none;
