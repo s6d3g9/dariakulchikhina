@@ -675,11 +675,14 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 }
 
 .section-tabs .v-tab.v-tab--selected {
-  flex-grow: 1.16;
-  transform: translateY(-1px) scale(1.02);
+  /* Sliding M3 indicator replaces the old grow+lift transform. */
 }
 
-.section-tabs .v-tabs-slider,
+.section-tabs .v-tab__slider {
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
 .section-tabs .v-slide-group__prev,
 .section-tabs .v-slide-group__next {
   display: none !important;
@@ -5366,8 +5369,7 @@ html[data-messenger-keyboard='open'] .section-block--chat {
 }
 
 .composer-media-menu__tabs .v-tab.v-tab--selected,
-.content-gallery__nav .v-tab.v-tab--selected,
-.section-tabs .v-tab.v-tab--selected {
+.content-gallery__nav .v-tab.v-tab--selected {
   flex-grow: 1.16;
   transform: translateY(-1px) scale(1.02);
 }
