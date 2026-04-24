@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDisplay } from 'vuetify'
 import type { MessengerSectionKey } from './model/useMessengerSections'
 
 const auth = useMessengerAuth()
@@ -11,6 +12,7 @@ const viewport = useMessengerViewport()
 const settingsModel = useMessengerSettings()
 const { agentsEnabled } = useMessengerFeatures()
 const { sections } = useMessengerSections()
+const display = useDisplay()
 const localTestScenarioPending = ref(false)
 
 function getQueryValue(value: string | string[] | undefined) {
@@ -218,67 +220,13 @@ async function logout() {
       <MessengerCallOverlay />
 
       <!-- Bottom Navigation Bar (кастомный, не VBottomNavigation — чтобы оставался в flex-потоке) -->
-      <nav
+      <MessengerNavigationBar
         v-show="showBottomNav"
-        class="messenger-bottom-nav"
-        aria-label="Основная навигация"
-      >
-        <button
-          type="button"
-          class="messenger-nav-btn"
-          :class="{ 'messenger-nav-btn--active': navValue === 'chat' }"
-          :disabled="chatDisabled"
-          @click="navValue = 'chat'"
-        >
-          <VIcon class="messenger-nav-icon">mdi-message-outline</VIcon>
-        </button>
-
-        <button
-          type="button"
-          class="messenger-nav-btn"
-          :class="{ 'messenger-nav-btn--active': navValue === 'chats' }"
-          @click="navValue = 'chats'"
-        >
-          <VIcon class="messenger-nav-icon">mdi-message-text-outline</VIcon>
-        </button>
-
-        <button
-          type="button"
-          class="messenger-nav-btn"
-          :class="{ 'messenger-nav-btn--active': navValue === 'contacts' }"
-          @click="navValue = 'contacts'"
-        >
-          <VIcon class="messenger-nav-icon">mdi-account-multiple-outline</VIcon>
-        </button>
-
-        <button
-          v-if="agentsEnabled"
-          type="button"
-          class="messenger-nav-btn"
-          :class="{ 'messenger-nav-btn--active': navValue === 'agents' }"
-          @click="navValue = 'agents'"
-        >
-          <VIcon class="messenger-nav-icon">mdi-robot-outline</VIcon>
-        </button>
-
-        <button
-          type="button"
-          class="messenger-nav-btn"
-          :class="{ 'messenger-nav-btn--active': navValue === 'aidev' }"
-          @click="navValue = 'aidev'"
-        >
-          <VIcon class="messenger-nav-icon">mdi-rocket-launch-outline</VIcon>
-        </button>
-
-        <button
-          type="button"
-          class="messenger-nav-btn"
-          :class="{ 'messenger-nav-btn--active': navValue === 'settings' }"
-          @click="navValue = 'settings'"
-        >
-          <VIcon class="messenger-nav-icon">mdi-cog-outline</VIcon>
-        </button>
-      </nav>
+        :model-value="navValue"
+        :sections="sections"
+        :chat-disabled="chatDisabled"
+        @update:model-value="openNavSection"
+      />
     </div>
   </VMain>
 </template>
