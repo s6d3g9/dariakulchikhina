@@ -555,6 +555,65 @@ async function onModelSelect(model: string) {
   }
 }
 
+const effortSetPending = ref(false)
+
+const currentSessionEffort = computed<'low' | 'medium' | 'high'>(() => {
+  const slug = activeAgentSession.value?.slug
+  if (!slug) return 'medium'
+  return cliSessionsModel.getEffort(slug)
+})
+
+async function onEffortSelect(effort: 'low' | 'medium' | 'high') {
+  const sess = activeAgentSession.value
+  if (!sess) return
+  effortSetPending.value = true
+  modelSetError.value = ''
+  try {
+    await cliSessionsModel.setEffort(sess.slug, effort)
+  }
+  catch {
+    modelSetError.value = 'Не удалось сменить effort'
+    setTimeout(() => { modelSetError.value = '' }, 3000)
+  }
+  finally {
+    effortSetPending.value = false
+  }
+}
+
+const subsModel = useMessengerSubscriptions()
+onMounted(() => { subsModel.hydrate().catch(() => {}) })
+
+const currentSubscriptionLabel = computed(() => subsModel.defaultSubscription.value?.label ?? '')
+
+const currentUsage5h = computed(() => {
+  const sub = subsModel.defaultSubscription.value
+  if (!sub) return { requests: 0, limit: 0 }
+  const u = subsModel.getUsage5h(sub.id)
+  const limits = subsModel.limitsFor(sub)
+  return { requests: u.requestCount, limit: limits.requestsPer5h }
+})
+
+const currentUsageWeek = computed(() => {
+  const sub = subsModel.defaultSubscription.value
+  if (!sub) return { requests: 0, limit: 0 }
+  const u = subsModel.getUsageWeek(sub.id)
+  const limits = subsModel.limitsFor(sub)
+  return { requests: u.requestCount, limit: limits.requestsPerWeek }
+})
+
+const currentUsageMonth = computed(() => {
+  const sub = subsModel.defaultSubscription.value
+  if (!sub) return { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, tokensLimit: 0 }
+  const u = subsModel.getUsage(sub.id)
+  const limits = subsModel.limitsFor(sub)
+  return {
+    inputTokens: u.inputTokens,
+    outputTokens: u.outputTokens,
+    cacheReadTokens: u.cacheReadTokens,
+    tokensLimit: limits.tokensPerMonth,
+  }
+})
+
 // Project-scoped hierarchy for the in-chat session nav.
 // Rules (tightened per user request):
 //   1. Only sessions that are BOTH currently running AND actively working
@@ -2640,6 +2699,12 @@ onBeforeUnmount(() => {
         :agent-model-color="currentModelMeta?.color"
         :agent-model-label="currentModelMeta?.label"
         :agent-model-pending="modelSetPending"
+        :agent-effort-value="currentSessionEffort"
+        :agent-effort-pending="effortSetPending"
+        :agent-subscription-label="currentSubscriptionLabel"
+        :agent-usage5h="currentUsage5h"
+        :agent-usage-week="currentUsageWeek"
+        :agent-usage-month="currentUsageMonth"
         :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
         :monitor-session-count="sessionTokenSummary.sessionCount"
         @toggle-details="toggleDetails"
@@ -2660,6 +2725,7 @@ onBeforeUnmount(() => {
         @back="navigation.openSection('chats')"
         @update:overflow-menu-open="headerOverflowMenuOpen = $event"
         @select-agent-model="onModelSelect($event)"
+        @select-agent-effort="onEffortSelect($event)"
         @toggle-monitor-panel="sessNavCollapsed = !sessNavCollapsed"
         @pointerdown="handleChatAreaPointerDown"
       />

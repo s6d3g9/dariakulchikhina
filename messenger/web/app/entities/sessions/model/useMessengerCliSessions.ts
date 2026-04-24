@@ -72,6 +72,27 @@ export function getSessionKindMeta(kind: string, slug?: string) {
   return { label: kind || 'Session', icon: 'mdi-robot-outline', color: 'surface-variant', tier: 2 }
 }
 
+export type MessengerSessionEffort = 'low' | 'medium' | 'high'
+
+const EFFORT_PREFS_KEY = 'daria-messenger-session-effort'
+
+function readEffortPrefs(): Record<string, MessengerSessionEffort> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(EFFORT_PREFS_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeEffortPrefs(prefs: Record<string, MessengerSessionEffort>) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(EFFORT_PREFS_KEY, JSON.stringify(prefs))
+}
+
 export function useMessengerCliSessions() {
   const api = useAgentsApi()
   const sessions = useState<MessengerCliSession[]>('messenger-cli-sessions', () => [])
@@ -79,6 +100,10 @@ export function useMessengerCliSessions() {
   const lastFetchedAt = useState<number>('messenger-cli-sessions-fetched', () => 0)
   const streamConnected = useState<boolean>('messenger-cli-sessions-stream', () => false)
   const lastDeltaAt = useState<number>('messenger-cli-sessions-last-delta', () => 0)
+  const effortPrefs = useState<Record<string, MessengerSessionEffort>>(
+    'messenger-cli-effort-prefs',
+    () => readEffortPrefs(),
+  )
 
   const runningSessions = computed(() => sessions.value.filter(s => s.status === 'running' && !s.archivedAt))
   const activeSessions = computed(() => sessions.value.filter(s => s.status === 'running' && s.isActive && !s.archivedAt))
@@ -102,8 +127,32 @@ export function useMessengerCliSessions() {
     return sessions.value.find(s => s.agentId === agentId) ?? null
   }
 
-  async function setModel(slug: string, model: string) {
-    await api.patchCliSession(slug, { model })
+  function getEffort(slug: string): MessengerSessionEffort {
+    return effortPrefs.value[slug] ?? 'medium'
+  }
+
+  function persistEffort(slug: string, effort: MessengerSessionEffort) {
+    effortPrefs.value = { ...effortPrefs.value, [slug]: effort }
+    writeEffortPrefs(effortPrefs.value)
+  }
+
+  async function setModel(slug: string, model: string, effort?: MessengerSessionEffort) {
+    const e = effort ?? getEffort(slug)
+    await api.patchCliSession(slug, { model, effort: e })
+    if (effort) persistEffort(slug, effort)
+    await refresh()
+  }
+
+  async function setEffort(slug: string, effort: MessengerSessionEffort) {
+    const sess = sessions.value.find(s => s.slug === slug)
+    const model = sess?.model
+    if (!model) {
+      // No model yet — persist preference so the next setModel picks it up.
+      persistEffort(slug, effort)
+      return
+    }
+    await api.patchCliSession(slug, { model, effort })
+    persistEffort(slug, effort)
     await refresh()
   }
 
@@ -236,6 +285,9 @@ export function useMessengerCliSessions() {
     lastDeltaAt,
     sessionForAgent,
     setModel,
+    setEffort,
+    getEffort,
+    effortPrefs,
     archive,
     stopSession,
     refresh,

@@ -159,7 +159,43 @@ export interface MessengerSubscriptionUsage {
   periodStart: string
 }
 
+export interface MessengerSubscriptionLimits {
+  /** Hard caps per rolling window (Claude.ai Pro/Max-style 5h window + weekly cap). */
+  requestsPer5h: number
+  requestsPerWeek: number
+  /** Soft monthly token budget for cost awareness. */
+  tokensPerMonth: number
+}
+
+export interface MessengerUsageEvent {
+  ts: number
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+}
+
+export interface MessengerWindowedUsage {
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+  requestCount: number
+}
+
+export const SUBSCRIPTION_LIMITS_BY_PROVIDER: Record<MessengerSubscriptionProvider, MessengerSubscriptionLimits> = {
+  // Claude.ai Pro: ~45 messages / 5h, ~225 / week. Max plans 5x. Defaulting to Pro tier.
+  'claude-code-cli':  { requestsPer5h: 45,  requestsPerWeek: 225,  tokensPerMonth: 5_000_000  },
+  'github-copilot':   { requestsPer5h: 200, requestsPerWeek: 1500, tokensPerMonth: 20_000_000 },
+  'openai':           { requestsPer5h: 80,  requestsPerWeek: 500,  tokensPerMonth: 8_000_000  },
+  'google':           { requestsPer5h: 200, requestsPerWeek: 1500, tokensPerMonth: 30_000_000 },
+  'alibaba':          { requestsPer5h: 200, requestsPerWeek: 1500, tokensPerMonth: 20_000_000 },
+  'custom':           { requestsPer5h: 999, requestsPerWeek: 9999, tokensPerMonth: 999_999_999 },
+}
+
 const USAGE_STORAGE_KEY = 'daria-messenger-subscription-usage'
+const EVENTS_STORAGE_KEY = 'daria-messenger-subscription-events'
+const EVENT_RETENTION_MS = 35 * 24 * 60 * 60 * 1000  // 35 days — covers any month + a week buffer
+const WINDOW_5H_MS = 5 * 60 * 60 * 1000
+const WINDOW_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 // Built-in subscriptions are always available, no API key needed.
 const BUILTIN_SUBSCRIPTIONS: MessengerSubscription[] = [
@@ -203,6 +239,41 @@ function writeUsageStored(usage: Record<string, MessengerSubscriptionUsage>) {
   localStorage.setItem(USAGE_STORAGE_KEY, JSON.stringify(usage))
 }
 
+function readEventsStored(): Record<string, MessengerUsageEvent[]> {
+  if (!import.meta.client) return {}
+  try {
+    const raw = localStorage.getItem(EVENTS_STORAGE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeEventsStored(events: Record<string, MessengerUsageEvent[]>) {
+  if (!import.meta.client) return
+  localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events))
+}
+
+function pruneEvents(list: MessengerUsageEvent[], now: number): MessengerUsageEvent[] {
+  const cutoff = now - EVENT_RETENTION_MS
+  return list.filter(e => e.ts >= cutoff)
+}
+
+function sumWindow(list: MessengerUsageEvent[], now: number, windowMs: number): MessengerWindowedUsage {
+  const cutoff = now - windowMs
+  let inputTokens = 0, outputTokens = 0, cacheReadTokens = 0, requestCount = 0
+  for (const e of list) {
+    if (e.ts < cutoff) continue
+    inputTokens += e.inputTokens
+    outputTokens += e.outputTokens
+    cacheReadTokens += e.cacheReadTokens
+    requestCount += 1
+  }
+  return { inputTokens, outputTokens, cacheReadTokens, requestCount }
+}
+
 export function daysUntilNextPeriod(): number {
   const now = new Date()
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
@@ -221,9 +292,21 @@ export function useMessengerSubscriptions() {
   const ready = useState<boolean>('messenger-subscriptions-ready', () => false)
   const pending = useState<boolean>('messenger-subscriptions-pending', () => false)
   const usageMap = useState<Record<string, MessengerSubscriptionUsage>>('messenger-sub-usage', () => ({}))
+  const eventsMap = useState<Record<string, MessengerUsageEvent[]>>('messenger-sub-events', () => ({}))
 
   function hydrateUsage() {
     usageMap.value = readUsageStored()
+    const stored = readEventsStored()
+    const now = Date.now()
+    const pruned: Record<string, MessengerUsageEvent[]> = {}
+    let dirty = false
+    for (const [k, v] of Object.entries(stored)) {
+      const next = pruneEvents(v, now)
+      pruned[k] = next
+      if (next.length !== v.length) dirty = true
+    }
+    eventsMap.value = pruned
+    if (dirty) writeEventsStored(pruned)
   }
 
   function getUsage(subId: string): MessengerSubscriptionUsage {
@@ -246,6 +329,35 @@ export function useMessengerSubscriptions() {
     }
     usageMap.value = { ...usageMap.value, [subId]: next }
     writeUsageStored(usageMap.value)
+
+    const now = Date.now()
+    const event: MessengerUsageEvent = {
+      ts: now,
+      inputTokens: delta.inputTokens ?? 0,
+      outputTokens: delta.outputTokens ?? 0,
+      cacheReadTokens: delta.cacheReadTokens ?? 0,
+    }
+    const prevEvents = eventsMap.value[subId] ?? []
+    const pruned = pruneEvents([...prevEvents, event], now)
+    eventsMap.value = { ...eventsMap.value, [subId]: pruned }
+    writeEventsStored(eventsMap.value)
+  }
+
+  function getWindowedUsage(subId: string, windowMs: number): MessengerWindowedUsage {
+    const list = eventsMap.value[subId] ?? []
+    return sumWindow(list, Date.now(), windowMs)
+  }
+
+  function getUsage5h(subId: string): MessengerWindowedUsage {
+    return getWindowedUsage(subId, WINDOW_5H_MS)
+  }
+
+  function getUsageWeek(subId: string): MessengerWindowedUsage {
+    return getWindowedUsage(subId, WINDOW_WEEK_MS)
+  }
+
+  function limitsFor(sub: MessengerSubscription): MessengerSubscriptionLimits {
+    return SUBSCRIPTION_LIMITS_BY_PROVIDER[sub.provider] ?? SUBSCRIPTION_LIMITS_BY_PROVIDER.custom
   }
 
   async function hydrate() {
@@ -363,6 +475,10 @@ export function useMessengerSubscriptions() {
     modelsByProvider,
     getUsage,
     recordUsage,
+    getWindowedUsage,
+    getUsage5h,
+    getUsageWeek,
+    limitsFor,
     add,
     update,
     remove,

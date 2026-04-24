@@ -35,6 +35,12 @@ const props = withDefaults(defineProps<{
   agentModelColor?: string
   agentModelLabel?: string
   agentModelPending?: boolean
+  agentEffortValue?: 'low' | 'medium' | 'high'
+  agentEffortPending?: boolean
+  agentSubscriptionLabel?: string
+  agentUsage5h?: { requests: number; limit: number }
+  agentUsageWeek?: { requests: number; limit: number }
+  agentUsageMonth?: { inputTokens: number; outputTokens: number; cacheReadTokens: number; tokensLimit: number }
   monitorPanelOpen?: boolean
   monitorSessionCount?: number
 }>(), {
@@ -47,9 +53,42 @@ const props = withDefaults(defineProps<{
   agentModelColor: 'primary',
   agentModelLabel: '',
   agentModelPending: false,
+  agentEffortValue: 'medium',
+  agentEffortPending: false,
+  agentSubscriptionLabel: '',
+  agentUsage5h: () => ({ requests: 0, limit: 0 }),
+  agentUsageWeek: () => ({ requests: 0, limit: 0 }),
+  agentUsageMonth: () => ({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, tokensLimit: 0 }),
   monitorPanelOpen: false,
   monitorSessionCount: 0,
 })
+
+const EFFORT_CHIPS: Array<{ value: 'low' | 'medium' | 'high'; label: string; hint: string; icon: string }> = [
+  { value: 'low',    label: 'Low',    hint: 'быстрее, дешевле',   icon: 'mdi-speedometer-slow'   },
+  { value: 'medium', label: 'Medium', hint: 'баланс',             icon: 'mdi-speedometer-medium' },
+  { value: 'high',   label: 'High',   hint: 'глубже, дольше',     icon: 'mdi-speedometer'        },
+]
+
+function effortLabel(v: 'low' | 'medium' | 'high'): string {
+  return EFFORT_CHIPS.find(c => c.value === v)?.label ?? 'Medium'
+}
+
+function fmtTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return `${n}`
+}
+
+function pct(n: number, limit: number): number {
+  if (!limit || limit <= 0) return 0
+  return Math.min(100, Math.round((n / limit) * 100))
+}
+
+function pctClass(p: number): string {
+  if (p >= 90) return 'chat-header-sheet__usage-bar--danger'
+  if (p >= 70) return 'chat-header-sheet__usage-bar--warn'
+  return ''
+}
 
 const emit = defineEmits<{
   'toggle-details': []
@@ -68,6 +107,7 @@ const emit = defineEmits<{
   'back': []
   'update:overflow-menu-open': [open: boolean]
   'select-agent-model': [value: string]
+  'select-agent-effort': [value: 'low' | 'medium' | 'high']
   'toggle-monitor-panel': []
   'open-shared-gallery': [section?: 'photos' | 'stickers' | 'documents' | 'links' | 'keys']
   'open-chat-search': []
@@ -509,25 +549,94 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
           </div>
         </div>
 
-        <div v-else-if="kind === 'model'" class="chat-header-sheet__list">
-          <button
-            v-for="opt in agentModelOptions"
-            :key="opt.value"
-            type="button"
-            class="chat-header-sheet__row"
-            :class="{ 'chat-header-sheet__row--active': opt.value === agentModelCurrentValue }"
-            :disabled="agentModelPending || opt.value === agentModelCurrentValue"
-            @click="emit('select-agent-model', opt.value); close()"
-          >
-            <VIcon :color="opt.color" :size="20" class="chat-header-sheet__row-icon">{{ opt.icon }}</VIcon>
-            <span class="chat-header-sheet__row-label">{{ opt.label }}</span>
-            <VIcon
-              v-if="opt.value === agentModelCurrentValue"
-              :size="18"
-              class="chat-header-sheet__row-check"
-              color="primary"
-            >mdi-check</VIcon>
-          </button>
+        <div v-else-if="kind === 'model'" class="chat-header-sheet__model">
+          <div class="chat-header-sheet__section-title label-small">Модель</div>
+          <div class="chat-header-sheet__list">
+            <button
+              v-for="opt in agentModelOptions"
+              :key="opt.value"
+              type="button"
+              class="chat-header-sheet__row"
+              :class="{ 'chat-header-sheet__row--active': opt.value === agentModelCurrentValue }"
+              :disabled="agentModelPending || opt.value === agentModelCurrentValue"
+              @click="emit('select-agent-model', opt.value); close()"
+            >
+              <VIcon :color="opt.color" :size="20" class="chat-header-sheet__row-icon">{{ opt.icon }}</VIcon>
+              <span class="chat-header-sheet__row-label">{{ opt.label }}</span>
+              <VIcon
+                v-if="opt.value === agentModelCurrentValue"
+                :size="18"
+                class="chat-header-sheet__row-check"
+                color="primary"
+              >mdi-check</VIcon>
+            </button>
+          </div>
+
+          <div class="chat-header-sheet__divider" aria-hidden="true" />
+          <div class="chat-header-sheet__section-title label-small">
+            Effort
+            <span class="chat-header-sheet__section-hint">{{ effortLabel(agentEffortValue) }}</span>
+          </div>
+          <div class="chat-header-sheet__effort-chips">
+            <button
+              v-for="chip in EFFORT_CHIPS"
+              :key="chip.value"
+              type="button"
+              class="chat-header-sheet__effort-chip"
+              :class="{ 'chat-header-sheet__effort-chip--active': chip.value === agentEffortValue }"
+              :disabled="agentEffortPending || chip.value === agentEffortValue"
+              :title="chip.hint"
+              @click="emit('select-agent-effort', chip.value)"
+            >
+              <VIcon :size="16" class="chat-header-sheet__effort-chip-icon">{{ chip.icon }}</VIcon>
+              <span class="chat-header-sheet__effort-chip-label">{{ chip.label }}</span>
+            </button>
+          </div>
+
+          <div class="chat-header-sheet__divider" aria-hidden="true" />
+          <div class="chat-header-sheet__section-title label-small">
+            Использование
+            <span v-if="agentSubscriptionLabel" class="chat-header-sheet__section-hint">{{ agentSubscriptionLabel }}</span>
+          </div>
+          <div class="chat-header-sheet__usage">
+            <div class="chat-header-sheet__usage-row">
+              <span class="chat-header-sheet__usage-label">5 ч</span>
+              <div class="chat-header-sheet__usage-track">
+                <div
+                  class="chat-header-sheet__usage-bar"
+                  :class="pctClass(pct(agentUsage5h.requests, agentUsage5h.limit))"
+                  :style="{ width: pct(agentUsage5h.requests, agentUsage5h.limit) + '%' }"
+                />
+              </div>
+              <span class="chat-header-sheet__usage-value label-small">{{ agentUsage5h.requests }}<span v-if="agentUsage5h.limit" class="chat-header-sheet__usage-limit">/{{ agentUsage5h.limit }}</span></span>
+            </div>
+            <div class="chat-header-sheet__usage-row">
+              <span class="chat-header-sheet__usage-label">Неделя</span>
+              <div class="chat-header-sheet__usage-track">
+                <div
+                  class="chat-header-sheet__usage-bar"
+                  :class="pctClass(pct(agentUsageWeek.requests, agentUsageWeek.limit))"
+                  :style="{ width: pct(agentUsageWeek.requests, agentUsageWeek.limit) + '%' }"
+                />
+              </div>
+              <span class="chat-header-sheet__usage-value label-small">{{ agentUsageWeek.requests }}<span v-if="agentUsageWeek.limit" class="chat-header-sheet__usage-limit">/{{ agentUsageWeek.limit }}</span></span>
+            </div>
+            <div class="chat-header-sheet__usage-row">
+              <span class="chat-header-sheet__usage-label">Токены / мес</span>
+              <div class="chat-header-sheet__usage-track">
+                <div
+                  class="chat-header-sheet__usage-bar"
+                  :class="pctClass(pct(agentUsageMonth.inputTokens + agentUsageMonth.outputTokens, agentUsageMonth.tokensLimit))"
+                  :style="{ width: pct(agentUsageMonth.inputTokens + agentUsageMonth.outputTokens, agentUsageMonth.tokensLimit) + '%' }"
+                />
+              </div>
+              <span class="chat-header-sheet__usage-value label-small">{{ fmtTokens(agentUsageMonth.inputTokens + agentUsageMonth.outputTokens) }}<span v-if="agentUsageMonth.tokensLimit" class="chat-header-sheet__usage-limit">/{{ fmtTokens(agentUsageMonth.tokensLimit) }}</span></span>
+            </div>
+            <div v-if="agentUsageMonth.cacheReadTokens > 0" class="chat-header-sheet__usage-meta label-small">
+              <VIcon :size="14">mdi-database-arrow-down-outline</VIcon>
+              кэш-чтение: {{ fmtTokens(agentUsageMonth.cacheReadTokens) }}
+            </div>
+          </div>
         </div>
 
         <div v-else-if="kind === 'monitor'" class="chat-header-sheet__monitor">
