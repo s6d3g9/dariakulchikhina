@@ -1440,6 +1440,10 @@
 - server/api/ai/document-stream.post.ts -> server/modules/ai/ (ai.service, rag.service) ✓ done 2026-04-20
 - server/api/ai/legal-status.get.ts -> server/modules/ai/ai.service ✓ done 2026-04-20
 
+### AI handlers
+- server/api/ai/document-stream.post.ts -> server/modules/ai/ (ai.service, rag.service) ✓ done 2026-04-20
+- server/api/ai/legal-status.get.ts -> server/modules/ai/ai.service ✓ done 2026-04-20
+
 ## server/utils -> target layout
 
 - server/utils/auth.ts -> server/modules/auth/admin-auth.service.ts + server/modules/auth/session.service.ts
