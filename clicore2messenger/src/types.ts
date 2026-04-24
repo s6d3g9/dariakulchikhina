@@ -3,10 +3,15 @@ export type IngestEvent =
   | { type: "run_start"; runId: string; conversationId?: string; prompt?: string }
   | { type: "substate"; runId: string; substate: string; message?: string }
   | { type: "delta"; runId: string; delta: string }
-  | { type: "tool_use"; runId: string; tool: string; input?: unknown }
+  | { type: "tool_use"; runId: string; tool: string; toolUseId?: string; input?: unknown }
   | { type: "tokens"; runId: string; tokenIn: number; tokenOut: number; costUsd?: number; cacheRead?: number; cacheWrite?: number }
   | { type: "complete"; runId: string; finalText?: string }
-  | { type: "error"; runId: string; message: string; fatal?: boolean };
+  | { type: "error"; runId: string; message: string; fatal?: boolean }
+  // Subagent lifecycle — emitted when the assistant uses the built-in Task
+  // tool to spawn a subagent. runId refers to the PARENT run; the ingest
+  // handler creates a child agent_run keyed by toolUseId.
+  | { type: "subagent_start"; runId: string; toolUseId: string; subagentType: string; promptExcerpt?: string }
+  | { type: "subagent_end"; runId: string; toolUseId: string; success: boolean; message?: string };
 
 export interface CliAdapterContext {
   runId: string;

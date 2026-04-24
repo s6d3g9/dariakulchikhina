@@ -87,6 +87,34 @@ export function useAgentsApi() {
     })
   }
 
+  function stopCliSession(slug: string) {
+    return auth.request<{ slug: string; stopped: boolean }>(`/cli-sessions/${slug}/stop`, {
+      method: 'POST',
+    })
+  }
+
+  function getCliSessionTrace(slug: string, limit = 100) {
+    return auth.request<{
+      slug: string
+      agentId: string | null
+      events: Array<{
+        eventId: string
+        runId: string
+        occurredAt: string
+        kind: string
+        substate: string | null
+        tool: string | null
+        toolDescriptor: string | null
+        tokenIn: number
+        tokenOut: number
+        message: string | null
+      }>
+    }>(`/cli-sessions/${slug}/trace`, {
+      method: 'GET',
+      query: { limit },
+    })
+  }
+
   function getAgentActiveRun(agentId: string) {
     return auth.request<{ run: { id: string; status: string; prompt: string | null; createdAt: string; conversationId: string | null } | null }>(
       `/agents/${agentId}/active-run`,
@@ -116,6 +144,8 @@ export function useAgentsApi() {
     listAgentEdgePayloads,
     listCliSessions,
     patchCliSession,
+    stopCliSession,
+    getCliSessionTrace,
     getAgentActiveRun,
     getAgentRunEvents,
   }

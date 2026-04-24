@@ -427,6 +427,9 @@ function setChatMode(mode: ChatMode) {
 
   activeChatMode.value = mode
   ensureActiveFolderForMode(mode)
+  if (mode === 'sessions') {
+    void cliSessions.refresh()
+  }
 }
 
 const filteredConversations = computed(() => {
@@ -630,6 +633,8 @@ function sessionRelativeTimeReactive(iso: string | null): string {
 // Background refresh to keep session activity fresh (no WS subscription yet).
 let sessionRefreshTimer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
+  // Prime session list immediately so the plate isn't empty for 10s on first paint.
+  void cliSessions.refresh()
   sessionRefreshTimer = setInterval(() => {
     if (activeChatMode.value === 'sessions' && showSessionsDirectory.value) {
       void cliSessions.refresh()
@@ -1453,6 +1458,9 @@ function formatChatPreview(chat: MessengerConversationItem) {
             <p class="sessions-directory__title">
               <span class="sessions-directory__live-dot" />
               Живые сессии
+              <VChip size="x-small" variant="tonal" color="info" class="ml-1">
+                total:{{ cliSessions.sessions.value.length }} · run:{{ cliSessions.runningSessions.value.length }} · rtp:{{ cliSessions.sessions.value.filter(s => s.slug.startsWith('rtp-')).length }}
+              </VChip>
             </p>
             <div class="d-flex align-center gap-1">
               <VBtn

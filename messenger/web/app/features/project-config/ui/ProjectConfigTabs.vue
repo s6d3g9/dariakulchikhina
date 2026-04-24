@@ -4,10 +4,12 @@ import type { MessengerMcpServer } from '../../../entities/mcp/model/useMessenge
 import type { MessengerExternalApi } from '../../../entities/external-apis/model/useMessengerExternalApis'
 import type { MessengerConnector } from '../../../entities/connectors/model/useMessengerConnectors'
 
-const props = defineProps<{ project: MessengerProject }>()
+const props = defineProps<{ project: MessengerProject; hideTabs?: boolean }>()
 
 const projectIdRef = computed(() => props.project.id)
-const activeTab = ref('composer')
+// Shared state: external components (e.g. chat composer aidev bar) can set the
+// active tab to jump into a specific section.
+const activeTab = useState<string>('aidev-active-tab', () => 'composer')
 
 const tabs = [
   { key: 'composer', label: 'Composer', icon: 'mdi-chat-processing-outline' },
@@ -17,6 +19,7 @@ const tabs = [
   { key: 'plugins', label: 'Плагины', icon: 'mdi-puzzle-outline' },
   { key: 'mcp', label: 'MCP', icon: 'mdi-api' },
   { key: 'external-apis', label: 'Внешние API', icon: 'mdi-cloud-outline' },
+  { key: 'balancing', label: 'Балансировка', icon: 'mdi-scale-balance' },
   { key: 'settings', label: 'Настройки', icon: 'mdi-cog-outline' },
 ] as const
 
@@ -649,14 +652,21 @@ async function submitExtForm() {
         </VDialog>
       </VTabsWindowItem>
 
+      <!-- Balancing tab — Claude agent launch presets -->
+      <VTabsWindowItem value="balancing" class="project-config-tabs__panel">
+        <AidevBalancingTab />
+      </VTabsWindowItem>
+
       <!-- Settings tab (LIVE — rename + delete + meta) -->
       <VTabsWindowItem value="settings" class="project-config-tabs__panel">
         <AidevProjectSettingsTab :project="project" />
       </VTabsWindowItem>
     </VTabsWindow>
 
-    <!-- Sub-tabs row (icon-only, at bottom, above global bottom-nav) -->
-    <div class="section-tabs-row project-config-tabs__nav-row">
+    <!-- Sub-tabs row (icon-only, at bottom, above global bottom-nav).
+         Hidden when this component is mounted inside an external tab control
+         (e.g. chat composer AIDev overlay) to avoid a duplicate tab bar. -->
+    <div v-if="!props.hideTabs" class="section-tabs-row project-config-tabs__nav-row">
       <VTabs
         v-model="activeTab"
         class="section-tabs project-config-tabs__nav"

@@ -8,13 +8,35 @@ export const claudeAdapter: CliAdapter = {
   finalize(ctx: CliAdapterContext): IngestEvent[] {
     const state = ctx.state as ExtState;
     const events: IngestEvent[] = [];
-    // Flush any tool_use that never got content_block_stop
+    // Flush any tool_use that never got content_block_stop. If it was a Task
+    // (subagent launch), also emit the matching subagent_start so the child
+    // run gets created before the fallback subagent_end below fires.
     if (state._pendingTool) {
-      const { tool, json } = state._pendingTool;
+      const { tool, toolUseId, json } = state._pendingTool;
       let input: unknown = undefined;
       try { input = json ? JSON.parse(json) : undefined; } catch { input = undefined; }
-      events.push({ type: "tool_use", runId: ctx.runId, tool, input });
+      events.push({ type: "tool_use", runId: ctx.runId, tool, toolUseId, input });
+      if (tool === "Task" && toolUseId) {
+        const inputObj = (input && typeof input === "object") ? input as Record<string, unknown> : {};
+        const subagentType = typeof inputObj.subagent_type === "string"
+          ? inputObj.subagent_type
+          : (typeof inputObj.description === "string" ? inputObj.description : "general-purpose");
+        const promptRaw = typeof inputObj.prompt === "string" ? inputObj.prompt : "";
+        const promptExcerpt = promptRaw ? promptRaw.slice(0, 400) : undefined;
+        events.push({ type: "subagent_start", runId: ctx.runId, toolUseId, subagentType, promptExcerpt });
+        if (!state._openSubagents) state._openSubagents = new Set();
+        state._openSubagents.add(toolUseId);
+      }
       state._pendingTool = null;
+    }
+    // Close any subagents that never got a tool_result — parent finished cleanly,
+    // so mark them as successful. If the parent errored, the caller emits error()
+    // separately; we still close subagents to avoid "running forever" runs.
+    if (state._openSubagents && state._openSubagents.size > 0) {
+      for (const toolUseId of state._openSubagents) {
+        events.push({ type: "subagent_end", runId: ctx.runId, toolUseId, success: true });
+      }
+      state._openSubagents.clear();
     }
     events.push({ type: "complete", runId: ctx.runId, finalText: state.finalText || undefined });
     return events;
@@ -49,7 +71,14 @@ export const claudeAdapter: CliAdapter = {
   },
 };
 
-type ExtState = { finalText: string; tokensIn: number; tokensOut: number; costUsd: number; _pendingTool?: { tool: string; json: string } | null };
+type ExtState = {
+  finalText: string;
+  tokensIn: number;
+  tokensOut: number;
+  costUsd: number;
+  _pendingTool?: { tool: string; toolUseId: string | undefined; json: string } | null;
+  _openSubagents?: Set<string>;
+};
 
 // Verbatim mapping logic from scripts/workrooms/claude-stream-bridge.ts
 function mapCliEvent(
@@ -81,7 +110,28 @@ function mapCliEvent(
           const cb = se.content_block as Record<string, unknown> | undefined;
           if (cb?.type === "tool_use") {
             events.push({ type: "substate", runId, substate: "tool_call" });
-            state._pendingTool = { tool: String(cb.name ?? "unknown"), json: "" };
+            state._pendingTool = {
+              tool: String(cb.name ?? "unknown"),
+              toolUseId: typeof cb.id === "string" ? cb.id : undefined,
+              json: "",
+            };
+          } else if (cb?.type === "tool_result") {
+            // tool_result blocks appear on subsequent assistant turns once a
+            // Task (or any tool) has completed. Close the matching subagent
+            // if we opened one for this tool_use_id.
+            const toolUseId = typeof cb.tool_use_id === "string" ? cb.tool_use_id : undefined;
+            if (toolUseId && state._openSubagents?.has(toolUseId)) {
+              const isError = cb.is_error === true;
+              const content = typeof cb.content === "string" ? cb.content : undefined;
+              events.push({
+                type: "subagent_end",
+                runId,
+                toolUseId,
+                success: !isError,
+                message: isError && content ? content.slice(0, 400) : undefined,
+              });
+              state._openSubagents.delete(toolUseId);
+            }
           }
           break;
         }
@@ -103,10 +153,30 @@ function mapCliEvent(
 
         case "content_block_stop": {
           if (state._pendingTool) {
-            const { tool, json } = state._pendingTool;
+            const { tool, toolUseId, json } = state._pendingTool;
             let input: unknown = undefined;
             try { input = json ? JSON.parse(json) : undefined; } catch { input = undefined; }
-            events.push({ type: "tool_use", runId, tool, input });
+            events.push({ type: "tool_use", runId, tool, toolUseId, input });
+            // Task tool_use launches a subagent. Emit a dedicated start event
+            // so the ingest handler can create a child agent_run keyed by
+            // toolUseId. We use the tool_use_id as stable correlation key.
+            if (tool === "Task" && toolUseId) {
+              const inputObj = (input && typeof input === "object") ? input as Record<string, unknown> : {};
+              const subagentType = typeof inputObj.subagent_type === "string"
+                ? inputObj.subagent_type
+                : (typeof inputObj.description === "string" ? inputObj.description : "general-purpose");
+              const promptRaw = typeof inputObj.prompt === "string" ? inputObj.prompt : "";
+              const promptExcerpt = promptRaw ? promptRaw.slice(0, 400) : undefined;
+              events.push({
+                type: "subagent_start",
+                runId,
+                toolUseId,
+                subagentType,
+                promptExcerpt,
+              });
+              if (!state._openSubagents) state._openSubagents = new Set();
+              state._openSubagents.add(toolUseId);
+            }
             state._pendingTool = null;
           }
           break;

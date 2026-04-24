@@ -4,7 +4,7 @@ import type { MessengerKlipyItem } from '../../entities/messages/model/useMessen
 import type { MessengerConversationSecuritySummary } from '../../entities/messages/model/useMessengerCrypto'
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
 import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
-import { getSessionKindMeta } from '../../entities/sessions/model/useMessengerCliSessions'
+import { getSessionKindMeta, type MessengerCliSession } from '../../entities/sessions/model/useMessengerCliSessions'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -22,6 +22,65 @@ const viewport = useMessengerViewport()
 const navigation = useMessengerConversationState()
 const { resetKlipyFeedPaging, buildLoopedFeed, handleLoopedRailScroll, handleLoopedFeedScroll, primeLoopedRailPosition, primeLoopedFeedPosition } = useKlipyFeedPaging()
 const draft = ref('')
+const searchMode = ref(false)
+
+const AIDEV_MENU_ITEMS = [
+  { key: 'composer', title: 'Composer', icon: 'mdi-chat-processing-outline' },
+  { key: 'agents', title: 'Агенты', icon: 'mdi-robot-outline' },
+  { key: 'connectors', title: 'Коннекторы', icon: 'mdi-connection' },
+  { key: 'skills', title: 'Навыки', icon: 'mdi-lightning-bolt-outline' },
+  { key: 'plugins', title: 'Плагины', icon: 'mdi-puzzle-outline' },
+  { key: 'mcp', title: 'MCP', icon: 'mdi-api' },
+  { key: 'external-apis', title: 'API', icon: 'mdi-cloud-outline' },
+  { key: 'settings', title: 'Настройки', icon: 'mdi-cog-outline' },
+] as const
+
+const WORKSPACE_MENU_ITEMS = [
+  { key: 'overview', title: 'Обзор', icon: 'mdi-view-dashboard-outline' },
+  { key: 'settings', title: 'Настройки', icon: 'mdi-tune-variant' },
+  { key: 'knowledge', title: 'Знания', icon: 'mdi-database-search-outline' },
+  { key: 'links', title: 'Связи', icon: 'mdi-connection' },
+  { key: 'runs', title: 'Прогоны', icon: 'mdi-history' },
+  { key: 'graph', title: 'Граф', icon: 'mdi-graph-outline' },
+  { key: 'explorer', title: 'Проводник', icon: 'mdi-file-tree-outline' },
+] as const
+
+const workspaceActiveSectionState = useState<string>('messenger-agent-chat-workspace-section', () => 'overview')
+
+interface AiMenuHit {
+  kind: 'aidev' | 'workspace'
+  key: string
+  title: string
+  icon: string
+  group: string
+}
+
+const aiMenuSearchResults = computed<AiMenuHit[]>(() => {
+  const query = draft.value.trim().toLowerCase()
+  const aidev: AiMenuHit[] = AIDEV_MENU_ITEMS.map(i => ({ kind: 'aidev', group: 'AIDev', ...i }))
+  const workspace: AiMenuHit[] = WORKSPACE_MENU_ITEMS.map(i => ({ kind: 'workspace', group: 'Рабочая область', ...i }))
+  const all = [...aidev, ...workspace]
+  if (!query) return all
+  return all.filter(item => item.title.toLowerCase().includes(query) || item.key.toLowerCase().includes(query))
+})
+
+function toggleSearchMode() {
+  searchMode.value = !searchMode.value
+  draft.value = ''
+}
+
+function pickAiMenuHit(hit: AiMenuHit) {
+  if (hit.kind === 'aidev') {
+    onSelectAidevTab(hit.key)
+  } else {
+    workspaceActiveSectionState.value = hit.key
+    if (activeConversationAgent.value) {
+      agentWorkspaceCollapsed.value = false
+    }
+  }
+  searchMode.value = false
+  draft.value = ''
+}
 const actionError = ref('')
 const composerMediaMenuRef = ref<{
   categoryRailEl: HTMLDivElement | null
@@ -267,7 +326,203 @@ const activeAgentProjectId = computed(() => {
   return agentsModel.agents.value.find(a => a.id === agentId)?.projectId ?? null
 })
 
-const sessNavCollapsed = ref(true)
+// AIDev overlay panel (expands over the chat rather than navigating away).
+// `aidevActiveTabState` is also read by ProjectConfigTabs so the two stay synced.
+const aidevActiveTabState = useState<string>('aidev-active-tab', () => 'composer')
+const aidevPanelTab = ref<string | null>(null)
+const projectsModel = useMessengerProjects()
+
+const agentProject = computed(() => {
+  const id = activeAgentProjectId.value
+  if (!id) return null
+  return projectsModel.projects.value.find(p => p.id === id) ?? null
+})
+
+function onSelectAidevTab(tab: string | null) {
+  aidevPanelTab.value = tab
+  if (tab) aidevActiveTabState.value = tab
+}
+
+onMounted(() => { void projectsModel.refresh() })
+
+const sessNavCollapsed = ref(false)
+
+// Live-ticking "now" for elapsed-time counters rendered in session capsules.
+// 1s cadence is fine — the counters read in H:MM:SS so sub-second updates
+// would be visual noise.
+const nowTick = ref(Date.now())
+let nowTickTimer: ReturnType<typeof setInterval> | null = null
+
+function formatElapsed(fromIso: string | null | undefined): string {
+  if (!fromIso) return '—'
+  const t = new Date(fromIso).getTime()
+  if (!Number.isFinite(t)) return '—'
+  const sec = Math.max(0, Math.floor((nowTick.value - t) / 1000))
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  const s = sec % 60
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+}
+
+function formatClock(iso: string | null | undefined): string {
+  if (!iso) return ''
+  try { return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }
+  catch { return '' }
+}
+
+function formatTokens(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '0'
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2).replace(/\.?0+$/, '') + 'M'
+  if (n >= 1_000) return Math.round(n / 1000) + 'k'
+  return String(n)
+}
+
+// Tokens summary for the header capsule — shows composer spend (all composer
+// sessions scoped to the current project) and total spend (every session we
+// render in projectScopedHierarchy). Composer is called out separately because
+// it's the hub that fans work out; the rest is aggregate "what the tree cost".
+const sessionTokenSummary = computed(() => {
+  const flat = projectScopedHierarchy.value.flat()
+  let composerIn = 0, composerOut = 0
+  let totalIn = 0, totalOut = 0
+  let totalCost = 0
+  for (const s of flat) {
+    totalIn += s.tokenInTotal
+    totalOut += s.tokenOutTotal
+    totalCost += s.costUsd
+    if (s.kind === 'composer') {
+      composerIn += s.tokenInTotal
+      composerOut += s.tokenOutTotal
+    }
+  }
+  return {
+    composerIn, composerOut, composerTotal: composerIn + composerOut,
+    totalIn, totalOut, total: totalIn + totalOut,
+    totalCost,
+    hasComposer: flat.some(s => s.kind === 'composer'),
+    sessionCount: flat.length,
+  }
+})
+
+// --- SVG edges connecting parent → child across tier rows ----------------
+// Visually shows "who spawned whom" by drawing a curve from each child's
+// session capsule up to its parent's capsule. Without this, a 3-tier stack
+// of rows just looks like three flat lists with no relationship between
+// them. Parent resolution tries explicit parentAgentId first, then falls
+// back to a sensible default (tier 1 → first composer, tier 2 → first
+// orchestrator, else first composer).
+const sessNavBodyRef = ref<HTMLElement | null>(null)
+const tabElsBySlug = new Map<string, HTMLElement>()
+function registerSessTab(slug: string, el: unknown) {
+  if (el instanceof HTMLElement) tabElsBySlug.set(slug, el)
+  else tabElsBySlug.delete(slug)
+}
+
+interface SessNavEdge { id: string; d: string; color: string }
+const sessNavEdges = ref<SessNavEdge[]>([])
+const sessNavBodySize = ref({ w: 0, h: 0 })
+
+function recomputeSessNavEdges() {
+  const body = sessNavBodyRef.value
+  if (!body) { sessNavEdges.value = []; return }
+  const bodyRect = body.getBoundingClientRect()
+  sessNavBodySize.value = { w: bodyRect.width, h: bodyRect.height }
+
+  const hierarchy = projectScopedHierarchy.value
+  const composers = hierarchy[0] ?? []
+  const orchestrators = hierarchy[1] ?? []
+  const workers = hierarchy[2] ?? []
+  const byAgentId = new Map<string, MessengerCliSession>()
+  for (const s of [...composers, ...orchestrators, ...workers]) {
+    if (s.agentId) byAgentId.set(s.agentId, s)
+  }
+
+  function anchor(slug: string) {
+    const el = tabElsBySlug.get(slug)
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return {
+      topX: r.left - bodyRect.left + r.width / 2,
+      topY: r.top - bodyRect.top,
+      botX: r.left - bodyRect.left + r.width / 2,
+      botY: r.bottom - bodyRect.top,
+    }
+  }
+
+  const edges: SessNavEdge[] = []
+  function addEdge(parent: MessengerCliSession, child: MessengerCliSession, color: string) {
+    const pa = anchor(parent.slug)
+    const ca = anchor(child.slug)
+    if (!pa || !ca) return
+    const x1 = pa.botX, y1 = pa.botY
+    const x2 = ca.topX, y2 = ca.topY
+    const mid = (y1 + y2) / 2
+    const d = `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`
+    edges.push({ id: `${parent.slug}->${child.slug}`, d, color })
+  }
+
+  for (const orch of orchestrators) {
+    const parent = (orch.parentAgentId && byAgentId.get(orch.parentAgentId)) || composers[0]
+    if (parent) addEdge(parent, orch, 'rgba(167,139,250,.75)')
+  }
+  for (const w of workers) {
+    const parent = (w.parentAgentId && byAgentId.get(w.parentAgentId)) || orchestrators[0] || composers[0]
+    if (parent) addEdge(parent, w, 'rgba(96,165,250,.6)')
+  }
+
+  sessNavEdges.value = edges
+}
+
+watch(
+  [() => projectScopedHierarchy.value, () => sessNavCollapsed.value],
+  () => { void nextTick(() => recomputeSessNavEdges()) },
+  { deep: true },
+)
+// The elapsed-time counter in each capsule changes every second, which can
+// shift tab widths. Retick edges ~once a second to keep lines attached.
+watch(() => nowTick.value, () => { recomputeSessNavEdges() })
+
+let sessNavResizeObs: ResizeObserver | null = null
+onMounted(() => {
+  void nextTick(() => {
+    recomputeSessNavEdges()
+    if (typeof ResizeObserver !== 'undefined' && sessNavBodyRef.value) {
+      sessNavResizeObs = new ResizeObserver(() => recomputeSessNavEdges())
+      sessNavResizeObs.observe(sessNavBodyRef.value)
+    }
+  })
+})
+onUnmounted(() => {
+  sessNavResizeObs?.disconnect()
+  sessNavResizeObs = null
+  tabElsBySlug.clear()
+})
+
+// Stop-button state — per-slug pending flags so spamming stop on one capsule
+// doesn't disable every button.
+const stoppingSlugs = ref<Set<string>>(new Set())
+const stopErrorBySlug = ref<Record<string, string>>({})
+async function onStopSession(slug: string) {
+  if (!slug || stoppingSlugs.value.has(slug)) return
+  stoppingSlugs.value.add(slug)
+  delete stopErrorBySlug.value[slug]
+  try {
+    await cliSessionsModel.stopSession(slug)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'stop failed'
+    stopErrorBySlug.value = { ...stopErrorBySlug.value, [slug]: msg }
+    setTimeout(() => {
+      const next = { ...stopErrorBySlug.value }
+      delete next[slug]
+      stopErrorBySlug.value = next
+    }, 4000)
+  } finally {
+    const next = new Set(stoppingSlugs.value)
+    next.delete(slug)
+    stoppingSlugs.value = next
+  }
+}
 
 const MODEL_OPTIONS = [
   { label: 'Opus 4.7',   value: 'claude-opus-4-7',           icon: 'mdi-brain',   color: 'primary' },
@@ -301,15 +556,38 @@ async function onModelSelect(model: string) {
   }
 }
 
+// Project-scoped hierarchy for the in-chat session nav.
+// Rules (tightened per user request):
+//   1. Only sessions that are BOTH currently running AND actively working
+//      (`isActive` — running AND not-long-idle) appear. Dormant sessions
+//      are hidden so the bar shows "what is happening right now", not "what
+//      has ever run".
+//   2. Always scoped to the current chat's project. Even the composer no
+//      longer gets a global view — it shows only its own project's tree, so
+//      cross-project clutter doesn't leak in.
+//   3. The currently open agent is always included even if it's briefly idle,
+//      so switching into a conversation never shows an empty bar.
 const projectScopedHierarchy = computed(() => {
   const projectId = activeAgentProjectId.value
   const activeAgentId = conversations.activeConversation.value?.peerUserId
-  if (!projectId && !activeAgentId) return cliSessionsModel.hierarchy.value
-  return cliSessionsModel.hierarchy.value.map(tier =>
-    tier.filter(s =>
-      !projectId || s.agentProjectId === projectId || s.agentId === activeAgentId,
-    ),
-  )
+  const byTier: MessengerCliSession[][] = [[], [], []]
+  for (const s of cliSessionsModel.activeSessions.value) {
+    if (projectId && s.agentProjectId !== projectId && s.agentId !== activeAgentId) continue
+    const meta = getSessionKindMeta(s.kind, s.slug)
+    const tier = Math.min(meta.tier, 2)
+    byTier[tier]!.push(s)
+  }
+  // Also include the currently-focused agent's session even if it slipped out
+  // of isActive (e.g. Claude paused briefly between turns) — missing the tab
+  // of the chat you're looking at is jarring.
+  const focused = activeAgentId
+    ? cliSessionsModel.sessions.value.find(s => s.agentId === activeAgentId && s.status === 'running' && !s.archivedAt)
+    : null
+  if (focused && !byTier.some(t => t.some(s => s.slug === focused.slug))) {
+    const tier = Math.min(getSessionKindMeta(focused.kind, focused.slug).tier, 2)
+    byTier[tier]!.push(focused)
+  }
+  return byTier
 })
 
 const chatSessNavVisible = computed(() =>
@@ -2158,21 +2436,67 @@ watch(auth.ready, (ready) => {
   if (ready && activeConversationAgent.value) void cliSessionsModel.refresh()
 }, { immediate: true })
 
-// Poll sessions every 20 s while an agent chat is active so the hierarchy
-// bar stays up-to-date without requiring a page reload.
+// Open the SSE live-delta stream once auth is ready. The stream replaces the
+// old 20s polling timer — deltas fire on every session create/event/stop so
+// the hierarchy bar reflects reality within a few hundred ms. Poll kept as a
+// 60s safety net in case SSE is blocked by a proxy.
 let cliSessionsPollTimer: ReturnType<typeof setInterval> | null = null
-watch(activeConversationAgent, (isAgent) => {
-  if (isAgent) {
-    if (!cliSessionsPollTimer) {
-      cliSessionsPollTimer = setInterval(() => { void cliSessionsModel.refresh() }, 20_000)
-    }
-  } else {
-    if (cliSessionsPollTimer) {
-      clearInterval(cliSessionsPollTimer)
-      cliSessionsPollTimer = null
-    }
+watch(auth.ready, (ready) => {
+  if (!ready) return
+  cliSessionsModel.connectStream()
+  if (!cliSessionsPollTimer) {
+    cliSessionsPollTimer = setInterval(() => { void cliSessionsModel.refresh() }, 60_000)
+  }
+  // Start the 1s elapsed-timer tick once auth is ready (avoids ticking during
+  // SSR / before we'd ever show session capsules).
+  if (!nowTickTimer) {
+    nowTickTimer = setInterval(() => { nowTick.value = Date.now() }, 1000)
   }
 }, { immediate: true })
+
+onUnmounted(() => {
+  cliSessionsModel.disconnectStream()
+  if (cliSessionsPollTimer) { clearInterval(cliSessionsPollTimer); cliSessionsPollTimer = null }
+  if (nowTickTimer) { clearInterval(nowTickTimer); nowTickTimer = null }
+})
+
+// --- Session trace panel (click session in dropdown to expand) ---
+const traceModel = useMessengerSessionTrace()
+const expandedTraceSlug = ref<string | null>(null)
+
+// Current expanded session + who spawned it (parent chain). Drives the trace
+// header so "которая какую инициировала" is visible — operator sees the
+// parent agent → this agent relationship at a glance, not just a flat event
+// list.
+const expandedTraceSession = computed<MessengerCliSession | null>(() => {
+  const slug = expandedTraceSlug.value
+  if (!slug) return null
+  return cliSessionsModel.sessions.value.find(s => s.slug === slug) ?? null
+})
+const expandedTraceParent = computed<MessengerCliSession | null>(() => {
+  const cur = expandedTraceSession.value
+  if (!cur?.parentAgentId) return null
+  return cliSessionsModel.sessions.value.find(s => s.agentId === cur.parentAgentId) ?? null
+})
+const expandedTraceChildren = computed<MessengerCliSession[]>(() => {
+  const cur = expandedTraceSession.value
+  if (!cur?.agentId) return []
+  return cliSessionsModel.sessions.value.filter(s => s.parentAgentId === cur.agentId)
+})
+async function toggleSessionTrace(slug: string) {
+  if (expandedTraceSlug.value === slug) {
+    expandedTraceSlug.value = null
+    traceModel.reset()
+    return
+  }
+  expandedTraceSlug.value = slug
+  await traceModel.load(slug)
+}
+watch(() => cliSessionsModel.lastDeltaAt.value, () => {
+  // Refresh the open trace panel when a new event lands for its slug.
+  const slug = expandedTraceSlug.value
+  if (slug) void traceModel.load(slug)
+})
 
 function relationTitle(mode: 'reply' | 'comment' | null) {
   if (mode === 'reply') {
@@ -2349,16 +2673,46 @@ onBeforeUnmount(() => {
           <VIcon size="11" class="sess-nav__header-icon">mdi-layers-outline</VIcon>
           <span class="sess-nav__title">
             Sessions
-            <span class="sess-nav__count">{{ projectScopedHierarchy.flat().length }}</span>
+            <span class="sess-nav__count">{{ sessionTokenSummary.sessionCount }}</span>
+          </span>
+          <span v-if="sessionTokenSummary.hasComposer" class="sess-nav__summary sess-nav__summary--composer" title="Токены композитора">
+            <VIcon size="11">mdi-brain</VIcon>
+            {{ formatTokens(sessionTokenSummary.composerTotal) }}
+          </span>
+          <span v-if="sessionTokenSummary.total > 0" class="sess-nav__summary sess-nav__summary--total" title="Суммарно по всем сессиям в проекте">
+            Σ {{ formatTokens(sessionTokenSummary.total) }}
+          </span>
+          <span v-if="sessionTokenSummary.totalCost > 0" class="sess-nav__summary sess-nav__summary--cost" title="Стоимость">
+            ${{ sessionTokenSummary.totalCost.toFixed(2) }}
           </span>
           <VIcon size="13" class="sess-nav__chevron">{{ sessNavCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</VIcon>
         </button>
         <template v-if="!sessNavCollapsed">
+         <div ref="sessNavBodyRef" class="sess-nav__body">
+          <svg
+            v-if="sessNavEdges.length"
+            class="sess-nav__edges"
+            :viewBox="`0 0 ${sessNavBodySize.w} ${sessNavBodySize.h}`"
+            :style="`width: ${sessNavBodySize.w}px; height: ${sessNavBodySize.h}px;`"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path
+              v-for="e in sessNavEdges"
+              :key="e.id"
+              :d="e.d"
+              :stroke="e.color"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              fill="none"
+            />
+          </svg>
           <div v-if="projectScopedHierarchy[0]?.length" class="sess-nav__row sess-nav__row--composers">
             <span class="sess-nav__label">Composers</span>
             <div
               v-for="session in projectScopedHierarchy[0]"
               :key="session.slug"
+              :ref="(el) => registerSessTab(session.slug, el)"
               class="sess-nav__tab"
               :class="{ 'sess-nav__tab--running': session.status === 'running', 'sess-nav__tab--active': sessNavDotClass(session) === 'sess-nav__dot--active' }"
               :title="session.slug"
@@ -2371,8 +2725,33 @@ onBeforeUnmount(() => {
                 class="sess-nav__dot"
                 :class="sessNavDotClass(session)"
               />
+              <VIcon size="12" class="sess-nav__kind-icon">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
               <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
               <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+              <span class="sess-nav__meta" :title="'Запущено ' + formatClock(session.created)">
+                <VIcon size="10">mdi-clock-outline</VIcon>
+                <span class="sess-nav__meta-clock">{{ formatClock(session.created) }}</span>
+                <span class="sess-nav__meta-elapsed">· {{ formatElapsed(session.created) }}</span>
+              </span>
+              <span v-if="session.tokenInTotal + session.tokenOutTotal > 0" class="sess-nav__tokens" title="Токены сессии">↓{{ formatTokens(session.tokenInTotal) }} ↑{{ formatTokens(session.tokenOutTotal) }}</span>
+              <button
+                class="sess-nav__trace-btn"
+                :class="{ 'sess-nav__trace-btn--active': expandedTraceSlug === session.slug }"
+                type="button"
+                :title="expandedTraceSlug === session.slug ? 'Скрыть трассу' : 'Показать трассу'"
+                @click.stop="toggleSessionTrace(session.slug)"
+              >
+                <VIcon size="12">{{ expandedTraceSlug === session.slug ? 'mdi-chevron-up-box-outline' : 'mdi-chart-timeline-variant' }}</VIcon>
+              </button>
+              <button
+                class="sess-nav__stop-btn"
+                type="button"
+                :disabled="stoppingSlugs.has(session.slug)"
+                :title="stopErrorBySlug[session.slug] || 'Остановить сессию'"
+                @click.stop="onStopSession(session.slug)"
+              >
+                <VIcon size="12">{{ stoppingSlugs.has(session.slug) ? 'mdi-loading' : 'mdi-stop-circle-outline' }}</VIcon>
+              </button>
             </div>
           </div>
           <div v-if="projectScopedHierarchy[1]?.length" class="sess-nav__row sess-nav__row--orchestrators">
@@ -2380,6 +2759,7 @@ onBeforeUnmount(() => {
             <div
               v-for="session in projectScopedHierarchy[1]"
               :key="session.slug"
+              :ref="(el) => registerSessTab(session.slug, el)"
               class="sess-nav__tab"
               :class="{ 'sess-nav__tab--running': session.status === 'running', 'sess-nav__tab--active': sessNavDotClass(session) === 'sess-nav__dot--active' }"
               :title="session.slug"
@@ -2392,8 +2772,33 @@ onBeforeUnmount(() => {
                 class="sess-nav__dot"
                 :class="sessNavDotClass(session)"
               />
+              <VIcon size="12" class="sess-nav__kind-icon">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
               <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
               <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+              <span class="sess-nav__meta" :title="'Запущено ' + formatClock(session.created)">
+                <VIcon size="10">mdi-clock-outline</VIcon>
+                <span class="sess-nav__meta-clock">{{ formatClock(session.created) }}</span>
+                <span class="sess-nav__meta-elapsed">· {{ formatElapsed(session.created) }}</span>
+              </span>
+              <span v-if="session.tokenInTotal + session.tokenOutTotal > 0" class="sess-nav__tokens" title="Токены сессии">↓{{ formatTokens(session.tokenInTotal) }} ↑{{ formatTokens(session.tokenOutTotal) }}</span>
+              <button
+                class="sess-nav__trace-btn"
+                :class="{ 'sess-nav__trace-btn--active': expandedTraceSlug === session.slug }"
+                type="button"
+                :title="expandedTraceSlug === session.slug ? 'Скрыть трассу' : 'Показать трассу'"
+                @click.stop="toggleSessionTrace(session.slug)"
+              >
+                <VIcon size="12">{{ expandedTraceSlug === session.slug ? 'mdi-chevron-up-box-outline' : 'mdi-chart-timeline-variant' }}</VIcon>
+              </button>
+              <button
+                class="sess-nav__stop-btn"
+                type="button"
+                :disabled="stoppingSlugs.has(session.slug)"
+                :title="stopErrorBySlug[session.slug] || 'Остановить сессию'"
+                @click.stop="onStopSession(session.slug)"
+              >
+                <VIcon size="12">{{ stoppingSlugs.has(session.slug) ? 'mdi-loading' : 'mdi-stop-circle-outline' }}</VIcon>
+              </button>
             </div>
           </div>
           <template v-if="chatWorkerGroups.length">
@@ -2405,6 +2810,7 @@ onBeforeUnmount(() => {
               <div
                 v-for="session in group.sessions"
                 :key="session.slug"
+                :ref="(el) => registerSessTab(session.slug, el)"
                 class="sess-nav__tab"
                 :class="{ 'sess-nav__tab--running': session.status === 'running', 'sess-nav__tab--active': sessNavDotClass(session) === 'sess-nav__dot--active' }"
                 :title="session.slug"
@@ -2417,11 +2823,99 @@ onBeforeUnmount(() => {
                   class="sess-nav__dot"
                   :class="sessNavDotClass(session)"
                 />
-                <span class="sess-nav__name">{{ session.agentDisplayName || session.slug }}</span>
+                <VIcon size="12" class="sess-nav__kind-icon">{{ getSessionKindMeta(session.kind).icon }}</VIcon>
+                <span class="sess-nav__name" :title="session.agentDisplayName || session.slug">{{ session.slug }}</span>
                 <span v-if="session.workroom" class="sess-nav__wr">{{ session.workroom }}</span>
+                <span class="sess-nav__meta" :title="'Запущено ' + formatClock(session.created)">
+                  <VIcon size="10">mdi-clock-outline</VIcon>
+                  <span class="sess-nav__meta-clock">{{ formatClock(session.created) }}</span>
+                  <span class="sess-nav__meta-elapsed">· {{ formatElapsed(session.created) }}</span>
+                </span>
+                <span v-if="session.tokenInTotal + session.tokenOutTotal > 0" class="sess-nav__tokens" title="Токены сессии">↓{{ formatTokens(session.tokenInTotal) }} ↑{{ formatTokens(session.tokenOutTotal) }}</span>
+                <button
+                  class="sess-nav__trace-btn"
+                  :class="{ 'sess-nav__trace-btn--active': expandedTraceSlug === session.slug }"
+                  type="button"
+                  :title="expandedTraceSlug === session.slug ? 'Скрыть трассу' : 'Показать трассу'"
+                  @click.stop="toggleSessionTrace(session.slug)"
+                >
+                  <VIcon size="12">{{ expandedTraceSlug === session.slug ? 'mdi-chevron-up-box-outline' : 'mdi-chart-timeline-variant' }}</VIcon>
+                </button>
+                <button
+                  class="sess-nav__stop-btn"
+                  type="button"
+                  :disabled="stoppingSlugs.has(session.slug)"
+                  :title="stopErrorBySlug[session.slug] || 'Остановить сессию'"
+                  @click.stop="onStopSession(session.slug)"
+                >
+                  <VIcon size="12">{{ stoppingSlugs.has(session.slug) ? 'mdi-loading' : 'mdi-stop-circle-outline' }}</VIcon>
+                </button>
               </div>
             </div>
           </template>
+         </div>
+          <div v-if="expandedTraceSlug" class="sess-nav__trace">
+            <div class="sess-nav__trace-header">
+              <span>Трасса: <code>{{ expandedTraceSlug }}</code></span>
+              <span v-if="traceModel.pending.value" class="sess-nav__trace-pending">загрузка…</span>
+              <span v-else-if="traceModel.error.value" class="sess-nav__trace-error">{{ traceModel.error.value }}</span>
+              <span v-else class="sess-nav__trace-count">{{ traceModel.events.value.length }} событий</span>
+              <button class="sess-nav__trace-close" type="button" @click="toggleSessionTrace(expandedTraceSlug)">
+                <VIcon size="14">mdi-close</VIcon>
+              </button>
+            </div>
+            <div v-if="expandedTraceParent || expandedTraceChildren.length" class="sess-nav__trace-lineage">
+              <span v-if="expandedTraceParent" class="sess-nav__trace-lineage-item" :title="'Инициатор: ' + expandedTraceParent.slug">
+                <VIcon size="11">mdi-arrow-up-thin</VIcon>
+                <span class="sess-nav__trace-lineage-label">от</span>
+                <code>{{ expandedTraceParent.agentDisplayName || expandedTraceParent.slug }}</code>
+              </span>
+              <span v-if="expandedTraceSession" class="sess-nav__trace-lineage-self">
+                <VIcon size="11">{{ getSessionKindMeta(expandedTraceSession.kind).icon }}</VIcon>
+                <code>{{ expandedTraceSession.agentDisplayName || expandedTraceSession.slug }}</code>
+              </span>
+              <span v-if="expandedTraceChildren.length" class="sess-nav__trace-lineage-item" :title="'Дочерних сессий: ' + expandedTraceChildren.length">
+                <VIcon size="11">mdi-arrow-down-thin</VIcon>
+                <span class="sess-nav__trace-lineage-label">породила</span>
+                <code v-for="c in expandedTraceChildren" :key="c.slug">{{ c.agentDisplayName || c.slug }}</code>
+              </span>
+            </div>
+            <div v-if="traceModel.events.value.length" class="sess-nav__trace-list">
+              <div
+                v-for="ev in traceModel.events.value"
+                :key="ev.eventId"
+                class="sess-nav__trace-row"
+                :class="[
+                  'sess-nav__trace-row--' + ev.kind,
+                  ev.kind === 'subagent_start' ? 'sess-nav__trace-row--subagent' : null,
+                  ev.kind === 'subagent_end' && ev.subagentSuccess === false ? 'sess-nav__trace-row--subagent-fail' : null,
+                  ev.kind === 'subagent_end' && ev.subagentSuccess === true ? 'sess-nav__trace-row--subagent-ok' : null,
+                ]"
+              >
+                <span class="sess-nav__trace-ts">{{ new Date(ev.occurredAt).toLocaleTimeString('ru-RU', { hour12: false }) }}</span>
+                <template v-if="ev.kind === 'subagent_start'">
+                  <VIcon size="12" class="sess-nav__trace-subagent-icon">mdi-robot-outline</VIcon>
+                  <span class="sess-nav__trace-kind">subagent</span>
+                  <span v-if="ev.subagentType" class="sess-nav__trace-tool">{{ ev.subagentType }}</span>
+                  <span v-if="ev.message" class="sess-nav__trace-desc">{{ ev.message }}</span>
+                </template>
+                <template v-else-if="ev.kind === 'subagent_end'">
+                  <VIcon size="12" class="sess-nav__trace-subagent-icon">{{ ev.subagentSuccess === false ? 'mdi-close-circle-outline' : 'mdi-check-circle-outline' }}</VIcon>
+                  <span class="sess-nav__trace-kind">{{ ev.subagentSuccess === false ? 'subagent fail' : 'subagent done' }}</span>
+                  <span v-if="ev.subagentType" class="sess-nav__trace-tool">{{ ev.subagentType }}</span>
+                  <span v-if="ev.message" class="sess-nav__trace-msg">{{ ev.message }}</span>
+                </template>
+                <template v-else>
+                  <span class="sess-nav__trace-kind">{{ ev.substate || ev.kind }}</span>
+                  <span v-if="ev.tool" class="sess-nav__trace-tool">{{ ev.tool }}</span>
+                  <span v-if="ev.toolDescriptor" class="sess-nav__trace-desc">{{ ev.toolDescriptor }}</span>
+                  <span v-else-if="ev.message" class="sess-nav__trace-msg">{{ ev.message }}</span>
+                  <span v-if="ev.tokenIn || ev.tokenOut" class="sess-nav__trace-tokens">↓{{ ev.tokenIn }} ↑{{ ev.tokenOut }}</span>
+                </template>
+              </div>
+            </div>
+            <div v-else-if="!traceModel.pending.value" class="sess-nav__trace-empty">Нет событий</div>
+          </div>
         </template>
       </div>
 
@@ -2676,8 +3170,6 @@ onBeforeUnmount(() => {
         :draft="draft"
         :media-menu-open="composerMediaMenuOpen"
         :active-conversation="Boolean(conversations.activeConversation.value)"
-        :show-agent-menu-toggle="Boolean(activeConversationAgent)"
-        :agent-menu-expanded="Boolean(activeConversationAgent) && !agentWorkspaceCollapsed"
         :message-pending="conversations.messagePending.value"
         :is-recording="isRecording"
         :recording-seconds="recordingSeconds"
@@ -2690,7 +3182,11 @@ onBeforeUnmount(() => {
         :show-project-actions-button="Boolean(conversations.activeConversation.value) && !activeConversationAgent"
         :project-actions-open="projectActions.panelOpen.value"
         :is-agent-composer="Boolean(activeConversationAgent)"
+        :show-aidev-actions-bar="Boolean(activeConversationAgent && agentProject)"
+        :aidev-active-tab="aidevPanelTab"
         :attachment-ids="[]"
+        :show-search-toggle="Boolean(conversations.activeConversation.value)"
+        :search-mode="searchMode"
         @update:draft="draft = $event"
         @focus="expandComposer"
         @blur="collapseComposer"
@@ -2698,8 +3194,9 @@ onBeforeUnmount(() => {
         @file-select="handleFileSelect"
         @toggle-media-menu="toggleComposerMediaMenu"
         @open-file-picker="openFilePicker()"
-        @toggle-agent-workspace="agentWorkspaceCollapsed = !agentWorkspaceCollapsed"
         @toggle-project-actions="projectActions.togglePanel()"
+        @select-aidev-tab="onSelectAidevTab($event)"
+        @toggle-search-mode="toggleSearchMode"
         @primary-pointerdown="handleComposerPrimaryPointerDown"
         @primary-action="handleComposerPrimaryAction"
         @cancel-audio-draft="cancelAudioComposerState"
@@ -2707,6 +3204,66 @@ onBeforeUnmount(() => {
         @update:audio-trim-end="updateAudioDraftTrimEnd"
         @run-started="handleRunStarted"
       >
+        <template #ai-search-panel>
+          <div class="ai-search-panel">
+            <header class="ai-search-panel__head">
+              <VIcon size="16" class="mr-1" color="primary">mdi-magnify</VIcon>
+              <span class="ai-search-panel__title">Поиск по AI-меню</span>
+              <span class="ai-search-panel__count">{{ aiMenuSearchResults.length }}</span>
+            </header>
+            <div class="ai-search-panel__body">
+              <div v-if="!aiMenuSearchResults.length" class="ai-search-panel__empty">
+                <VIcon size="32" color="on-surface-variant">mdi-magnify-remove-outline</VIcon>
+                <p>Ничего не нашлось</p>
+              </div>
+              <ul v-else class="ai-search-panel__list">
+                <li
+                  v-for="(hit, idx) in aiMenuSearchResults"
+                  :key="`${hit.kind}-${hit.key}-${idx}`"
+                >
+                  <button type="button" class="ai-search-panel__item" @mousedown.prevent @click="pickAiMenuHit(hit)">
+                    <VIcon :size="18" class="ai-search-panel__item-icon">{{ hit.icon }}</VIcon>
+                    <span class="ai-search-panel__item-title">{{ hit.title }}</span>
+                    <span class="ai-search-panel__item-group">{{ hit.group }}</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </template>
+
+        <template #aidev-panel>
+          <div class="chat-aidev-overlay">
+            <header class="chat-aidev-overlay__head">
+              <div class="chat-aidev-overlay__title">
+                <VIcon size="16" class="mr-1" color="primary">mdi-folder-cog-outline</VIcon>
+                <span class="chat-aidev-overlay__project">{{ agentProject?.name || 'AIDev' }}</span>
+                <span class="chat-aidev-overlay__sep">·</span>
+                <span class="chat-aidev-overlay__tab">{{ aidevPanelTab }}</span>
+              </div>
+              <button
+                type="button"
+                class="chat-aidev-overlay__close"
+                aria-label="Закрыть"
+                title="Закрыть"
+                @click="aidevPanelTab = null"
+              >
+                <VIcon size="18">mdi-close</VIcon>
+              </button>
+            </header>
+            <div class="chat-aidev-overlay__body">
+              <ProjectConfigTabs
+                v-if="agentProject"
+                :project="agentProject"
+                hide-tabs
+              />
+              <div v-else class="chat-aidev-overlay__empty">
+                <VIcon size="36" color="on-surface-variant">mdi-folder-question-outline</VIcon>
+                <p>У агента нет привязанного проекта</p>
+              </div>
+            </div>
+          </div>
+        </template>
         <template #project-actions-panel>
           <MessengerProjectActionsPanel
             :open="projectActions.panelOpen.value"
@@ -2744,6 +3301,178 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
+/* AIDev overlay panel — expands over the chat above the composer. */
+.chat-aidev-overlay {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.chat-aidev-overlay__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgb(var(--v-theme-surface-container));
+  flex-shrink: 0;
+}
+.chat-aidev-overlay__title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.chat-aidev-overlay__project { font-weight: 600; }
+.chat-aidev-overlay__sep { opacity: 0.5; margin: 0 2px; }
+.chat-aidev-overlay__tab { opacity: 0.7; text-transform: capitalize; }
+.chat-aidev-overlay__close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 140ms ease, color 140ms ease;
+}
+.chat-aidev-overlay__close:hover {
+  background: rgba(var(--v-theme-error), 0.12);
+  color: rgb(var(--v-theme-error));
+}
+.chat-aidev-overlay__body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.chat-aidev-overlay__body > .project-config-tabs {
+  flex: 1;
+  min-height: 0;
+}
+.chat-aidev-overlay__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 24px 16px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 13px;
+}
+
+.ai-search-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.ai-search-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  flex-shrink: 0;
+}
+.ai-search-panel__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  letter-spacing: 0.01em;
+}
+.ai-search-panel__count {
+  margin-left: auto;
+  font-size: 11px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+}
+.ai-search-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+}
+.ai-search-panel__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 13px;
+  text-align: center;
+}
+.ai-search-panel__empty p { margin: 0; }
+.ai-search-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ai-search-panel__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.ai-search-panel__item:hover {
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-color: rgba(var(--v-theme-primary), 0.25);
+}
+.ai-search-panel__item-icon {
+  color: rgb(var(--v-theme-on-surface-variant));
+  flex-shrink: 0;
+}
+.ai-search-panel__item:hover .ai-search-panel__item-icon {
+  color: rgb(var(--v-theme-primary));
+}
+.ai-search-panel__item-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.ai-search-panel__item-group {
+  font-size: 11px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  flex-shrink: 0;
+}
+
 .agent-model-bar {
   display: flex;
   align-items: center;

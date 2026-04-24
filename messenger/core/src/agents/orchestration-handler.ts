@@ -33,11 +33,44 @@ import {
 
 const execFile = promisify(_execFile)
 
+// --- cli-session delta broadcaster (in-process SSE fan-out) ---
+
+type SessionDelta = {
+  slug: string
+  reason: 'created' | 'event' | 'stopped' | 'archived' | 'patched'
+  ts: string
+  agentId?: string | null
+  runId?: string | null
+  substate?: string | null
+  tool?: string | null
+  tokenIn?: number
+  tokenOut?: number
+  message?: string | null
+}
+
+const sessionDeltaListeners = new Set<(evt: SessionDelta) => void>()
+
+export function subscribeSessionDeltas(fn: (evt: SessionDelta) => void) {
+  sessionDeltaListeners.add(fn)
+  return () => { sessionDeltaListeners.delete(fn) }
+}
+
+export function publishSessionDelta(evt: SessionDelta) {
+  for (const fn of sessionDeltaListeners) {
+    try { fn(evt) } catch { /* swallow — one broken listener shouldn't stop others */ }
+  }
+}
+
 // --- auth helpers ---
 
 function resolveSessionAuth(request: FastifyRequest) {
   const config = readMessengerConfig()
-  const token = readBearerToken(request.headers.authorization ?? '')
+  let token = readBearerToken(request.headers.authorization ?? '')
+  // Fallback for SSE / img tags that can't set Authorization header.
+  if (!token) {
+    const q = (request.query ?? {}) as { token?: string }
+    if (typeof q.token === 'string' && q.token) token = q.token
+  }
   if (!token) return null
   return verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET)
 }
@@ -535,12 +568,18 @@ export function registerOrchestrationRoutes(
         }
       }
 
-      // A session is truly "running" when clicore2messenger has pushed an event
-      // within the last few minutes — not when its tmux window happens to still be
-      // alive (tmux keeps abandoned Claude processes forever). New sessions get a
-      // grace period before they're required to have produced events.
-      const ACTIVITY_WINDOW_MS = 15 * 60_000
-      const NEW_SESSION_GRACE_MS = 3 * 60_000
+      // Tmux is the authoritative liveness signal. An event-stream silence doesn't
+      // mean the session died — Claude can think for 20+ minutes on one turn. We
+      // only mark `done` when (a) tmux confirms the window is gone, or (b) the DB
+      // has a stoppedAt from the ingest handler's `complete`/`error` event.
+      // ACTIVITY_IDLE_MS is purely cosmetic (for an "idle" badge in the UI), never
+      // for status itself.
+      const ACTIVITY_IDLE_MS = 15 * 60_000
+      // "Active" = running AND recently executing an operation. Used by the
+      // chat UI to show only sessions that are currently working, not every
+      // long-running tmux window. 90s captures "Claude is thinking/calling
+      // tools right now"; longer gaps read as "dormant".
+      const ACTIVE_ACTIVITY_MS = 90_000
       const now = Date.now()
 
       // Signals 1/2/3 from clicore-integ: spawn tree, finish outcome, task completions.
@@ -625,29 +664,32 @@ export function registerOrchestrationRoutes(
           const activity = agentId ? activityByAgent.get(agentId) ?? null : null
           const run = agentId ? latestRunByAgent.get(agentId) : undefined
           const taskCounts = agentId ? taskCountByAgent.get(agentId) : undefined
-          const tmuxDead = liveTmuxWindows.size > 0 && !liveTmuxWindows.has(s.window)
+          const tmuxChecked = liveTmuxWindows.size > 0
+          const tmuxAlive = tmuxChecked && liveTmuxWindows.has(s.window)
+          const tmuxDead = tmuxChecked && !tmuxAlive
           const dbStopped = stoppedSlugs.has(s.slug)
+          // Tmux-authoritative status. If we couldn't read tmux (empty set), fall
+          // back to what the registry file says so the dropdown isn't empty on
+          // transient tmux failures.
           let computedStatus: 'running' | 'done' = s.status
           if (s.status === 'running') {
-            if (tmuxDead) {
-              computedStatus = 'done'
-            }
-            else if (activity?.lastActivityAt) {
-              // Activity wins over dbStopped — short-lived --print sessions
-              // get PATCHed to stopped the moment Claude exits, but the user
-              // still needs a window to see them in the plate.
-              const age = now - new Date(activity.lastActivityAt).getTime()
-              computedStatus = age < ACTIVITY_WINDOW_MS ? 'running' : 'done'
-            }
-            else if (dbStopped) {
-              computedStatus = 'done'
-            }
-            else {
-              // No events yet — running only if the session is fresh
-              const createdAge = s.created ? now - new Date(s.created).getTime() : Number.POSITIVE_INFINITY
-              computedStatus = createdAge < NEW_SESSION_GRACE_MS ? 'running' : 'done'
-            }
+            if (tmuxAlive) computedStatus = 'running'
+            else if (tmuxDead) computedStatus = 'done'
+            else if (dbStopped) computedStatus = 'done'
+            // else: tmux not readable → keep registry's 'running'
           }
+          const idleForMs = activity?.lastActivityAt
+            ? now - new Date(activity.lastActivityAt).getTime()
+            : null
+          const isIdle = computedStatus === 'running' && idleForMs !== null && idleForMs > ACTIVITY_IDLE_MS
+          // Treat sessions that have never emitted an event yet as active for
+          // their first ACTIVE_ACTIVITY_MS window — the CLI bootstrap takes a
+          // few seconds, so we don't want brand-new sessions to flicker "idle".
+          const createdAtMs = s.created ? new Date(s.created).getTime() : null
+          const sinceCreatedMs = createdAtMs ? now - createdAtMs : null
+          const recentActivity = idleForMs !== null && idleForMs < ACTIVE_ACTIVITY_MS
+          const recentlyCreated = idleForMs === null && sinceCreatedMs !== null && sinceCreatedMs < ACTIVE_ACTIVITY_MS
+          const isActive = computedStatus === 'running' && (recentActivity || recentlyCreated)
           return {
             ...s,
             status: computedStatus,
@@ -655,6 +697,9 @@ export function registerOrchestrationRoutes(
             agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
             agentProjectId: agentBySlug.get(s.slug)?.projectId ?? slugToMessengerProjectId.get(s.slug) ?? s.registryProjectId ?? null,
             lastActivityAt: activity?.lastActivityAt ?? null,
+            idleForMs,
+            isIdle,
+            isActive,
             lastSubstate: activity?.lastSubstate ?? null,
             lastTool: activity?.lastTool ?? null,
             lastToolDescriptor: activity?.lastToolDescriptor ?? null,
@@ -681,6 +726,145 @@ export function registerOrchestrationRoutes(
       }
     },
   )
+
+  // GET /cli-sessions/:slug/trace — last N events across all runs for the agent
+  // linked to this slug. Used by the in-chat trace panel for debugging + monitoring.
+  app.get<{ Params: { slug: string }; Querystring: { limit?: string } }>(
+    '/cli-sessions/:slug/trace',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+      const { slug } = request.params
+      if (!/^[a-z0-9-]{2,40}$/.test(slug)) {
+        return reply.code(400).send({ error: 'INVALID_INPUT' })
+      }
+      const limit = Math.min(Math.max(parseInt(request.query.limit ?? '100', 10) || 100, 1), 500)
+
+      // Resolve agent linked to this slug via either config.claudeSessionSlug
+      // or messenger_cli_sessions.agent_id.
+      let agentId: string | null = null
+      try {
+        const [row] = await db
+          .select({ id: messengerAgents.id })
+          .from(messengerAgents)
+          .where(and(
+            sql`${messengerAgents.config}->>'claudeSessionSlug' = ${slug}`,
+            isNull(messengerAgents.deletedAt),
+          ))
+          .limit(1)
+        if (row) agentId = row.id
+      } catch {}
+      if (!agentId) {
+        try {
+          const [row] = await db
+            .select({ agentId: messengerCliSessions.agentId })
+            .from(messengerCliSessions)
+            .where(and(eq(messengerCliSessions.slug, slug), isNull(messengerCliSessions.deletedAt)))
+            .orderBy(desc(messengerCliSessions.createdAt))
+            .limit(1)
+          if (row?.agentId) agentId = row.agentId
+        } catch {}
+      }
+      if (!agentId) return { slug, agentId: null, events: [] }
+
+      const eventRows = await db.execute<{
+        event_id: string
+        run_id: string
+        occurred_at: string
+        substate: string | null
+        token_in: number | null
+        token_out: number | null
+        message: string | null
+        payload: Record<string, unknown> | null
+      }>(sql`
+        SELECT e.id AS event_id, e.run_id, e.occurred_at, e.substate,
+               e.token_in, e.token_out, e.message, e.payload
+        FROM messenger_agent_run_events e
+        JOIN messenger_agent_runs r ON r.id = e.run_id
+        WHERE r.agent_id = ${agentId}::uuid AND r.deleted_at IS NULL
+        ORDER BY e.occurred_at DESC
+        LIMIT ${limit}
+      `)
+      const rows = Array.isArray(eventRows) ? eventRows : (eventRows as { rows?: unknown[] }).rows ?? []
+      const events = (rows as Array<{
+        event_id: string; run_id: string; occurred_at: string | Date;
+        substate: string | null; token_in: number | null; token_out: number | null;
+        message: string | null; payload: Record<string, unknown> | null;
+      }>).map(r => {
+        const p = (r.payload ?? {}) as Record<string, unknown>
+        const kind = typeof p.type === 'string' ? p.type : (r.substate ?? 'event')
+        const tool = p.type === 'tool_use' && typeof p.tool === 'string' ? p.tool : null
+        const toolInput = p.type === 'tool_use' && p.input && typeof p.input === 'object'
+          ? p.input as Record<string, unknown>
+          : null
+        const subagentType = (p.type === 'subagent_start' || p.type === 'subagent_end') && typeof p.subagentType === 'string'
+          ? p.subagentType
+          : null
+        const toolUseId = (p.type === 'subagent_start' || p.type === 'subagent_end' || p.type === 'tool_use') && typeof p.toolUseId === 'string'
+          ? p.toolUseId
+          : null
+        const childRunId = typeof p.childRunId === 'string' ? p.childRunId : null
+        const success = p.type === 'subagent_end' && typeof p.success === 'boolean' ? p.success : null
+        return {
+          eventId: r.event_id,
+          runId: r.run_id,
+          occurredAt: typeof r.occurred_at === 'string' ? r.occurred_at : r.occurred_at.toISOString(),
+          kind,
+          substate: r.substate,
+          tool,
+          toolDescriptor: toolInput
+            ? (typeof toolInput.command === 'string' ? String(toolInput.command).slice(0, 200)
+              : typeof toolInput.file_path === 'string' ? String(toolInput.file_path)
+              : typeof toolInput.pattern === 'string' ? String(toolInput.pattern).slice(0, 140)
+              : null)
+            : null,
+          tokenIn: r.token_in ?? 0,
+          tokenOut: r.token_out ?? 0,
+          message: r.message ? r.message.slice(0, 400) : null,
+          subagentType,
+          toolUseId,
+          childRunId,
+          subagentSuccess: success,
+        }
+      }).reverse() // oldest → newest for timeline rendering
+      return { slug, agentId, events }
+    },
+  )
+
+  // GET /cli-sessions/stream — Server-Sent Events for live session deltas.
+  // Forwards the internal `cli-sessions:delta` broadcast channel so the UI
+  // can refresh without polling. The ingest handler and session lifecycle
+  // points publish { slug, reason, ts } messages to that channel.
+  app.get('/cli-sessions/stream', async (request, reply) => {
+    if (!resolveSessionAuth(request)) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+    reply.raw.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    })
+    reply.raw.write(`: connected ${new Date().toISOString()}\n\n`)
+    const keepalive = setInterval(() => {
+      try { reply.raw.write(`: ping ${Date.now()}\n\n`) } catch { /* client gone */ }
+    }, 15000)
+    const send = (evt: Record<string, unknown>) => {
+      try { reply.raw.write(`data: ${JSON.stringify(evt)}\n\n`) } catch { /* client gone */ }
+    }
+    // Hook into the same broadcaster used by the ingest pipeline — we piggy-back
+    // on the `cli-sessions:delta` channel name for session-level deltas.
+    const unsubscribe = subscribeSessionDeltas(send)
+    request.raw.on('close', () => {
+      clearInterval(keepalive)
+      unsubscribe()
+    })
+    // Keep the handler alive — fastify awaits this promise.
+    await new Promise<void>((resolve) => {
+      request.raw.on('close', () => resolve())
+    })
+  })
 
   // PATCH /cli-sessions/:slug — change model/effort from UI, or archive/unarchive
   app.patch<{ Params: { slug: string }, Body: { model?: string, effort?: string, archived?: boolean } }>(
@@ -709,6 +893,7 @@ export function registerOrchestrationRoutes(
           .update(messengerCliSessions)
           .set({ archivedAt })
           .where(and(eq(messengerCliSessions.slug, slug), isNull(messengerCliSessions.deletedAt)))
+        publishSessionDelta({ slug, reason: archived ? 'archived' : 'patched', ts: new Date().toISOString() })
         return { slug, archived }
       }
 
@@ -752,6 +937,44 @@ export function registerOrchestrationRoutes(
     },
   )
 
+  // POST /cli-sessions/:slug/stop — kill tmux window, mark DB stopped, broadcast delta.
+  // Used by the "Stop" button in the chat-header session capsule. Idempotent:
+  // if tmux already died, we still update DB state and publish so the UI
+  // converges quickly without waiting for the 30s reconciler.
+  app.post<{ Params: { slug: string } }>(
+    '/cli-sessions/:slug/stop',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+      const { slug } = request.params
+      if (!/^[a-z0-9-]{2,40}$/.test(slug)) {
+        return reply.code(400).send({ error: 'INVALID_INPUT' })
+      }
+
+      const [existing] = await db
+        .select({ id: messengerCliSessions.id, status: messengerCliSessions.status })
+        .from(messengerCliSessions)
+        .where(and(eq(messengerCliSessions.slug, slug), isNull(messengerCliSessions.deletedAt)))
+        .limit(1)
+      if (!existing) return reply.code(404).send({ error: 'NOT_FOUND' })
+
+      try {
+        await execFile('/home/claudecode/bin/claude-session', ['kill', slug], { timeout: 10000 })
+      } catch (err) {
+        request.log?.warn?.({ err, slug }, 'claude-session kill failed — marking stopped anyway')
+      }
+
+      const now = new Date()
+      await db
+        .update(messengerCliSessions)
+        .set({ status: 'stopped', stoppedAt: now })
+        .where(eq(messengerCliSessions.id, existing.id))
+      publishSessionDelta({ slug, reason: 'stopped', ts: now.toISOString() })
+      return { slug, stopped: true }
+    },
+  )
+
   // POST /cli-sessions — auth via ingest bearer token
   app.post<{ Body: unknown }>(
     '/cli-sessions',
@@ -788,12 +1011,13 @@ export function registerOrchestrationRoutes(
         }
       }
 
+      const finalSlug = workroomSlug ?? randomUUID()
       const [inserted] = await db
         .insert(messengerCliSessions)
         .values({
           agentId,
           runId: runId ?? null,
-          slug: workroomSlug ?? randomUUID(),
+          slug: finalSlug,
           workroom: workroomSlug ?? null,
           model,
           tmuxWindow,
@@ -801,7 +1025,50 @@ export function registerOrchestrationRoutes(
         })
         .returning({ id: messengerCliSessions.id })
 
+      publishSessionDelta({ slug: finalSlug, reason: 'created', ts: new Date().toISOString(), agentId, runId: runId ?? null })
       return { id: inserted.id }
     },
   )
+
+  // --- tmux reconciler ---
+  // Runs every 30s. For any session DB row with status='running' whose tmux
+  // window is no longer in `tmux list-windows -t cc`, flips status to
+  // 'stopped' and publishes a delta so the UI updates instantly. This closes
+  // the gap where a session dies without emitting a `complete`/`error` event.
+  const RECONCILE_INTERVAL_MS = 30_000
+  const reconcileTick = async () => {
+    try {
+      const { execFileSync } = await import('node:child_process')
+      let liveWindows: Set<string>
+      try {
+        const out = execFileSync('tmux', ['list-windows', '-t', 'cc', '-F', '#{window_name}'], {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        })
+        liveWindows = new Set(out.trim().split('\n').filter(Boolean))
+      } catch {
+        // tmux unreadable — skip this tick rather than mark everything dead
+        return
+      }
+      const runningRows = await db
+        .select({ id: messengerCliSessions.id, slug: messengerCliSessions.slug, window: messengerCliSessions.tmuxWindow })
+        .from(messengerCliSessions)
+        .where(and(eq(messengerCliSessions.status, 'running'), isNull(messengerCliSessions.deletedAt)))
+      const now = new Date()
+      for (const row of runningRows) {
+        if (!row.window || liveWindows.has(row.window)) continue
+        await db
+          .update(messengerCliSessions)
+          .set({ status: 'stopped', stoppedAt: now })
+          .where(eq(messengerCliSessions.id, row.id))
+        publishSessionDelta({ slug: row.slug, reason: 'stopped', ts: now.toISOString() })
+      }
+    } catch (err) {
+      app.log.warn({ err }, 'cli-session reconciler tick failed')
+    }
+  }
+  const reconcileTimer = setInterval(reconcileTick, RECONCILE_INTERVAL_MS)
+  // Kick once on startup so stale DB state gets cleaned up immediately.
+  setTimeout(reconcileTick, 5_000)
+  app.addHook('onClose', async () => { clearInterval(reconcileTimer) })
 }

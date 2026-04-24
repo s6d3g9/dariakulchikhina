@@ -97,8 +97,6 @@ const settingsDraft = reactive({
   },
 })
 const settingsSaving = ref(false)
-const searchDraft = ref('')
-const searchOpen = ref(false)
 const explorerPending = ref(false)
 const explorerFilePending = ref(false)
 const explorerError = ref('')
@@ -320,14 +318,6 @@ const collapsed = computed({
   get: () => Boolean(props.collapsed),
   set: (value: boolean) => emit('update:collapsed', value),
 })
-const searchMatches = computed(() => {
-  const query = searchDraft.value.trim().toLowerCase()
-  if (!query) {
-    return []
-  }
-
-  return sections.filter(section => section.title.toLowerCase().includes(query))
-})
 const explorerBreadcrumbs = computed(() => {
   const listing = explorerListing.value
   if (!listing) {
@@ -447,8 +437,6 @@ watch(() => resolvedAgent.value?.id, () => {
   selectedRunId.value = null
   runsModel.clearSelection()
   activeSection.value = 'overview'
-  searchDraft.value = ''
-  searchOpen.value = false
   explorerListing.value = null
   explorerFile.value = null
   explorerError.value = ''
@@ -460,8 +448,6 @@ watch(() => resolvedAgent.value?.id, () => {
 watch(() => props.conversationId, () => {
   settingsDraft.model = currentConversation.value?.policy?.model || resolvedAgent.value?.settings.model || 'claude-sonnet-4-6'
   activeSection.value = 'overview'
-  searchDraft.value = ''
-  searchOpen.value = false
 })
 
 watch(() => props.agentId, async () => {
@@ -825,24 +811,14 @@ function sectionIcon(section: AgentWorkspaceSectionKey) {
   return sectionIconMap[section]
 }
 
-function openSearch() {
-  searchOpen.value = true
-}
-
-function closeSearch() {
-  setTimeout(() => {
-    searchOpen.value = false
-  }, 150)
-}
-
 function selectSection(section: AgentWorkspaceSectionKey) {
-  if (collapsed.value) {
-    collapsed.value = false
+  if (section === activeSection.value) {
+    collapsed.value = !collapsed.value
+    return
   }
 
   activeSection.value = section
-  searchDraft.value = ''
-  searchOpen.value = false
+  collapsed.value = false
 }
 
 async function openRunDetail(runId: string) {
@@ -1715,57 +1691,85 @@ async function openWorkspaceFile(path: string) {
     </Transition>
 
     <div class="agent-chat-workspace__dock">
-      <div class="section-tabs-row agent-chat-workspace__tabs-row">
-        <VTabs
-          :model-value="activeSection"
-          class="section-tabs"
-          bg-color="surface-container"
-          color="primary"
-          density="compact"
-          grow
-          @update:model-value="selectSection($event as AgentWorkspaceSectionKey)"
-        >
-          <VTab
+      <div class="ws-chip-bar" role="toolbar" aria-label="Разделы рабочей области">
+        <div class="ws-chip-bar__scroll">
+          <button
             v-for="section in sections"
             :key="section.key"
-            :value="section.key"
-            :aria-label="section.title"
+            type="button"
+            class="ws-chip"
+            :class="{ 'ws-chip--active': activeSection === section.key && !collapsed }"
             :title="section.title"
+            :aria-pressed="activeSection === section.key && !collapsed"
+            @click="selectSection(section.key)"
           >
-            <VIcon>{{ sectionIcon(section.key) }}</VIcon>
-          </VTab>
-        </VTabs>
-      </div>
-
-      <div class="search-dock search-dock--bottom-dock agent-chat-workspace__search-dock">
-        <div class="search-dock__field">
-          <MessengerDockField>
-            <input
-              v-model="searchDraft"
-              type="text"
-              class="composer-input composer-input--dock"
-              placeholder="Найти раздел"
-              autocomplete="off"
-              @focus="openSearch"
-              @blur="closeSearch"
-            />
-          </MessengerDockField>
-
-          <Transition name="chrome-reveal">
-            <div v-if="searchOpen && searchMatches.length" class="search-dropdown" @mousedown.prevent>
-              <VList bg-color="transparent" density="comfortable">
-                <VListItem
-                  v-for="section in searchMatches"
-                  :key="section.key"
-                  @click="selectSection(section.key)"
-                >
-                  <template #title>{{ section.title }}</template>
-                </VListItem>
-              </VList>
-            </div>
-          </Transition>
+            <VIcon :size="13" class="ws-chip__icon">{{ sectionIcon(section.key) }}</VIcon>
+            <span class="ws-chip__label">{{ section.title }}</span>
+          </button>
         </div>
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+.ws-chip-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 4px 6px 6px;
+  background: transparent;
+  border: 0;
+}
+
+.ws-chip-bar__scroll {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex: 1;
+  min-width: 0;
+  mask-image: linear-gradient(to right,
+    transparent 0,
+    #000 10px,
+    #000 calc(100% - 10px),
+    transparent 100%);
+}
+.ws-chip-bar__scroll::-webkit-scrollbar { display: none; }
+
+.ws-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 120ms ease;
+}
+.ws-chip:hover {
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  color: rgb(var(--v-theme-on-surface));
+}
+.ws-chip:active { transform: scale(0.97); }
+.ws-chip--active {
+  background: rgba(var(--v-theme-primary), 0.16);
+  border-color: rgba(var(--v-theme-primary), 0.38);
+  color: rgb(var(--v-theme-primary));
+}
+.ws-chip__icon { opacity: 0.8; flex-shrink: 0; }
+.ws-chip:hover .ws-chip__icon { opacity: 0.95; }
+.ws-chip--active .ws-chip__icon { opacity: 1; }
+.ws-chip__label { line-height: 1; }
+
+</style>

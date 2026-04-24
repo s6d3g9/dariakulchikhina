@@ -4,7 +4,8 @@ import { z } from 'zod'
 import { useIngestDb, messengerAgents, messengerAgentRuns, messengerAgentRunEvents, messengerCliSessions, eq, and, isNull, sql } from './ingest-db.ts'
 import { addAgentMessageToConversation, findConversationById } from '../conversations/conversation-store.ts'
 import { findMessengerAgentById } from './agent-store.ts'
-import { isCliAgent } from './agent-run-store.ts'
+import { createRun, isCliAgent } from './agent-run-store.ts'
+import { publishSessionDelta } from './orchestration-handler.ts'
 
 // --- event schemas ---
 
@@ -16,7 +17,7 @@ const baseEvent = {
 const runStartSchema = z.object({ ...baseEvent, type: z.literal('run_start'), prompt: z.string().optional() })
 const substateSchema = z.object({ ...baseEvent, type: z.literal('substate'), substate: z.string(), message: z.string().optional() })
 const deltaSchema = z.object({ ...baseEvent, type: z.literal('delta'), delta: z.string() })
-const toolUseSchema = z.object({ ...baseEvent, type: z.literal('tool_use'), tool: z.string(), input: z.unknown().optional() })
+const toolUseSchema = z.object({ ...baseEvent, type: z.literal('tool_use'), tool: z.string(), toolUseId: z.string().optional(), input: z.unknown().optional() })
 const tokensSchema = z.object({
   ...baseEvent,
   type: z.literal('tokens'),
@@ -28,6 +29,20 @@ const tokensSchema = z.object({
 })
 const completeSchema = z.object({ ...baseEvent, type: z.literal('complete'), finalText: z.string().optional() })
 const errorSchema = z.object({ ...baseEvent, type: z.literal('error'), message: z.string(), fatal: z.boolean().optional() })
+const subagentStartSchema = z.object({
+  ...baseEvent,
+  type: z.literal('subagent_start'),
+  toolUseId: z.string(),
+  subagentType: z.string(),
+  promptExcerpt: z.string().optional(),
+})
+const subagentEndSchema = z.object({
+  ...baseEvent,
+  type: z.literal('subagent_end'),
+  toolUseId: z.string(),
+  success: z.boolean(),
+  message: z.string().optional(),
+})
 
 const eventSchema = z.discriminatedUnion('type', [
   runStartSchema,
@@ -37,6 +52,8 @@ const eventSchema = z.discriminatedUnion('type', [
   tokensSchema,
   completeSchema,
   errorSchema,
+  subagentStartSchema,
+  subagentEndSchema,
 ])
 
 type IngestEvent = z.infer<typeof eventSchema>
@@ -60,6 +77,14 @@ function consumeRateLimit(agentId: string): boolean {
   bucket.tokens -= 1
   return true
 }
+
+// --- subagent tracking ---
+
+// Maps Task tool_use_id -> child agent_run_id for the lifetime of the
+// messenger-core process. If messenger-core restarts between subagent_start
+// and subagent_end, the child run stays in "running" status; a separate
+// sweeper can reap orphans by checking runs where finished_at IS NULL.
+const subagentRunMap = new Map<string, string>()
 
 // --- persistence ---
 
@@ -120,6 +145,16 @@ async function persistEvent(
       .update(messengerCliSessions)
       .set({ status: 'stopped', stoppedAt: now })
       .where(and(eq(messengerCliSessions.runId, event.runId), isNull(messengerCliSessions.deletedAt)))
+    // Cascade: close any child subagent runs still marked running — the
+    // parent finished cleanly so treat orphans as completed.
+    await db
+      .update(messengerAgentRuns)
+      .set({ status: 'completed', finishedAt: now })
+      .where(and(
+        eq(messengerAgentRuns.parentRunId, event.runId),
+        sql`${messengerAgentRuns.status} IN ('pending','running')`,
+        isNull(messengerAgentRuns.deletedAt),
+      ))
   } else if (event.type === 'error') {
     const now = new Date()
     await db
@@ -130,6 +165,15 @@ async function persistEvent(
       .update(messengerCliSessions)
       .set({ status: 'stopped', stoppedAt: now })
       .where(and(eq(messengerCliSessions.runId, event.runId), isNull(messengerCliSessions.deletedAt)))
+    // Cascade: parent failed → any open child subagent runs are failed too.
+    await db
+      .update(messengerAgentRuns)
+      .set({ status: 'failed', finishedAt: now, error: 'parent run terminated' })
+      .where(and(
+        eq(messengerAgentRuns.parentRunId, event.runId),
+        sql`${messengerAgentRuns.status} IN ('pending','running')`,
+        isNull(messengerAgentRuns.deletedAt),
+      ))
   } else if (event.type === 'tokens') {
     const costIncrement = event.costUsd?.toFixed(8) ?? '0'
     await db
@@ -140,6 +184,45 @@ async function persistEvent(
         costUsd: sql`${messengerAgentRuns.costUsd} + ${costIncrement}::numeric`,
       })
       .where(eq(messengerAgentRuns.id, event.runId))
+  }
+
+  // Subagent lifecycle: create/update a child agent_run linked by
+  // toolUseId. The event row itself lands on the PARENT run's timeline
+  // (so the session trace shows it in sequence); the `childRunId` is
+  // stitched into the payload so the UI can link to the child's events.
+  let childRunId: string | null = null
+  if (event.type === 'subagent_start') {
+    if (!run.conversationId) {
+      throw Object.assign(new Error('parent run has no conversation'), { statusCode: 400 })
+    }
+    const created = await createRun({
+      agentId,
+      conversationId: run.conversationId,
+      parentRunId: event.runId,
+      spawnedByAgentId: agentId,
+      prompt: event.promptExcerpt,
+    })
+    childRunId = created.runId
+    await db
+      .update(messengerAgentRuns)
+      .set({ status: 'running', startedAt: new Date() })
+      .where(eq(messengerAgentRuns.id, childRunId))
+    subagentRunMap.set(event.toolUseId, childRunId)
+  } else if (event.type === 'subagent_end') {
+    childRunId = subagentRunMap.get(event.toolUseId) ?? null
+    if (childRunId) {
+      const now = new Date()
+      await db
+        .update(messengerAgentRuns)
+        .set({
+          status: event.success ? 'completed' : 'failed',
+          finishedAt: now,
+          result: event.success ? (event.message ?? null) : null,
+          error: event.success ? null : (event.message ?? 'subagent failed'),
+        })
+        .where(eq(messengerAgentRuns.id, childRunId))
+      subagentRunMap.delete(event.toolUseId)
+    }
   }
 
   // Insert event row
@@ -161,7 +244,15 @@ async function persistEvent(
     message = event.delta
   } else if (event.type === 'tool_use') {
     message = event.tool
+  } else if (event.type === 'subagent_start') {
+    message = event.subagentType
+  } else if (event.type === 'subagent_end') {
+    message = event.success ? null : (event.message ?? 'subagent failed')
   }
+
+  const payload: Record<string, unknown> = childRunId
+    ? { ...event, childRunId }
+    : (event as Record<string, unknown>)
 
   await db.insert(messengerAgentRunEvents).values({
     id: eventId,
@@ -171,7 +262,7 @@ async function persistEvent(
     tokenIn,
     tokenOut,
     message,
-    payload: event as Record<string, unknown>,
+    payload,
   })
 
   // Re-fetch updated totals for broadcast payload
@@ -303,6 +394,39 @@ export function registerIngestRoutes(
         // Broadcast after message is saved so frontend loadMessages() sees it immediately
         broadcastToChannel(`agent-stream:${agentId}`, { ...event, persistedEventId })
         broadcastToChannel(`agent-tree:${run.rootRunId}`, agentTreePayload)
+
+        // Fan out cli-session level delta so the monitoring dropdown refreshes
+        // without polling. Reason `stopped` for terminal events, otherwise `event`.
+        try {
+          let sessionSlug: string | null = null
+          try {
+            const [cliRow] = await db
+              .select({ slug: messengerCliSessions.slug })
+              .from(messengerCliSessions)
+              .where(and(eq(messengerCliSessions.runId, event.runId), isNull(messengerCliSessions.deletedAt)))
+              .limit(1)
+            sessionSlug = cliRow?.slug ?? null
+          } catch {}
+          if (sessionSlug) {
+            const terminal = event.type === 'complete' || event.type === 'error'
+            publishSessionDelta({
+              slug: sessionSlug,
+              reason: terminal ? 'stopped' : 'event',
+              ts: new Date().toISOString(),
+              agentId,
+              runId: event.runId,
+              substate: event.type === 'substate' ? event.substate : null,
+              tool: event.type === 'tool_use' ? event.tool : null,
+              tokenIn: event.type === 'tokens' ? event.tokenIn : undefined,
+              tokenOut: event.type === 'tokens' ? event.tokenOut : undefined,
+              message: event.type === 'substate' ? (event.message ?? null)
+                : event.type === 'error' ? event.message
+                : null,
+            })
+          }
+        } catch (err3) {
+          request.log.warn(err3, 'ingest: session delta fan-out failed')
+        }
 
         return { persistedEventId }
       } catch (err: unknown) {

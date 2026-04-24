@@ -7652,6 +7652,16 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
 .sess-nav__trace-row--error    { color: #fca5a5; }
 .sess-nav__trace-row--complete { color: #86efac; }
 .sess-nav__trace-row--tokens   { color: #7dd3fc; }
+.sess-nav__trace-row--subagent,
+.sess-nav__trace-row--subagent-ok,
+.sess-nav__trace-row--subagent-fail {
+  background: rgba(168, 85, 247, .06);
+  border-left: 2px solid #a78bfa;
+}
+.sess-nav__trace-row--subagent       { color: #c4b5fd; }
+.sess-nav__trace-row--subagent-ok    { color: #86efac; }
+.sess-nav__trace-row--subagent-fail  { color: #fca5a5; border-left-color: #f87171; }
+.sess-nav__trace-subagent-icon       { margin-right: 2px; opacity: .85; }
 
 .sess-nav__trace-ts    { color: #6b7280; font-size: 9px; white-space: nowrap; }
 .sess-nav__trace-kind  { color: #a78bfa; text-transform: lowercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

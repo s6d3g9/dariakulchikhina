@@ -12,8 +12,6 @@ const props = defineProps<{
   draft: string
   mediaMenuOpen: boolean
   activeConversation: boolean
-  showAgentMenuToggle?: boolean
-  agentMenuExpanded?: boolean
   messagePending: boolean
   isRecording: boolean
   recordingSeconds: number
@@ -26,7 +24,11 @@ const props = defineProps<{
   showProjectActionsButton?: boolean
   projectActionsOpen?: boolean
   isAgentComposer?: boolean
+  showAidevActionsBar?: boolean
+  aidevActiveTab?: string | null
   attachmentIds?: string[]
+  showSearchToggle?: boolean
+  searchMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -37,8 +39,9 @@ const emit = defineEmits<{
   'file-select': [event: Event]
   'toggle-media-menu': []
   'open-file-picker': []
-  'toggle-agent-workspace': []
   'toggle-project-actions': []
+  'select-aidev-tab': [tab: string | null]
+  'toggle-search-mode': []
   'primary-pointerdown': [event: PointerEvent]
   'primary-action': []
   'cancel-audio-draft': []
@@ -99,7 +102,25 @@ defineExpose({
 <template>
   <template v-if="props.visible">
     <input ref="fileInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="emit('file-select', $event)">
-    <div ref="projectActionsRootEl" class="composer-dock-wrapper" :class="{ 'composer-dock-wrapper--project-actions-open': props.projectActionsOpen }">
+    <div ref="projectActionsRootEl" class="composer-dock-wrapper" :class="{ 'composer-dock-wrapper--project-actions-open': props.projectActionsOpen, 'composer-dock-wrapper--aidev-panel-open': Boolean(props.aidevActiveTab) }">
+      <Transition name="composer-aidev-panel">
+        <div v-if="props.aidevActiveTab && $slots['aidev-panel']" class="composer-aidev-panel" @click.stop>
+          <slot name="aidev-panel" />
+        </div>
+      </Transition>
+
+      <Transition name="composer-search-panel">
+        <div v-if="props.searchMode && $slots['ai-search-panel']" class="composer-search-panel" @click.stop>
+          <slot name="ai-search-panel" />
+        </div>
+      </Transition>
+
+      <MessengerChatAidevActionsBar
+        :visible="Boolean(props.showAidevActionsBar) && !props.isRecording && !props.audioDraft"
+        :active-tab="props.aidevActiveTab ?? null"
+        @select-tab="emit('select-aidev-tab', $event)"
+      />
+
       <button
         v-if="props.showProjectActionsButton && !props.isRecording && !props.audioDraft"
         type="button"
@@ -156,7 +177,7 @@ defineExpose({
           aria-multiline="true"
           :contenteditable="!props.activeConversation ? 'false' : 'plaintext-only'"
           class="composer-input composer-input--framed"
-          :data-placeholder="'Сообщение'"
+          :data-placeholder="props.searchMode ? 'Поиск по AI-меню' : 'Сообщение'"
           enterkeyhint="send"
           autocomplete="off"
           autocorrect="off"
@@ -175,7 +196,7 @@ defineExpose({
           :value="props.draft"
           rows="1"
           class="composer-input composer-input--framed"
-          placeholder="Сообщение"
+          :placeholder="props.searchMode ? 'Поиск по AI-меню' : 'Сообщение'"
           :disabled="!props.activeConversation"
           enterkeyhint="send"
           autocomplete="off"
@@ -190,15 +211,17 @@ defineExpose({
 
         <template #trailing>
           <VBtn
-            v-if="props.showAgentMenuToggle"
+            v-if="props.showSearchToggle"
             type="button"
             class="composer-btn composer-btn--inside"
+            :class="{ 'composer-btn--search-active': props.searchMode }"
             icon
             variant="text"
-            :aria-label="props.agentMenuExpanded ? 'Свернуть меню агента' : 'Развернуть меню агента'"
-            @click="emit('toggle-agent-workspace')"
+            :aria-label="props.searchMode ? 'Выключить поиск' : 'Поиск по AI-меню'"
+            :title="props.searchMode ? 'Выключить поиск' : 'Поиск по AI-меню'"
+            @click="emit('toggle-search-mode')"
           >
-            <VIcon :icon="props.agentMenuExpanded ? 'mdi-unfold-less-horizontal' : 'mdi-unfold-more-horizontal'" size="20" />
+            <VIcon :icon="props.searchMode ? 'mdi-magnify-close' : 'mdi-magnify'" size="20" />
           </VBtn>
 
           <VBtn
@@ -276,6 +299,34 @@ defineExpose({
   z-index: 30;
 }
 
+.composer-aidev-panel {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% + 8px);
+  width: 100%;
+  height: clamp(280px, 58vh, 560px);
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  background: rgb(var(--v-theme-surface-container-low));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+
+.composer-aidev-panel-enter-active,
+.composer-aidev-panel-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  transform-origin: center bottom;
+}
+.composer-aidev-panel-enter-from,
+.composer-aidev-panel-leave-to {
+  opacity: 0;
+  transform: translateY(14px) scale(0.985);
+}
+
 .composer-bar {
   width: 100%;
 }
@@ -296,5 +347,42 @@ defineExpose({
   .composer-project-actions-popover {
     bottom: calc(100% + 8px);
   }
+}
+
+.composer-btn--search-active :deep(.v-btn__content),
+.composer-btn--search-active :deep(.v-icon) {
+  color: rgb(var(--v-theme-primary));
+}
+.composer-btn--search-active {
+  background: rgba(var(--v-theme-primary), 0.14);
+  border-radius: 10px;
+}
+
+.composer-search-panel {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% + 8px);
+  width: 100%;
+  max-height: clamp(200px, 46vh, 440px);
+  z-index: 36;
+  display: flex;
+  flex-direction: column;
+  background: rgb(var(--v-theme-surface-container-low));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+
+.composer-search-panel-enter-active,
+.composer-search-panel-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform-origin: center bottom;
+}
+.composer-search-panel-enter-from,
+.composer-search-panel-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
 }
 </style>
