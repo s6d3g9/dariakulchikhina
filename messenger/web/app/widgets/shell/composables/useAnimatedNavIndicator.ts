@@ -2,43 +2,52 @@ import type { CSSProperties, ComputedRef, Ref } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 interface IndicatorState {
-  top: number
+  offset: number
   visible: boolean
 }
 
+type Axis = 'x' | 'y'
+
 export function useAnimatedNavIndicator(
-  railEl: Ref<HTMLElement | null>,
+  containerEl: Ref<HTMLElement | null>,
   itemEls: Ref<HTMLElement[]>,
   activeIndex: Ref<number>,
+  options?: { axis?: Axis },
 ): { indicatorStyle: ComputedRef<CSSProperties> } {
-  const state = ref<IndicatorState>({ top: 0, visible: false })
+  const axis: Axis = options?.axis ?? 'y'
+  const state = ref<IndicatorState>({ offset: 0, visible: false })
 
   let resizeObserver: ResizeObserver | null = null
 
-  function readIndicatorHeight(): number {
-    if (!railEl.value) return 32
-    const raw = getComputedStyle(railEl.value).getPropertyValue('--messenger-nav-indicator-height').trim()
+  function readIndicatorSize(): number {
+    if (!containerEl.value) return 32
+    const prop = axis === 'x' ? '--messenger-nav-indicator-width' : '--messenger-nav-indicator-height'
+    const raw = getComputedStyle(containerEl.value).getPropertyValue(prop).trim()
     const parsed = Number.parseFloat(raw)
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 32
+    const fallback = axis === 'x' ? 64 : 32
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
   }
 
   function measure() {
-    const rail = railEl.value
+    const container = containerEl.value
     const idx = activeIndex.value
     const items = itemEls.value
     const item = idx >= 0 ? items[idx] : null
 
-    if (!rail || !item) {
-      state.value = { top: state.value.top, visible: false }
+    if (!container || !item) {
+      state.value = { offset: state.value.offset, visible: false }
       return
     }
 
-    const railRect = rail.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
     const itemRect = item.getBoundingClientRect()
-    const indicatorHeight = readIndicatorHeight()
-    const top = itemRect.top - railRect.top + (itemRect.height - indicatorHeight) / 2
+    const indicatorSize = readIndicatorSize()
 
-    state.value = { top, visible: true }
+    const offset = axis === 'x'
+      ? itemRect.left - containerRect.left + (itemRect.width - indicatorSize) / 2
+      : itemRect.top - containerRect.top + (itemRect.height - indicatorSize) / 2
+
+    state.value = { offset, visible: true }
   }
 
   function handleWindowResize() {
@@ -49,9 +58,9 @@ export function useAnimatedNavIndicator(
     await nextTick()
     measure()
 
-    if (railEl.value && typeof ResizeObserver !== 'undefined') {
+    if (containerEl.value && typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => measure())
-      resizeObserver.observe(railEl.value)
+      resizeObserver.observe(containerEl.value)
     }
 
     if (typeof window !== 'undefined') {
@@ -80,7 +89,9 @@ export function useAnimatedNavIndicator(
   })
 
   const indicatorStyle = computed<CSSProperties>(() => ({
-    transform: `translateY(${state.value.top}px)`,
+    transform: axis === 'x'
+      ? `translateX(${state.value.offset}px)`
+      : `translateY(${state.value.offset}px)`,
     opacity: state.value.visible ? 1 : 0,
   }))
 

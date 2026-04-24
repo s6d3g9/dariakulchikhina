@@ -349,6 +349,8 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 
 /* ── Bottom Navigation Bar (кастомный <nav>, остаётся в flex-потоке) ── */
 .messenger-bottom-nav {
+  /* 64×32dp pill indicator matches M3 NavigationBar active-indicator. */
+  --messenger-nav-indicator-width: 64px;
   /* НЕ position: fixed — всегда в потоке flex-column */
   display: flex;
   flex-direction: row;
@@ -366,6 +368,8 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 }
 
 .messenger-nav-btn {
+  position: relative;
+  z-index: 1;
   flex: 1 1 0;
   display: flex;
   flex-direction: row;
@@ -379,15 +383,27 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   background: transparent;
   color: rgb(var(--v-theme-on-surface-variant));
   cursor: pointer;
-  transition: flex-grow 220ms ease, color 180ms ease, opacity 180ms ease, background-color 180ms ease, transform 220ms ease;
+  transition: color 180ms ease, opacity 180ms ease, background-color 180ms ease;
 }
 
 .messenger-nav-btn--active {
-  flex-grow: 1.16;
-  color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.12);
-  border: 1px dashed rgba(var(--v-theme-primary), 0.35);
-  transform: translateY(-1px) scale(1.02);
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+
+.messenger-bottom-nav__indicator {
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: var(--messenger-nav-indicator-width);
+  height: var(--messenger-nav-indicator-height);
+  border-radius: var(--messenger-nav-indicator-radius);
+  background: rgb(var(--v-theme-secondary-container));
+  pointer-events: none;
+  z-index: 0;
+  transition:
+    transform var(--messenger-motion-duration-standard) var(--messenger-motion-easing-emphasized-decelerate),
+    opacity var(--messenger-motion-duration-short) ease;
+  will-change: transform;
 }
 
 .messenger-nav-btn:disabled {
@@ -7909,8 +7925,7 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   border-top-color: rgba(255, 255, 255, 0.08);
 }
 .v-theme--dark .messenger-nav-btn--active {
-  background: rgba(var(--v-theme-primary), 0.16);
-  border-color: rgba(var(--v-theme-primary), 0.35);
+  color: rgb(var(--v-theme-on-secondary-container));
 }
 .v-theme--dark .section-head {
   background: rgba(0, 0, 0, 0.22);
