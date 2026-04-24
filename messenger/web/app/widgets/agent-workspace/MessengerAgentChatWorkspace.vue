@@ -291,6 +291,7 @@ const workspaceModelLabel = computed(() => resolvedAgent.value?.settings.model |
 const apiKeyConfigured = computed(() => Boolean(resolvedAgent.value?.settings.apiKeyConfigured))
 const sshConfigured = computed(() => Boolean(resolvedAgent.value?.settings.sshConfigured))
 const workspaceConfigured = computed(() => Boolean(resolvedAgent.value?.settings.ssh.workspacePath))
+const showStatusStrip = computed(() => activeSection.value === 'overview')
 const activeRepository = computed(() =>
   settingsDraft.ssh.repositories.find(r => r.id === settingsDraft.ssh.activeRepositoryId)
   ?? settingsDraft.ssh.repositories[0]
@@ -916,55 +917,67 @@ async function openWorkspaceFile(path: string) {
     <Transition name="agent-chat-workspace-sheet">
       <div v-if="!collapsed" class="agent-chat-workspace__sheet">
         <header class="agent-chat-workspace__head">
-          <div class="agent-chat-workspace__copy">
-            <h2 class="agent-chat-workspace__title">{{ workspaceTitle }}</h2>
-            <p class="agent-chat-workspace__section-marker">{{ currentSection?.title }}</p>
+          <div class="agent-chat-workspace__head-title">
+            <VIcon size="16" class="mr-1" color="primary">{{ sectionIcon(activeSection) }}</VIcon>
+            <span class="agent-chat-workspace__head-project">{{ workspaceTitle }}</span>
+            <span class="agent-chat-workspace__head-sep">·</span>
+            <span class="agent-chat-workspace__head-tab">{{ currentSection?.title }}</span>
           </div>
-          <div class="agent-chat-workspace__meta">
-            <span
-              class="agent-chat-workspace__status-pill agent-chat-workspace__substate-badge"
-              :class="{
-                'agent-chat-workspace__substate-badge--thinking': agentStream.substate.value === 'thinking',
-                'agent-chat-workspace__substate-badge--tool': agentStream.substate.value === 'tool_call',
-                'agent-chat-workspace__substate-badge--awaiting': agentStream.substate.value === 'awaiting_input',
-                'agent-chat-workspace__substate-badge--streaming': agentStream.substate.value === 'streaming',
-                'agent-chat-workspace__substate-badge--error': agentStream.substate.value === 'error',
-              }"
-            >
-              <span class="agent-chat-workspace__substate-dot" aria-hidden="true" />
-              {{ substateLabel(agentStream.substate.value) }}
-            </span>
-            <span v-if="streamTokenLabel" class="agent-chat-workspace__status-pill agent-chat-workspace__token-pill">
-              <span class="agent-chat-workspace__token-bar">
-                <span class="agent-chat-workspace__token-bar-fill" :style="{ width: `${agentStream.tokenCount.value.contextPct}%` }" />
-              </span>
-              {{ streamTokenLabel }}
-            </span>
-            <span v-if="streamCostLabel" class="agent-chat-workspace__status-pill">
-              {{ streamCostLabel }}
-            </span>
-            <button
-              v-if="streamCancelActive"
-              type="button"
-              class="agent-chat-workspace__ghost agent-chat-workspace__cancel-btn"
-              @click="agentStream.cancel()"
-            >
-              Остановить
-            </button>
-            <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--live': runtimeState }">
-              {{ runtimeState ? runtimePhaseLabel(runtimeState.phase) : 'Idle' }}
-            </span>
-            <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !apiKeyConfigured }">
-              {{ apiKeyConfigured ? 'API key подключён' : 'API key не задан' }}
-            </span>
-            <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !sshConfigured }">
-              {{ sshConfigured ? 'SSH подключён' : 'SSH не задан' }}
-            </span>
-            <button type="button" class="agent-chat-workspace__ghost" @click="openAgentsSection">
-              Открыть модуль агентов
-            </button>
-          </div>
+          <button
+            type="button"
+            class="agent-chat-workspace__head-close"
+            aria-label="Закрыть"
+            title="Закрыть"
+            @click="collapsed = true"
+          >
+            <VIcon :size="18">mdi-close</VIcon>
+          </button>
         </header>
+
+        <div v-if="showStatusStrip" class="agent-chat-workspace__status-strip" role="toolbar" aria-label="Статус агента">
+          <span
+            class="agent-chat-workspace__status-pill agent-chat-workspace__substate-badge"
+            :class="{
+              'agent-chat-workspace__substate-badge--thinking': agentStream.substate.value === 'thinking',
+              'agent-chat-workspace__substate-badge--tool': agentStream.substate.value === 'tool_call',
+              'agent-chat-workspace__substate-badge--awaiting': agentStream.substate.value === 'awaiting_input',
+              'agent-chat-workspace__substate-badge--streaming': agentStream.substate.value === 'streaming',
+              'agent-chat-workspace__substate-badge--error': agentStream.substate.value === 'error',
+            }"
+          >
+            <span class="agent-chat-workspace__substate-dot" aria-hidden="true" />
+            {{ substateLabel(agentStream.substate.value) }}
+          </span>
+          <span v-if="streamTokenLabel" class="agent-chat-workspace__status-pill agent-chat-workspace__token-pill">
+            <span class="agent-chat-workspace__token-bar">
+              <span class="agent-chat-workspace__token-bar-fill" :style="{ width: `${agentStream.tokenCount.value.contextPct}%` }" />
+            </span>
+            {{ streamTokenLabel }}
+          </span>
+          <span v-if="streamCostLabel" class="agent-chat-workspace__status-pill">
+            {{ streamCostLabel }}
+          </span>
+          <button
+            v-if="streamCancelActive"
+            type="button"
+            class="agent-chat-workspace__ghost agent-chat-workspace__cancel-btn"
+            @click="agentStream.cancel()"
+          >
+            Остановить
+          </button>
+          <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--live': runtimeState }">
+            {{ runtimeState ? runtimePhaseLabel(runtimeState.phase) : 'Idle' }}
+          </span>
+          <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !apiKeyConfigured }">
+            {{ apiKeyConfigured ? 'API key подключён' : 'API key не задан' }}
+          </span>
+          <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !sshConfigured }">
+            {{ sshConfigured ? 'SSH подключён' : 'SSH не задан' }}
+          </span>
+          <button type="button" class="agent-chat-workspace__ghost" @click="openAgentsSection">
+            Открыть модуль агентов
+          </button>
+        </div>
 
 
         <p v-if="feedbackMessage" class="agent-chat-workspace__feedback" :class="{ 'agent-chat-workspace__feedback--error': feedbackTone === 'error' }">
