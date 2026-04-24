@@ -79,6 +79,10 @@
 - server/api/gallery/ -> server/modules/gallery/
 - server/api/upload.post.ts -> server/api/upload.post.ts  (no DB, multipart-only, stays)
 - server/api/suggest/address.get.ts -> server/api/suggest/address.get.ts  (external Yandex proxy, no DB, stays)
+
+### Geocode
+- server/api/geocode/address.get.ts -> server/api/geocode/address.get.ts  (thin handler, external provider proxy) ✓ done 2026-04-20
+
 - server/api/chat/ -> server/modules/chat/
 
 ## server/utils -> target layout
