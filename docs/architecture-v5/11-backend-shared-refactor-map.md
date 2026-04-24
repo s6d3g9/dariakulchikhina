@@ -196,6 +196,13 @@
 - `messenger/core/src/agents/**` — **исполнение** агентов (LLM runs, knowledge lookup, workspace state) в отдельном процессе. Обменивается с CRM только через Redis Pub/Sub и HTTP.
 - `app/entities/agents/**` — **UI-модели** (composables useAgent*) для консоли агентов в CRM и мессенджере.
 
+#### server/api/agents/** — CRM registry CRUD handlers
+- server/api/agents/index.get.ts -> server/modules/agent-registry/agent-registry.service.ts ✓ done 2026-04-20
+- server/api/agents/index.post.ts -> server/modules/agent-registry/agent-registry.service.ts ✓ done 2026-04-20
+- server/api/agents/[id].get.ts -> server/modules/agent-registry/agent-registry.service.ts ✓ done 2026-04-20
+- server/api/agents/[id].put.ts -> server/modules/agent-registry/agent-registry.service.ts (OCC version, 409 on mismatch) ✓ done 2026-04-20
+- server/api/agents/[id].delete.ts -> server/modules/agent-registry/agent-registry.service.ts (soft-delete) ✓ done 2026-04-20
+
 ### Communications (четыре зоны)
 - `server/modules/communications/communications-bootstrap.service.ts` — bootstrap контекста для фронта.
 - `server/modules/communications/project-communications-relay.service.ts` — маршрутизация событий проекта в Pub/Sub.
