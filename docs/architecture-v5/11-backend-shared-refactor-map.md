@@ -84,22 +84,22 @@
 ## server/utils -> target layout
 
 - server/utils/auth.ts -> server/modules/auth/admin-auth.service.ts + server/modules/auth/session.service.ts
-- server/utils/auth-registration.ts -> server/modules/auth/admin-auth.service.ts
+- server/utils/auth-registration.ts -> server/modules/auth/admin-auth.service.ts ✓ moved 2026-04-20 (util deleted)
 - server/utils/body.ts -> server/utils/body.ts  (infrastructure helper, stays)
 - server/utils/query.ts -> server/utils/query.ts  (infrastructure helper, stays)
-- server/utils/storage.ts -> server/modules/uploads/upload-storage.service.ts
-- server/utils/upload-validation.ts -> server/modules/uploads/upload-validation.service.ts
-- server/utils/communications.ts -> server/modules/communications/communications-bootstrap.service.ts ✓ done 2026-04-20
-- server/utils/project-communications-relay.ts -> server/modules/communications/project-communications-relay.service.ts ✓ done 2026-04-20
-- server/utils/standalone-chat-communications.ts -> server/modules/chat/chat-communications.service.ts
-- server/utils/standalone-chat-users.ts -> server/modules/chat/chat-users.service.ts
-- server/utils/projects.ts -> server/modules/projects/projects.service.ts
-- server/utils/project-relations.ts -> server/modules/projects/project-relations.service.ts
-- server/utils/gemma.ts -> server/modules/ai/gemma.service.ts
-- server/utils/gemma-prompts.ts -> server/modules/ai/gemma-prompts.ts
-- server/utils/rag.ts -> server/modules/ai/rag.service.ts
-- server/utils/recovery-phrase.ts -> server/modules/auth/admin-recovery.service.ts
-- server/utils/admin-settings.ts -> server/modules/admin-settings/admin-settings.service.ts
+- server/utils/storage.ts -> server/modules/uploads/upload-storage.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/upload-validation.ts -> server/modules/uploads/upload-validation.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/communications.ts -> server/modules/communications/communications-bootstrap.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/project-communications-relay.ts -> server/modules/communications/project-communications-relay.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/standalone-chat-communications.ts -> server/modules/chat/chat-communications.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/standalone-chat-users.ts -> server/modules/chat/chat-users.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/projects.ts -> server/modules/projects/projects.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/project-relations.ts -> server/modules/projects/project-relations.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/gemma.ts -> server/modules/ai/gemma.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/gemma-prompts.ts -> server/modules/ai/gemma-prompts.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/rag.ts -> server/modules/ai/rag.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/recovery-phrase.ts -> server/modules/auth/admin-recovery.service.ts ✓ moved 2026-04-20 (util deleted)
+- server/utils/admin-settings.ts -> server/modules/admin-settings/admin-settings.service.ts ✓ moved 2026-04-20 (util deleted)
 
 ## server/db/schema split (done)
 

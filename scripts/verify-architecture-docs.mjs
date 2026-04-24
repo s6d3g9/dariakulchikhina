@@ -209,6 +209,7 @@ function checkMatrices() {
 
 const SERVER_UTILS_ALLOWED = new Set([
   'body.ts',
+  'define-endpoint.ts',
   'errors.ts',
   'logger.ts',
   'messenger-cors.ts',
