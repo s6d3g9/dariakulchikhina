@@ -1988,17 +1988,32 @@ async function handleDesktopDrop(event: DragEvent) {
   await uploadDroppedFiles(event.dataTransfer?.files || null)
 }
 
+type SharedGallerySection = 'photos' | 'stickers' | 'documents' | 'links' | 'keys'
+const requestedGallerySection = ref<SharedGallerySection | null>(null)
+
 function toggleDetails() {
   if (!conversations.activeConversation.value) {
     return
   }
 
   galleryPhotoId.value = null
+  requestedGallerySection.value = null
   detailsOpen.value = !detailsOpen.value
+}
+
+function openSharedGallery(section?: SharedGallerySection) {
+  if (!conversations.activeConversation.value) {
+    return
+  }
+
+  galleryPhotoId.value = null
+  requestedGallerySection.value = section ?? null
+  detailsOpen.value = true
 }
 
 function closeDetails() {
   galleryPhotoId.value = null
+  requestedGallerySection.value = null
   detailsOpen.value = false
 }
 
@@ -2605,6 +2620,7 @@ onBeforeUnmount(() => {
         :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
         :monitor-session-count="sessionTokenSummary.sessionCount"
         @toggle-details="toggleDetails"
+        @open-shared-gallery="openSharedGallery"
         @toggle-audio-call="toggleAudioCall"
         @toggle-call-analysis="toggleCallAnalysis"
         @toggle-transcription="toggleCallTranscription"
@@ -3092,7 +3108,7 @@ onBeforeUnmount(() => {
             :documents="sharedContent.documents"
             :links="sharedContent.links"
             :security="sharedGallerySecurity"
-            :initial-section="galleryPhotoId ? 'photos' : undefined"
+            :initial-section="galleryPhotoId ? 'photos' : (requestedGallerySection ?? undefined)"
             :initial-photo-id="galleryPhotoId"
             @close="closeDetails"
             @select="copyLink($event.href, $event.title)"

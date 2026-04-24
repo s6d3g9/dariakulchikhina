@@ -3307,6 +3307,19 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 
 .chat-header-sheet__row:disabled {
   cursor: default;
+  opacity: 0.55;
+}
+
+.chat-header-sheet__row:disabled:hover {
+  background: transparent;
+}
+
+.chat-header-sheet__row-hint {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: rgb(var(--v-theme-on-surface-variant));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .chat-header-sheet__row--active {

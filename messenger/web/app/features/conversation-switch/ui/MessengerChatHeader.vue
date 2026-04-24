@@ -69,6 +69,7 @@ const emit = defineEmits<{
   'update:overflow-menu-open': [open: boolean]
   'select-agent-model': [value: string]
   'toggle-monitor-panel': []
+  'open-shared-gallery': [section?: 'photos' | 'stickers' | 'documents' | 'links' | 'keys']
 }>()
 
 const overflowMenuOpen = ref(false)
@@ -456,26 +457,45 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
             </div>
           </div>
           <div class="chat-header-sheet__list">
-            <button type="button" class="chat-header-sheet__row" @click="emit('toggle-details'); close()">
-              <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-magnify</VIcon>
-              <span class="chat-header-sheet__row-label">Поиск в переписке</span>
-            </button>
-            <button type="button" class="chat-header-sheet__row" @click="emit('toggle-details'); close()">
+            <button
+              type="button"
+              class="chat-header-sheet__row"
+              @click="emit('open-shared-gallery', 'photos'); close()"
+            >
               <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-image-multiple-outline</VIcon>
-              <span class="chat-header-sheet__row-label">Медиа и файлы</span>
+              <span class="chat-header-sheet__row-label">Фото и стикеры</span>
+            </button>
+            <button
+              type="button"
+              class="chat-header-sheet__row"
+              @click="emit('open-shared-gallery', 'documents'); close()"
+            >
+              <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-file-document-outline</VIcon>
+              <span class="chat-header-sheet__row-label">Файлы</span>
+            </button>
+            <button
+              type="button"
+              class="chat-header-sheet__row"
+              @click="emit('open-shared-gallery', 'links'); close()"
+            >
+              <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-link-variant</VIcon>
+              <span class="chat-header-sheet__row-label">Ссылки</span>
             </button>
             <div class="chat-header-sheet__divider" aria-hidden="true" />
-            <button type="button" class="chat-header-sheet__row">
+            <button type="button" class="chat-header-sheet__row" disabled>
               <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-bell-off-outline</VIcon>
               <span class="chat-header-sheet__row-label">Отключить уведомления</span>
+              <span class="chat-header-sheet__row-hint label-small">скоро</span>
             </button>
-            <button type="button" class="chat-header-sheet__row">
+            <button type="button" class="chat-header-sheet__row" disabled>
               <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-broom</VIcon>
               <span class="chat-header-sheet__row-label">Очистить историю</span>
+              <span class="chat-header-sheet__row-hint label-small">скоро</span>
             </button>
-            <button type="button" class="chat-header-sheet__row chat-header-sheet__row--danger">
+            <button type="button" class="chat-header-sheet__row chat-header-sheet__row--danger" disabled>
               <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-account-cancel-outline</VIcon>
               <span class="chat-header-sheet__row-label">Заблокировать</span>
+              <span class="chat-header-sheet__row-hint label-small">скоро</span>
             </button>
           </div>
         </div>
@@ -523,22 +543,40 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
         </div>
 
         <div v-else-if="kind === 'overflow'" class="chat-header-sheet__list">
-          <button type="button" class="chat-header-sheet__row" @click="emit('toggle-details'); close()">
-            <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-magnify</VIcon>
-            <span class="chat-header-sheet__row-label">Поиск в переписке</span>
-          </button>
-          <button type="button" class="chat-header-sheet__row" @click="emit('toggle-details'); close()">
+          <button
+            type="button"
+            class="chat-header-sheet__row"
+            @click="emit('open-shared-gallery', 'photos'); close()"
+          >
             <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-image-multiple-outline</VIcon>
-            <span class="chat-header-sheet__row-label">Медиа и файлы</span>
+            <span class="chat-header-sheet__row-label">Фото и стикеры</span>
+          </button>
+          <button
+            type="button"
+            class="chat-header-sheet__row"
+            @click="emit('open-shared-gallery', 'documents'); close()"
+          >
+            <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-file-document-outline</VIcon>
+            <span class="chat-header-sheet__row-label">Файлы</span>
+          </button>
+          <button
+            type="button"
+            class="chat-header-sheet__row"
+            @click="emit('open-shared-gallery', 'links'); close()"
+          >
+            <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-link-variant</VIcon>
+            <span class="chat-header-sheet__row-label">Ссылки</span>
           </button>
           <div class="chat-header-sheet__divider" aria-hidden="true" />
-          <button type="button" class="chat-header-sheet__row">
+          <button type="button" class="chat-header-sheet__row" disabled>
             <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-account-cancel-outline</VIcon>
             <span class="chat-header-sheet__row-label">Заблокировать</span>
+            <span class="chat-header-sheet__row-hint label-small">скоро</span>
           </button>
-          <button type="button" class="chat-header-sheet__row chat-header-sheet__row--danger">
+          <button type="button" class="chat-header-sheet__row chat-header-sheet__row--danger" disabled>
             <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-delete-outline</VIcon>
             <span class="chat-header-sheet__row-label">Удалить диалог</span>
+            <span class="chat-header-sheet__row-hint label-small">скоро</span>
           </button>
         </div>
       </template>
