@@ -53,7 +53,9 @@ test("tail oneShot drains full file and persists offset", async () => {
   assert.ok(captured.some((e) => e.type === "substate" && (e as any).substate === "user_prompt"));
   assert.ok(captured.some((e) => e.type === "delta" && (e as any).delta === "hello back"));
 
-  const savedOffset = Number(fs.readFileSync(path.join(state, "agent-host.offset"), "utf8"));
+  const offsetFile = fs.readdirSync(state).find((f) => f.startsWith("agent-host-") && f.endsWith(".offset"));
+  assert.ok(offsetFile, "expected offset file to be persisted");
+  const savedOffset = Number(fs.readFileSync(path.join(state, offsetFile!), "utf8"));
   assert.equal(savedOffset, fs.statSync(file).size);
 });
 

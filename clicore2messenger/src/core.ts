@@ -237,7 +237,11 @@ export async function runTailMode(opts: TailModeOpts): Promise<void> {
   } = opts;
   const stateDir = opts.stateDir ?? path.join(os.homedir(), "state", "claude-bridge");
   fs.mkdirSync(stateDir, { recursive: true });
-  const offsetPath = path.join(stateDir, `${agentId}.offset`);
+  // Offset is keyed by (agentId, filename) so switching to a new transcript
+  // (new session) starts fresh without risking a stale offset against a file
+  // that happens to be larger than the prior one.
+  const fileKey = path.basename(filePath).replace(/[^a-zA-Z0-9._-]/g, "_");
+  const offsetPath = path.join(stateDir, `${agentId}-${fileKey}.offset`);
   const dlqPath = path.join(stateDir, `${runId}.dlq.ndjson`);
 
   const send = async (event: IngestEvent) => {
