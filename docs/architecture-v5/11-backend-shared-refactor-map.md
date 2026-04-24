@@ -78,7 +78,8 @@
 - server/api/documents/export-docx.post.ts -> server/modules/documents/documents.service.ts ✓ done 2026-04-20
 - server/api/gallery/ -> server/modules/gallery/
 - server/api/upload.post.ts -> server/api/upload.post.ts  (no DB, multipart-only, stays)
-- server/api/suggest/address.get.ts -> server/api/suggest/address.get.ts  (external Yandex proxy, no DB, stays)
+- server/api/suggest/address.get.ts -> server/api/suggest/address.get.ts  (external Yandex proxy, no DB, stays) ✓ done 2026-04-20
+- server/api/suggestions.get.ts -> server/api/suggestions.get.ts  (JSON file lookup, no DB, stays) ✓ done 2026-04-20
 - server/api/chat/ -> server/modules/chat/
 
 ## server/utils -> target layout
