@@ -29,16 +29,16 @@
 - server/api/auth/csrf.get.ts -> server/api/auth/csrf.get.ts  (2-liner, no DB, stays)
 
 ### Admin + settings
-- server/api/admin/search.get.ts -> server/modules/admin/admin-search.service.ts
-- server/api/admin/notifications.get.ts -> server/modules/admin/admin-notifications.service.ts
-- server/api/admin/app-blueprints.get.ts -> server/modules/admin-settings/admin-settings.service.ts
-- server/api/admin/app-blueprints.put.ts -> server/modules/admin-settings/admin-settings.service.ts
-- server/api/admin/design-modules.get.ts -> server/modules/admin-settings/admin-settings.service.ts
-- server/api/admin/design-modules.put.ts -> server/modules/admin-settings/admin-settings.service.ts
-- server/api/admin/element-alignment.get.ts -> server/modules/admin-settings/admin-settings.service.ts
-- server/api/admin/element-alignment.put.ts -> server/modules/admin-settings/admin-settings.service.ts
-- server/api/admin/element-visibility.get.ts -> server/modules/admin-settings/admin-settings.service.ts
-- server/api/admin/element-visibility.put.ts -> server/modules/admin-settings/admin-settings.service.ts
+- server/api/admin/search.get.ts -> server/modules/admin/admin-search.service.ts ✓ done 2026-04-20
+- server/api/admin/notifications.get.ts -> server/modules/admin/admin-notifications.service.ts ✓ done 2026-04-20
+- server/api/admin/app-blueprints.get.ts -> server/modules/admin-settings/admin-settings.service.ts ✓ done 2026-04-20
+- server/api/admin/app-blueprints.put.ts -> server/modules/admin-settings/admin-settings.service.ts ✓ done 2026-04-20
+- server/api/admin/design-modules.get.ts -> server/modules/admin-settings/admin-settings.service.ts ✓ done 2026-04-20
+- server/api/admin/design-modules.put.ts -> server/modules/admin-settings/admin-settings.service.ts ✓ done 2026-04-20
+- server/api/admin/element-alignment.get.ts -> server/modules/admin-settings/admin-settings.service.ts ✓ done 2026-04-20
+- server/api/admin/element-alignment.put.ts -> server/modules/admin-settings/admin-settings.service.ts ✓ done 2026-04-20
+- server/api/admin/element-visibility.get.ts -> server/modules/admin-settings/admin-settings.service.ts ✓ done 2026-04-20
+- server/api/admin/element-visibility.put.ts -> server/modules/admin-settings/admin-settings.service.ts ✓ done 2026-04-20
 
 ### Projects
 - server/api/projects/index.get.ts -> server/modules/projects/projects.service.ts
