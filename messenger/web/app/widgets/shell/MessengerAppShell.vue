@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useDisplay } from 'vuetify'
 import type { MessengerSectionKey } from './model/useMessengerSections'
 
 const auth = useMessengerAuth()
@@ -12,7 +11,6 @@ const viewport = useMessengerViewport()
 const settingsModel = useMessengerSettings()
 const { agentsEnabled } = useMessengerFeatures()
 const { sections } = useMessengerSections()
-const display = useDisplay()
 const localTestScenarioPending = ref(false)
 
 function getQueryValue(value: string | string[] | undefined) {
@@ -129,13 +127,6 @@ function openNavSection(section: MessengerSectionKey) {
   navValue.value = section
 }
 
-const mobileDrawerOpen = ref(false)
-
-function handleMobileNavSelect(section: MessengerSectionKey) {
-  openNavSection(section)
-  mobileDrawerOpen.value = false
-}
-
 onMounted(() => {
   settingsModel.hydrate()
   void realtime.connect()
@@ -205,26 +196,7 @@ async function logout() {
         :sections="sections"
         :chat-disabled="chatDisabled"
         @update:model-value="openNavSection"
-        @open-drawer="mobileDrawerOpen = true"
       />
-
-      <!-- Mobile modal NavigationDrawer (<600px, triggered by the bar hamburger) -->
-      <VNavigationDrawer
-        v-if="navMode === 'bar'"
-        v-model="mobileDrawerOpen"
-        temporary
-        location="start"
-        :width="360"
-        scrim
-      >
-        <MessengerNavigationDrawer
-          :model-value="navValue"
-          :sections="sections"
-          :chat-disabled="chatDisabled"
-          class="messenger-mobile-drawer"
-          @update:model-value="handleMobileNavSelect"
-        />
-      </VNavigationDrawer>
     </div>
   </VMain>
 </template>

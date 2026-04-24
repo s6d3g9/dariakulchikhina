@@ -6,9 +6,6 @@ import type { MessengerConversationSecuritySummary } from '../../entities/messag
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
 import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
 import { getSessionKindMeta, type MessengerCliSession } from '../../entities/sessions/model/useMessengerCliSessions'
-import type { MessengerSectionKey } from '../shell/model/useMessengerSections'
-import { sectionIcon } from '../shell/composables/sectionIcon'
-
 const display = useDisplay()
 // Desktop: show the unified [Чат|←] pill so the header plate reads as one
 // continuous toolbar. Below 600px the back arrow alone is enough.
@@ -28,20 +25,6 @@ const klipy = useMessengerKlipy()
 const klipyApi = useKlipyApi()
 const viewport = useMessengerViewport()
 const navigation = useMessengerConversationState()
-const { sections: messengerSections } = useMessengerSections()
-const chatHeaderSectionMenuItems = computed(() =>
-  messengerSections.value
-    .filter(s => s.key !== 'chat')
-    .map(s => ({
-      key: s.key,
-      title: s.title,
-      icon: sectionIcon(s.key),
-      active: false,
-    })),
-)
-function onHeaderNavigateSection(key: string) {
-  navigation.openSection(key as MessengerSectionKey)
-}
 const { resetKlipyFeedPaging, buildLoopedFeed, handleLoopedRailScroll, handleLoopedFeedScroll, primeLoopedRailPosition, primeLoopedFeedPosition } = useKlipyFeedPaging()
 const draft = ref('')
 const searchMode = ref(false)
@@ -2618,7 +2601,6 @@ onBeforeUnmount(() => {
         :show-call-actions="Boolean(conversations.activeConversation.value) && !activeConversationAgent"
         :can-switch-camera="calls.canSwitchCamera.value"
         :section-chip-visible="isDesktop"
-        :section-menu-items="chatHeaderSectionMenuItems"
         :show-agent-extras="Boolean(activeAgentSession)"
         :agent-model-options="MODEL_OPTIONS"
         :agent-model-current-value="activeAgentSession?.model"
@@ -2642,7 +2624,6 @@ onBeforeUnmount(() => {
         @set-call-view-mode="calls.setCallViewMode($event)"
         @hangup-call="calls.hangupCall()"
         @back="navigation.openSection('chats')"
-        @navigate-section="onHeaderNavigateSection($event)"
         @update:overflow-menu-open="headerOverflowMenuOpen = $event"
         @select-agent-model="onModelSelect($event)"
         @toggle-monitor-panel="sessNavCollapsed = !sessNavCollapsed"
