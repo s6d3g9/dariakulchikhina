@@ -28,9 +28,6 @@ const props = withDefaults(defineProps<{
   canSwitchCamera?: boolean
   floating?: boolean
   showBackButton?: boolean
-  sectionChipVisible?: boolean
-  sectionChipLabel?: string
-  sectionChipIcon?: string
   showAgentExtras?: boolean
   agentModelOptions?: ReadonlyArray<{ label: string; value: string; icon: string; color: string }>
   agentModelCurrentValue?: string
@@ -43,9 +40,6 @@ const props = withDefaults(defineProps<{
 }>(), {
   floating: false,
   showBackButton: true,
-  sectionChipVisible: false,
-  sectionChipLabel: 'Чат',
-  sectionChipIcon: 'mdi-message-outline',
   showAgentExtras: false,
   agentModelOptions: () => [],
   agentModelCurrentValue: '',
@@ -140,18 +134,6 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
   <header class="chat-header" :class="{ 'chat-header--call-visible': callVisible, 'chat-header--floating': floating }">
     <div class="chat-header__toolbar" :class="{ 'chat-header__toolbar--no-back': !showBackButton }">
       <div v-if="showBackButton" class="chat-header__nav-group">
-        <button
-          v-if="sectionChipVisible"
-          type="button"
-          class="chat-header__section-chip"
-          :aria-label="`Вернуться к разделу ${sectionChipLabel}`"
-          :title="sectionChipLabel"
-          @click="emit('back')"
-        >
-          <VIcon :size="24" class="chat-header__section-chip-icon">{{ sectionChipIcon }}</VIcon>
-          <span class="chat-header__section-chip-label">{{ sectionChipLabel }}</span>
-        </button>
-
         <VBtn
           type="button"
           icon

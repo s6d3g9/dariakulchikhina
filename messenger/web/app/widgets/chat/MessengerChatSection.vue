@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import { useDisplay } from 'vuetify'
 import type { MessengerAttachmentKlipyPayload, MessengerConversationMessage } from '../../entities/conversations/model/useMessengerConversations'
 import type { MessengerKlipyItem } from '../../entities/messages/model/useMessengerKlipy'
 import type { MessengerConversationSecuritySummary } from '../../entities/messages/model/useMessengerCrypto'
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
 import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
 import { getSessionKindMeta, type MessengerCliSession } from '../../entities/sessions/model/useMessengerCliSessions'
-const display = useDisplay()
-// Desktop: show the unified [Чат|←] pill so the header plate reads as one
-// continuous toolbar. Below 600px the back arrow alone is enough.
-const isDesktop = computed(() => display.width.value >= 600)
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -2600,7 +2595,6 @@ onBeforeUnmount(() => {
         :show-call-view-modes="showCallViewModes"
         :show-call-actions="Boolean(conversations.activeConversation.value) && !activeConversationAgent"
         :can-switch-camera="calls.canSwitchCamera.value"
-        :section-chip-visible="isDesktop"
         :show-agent-extras="Boolean(activeAgentSession)"
         :agent-model-options="MODEL_OPTIONS"
         :agent-model-current-value="activeAgentSession?.model"
