@@ -80,15 +80,11 @@ const showBottomNav = computed(() =>
   !navigation.mediaSheetOpen.value && !calls.analysisPanelOpen.value,
 )
 
-// The left nav-rail and persistent drawer were removed in favour of a
-// unified capsule header that lives on top of every section and exposes
-// the section switcher as a dropdown. Below 600px the bottom navigation
-// bar stays — on phones you want the thumb target, not another menu tap.
-const navMode = computed<'bar' | 'none'>(() => {
-  const w = display.width.value
-  if (w >= 600) return 'none'
-  return 'bar'
-})
+// Bottom navigation bar is the only nav affordance on every viewport.
+// The left rail and the top section capsule were removed — the bar alone
+// handles section switching, keeping the chrome identical on mobile and
+// desktop.
+const navMode = computed<'bar'>(() => 'bar')
 
 // Активный раздел для VBottomNavigation
 const navValue = computed<MessengerSectionKey>({
@@ -178,42 +174,23 @@ async function logout() {
           <MessengerChatSection
             v-show="navigation.activeSection.value === 'chat'"
           />
-          <div
+          <MessengerChatsSection
             v-show="navigation.activeSection.value === 'chats'"
-            class="messenger-section-stack"
-          >
-            <MessengerSectionCapsule section-key="chats" />
-            <MessengerChatsSection />
-          </div>
-          <div
+          />
+          <MessengerContactsSection
             v-show="navigation.activeSection.value === 'contacts'"
-            class="messenger-section-stack"
-          >
-            <MessengerSectionCapsule section-key="contacts" />
-            <MessengerContactsSection />
-          </div>
-          <div
+          />
+          <MessengerAgentsSection
             v-if="agentsEnabled"
             v-show="navigation.activeSection.value === 'agents'"
-            class="messenger-section-stack"
-          >
-            <MessengerSectionCapsule section-key="agents" />
-            <MessengerAgentsSection />
-          </div>
-          <div
+          />
+          <MessengerAidevSection
             v-show="navigation.activeSection.value === 'aidev'"
-            class="messenger-section-stack"
-          >
-            <MessengerSectionCapsule section-key="aidev" />
-            <MessengerAidevSection />
-          </div>
-          <div
+          />
+          <MessengerSettingsSection
             v-show="navigation.activeSection.value === 'settings'"
-            class="messenger-section-stack"
-          >
-            <MessengerSectionCapsule section-key="settings" />
-            <MessengerSettingsSection @logout="logout" />
-          </div>
+            @logout="logout"
+          />
         </div>
       </div>
 
