@@ -184,7 +184,15 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-bottom-bar-button-height: 38px;
   --messenger-bottom-bar-gap: 2px;
   --messenger-bottom-bar-radius: 10px;
-  --messenger-agent-workspace-dock-height: 102px;
+  --messenger-agent-workspace-dock-height: 40px;
+  --messenger-nav-rail-width: 80px;
+  --messenger-nav-indicator-width: 56px;
+  --messenger-nav-indicator-height: 32px;
+  --messenger-nav-indicator-radius: 16px;
+  --messenger-motion-duration-standard: 300ms;
+  --messenger-motion-duration-short: 150ms;
+  --messenger-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --messenger-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
   --messenger-keyboard-offset: max(0px, var(--messenger-keyboard-inset, 0px));
   --messenger-viewport-effective-height: var(--messenger-root-effective-height, var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh)));
   display: flex;
@@ -780,9 +788,9 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 4px 4px;
-  background: rgba(var(--v-theme-primary), 0.03);
-  border-top: 1px dashed rgba(var(--v-theme-primary), 0.18);
+  padding: 0;
+  background: transparent;
+  border-top: 0;
 }
 
 .agent-chat-workspace__search-dock {
@@ -2200,11 +2208,11 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  border-top: 1px dashed rgba(var(--v-theme-primary), 0.18);
-  border-bottom: 1px dashed rgba(var(--v-theme-primary), 0.18);
-  background: rgba(var(--v-theme-primary), 0.03);
+  gap: 0;
+  padding: 0;
+  border-top: 0;
+  border-bottom: 0;
+  background: transparent;
 }
 
 .agent-chat-workspace__head {
@@ -7323,6 +7331,25 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
 
 .sess-nav__chevron { flex-shrink: 0; opacity: .5; }
 
+/* Wrapper that hosts the SVG overlay drawing parent→child connector curves
+   between session rows. Position:relative so the absolute SVG lines up with
+   the tab rects inside. */
+.sess-nav__body {
+  position: relative;
+}
+.sess-nav__edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+.sess-nav__edges path {
+  filter: drop-shadow(0 0 3px rgba(167,139,250,.25));
+}
+/* Rows above the SVG so capsules stay clickable. */
+.sess-nav__body > .sess-nav__row { position: relative; z-index: 2; }
+
 .sess-nav__row {
   display: flex;
   align-items: center;
@@ -7431,6 +7458,217 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   color: #6b7280;
   font-weight: 600;
   user-select: none;
+}
+
+/* --- Trace button + panel --- */
+
+.sess-nav__trace-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.5);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.sess-nav__trace-btn:hover { background: rgba(59,130,246,.18); color: #93c5fd; }
+.sess-nav__trace-btn--active {
+  background: rgba(59,130,246,.28);
+  color: #bfdbfe;
+}
+
+.sess-nav__trace {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(255,255,255,.08);
+  background: #07090c;
+  max-height: 280px;
+  overflow: hidden;
+}
+.sess-nav__trace-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 10px;
+  color: #9ca3af;
+  background: rgba(255,255,255,.02);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.sess-nav__trace-header code {
+  font-size: 10px;
+  color: #93c5fd;
+  background: rgba(59,130,246,.08);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.sess-nav__trace-pending { color: #9ca3af; font-style: italic; }
+.sess-nav__trace-error   { color: #fca5a5; }
+.sess-nav__trace-count   { opacity: .5; margin-left: auto; }
+.sess-nav__trace-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,.4);
+  cursor: pointer;
+  border-radius: 3px;
+}
+.sess-nav__trace-close:hover { background: rgba(239,68,68,.15); color: #fca5a5; }
+
+.sess-nav__trace-list {
+  overflow-y: auto;
+  max-height: 256px;
+  padding: 2px 0;
+}
+.sess-nav__trace-row {
+  display: grid;
+  grid-template-columns: 64px 90px 80px 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 2px 10px;
+  font-size: 10px;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(255,255,255,.02);
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  line-height: 1.4;
+}
+.sess-nav__trace-row:hover { background: rgba(255,255,255,.02); }
+.sess-nav__trace-row--tool_use { color: #fde68a; }
+.sess-nav__trace-row--error    { color: #fca5a5; }
+.sess-nav__trace-row--complete { color: #86efac; }
+.sess-nav__trace-row--tokens   { color: #7dd3fc; }
+
+.sess-nav__trace-ts    { color: #6b7280; font-size: 9px; white-space: nowrap; }
+.sess-nav__trace-kind  { color: #a78bfa; text-transform: lowercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sess-nav__trace-tool  {
+  color: #fbbf24;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sess-nav__trace-desc, .sess-nav__trace-msg {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #d1d5db;
+}
+.sess-nav__trace-tokens {
+  color: #7dd3fc;
+  font-size: 9px;
+  white-space: nowrap;
+  opacity: .7;
+}
+
+/* Header summary pills (composer / total / cost) — live token counters */
+.sess-nav__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.06);
+  color: #cbd5e1;
+}
+.sess-nav__summary--composer { color: #a78bfa; border-color: rgba(167,139,250,.25); }
+.sess-nav__summary--total    { color: #93c5fd; border-color: rgba(96,165,250,.25); }
+.sess-nav__summary--cost     { color: #fcd34d; border-color: rgba(251,191,36,.25); }
+
+/* Kind icon inside a session capsule — color-coded per tier */
+.sess-nav__kind-icon { opacity: .65; flex-shrink: 0; }
+
+/* Start time + elapsed meta inside a session capsule */
+.sess-nav__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #94a3b8;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: .75;
+}
+.sess-nav__meta-clock   { color: #94a3b8; }
+.sess-nav__meta-elapsed { color: #cbd5e1; font-weight: 500; }
+
+/* Per-session tokens readout inside a capsule */
+.sess-nav__tokens {
+  color: #7dd3fc;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: .8;
+}
+
+/* Stop button — sibling of trace button. Red on hover. */
+.sess-nav__stop-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.sess-nav__stop-btn:hover:not(:disabled) {
+  background: rgba(239,68,68,.18);
+  color: #fca5a5;
+}
+.sess-nav__stop-btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+/* Trace lineage (parent → this → children) */
+.sess-nav__trace-lineage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: 10px;
+  color: #cbd5e1;
+  background: rgba(255,255,255,.015);
+}
+.sess-nav__trace-lineage-item,
+.sess-nav__trace-lineage-self {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.sess-nav__trace-lineage-self code { color: #93c5fd; font-weight: 600; }
+.sess-nav__trace-lineage-label { opacity: .55; text-transform: uppercase; font-size: 9px; letter-spacing: .3px; }
+.sess-nav__trace-lineage code {
+  background: rgba(255,255,255,.04);
+  padding: 0 4px;
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 10px;
+}
+
+.sess-nav__trace-empty {
+  padding: 10px;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(255,255,255,.3);
+  font-style: italic;
 }
 
 /* Context window + cache metrics bar */
@@ -7792,8 +8030,8 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   border-color: rgba(255, 255, 255, 0.08);
 }
 .v-theme--dark .agent-chat-workspace__dock {
-  background: rgba(0, 0, 0, 0.25);
-  border-top-color: rgba(255, 255, 255, 0.07);
+  background: transparent;
+  border-top-color: transparent;
 }
 .v-theme--dark .agent-chat-workspace__card,
 .v-theme--dark .agent-chat-workspace__list-item {
