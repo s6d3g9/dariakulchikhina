@@ -46,20 +46,41 @@
 - server/api/projects/[slug].get.ts -> server/modules/projects/projects.service.ts
 - server/api/projects/[slug].put.ts -> server/modules/projects/projects.service.ts
 - server/api/projects/[slug].delete.ts -> server/modules/projects/projects.service.ts
-- server/api/projects/[slug]/status.put.ts -> server/modules/projects/project-mutations.service.ts
-- server/api/projects/[slug]/client-profile.put.ts -> server/modules/projects/project-mutations.service.ts
-- server/api/projects/[slug]/page-content.get.ts -> server/modules/projects/project-pages.service.ts
-- server/api/projects/[slug]/page-content.put.ts -> server/modules/projects/project-pages.service.ts
-- server/api/projects/[slug]/page-answers.get.ts -> server/modules/projects/project-pages.service.ts
-- server/api/projects/[slug]/page-answers.put.ts -> server/modules/projects/project-pages.service.ts
-- server/api/projects/[slug]/relations.get.ts -> server/modules/projects/project-relations.service.ts
-- server/api/projects/[slug]/relations.put.ts -> server/modules/projects/project-relations.service.ts
-- server/api/projects/[slug]/work-status.get.ts -> server/modules/projects/project-work-status.service.ts
-- server/api/projects/[slug]/work-status.put.ts -> server/modules/projects/project-work-status.service.ts
-- server/api/projects/[slug]/extra-services/index.get.ts -> server/modules/projects/project-extra-services.service.ts
-- server/api/projects/[slug]/extra-services/index.post.ts -> server/modules/projects/project-extra-services.service.ts
-- server/api/projects/[slug]/extra-services/[id].put.ts -> server/modules/projects/project-extra-services.service.ts
-- server/api/projects/[slug]/extra-services/[id].delete.ts -> server/modules/projects/project-extra-services.service.ts
+- server/api/projects/[slug]/status.put.ts -> server/modules/projects/project-mutations.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/client-profile.put.ts -> server/modules/projects/project-client-profile.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/page-content.get.ts -> server/modules/projects/page-content.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/page-content.put.ts -> server/modules/projects/page-content.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/page-answers.get.ts -> server/modules/projects/page-answers.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/page-answers.put.ts -> server/modules/projects/page-answers.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/relations.get.ts -> server/modules/projects/project-relations.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/relations.put.ts -> server/modules/projects/project-relations.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/contractors.get.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/contractors.post.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/contractors.delete.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/contractors/[contractorId].delete.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/designers.get.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/designers.post.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/designers.delete.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/sellers.get.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/sellers.post.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/sellers.delete.ts -> server/modules/projects/project-partners.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/work-status.get.ts -> server/modules/projects/project-work-status.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/work-status.put.ts -> server/modules/projects/project-work-status.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/work-status/[itemId]/comments.get.ts -> server/modules/projects/project-work-status-items.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/work-status/[itemId]/comments.post.ts -> server/modules/projects/project-work-status-items.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/work-status/[itemId]/photos.get.ts -> server/modules/projects/project-work-status-items.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/coordination/participants/index.post.ts -> server/modules/projects/project-governance.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/coordination/participants/[participantId].patch.ts -> server/modules/projects/project-governance.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/coordination/assignments/index.post.ts -> server/modules/projects/project-governance.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/coordination/assignments/[assignmentId].patch.ts -> server/modules/projects/project-governance.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/coordination/assignments/[assignmentId].delete.ts -> server/modules/projects/project-governance.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/coordination/scopes/[scopeType]/[scopeId].get.ts -> server/modules/projects/project-governance.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/coordination/scopes/[scopeType]/[scopeId]/settings.patch.ts -> server/modules/projects/project-governance.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/extra-services/index.get.ts -> server/modules/projects/project-extra-services.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/extra-services/index.post.ts -> server/modules/projects/project-extra-services.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/extra-services/[id].put.ts -> server/modules/projects/project-extra-services.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/extra-services/[id].delete.ts -> server/modules/projects/project-extra-services.service.ts ✓ done 2026-04-20
+- server/api/projects/[slug]/extra-services/[id]/generate-docs.post.ts -> server/modules/projects/project-extra-service-documents.service.ts ✓ done 2026-04-20
 - server/api/projects/[slug]/communications-bootstrap.get.ts -> server/modules/communications/communications-bootstrap.service.ts ✓ done 2026-04-20
 - server/api/projects/[slug]/communications/** (bootstrap.get, dispatch.post, action-catalog.get, action-execute.post, call-insights/*, rooms/**) — thin handlers, delegate to modules/communications/ ✓ done 2026-04-20
 
