@@ -3183,8 +3183,12 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 }
 
 .chat-header__call-primary--idle {
-  grid-template-columns: repeat(4, 38px);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  grid-template-columns: none;
   padding-left: 0;
+  flex: 0 0 auto;
 }
 
 .chat-header__call-primary--incoming {
@@ -3370,7 +3374,7 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   }
 
   .chat-header__call-primary--idle {
-    grid-template-columns: repeat(4, 34px);
+    gap: 4px;
   }
 
   .chat-header__call-primary--incoming {
