@@ -115,23 +115,6 @@ const detachedCallHeaderVisible = computed(() => {
   )
 })
 
-function sectionIcon(section: MessengerSectionKey) {
-  switch (section) {
-    case 'chat':
-      return 'mdi-message-outline'
-    case 'chats':
-      return 'mdi-message-text-outline'
-    case 'contacts':
-      return 'mdi-account-multiple-outline'
-    case 'agents':
-      return 'mdi-robot-outline'
-    case 'aidev':
-      return 'mdi-rocket-launch-outline'
-    case 'settings':
-      return 'mdi-cog-outline'
-  }
-}
-
 function openNavSection(section: MessengerSectionKey) {
   if (section === 'chat' && chatDisabled.value) {
     return
@@ -171,25 +154,13 @@ async function logout() {
       :data-messenger-detached-call="detachedCallHeaderVisible ? 'open' : 'closed'"
     >
       <div class="messenger-workspace">
-        <aside class="messenger-desktop-nav" aria-label="Боковая навигация Messenger">
-          <div class="messenger-desktop-nav__head">
-            <p class="messenger-desktop-nav__title">Разделы</p>
-          </div>
-
-          <nav class="messenger-desktop-nav__list" aria-label="Разделы Messenger">
-            <button
-              v-for="section in sections"
-              :key="section.key"
-              type="button"
-              class="messenger-desktop-nav__item"
-              :class="{ 'messenger-desktop-nav__item--active': navValue === section.key }"
-              :disabled="section.key === 'chat' && chatDisabled"
-              @click="openNavSection(section.key)"
-            >
-              <span class="messenger-desktop-nav__label">{{ section.title }}</span>
-            </button>
-          </nav>
-        </aside>
+        <MessengerNavigationRail
+          v-if="display.smAndUp.value"
+          :model-value="navValue"
+          :sections="sections"
+          :chat-disabled="chatDisabled"
+          @update:model-value="openNavSection"
+        />
 
         <!-- Активная секция (v-show сохраняет стейт при переключении) -->
         <div class="messenger-section-wrap">
@@ -221,6 +192,7 @@ async function logout() {
 
       <!-- Bottom Navigation Bar (кастомный, не VBottomNavigation — чтобы оставался в flex-потоке) -->
       <MessengerNavigationBar
+        v-if="!display.smAndUp.value"
         v-show="showBottomNav"
         :model-value="navValue"
         :sections="sections"

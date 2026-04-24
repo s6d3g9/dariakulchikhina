@@ -44,7 +44,10 @@ function selectSection(section: SectionItem) {
 </script>
 
 <template>
-  <nav class="messenger-bottom-nav" aria-label="Основная навигация">
+  <nav
+    class="messenger-bottom-nav"
+    aria-label="Основная навигация"
+  >
     <button
       v-for="section in props.sections"
       :key="section.key"
@@ -54,7 +57,9 @@ function selectSection(section: SectionItem) {
       :disabled="section.key === 'chat' && props.chatDisabled"
       @click="selectSection(section)"
     >
-      <VIcon class="messenger-nav-icon">{{ section.icon || sectionIcon(section.key) }}</VIcon>
+      <VIcon class="messenger-nav-icon">
+        {{ section.icon || sectionIcon(section.key) }}
+      </VIcon>
     </button>
   </nav>
 </template>
