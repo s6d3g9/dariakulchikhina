@@ -2,8 +2,9 @@
 import * as fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import { claudeAdapter } from "./adapters/claude.ts";
+import { claudeTranscriptAdapter } from "./adapters/claude-transcript.ts";
 import { copilotAdapter } from "./adapters/copilot.ts";
-import { runSpawnMode, runPipeMode } from "./core.ts";
+import { runSpawnMode, runPipeMode, runTailMode } from "./core.ts";
 
 export async function main(argv: string[]): Promise<void> {
   const args = argv.slice(2);
@@ -36,6 +37,9 @@ export async function main(argv: string[]): Promise<void> {
   const effort = get("--effort") as "low" | "medium" | "high" | "xhigh" | undefined;
   const runId = get("--run-id") ?? randomUUID();
   const adapterName = get("--adapter") ?? "claude";
+  const tailFile = get("--tail-file");
+  const stateDir = get("--state-dir");
+  const pollMs = get("--poll-ms");
 
   if (!agentId) die("--agent-id is required");
   if (!token) die("MESSENGER_INGEST_TOKEN / --ingest-token is required");
@@ -43,10 +47,37 @@ export async function main(argv: string[]): Promise<void> {
   let adapter;
   if (adapterName === "claude") {
     adapter = claudeAdapter;
+  } else if (adapterName === "claude-transcript") {
+    adapter = claudeTranscriptAdapter;
   } else if (adapterName === "copilot") {
     adapter = copilotAdapter;
   } else {
     die(`unknown adapter: ${adapterName}`);
+  }
+
+  if (tailFile) {
+    // Tail mode runs until aborted (SIGINT/SIGTERM). Wire signals so the
+    // supervisor can shut it down cleanly and the offset is persisted.
+    const controller = new AbortController();
+    const stop = (code: number) => {
+      controller.abort();
+      setTimeout(() => process.exit(code), 50);
+    };
+    process.on("SIGINT", () => stop(0));
+    process.on("SIGTERM", () => stop(0));
+    await runTailMode({
+      adapter,
+      filePath: tailFile,
+      stateDir,
+      runId,
+      conversationId,
+      agentId,
+      messengerUrl,
+      token,
+      pollIntervalMs: pollMs ? Number(pollMs) : undefined,
+      signal: controller.signal,
+    });
+    process.exit(0);
   }
 
   const pipeMode = !promptArg && !promptFile;

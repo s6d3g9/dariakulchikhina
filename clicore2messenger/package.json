@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types src/adapters/__tests__/*.test.ts src/core.test.ts"
+    "test": "node --test --experimental-strip-types src/adapters/__tests__/*.test.ts src/core.test.ts src/tail-mode.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
