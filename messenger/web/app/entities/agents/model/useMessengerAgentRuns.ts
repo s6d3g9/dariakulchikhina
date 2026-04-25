@@ -23,6 +23,7 @@ export interface MessengerAgentRun {
   status: 'running' | 'completed' | 'failed'
   parentRunId?: string
   rootRunId?: string
+  isSubagent?: boolean
   costUsd?: number
   tokenInTotal?: number
   tokenOutTotal?: number

@@ -16,6 +16,10 @@ const emit = defineEmits<{
 
 const CONTEXT_WINDOW = 200_000
 
+const isExpanded = ref(false)
+
+const hasChildren = computed(() => props.children.length > 0)
+
 const isCancelable = computed(() => props.node.status === 'running')
 
 const tokenLabel = computed(() => {
@@ -67,17 +71,30 @@ const statusDotClass = computed(() => {
         Стоп
       </button>
     </div>
-    <AgentRunNode
-      v-for="childId in children"
-      :key="childId"
-      :node="allNodes[childId]"
-      :children="childrenByParent[childId] ?? []"
-      :all-nodes="allNodes"
-      :children-by-parent="childrenByParent"
-      :depth="(depth ?? 0) + 1"
-      @open-run="emit('open-run', $event)"
-      @cancel="emit('cancel', $event)"
-    />
+    <button
+      v-if="hasChildren"
+      type="button"
+      class="run-node__subagent-toggle"
+      :aria-expanded="isExpanded"
+      @click="isExpanded = !isExpanded"
+    >
+      <span class="run-node__branch-icon" aria-hidden="true">⎇</span>
+      <span v-if="!isExpanded">+{{ children.length }} subagent {{ children.length === 1 ? 'run' : 'runs' }}</span>
+      <span v-else>Hide subagent {{ children.length === 1 ? 'run' : 'runs' }}</span>
+    </button>
+    <template v-if="isExpanded">
+      <AgentRunNode
+        v-for="childId in children"
+        :key="childId"
+        :node="allNodes[childId]"
+        :children="childrenByParent[childId] ?? []"
+        :all-nodes="allNodes"
+        :children-by-parent="childrenByParent"
+        :depth="(depth ?? 0) + 1"
+        @open-run="emit('open-run', $event)"
+        @cancel="emit('cancel', $event)"
+      />
+    </template>
   </div>
 </template>
 
@@ -197,5 +214,30 @@ const statusDotClass = computed(() => {
 
 .run-node__cancel:hover {
   background: color-mix(in srgb, rgb(var(--v-theme-error)) 12%, transparent);
+}
+
+.run-node__subagent-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px dashed color-mix(in srgb, rgb(var(--v-theme-outline)) 35%, transparent);
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 100ms ease, border-color 100ms ease;
+}
+
+.run-node__subagent-toggle:hover {
+  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 6%, transparent);
+  border-color: color-mix(in srgb, rgb(var(--v-theme-outline)) 60%, transparent);
+}
+
+.run-node__branch-icon {
+  font-size: 12px;
+  opacity: 0.7;
 }
 </style>
