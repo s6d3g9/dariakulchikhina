@@ -3393,32 +3393,6 @@ onBeforeUnmount(() => {
             />
           </template>
 
-          <!-- Active runs panel — shown only when 2+ runs are live simultaneously -->
-          <div v-if="chatActiveRuns.length > 1" class="active-runs-panel" aria-label="Параллельные прогоны">
-            <div
-              v-for="run in chatActiveRuns"
-              :key="run.runId"
-              class="active-run-row"
-              :class="{ 'active-run-row--filtered': activeRunFilter === run.runId }"
-              role="button"
-              tabindex="0"
-              :aria-pressed="activeRunFilter === run.runId"
-              @click="toggleActiveRunFilter(run.runId)"
-              @keydown.enter.space.prevent="toggleActiveRunFilter(run.runId)"
-            >
-              <span class="active-run-row__dot" aria-hidden="true"></span>
-              <span class="active-run-row__id">{{ run.runId.slice(0, 8) }}</span>
-              <span class="active-run-row__state">{{ SUBSTATE_LABELS[run.state.substate] || run.state.substate }}</span>
-              <span v-if="run.state.streamingDraft" class="active-run-row__draft">{{ run.state.streamingDraft.slice(0, 60) }}…</span>
-              <button
-                type="button"
-                class="active-run-row__runs-link"
-                title="Открыть в Прогонах"
-                @click.stop="openRunInWorkspace(run.runId)"
-              >Прогоны ↗</button>
-            </div>
-          </div>
-
           <!-- Thinking indicator — active run OR collapsed trace of last completed run -->
           <div
             v-if="awaitingAgentReply || chatDoneTrace"
@@ -3448,6 +3422,24 @@ onBeforeUnmount(() => {
               </div>
 
               <div v-else class="chat-thinking-bubble__expand">
+                <!-- Parallel runs selector — shown when 2+ active runs are live -->
+                <div v-if="chatActiveRuns.length > 1" class="thinking-runs-selector" aria-label="Параллельные прогоны">
+                  <div
+                    v-for="run in chatActiveRuns"
+                    :key="run.runId"
+                    class="thinking-run-chip"
+                    :class="{ 'thinking-run-chip--active': activeRunFilter === run.runId }"
+                    role="button"
+                    tabindex="0"
+                    :aria-pressed="activeRunFilter === run.runId"
+                    @click="toggleActiveRunFilter(run.runId)"
+                    @keydown.enter.space.prevent="toggleActiveRunFilter(run.runId)"
+                  >
+                    <span class="thinking-run-chip__id">{{ run.runId.slice(0, 8) }}</span>
+                    <span class="thinking-run-chip__state">{{ SUBSTATE_LABELS[run.state.substate] || run.state.substate }}</span>
+                    <span v-if="run.state.streamingDraft" class="thinking-run-chip__draft">{{ run.state.streamingDraft.slice(0, 60) }}</span>
+                  </div>
+                </div>
                 <div v-if="chatRunDuration || chatAgentStream.tokenCount.value.total" class="chat-thinking-meta">
                   <span v-if="chatRunDuration" class="chat-thinking-meta-chip" title="Длительность">⏱ {{ chatRunDuration }}</span>
                   <span v-if="chatAgentStream.tokenCount.value.total" class="chat-thinking-meta-chip" title="Токены in/out">🧠 {{ chatAgentStream.tokenCount.value.input }}↓ / {{ chatAgentStream.tokenCount.value.output }}↑</span>
@@ -3962,69 +3954,46 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-/* ── Active runs panel (multi-run) ───────────────────────────────── */
-.active-runs-panel {
+/* ── Thinking bubble: parallel runs selector ─────────────────────── */
+.thinking-runs-selector {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 12px 4px;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 6px 0 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-.active-run-row {
-  display: flex;
+.thinking-runs-selector::-webkit-scrollbar { display: none; }
+.thinking-run-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 4px 10px;
   border-radius: 8px;
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(255,255,255,.08);
   cursor: pointer;
   font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: background 120ms, border-color 120ms;
   user-select: none;
 }
-.active-run-row:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); }
-.active-run-row--filtered { border-color: rgba(99,179,237,.5); background: rgba(99,179,237,.08); }
-.active-run-row__dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #63b3ed;
-  flex-shrink: 0;
-  animation: run-dot-pulse 1.4s ease-in-out infinite;
-}
-@keyframes run-dot-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .35; }
-}
-.active-run-row__id {
+.thinking-run-chip:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); }
+.thinking-run-chip--active { border-color: rgba(99,179,237,.6); background: rgba(99,179,237,.10); }
+.thinking-run-chip__id {
   font-family: monospace;
   color: rgba(255,255,255,.5);
   font-size: 11px;
-  flex-shrink: 0;
 }
-.active-run-row__state {
+.thinking-run-chip__state {
   color: rgba(255,255,255,.75);
-  flex-shrink: 0;
 }
-.active-run-row__draft {
-  color: rgba(255,255,255,.45);
+.thinking-run-chip__draft {
+  color: rgba(255,255,255,.4);
+  font-style: italic;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-  font-style: italic;
+  max-width: 160px;
 }
-.active-run-row__runs-link {
-  flex-shrink: 0;
-  margin-left: auto;
-  padding: 2px 8px;
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 6px;
-  background: transparent;
-  color: rgba(255,255,255,.55);
-  font-size: 11px;
-  cursor: pointer;
-  transition: background 120ms, color 120ms;
-}
-.active-run-row__runs-link:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); }
 </style>

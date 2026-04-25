@@ -16,10 +16,12 @@ const emit = defineEmits<{
   'close': []
 }>()
 
-// Bind run tree to the active session if it has rootRunId + agentId.
-const rootRunId = computed(() => props.session?.rootRunId || '')
+// Bind run tree. Prefer rootRunId; fall back to the session's own runId
+// when it hasn't been adopted into a multi-session trace yet.
+const rootRunId = computed(() => props.session?.rootRunId || props.session?.runId || '')
 const agentId = computed(() => props.session?.agentId || '')
 const runTreeBound = computed(() => Boolean(rootRunId.value && agentId.value))
+const hasNoTrace = computed(() => Boolean(props.session && !runTreeBound.value))
 
 const sessionMeta = computed(() => {
   if (!props.session) return null
@@ -88,6 +90,12 @@ async function copySlug() {
 
 onBeforeUnmount(() => {
   if (copiedTimer) clearTimeout(copiedTimer)
+})
+
+// Reset transient state when the selected session changes.
+watch(() => props.session?.slug, () => {
+  copiedSlug.value = false
+  if (copiedTimer) { clearTimeout(copiedTimer); copiedTimer = null }
 })
 
 </script>
@@ -305,7 +313,7 @@ onBeforeUnmount(() => {
 
       <!-- Agent run tree (rootRunId scope) -->
       <section
-        v-if="runTreeBound"
+        v-if="runTreeBound || hasNoTrace"
         class="trace-details__section"
       >
         <div class="trace-details__section-title">
@@ -316,10 +324,17 @@ onBeforeUnmount(() => {
           Дерево agent runs
         </div>
         <AgentRunTree
+          v-if="runTreeBound"
           :key="`${rootRunId}:${agentId}`"
           :root-run-id="rootRunId"
           :agent-id="agentId"
         />
+        <div
+          v-else
+          class="trace-details__empty"
+        >
+          Трассировка ещё не началась
+        </div>
       </section>
 
       <!-- Open chat action -->

@@ -10,7 +10,7 @@ const MODE_STORAGE_KEY = 'daria.monitor.mode'
 const SEARCH_STORAGE_KEY = 'daria.monitor.search'
 const PINNED_STORAGE_KEY = 'daria.monitor.pinned'
 
-const FILTERS = ['all', 'awaiting', 'crashed'] as const
+const FILTERS = ['all', 'awaiting', 'crashed', 'active', 'archived', 'host'] as const
 const MODES = ['live', 'today'] as const
 
 function readPinned(): Set<string> {

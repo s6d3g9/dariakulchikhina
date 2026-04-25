@@ -4,7 +4,7 @@ import { getSessionKindMeta } from '../../../entities/sessions/model/useMessenge
 import { deriveLiveness, type LivenessMeta } from './liveness'
 
 export type MonitorMode = 'live' | 'today'
-export type MonitorFilter = 'all' | 'awaiting' | 'crashed'
+export type MonitorFilter = 'all' | 'awaiting' | 'crashed' | 'active' | 'archived' | 'host'
 
 export interface MonitorRow {
   session: MessengerCliSession
@@ -219,6 +219,30 @@ export function useMonitorTopology(
     return set
   })
 
+  const activeSlugs = computed<Set<string>>(() => {
+    const set = new Set<string>()
+    for (const s of filtered.value) {
+      if (s.isActive) set.add(s.slug)
+    }
+    return set
+  })
+
+  const archivedSlugs = computed<Set<string>>(() => {
+    const set = new Set<string>()
+    for (const s of filtered.value) {
+      if (s.agentArchived) set.add(s.slug)
+    }
+    return set
+  })
+
+  const hostSlugs = computed<Set<string>>(() => {
+    const set = new Set<string>()
+    for (const s of filtered.value) {
+      if (s.agentType === 'host-session') set.add(s.slug)
+    }
+    return set
+  })
+
   const counters = computed(() => {
     let composers = 0
     let orchestrators = 0
@@ -239,6 +263,8 @@ export function useMonitorTopology(
       active,
       awaiting: awaitingSlugs.value.size,
       crashed: crashedSlugs.value.size,
+      archived: archivedSlugs.value.size,
+      host: hostSlugs.value.size,
     }
   })
 
@@ -254,6 +280,9 @@ export function useMonitorTopology(
     activeTrace,
     awaitingSlugs,
     crashedSlugs,
+    activeSlugs,
+    archivedSlugs,
+    hostSlugs,
     livenessIndex,
     ancestryFor,
     childrenFor,
