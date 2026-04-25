@@ -607,21 +607,36 @@ const activeSessionUsage = computed(() => {
   }
 })
 
-// Per-subscription aggregate spend across every CLI session we know about.
-// Sessions don't carry an explicit subscriptionId — they only know their model
-// id — so we derive the subscription by matching the model against each
-// subscription's declared model list (first match wins). Sessions whose model
-// can't be mapped land in a synthetic "unknown" bucket, keeping the totals
-// honest instead of silently dropping them.
+// Per-subscription cumulative (lifetime) spend across every CLI session we
+// know about — running, done and archived. We deliberately include archived
+// rows because the user wants "сколько всего потрачено на подписку", not
+// "сколько тратится сейчас". The session count `×N` makes the historical
+// nature visible.
+//
+// Sessions don't carry a subscriptionId — they only know their model id — so
+// we derive the subscription by matching `model` against each subscription's
+// declared model list. A few model ids appear in multiple subscriptions
+// (e.g. `gpt-4.1` is in both openai and github-copilot). When that happens
+// we prefer the default subscription, otherwise fall back to first match.
+// Sessions whose model can't be mapped land in a synthetic "unknown" bucket,
+// keeping the totals honest instead of silently dropping them.
 const subscriptionUsages = computed(() => {
   const subs = subsModel.subscriptions.value
   if (subs.length === 0) return []
-  const modelToSubId = new Map<string, string>()
+  const defaultSubId = subsModel.defaultSubscription.value?.id ?? null
+  const modelToSubIds = new Map<string, string[]>()
   for (const sub of subs) {
     const meta = subsModel.providerOf(sub)
     for (const m of meta?.models ?? []) {
-      if (!modelToSubId.has(m.id)) modelToSubId.set(m.id, sub.id)
+      const list = modelToSubIds.get(m.id) ?? []
+      list.push(sub.id)
+      modelToSubIds.set(m.id, list)
     }
+  }
+  const modelToSubId = new Map<string, string>()
+  for (const [model, list] of modelToSubIds) {
+    const preferred = (defaultSubId && list.includes(defaultSubId)) ? defaultSubId : list[0]!
+    modelToSubId.set(model, preferred)
   }
   type Bucket = {
     id: string
