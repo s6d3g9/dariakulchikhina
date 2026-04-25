@@ -152,6 +152,7 @@ export const messengerAgentRuns = pgTable(
     tokenInTotal: integer('token_in_total').default(0).notNull(),
     tokenOutTotal: integer('token_out_total').default(0).notNull(),
     attachmentIds: jsonb('attachment_ids').default('[]').notNull(),
+    sessionMetadata: jsonb('session_metadata').notNull().default('{}'),
     startedAt: tstz('started_at'),
     finishedAt: tstz('finished_at'),
     createdAt: tstz('created_at').defaultNow().notNull(),
