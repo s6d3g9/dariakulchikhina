@@ -902,7 +902,7 @@ export function registerOrchestrationRoutes(
         return reply.code(400).send({ error: 'INVALID_INPUT' })
       }
 
-      const VALID_EFFORTS = ['low', 'medium', 'high'] as const
+      const VALID_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
       if (effort !== undefined && !VALID_EFFORTS.includes(effort as typeof VALID_EFFORTS[number])) {
         return reply.code(400).send({ error: 'INVALID_INPUT' })
       }

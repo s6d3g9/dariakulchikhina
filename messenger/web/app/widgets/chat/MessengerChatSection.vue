@@ -557,13 +557,13 @@ async function onModelSelect(model: string) {
 
 const effortSetPending = ref(false)
 
-const currentSessionEffort = computed<'low' | 'medium' | 'high'>(() => {
+const currentSessionEffort = computed<'low' | 'medium' | 'high' | 'xhigh' | 'max'>(() => {
   const slug = activeAgentSession.value?.slug
   if (!slug) return 'medium'
   return cliSessionsModel.getEffort(slug)
 })
 
-async function onEffortSelect(effort: 'low' | 'medium' | 'high') {
+async function onEffortSelect(effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max') {
   const sess = activeAgentSession.value
   if (!sess) return
   effortSetPending.value = true
@@ -677,6 +677,50 @@ async function onSessionChipClick(sess: { agentId: string | null }) {
   if (!sess.agentId) return
   try { await conversations.openAgentConversation(sess.agentId) }
   catch (err) { console.warn('[chat] could not open agent conversation', err) }
+}
+
+const monitorSessions = computed(() => {
+  const items: Array<{
+    slug: string
+    label: string
+    kind: string
+    icon: string
+    color: string
+    isActive: boolean
+    isIdle: boolean
+    tier: number
+    model?: string
+    lastTool?: string | null
+    tokenIn?: number
+    tokenOut?: number
+    costUsd?: number
+  }> = []
+  for (const s of cliSessionsModel.runningSessions.value) {
+    const meta = getSessionKindMeta(s.kind, s.slug)
+    items.push({
+      slug: s.slug,
+      label: s.agentDisplayName || s.slug,
+      kind: s.kind,
+      icon: meta.icon,
+      color: meta.color,
+      isActive: s.isActive,
+      isIdle: s.isIdle,
+      tier: Math.min(meta.tier, 2),
+      model: s.model,
+      lastTool: s.lastTool,
+      tokenIn: s.tokenInTotal,
+      tokenOut: s.tokenOutTotal,
+      costUsd: s.costUsd,
+    })
+  }
+  // Composers first, then orchestrators, then workers; within tier, active before idle.
+  return items.sort((a, b) => (a.tier - b.tier) || (Number(a.isIdle) - Number(b.isIdle)) || a.label.localeCompare(b.label))
+})
+
+async function onMonitorSessionOpen(slug: string) {
+  const sess = cliSessionsModel.sessions.value.find(s => s.slug === slug)
+  if (!sess) return
+  await onSessionChipClick(sess)
 }
 
 // --- Thinking indicator ---------------------------------------------------
@@ -2706,7 +2750,8 @@ onBeforeUnmount(() => {
         :agent-usage-week="currentUsageWeek"
         :agent-usage-month="currentUsageMonth"
         :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
-        :monitor-session-count="sessionTokenSummary.sessionCount"
+        :monitor-session-count="monitorSessions.length"
+        :monitor-sessions="monitorSessions"
         @toggle-details="toggleDetails"
         @open-shared-gallery="openSharedGallery"
         @open-chat-search="openChatSearch"
@@ -2727,6 +2772,7 @@ onBeforeUnmount(() => {
         @select-agent-model="onModelSelect($event)"
         @select-agent-effort="onEffortSelect($event)"
         @toggle-monitor-panel="sessNavCollapsed = !sessNavCollapsed"
+        @open-monitor-session="onMonitorSessionOpen($event)"
         @pointerdown="handleChatAreaPointerDown"
       />
 

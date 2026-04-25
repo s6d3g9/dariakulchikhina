@@ -35,7 +35,7 @@ const props = withDefaults(defineProps<{
   agentModelColor?: string
   agentModelLabel?: string
   agentModelPending?: boolean
-  agentEffortValue?: 'low' | 'medium' | 'high'
+  agentEffortValue?: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
   agentEffortPending?: boolean
   agentSubscriptionLabel?: string
   agentUsage5h?: { requests: number; limit: number }
@@ -43,6 +43,21 @@ const props = withDefaults(defineProps<{
   agentUsageMonth?: { inputTokens: number; outputTokens: number; cacheReadTokens: number; tokensLimit: number }
   monitorPanelOpen?: boolean
   monitorSessionCount?: number
+  monitorSessions?: ReadonlyArray<{
+    slug: string
+    label: string
+    kind: string
+    icon: string
+    color: string
+    isActive: boolean
+    isIdle: boolean
+    tier: number
+    model?: string
+    lastTool?: string | null
+    tokenIn?: number
+    tokenOut?: number
+    costUsd?: number
+  }>
 }>(), {
   floating: false,
   showBackButton: true,
@@ -61,15 +76,20 @@ const props = withDefaults(defineProps<{
   agentUsageMonth: () => ({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, tokensLimit: 0 }),
   monitorPanelOpen: false,
   monitorSessionCount: 0,
+  monitorSessions: () => [],
 })
 
-const EFFORT_CHIPS: Array<{ value: 'low' | 'medium' | 'high'; label: string; hint: string; icon: string }> = [
-  { value: 'low',    label: 'Low',    hint: 'быстрее, дешевле',   icon: 'mdi-speedometer-slow'   },
-  { value: 'medium', label: 'Medium', hint: 'баланс',             icon: 'mdi-speedometer-medium' },
-  { value: 'high',   label: 'High',   hint: 'глубже, дольше',     icon: 'mdi-speedometer'        },
+type EffortValue = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+
+const EFFORT_CHIPS: Array<{ value: EffortValue; label: string; hint: string; icon: string }> = [
+  { value: 'low',    label: 'Low',    hint: 'быстрее, дешевле',         icon: 'mdi-speedometer-slow'   },
+  { value: 'medium', label: 'Medium', hint: 'баланс',                   icon: 'mdi-speedometer-medium' },
+  { value: 'high',   label: 'High',   hint: 'глубже, дольше',           icon: 'mdi-speedometer'        },
+  { value: 'xhigh',  label: 'X-High', hint: 'максимум reasoning',       icon: 'mdi-flash'              },
+  { value: 'max',    label: 'Max',    hint: 'без ограничений',          icon: 'mdi-flash-triangle'     },
 ]
 
-function effortLabel(v: 'low' | 'medium' | 'high'): string {
+function effortLabel(v: EffortValue): string {
   return EFFORT_CHIPS.find(c => c.value === v)?.label ?? 'Medium'
 }
 
@@ -107,8 +127,9 @@ const emit = defineEmits<{
   'back': []
   'update:overflow-menu-open': [open: boolean]
   'select-agent-model': [value: string]
-  'select-agent-effort': [value: 'low' | 'medium' | 'high']
+  'select-agent-effort': [value: 'low' | 'medium' | 'high' | 'xhigh' | 'max']
   'toggle-monitor-panel': []
+  'open-monitor-session': [slug: string]
   'open-shared-gallery': [section?: 'photos' | 'stickers' | 'documents' | 'links' | 'keys']
   'open-chat-search': []
 }>()
@@ -646,6 +667,50 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
               {{ monitorSessionCount === 1 ? 'активная сессия' : 'активных сессий' }}
             </span>
           </div>
+
+          <div v-if="monitorSessions.length === 0" class="chat-header-sheet__monitor-empty label-small">
+            Нет запущенных сессий в этом проекте
+          </div>
+          <div v-else class="chat-header-sheet__monitor-list">
+            <button
+              v-for="sess in monitorSessions"
+              :key="sess.slug"
+              type="button"
+              class="chat-header-sheet__monitor-item"
+              :class="{
+                'chat-header-sheet__monitor-item--idle': sess.isIdle,
+                'chat-header-sheet__monitor-item--tier-1': sess.tier === 1,
+                'chat-header-sheet__monitor-item--tier-2': sess.tier === 2,
+              }"
+              :title="sess.slug"
+              @click="emit('open-monitor-session', sess.slug); close()"
+            >
+              <span
+                class="chat-header-sheet__monitor-dot"
+                :class="sess.isIdle ? 'chat-header-sheet__monitor-dot--idle' : 'chat-header-sheet__monitor-dot--live'"
+                aria-hidden="true"
+              />
+              <VIcon :color="sess.color" :size="18" class="chat-header-sheet__monitor-icon">{{ sess.icon }}</VIcon>
+              <div class="chat-header-sheet__monitor-body">
+                <div class="chat-header-sheet__monitor-row-top">
+                  <span class="chat-header-sheet__monitor-label">{{ sess.label }}</span>
+                  <span v-if="sess.model" class="chat-header-sheet__monitor-model label-small">{{ sess.model }}</span>
+                </div>
+                <div class="chat-header-sheet__monitor-row-bottom label-small">
+                  <span v-if="sess.lastTool" class="chat-header-sheet__monitor-tool" :title="sess.lastTool">{{ sess.lastTool }}</span>
+                  <span v-else class="chat-header-sheet__monitor-tool chat-header-sheet__monitor-tool--idle">{{ sess.isIdle ? 'idle' : 'active' }}</span>
+                  <span v-if="(sess.tokenIn ?? 0) + (sess.tokenOut ?? 0) > 0" class="chat-header-sheet__monitor-tokens">
+                    Σ {{ fmtTokens((sess.tokenIn ?? 0) + (sess.tokenOut ?? 0)) }}
+                  </span>
+                  <span v-if="(sess.costUsd ?? 0) > 0" class="chat-header-sheet__monitor-cost">
+                    ${{ (sess.costUsd ?? 0).toFixed(2) }}
+                  </span>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <div class="chat-header-sheet__divider" aria-hidden="true" />
           <button
             type="button"
             class="chat-header-sheet__monitor-action"

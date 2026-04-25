@@ -72,7 +72,7 @@ export function getSessionKindMeta(kind: string, slug?: string) {
   return { label: kind || 'Session', icon: 'mdi-robot-outline', color: 'surface-variant', tier: 2 }
 }
 
-export type MessengerSessionEffort = 'low' | 'medium' | 'high'
+export type MessengerSessionEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 
 const EFFORT_PREFS_KEY = 'daria-messenger-session-effort'
 
