@@ -54,6 +54,40 @@ watch(filter, (v) => { if (typeof window !== 'undefined') window.localStorage.se
 watch(mode, (v) => { if (typeof window !== 'undefined') window.localStorage.setItem(MODE_STORAGE_KEY, v) })
 watch(search, (v) => { if (typeof window !== 'undefined') window.localStorage.setItem(SEARCH_STORAGE_KEY, v) })
 
+// `/` shortcut focuses the search input — same convention as GitHub, GitLab,
+// Slack. Skipped when the user is already typing into a form field so we
+// don't steal their keystroke. Inside the search input, Esc clears the
+// query if any (else blurs so the parent's Esc handler can close the trace
+// pane on the next press).
+const searchInputRef = ref<HTMLInputElement | null>(null)
+
+function onGlobalKeydown(ev: KeyboardEvent) {
+  if (ev.key !== '/' || ev.metaKey || ev.ctrlKey || ev.altKey) return
+  const target = ev.target as HTMLElement | null
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+  ev.preventDefault()
+  searchInputRef.value?.focus()
+  searchInputRef.value?.select()
+}
+
+function onSearchKeydown(ev: KeyboardEvent) {
+  if (ev.key !== 'Escape') return
+  if (search.value) {
+    ev.preventDefault()
+    ev.stopPropagation()
+    search.value = ''
+  } else {
+    searchInputRef.value?.blur()
+  }
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') window.addEventListener('keydown', onGlobalKeydown)
+})
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') window.removeEventListener('keydown', onGlobalKeydown)
+})
+
 const normalizedSearch = computed(() => search.value.trim().toLowerCase())
 function rowMatchesSearch(row: typeof flatSorted.value[number], q: string): boolean {
   if (!q) return true
@@ -272,11 +306,13 @@ function onTreeKeydown(ev: KeyboardEvent) {
         class="monitor-tree__search-icon"
       />
       <input
+        ref="searchInputRef"
         v-model="search"
         type="search"
         class="monitor-tree__search-input"
-        placeholder="Поиск по имени, slug, kind…"
+        placeholder="Поиск (/) по имени, slug, kind…"
         aria-label="Поиск по сессиям"
+        @keydown="onSearchKeydown"
       >
       <button
         v-if="search"
