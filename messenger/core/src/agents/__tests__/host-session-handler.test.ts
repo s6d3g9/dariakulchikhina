@@ -449,6 +449,90 @@ async function testSessionMetadataStoredOnRun() {
 }
 
 // ---------------------------------------------------------------------------
+// Inline port of active-runs query logic
+// ---------------------------------------------------------------------------
+
+function activeRunsLogic(store: Store, ownerUserId: string) {
+  return store.runs
+    .filter((r) => {
+      const agent = store.agents.find((a) => a.id === r.agentId && a.deletedAt === null)
+      return (
+        r.status === 'running' &&
+        r.deletedAt === null &&
+        agent !== undefined &&
+        agent.config.type === 'host-session' &&
+        agent.ownerUserId === ownerUserId
+      )
+    })
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 100)
+    .map((r) => ({
+      id: r.id,
+      agentId: r.agentId,
+      sessionId: r.sessionMetadata.sessionId,
+      cwd: r.sessionMetadata.cwd,
+    }))
+}
+
+async function testActiveRunsReturnsRunningHostSessionRuns() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+
+  const r1 = await provisionLogic(store, { sessionId: randomUUID(), cwd: '/home/user/p1', hostname: 'h1', ownerUserId })
+  const r2 = await provisionLogic(store, { sessionId: randomUUID(), cwd: '/home/user/p2', hostname: 'h1', ownerUserId })
+
+  const result = activeRunsLogic(store, ownerUserId)
+
+  assert.equal(result.length, 2, 'both running runs returned')
+  const ids = result.map((r) => r.id)
+  assert.ok(ids.includes(r1.runId), 'run1 included')
+  assert.ok(ids.includes(r2.runId), 'run2 included')
+}
+
+async function testActiveRunsExcludesCompletedRuns() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+
+  const { runId } = await provisionLogic(store, { sessionId: randomUUID(), cwd: '/home/user/p1', hostname: 'h1', ownerUserId })
+  await completeLogic(store, runId)
+  await provisionLogic(store, { sessionId: randomUUID(), cwd: '/home/user/p1', hostname: 'h1', ownerUserId })
+
+  const result = activeRunsLogic(store, ownerUserId)
+  assert.equal(result.length, 1, 'only the running run returned')
+  assert.notEqual(result[0]!.id, runId, 'completed run excluded')
+}
+
+async function testActiveRunsExcludesOtherOwner() {
+  const store = makeStore()
+  const owner1 = randomUUID()
+  const owner2 = randomUUID()
+
+  await provisionLogic(store, { sessionId: randomUUID(), cwd: '/home/user/p1', hostname: 'h1', ownerUserId: owner1 })
+  await provisionLogic(store, { sessionId: randomUUID(), cwd: '/home/user/p1', hostname: 'h1', ownerUserId: owner2 })
+
+  const result1 = activeRunsLogic(store, owner1)
+  const result2 = activeRunsLogic(store, owner2)
+
+  assert.equal(result1.length, 1, 'owner1 sees only their run')
+  assert.equal(result2.length, 1, 'owner2 sees only their run')
+  assert.notEqual(result1[0]!.id, result2[0]!.id, 'different runs for different owners')
+}
+
+async function testActiveRunsOrderedByCreatedAtDesc() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+
+  const r1 = await provisionLogic(store, { sessionId: randomUUID(), cwd: '/home/user/p1', hostname: 'h1', ownerUserId })
+  // Advance createdAt for second run
+  store.runs.find((r) => r.id === r1.runId)!.createdAt = new Date(Date.now() - 1000)
+  const r2 = await provisionLogic(store, { sessionId: randomUUID(), cwd: '/home/user/p2', hostname: 'h1', ownerUserId })
+
+  const result = activeRunsLogic(store, ownerUserId)
+  assert.equal(result[0]!.id, r2.runId, 'most recent run first')
+  assert.equal(result[1]!.id, r1.runId, 'older run second')
+}
+
+// ---------------------------------------------------------------------------
 // Runner
 // ---------------------------------------------------------------------------
 
@@ -468,6 +552,10 @@ async function main() {
     testCompleteUnknownRunIdReturnsFalse,
     testCompleteAlreadyTerminalIsNoop,
     testSessionMetadataStoredOnRun,
+    testActiveRunsReturnsRunningHostSessionRuns,
+    testActiveRunsExcludesCompletedRuns,
+    testActiveRunsExcludesOtherOwner,
+    testActiveRunsOrderedByCreatedAtDesc,
   ]
 
   let passed = 0
