@@ -538,6 +538,16 @@ export default tseslint.config(
     },
   },
 
+  // clicore2messenger/** — standalone Node.js CLI bridge processes.
+  // Separate package with its own entry points; reads process.env directly by design.
+  {
+    files: ['clicore2messenger/**/*.{ts,js,cjs}'],
+    rules: {
+      'no-restricted-syntax': 'off',
+      'no-restricted-imports': 'off',
+    },
+  },
+
   // server/utils/** — infrastructure-only utilities (body, errors, logger, etc.)
   // Must not import the DB layer or domain modules. If you need domain logic,
   // put it in server/modules/<domain>/ and call it from there.
