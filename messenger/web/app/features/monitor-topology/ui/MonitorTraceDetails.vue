@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { MessengerCliSession } from '../../../entities/sessions/model/useMessengerCliSessions'
 import { getSessionKindMeta } from '../../../entities/sessions/model/useMessengerCliSessions'
+import { deriveLiveness } from '../model/liveness'
 
 const props = defineProps<{
   session: MessengerCliSession | null
@@ -247,9 +248,9 @@ const finishedLabel = computed(() => {
               />
               <span class="trace-details__list-label">{{ child.agentDisplayName || child.slug }}</span>
               <span
-                v-if="child.lastTool"
-                class="trace-details__mono"
-              >{{ child.lastTool }}</span>
+                class="trace-details__live-label"
+                :class="`trace-details__live-label--${deriveLiveness(child).state}`"
+              >{{ deriveLiveness(child).label }}</span>
             </button>
           </li>
         </ul>
@@ -567,6 +568,33 @@ const finishedLabel = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.trace-details__live-label {
+  font-size: 11px;
+  white-space: nowrap;
+  color: rgb(var(--v-theme-on-surface-variant));
+  flex: 0 0 auto;
+}
+
+.trace-details__live-label--awaiting-user {
+  color: rgb(var(--v-theme-warning));
+  font-weight: 500;
+}
+
+.trace-details__live-label--crashed {
+  color: rgb(var(--v-theme-error));
+  font-weight: 500;
+}
+
+.trace-details__live-label--streaming,
+.trace-details__live-label--thinking,
+.trace-details__live-label--tool {
+  color: rgb(var(--v-theme-primary));
+}
+
+.trace-details__live-label--done {
+  opacity: 0.7;
 }
 
 .trace-details__empty {
