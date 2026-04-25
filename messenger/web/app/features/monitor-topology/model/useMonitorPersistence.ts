@@ -1,0 +1,51 @@
+import type { MonitorMode, MonitorFilter } from './useMonitorTopology'
+
+// localStorage-backed monitor preferences. The composable returns refs for
+// filter chip / mode toggle / search query, hydrated once on mount and
+// persisted via shallow watchers. Kept SSR-safe (`typeof window` guards) so
+// it doesn't crash during Nuxt's server render.
+
+const FILTER_STORAGE_KEY = 'daria.monitor.filter'
+const MODE_STORAGE_KEY = 'daria.monitor.mode'
+const SEARCH_STORAGE_KEY = 'daria.monitor.search'
+
+const FILTERS = ['all', 'awaiting', 'crashed'] as const
+const MODES = ['live', 'today'] as const
+
+function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  if (typeof window === 'undefined') return fallback
+  const v = window.localStorage.getItem(key)
+  return (v && (allowed as readonly string[]).includes(v)) ? v as T : fallback
+}
+
+function writeStored(key: string, value: string) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(key, value)
+}
+
+export interface UseMonitorPersistenceOptions {
+  // Mode is owned by the parent (v-model on MonitorTopologyTree), so we don't
+  // create the ref here — we hydrate the existing one and persist its writes.
+  mode: Ref<MonitorMode>
+}
+
+export function useMonitorPersistence(opts: UseMonitorPersistenceOptions) {
+  const filter = ref<MonitorFilter>(readStored(FILTER_STORAGE_KEY, FILTERS, 'all'))
+  const search = ref<string>(
+    typeof window !== 'undefined' ? window.localStorage.getItem(SEARCH_STORAGE_KEY) ?? '' : '',
+  )
+
+  // Mode hydration happens once on mount: we can't read it via readStored at
+  // setup time because `mode` is parent-owned and the parent's initial value
+  // would clobber our write. Emit a single update if the stored value differs.
+  onMounted(() => {
+    const stored = readStored(MODE_STORAGE_KEY, MODES, opts.mode.value)
+    if (stored !== opts.mode.value) opts.mode.value = stored
+  })
+
+  watch(filter, v => writeStored(FILTER_STORAGE_KEY, v))
+  watch(opts.mode, v => writeStored(MODE_STORAGE_KEY, v))
+  watch(search, v => writeStored(SEARCH_STORAGE_KEY, v))
+
+  return { filter, search }
+}

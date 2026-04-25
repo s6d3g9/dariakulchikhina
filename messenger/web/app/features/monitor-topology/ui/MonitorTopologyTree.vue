@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { injectMonitorTopology, type MonitorMode, type MonitorFilter } from '../model/useMonitorTopology'
+import { injectMonitorTopology, type MonitorMode } from '../model/useMonitorTopology'
+import { useMonitorPersistence } from '../model/useMonitorPersistence'
 
 const props = defineProps<{
   activeSlug?: string | null
@@ -23,37 +24,14 @@ const mode = computed<MonitorMode>({
 const { flatSorted, counters, activeTrace, awaitingSlugs, crashedSlugs } = injectMonitorTopology()
 
 // Filter chips. Awaiting + crashed reset to 'all' when their pool empties so
-// the user is never stuck looking at an empty tree. Persisted to localStorage
-// so the user's "ждут вас" view survives a reload (and so does Live/Today).
-const FILTER_STORAGE_KEY = 'daria.monitor.filter'
-const MODE_STORAGE_KEY = 'daria.monitor.mode'
-const SEARCH_STORAGE_KEY = 'daria.monitor.search'
-
-function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
-  if (typeof window === 'undefined') return fallback
-  const v = window.localStorage.getItem(key)
-  return (v && (allowed as readonly string[]).includes(v)) ? v as T : fallback
-}
-
-const filter = ref<MonitorFilter>(readStored(FILTER_STORAGE_KEY, ['all', 'awaiting', 'crashed'] as const, 'all'))
-const search = ref<string>(typeof window !== 'undefined' ? window.localStorage.getItem(SEARCH_STORAGE_KEY) ?? '' : '')
-
-// Hydrate mode from storage once (first render after mount). We can't simply
-// initialise it via readStored above because mode is owned by the parent and
-// gets passed through props/v-model — so we emit an update once.
-onMounted(() => {
-  const stored = readStored(MODE_STORAGE_KEY, ['live', 'today'] as const, mode.value)
-  if (stored !== mode.value) mode.value = stored
-})
+// the user is never stuck looking at an empty tree. Filter / mode / search
+// state is hydrated from + persisted to localStorage by useMonitorPersistence.
+const { filter, search } = useMonitorPersistence({ mode })
 
 watchEffect(() => {
   if (filter.value === 'awaiting' && counters.value.awaiting === 0) filter.value = 'all'
   if (filter.value === 'crashed' && counters.value.crashed === 0) filter.value = 'all'
 })
-
-watch(filter, (v) => { if (typeof window !== 'undefined') window.localStorage.setItem(FILTER_STORAGE_KEY, v) })
-watch(mode, (v) => { if (typeof window !== 'undefined') window.localStorage.setItem(MODE_STORAGE_KEY, v) })
-watch(search, (v) => { if (typeof window !== 'undefined') window.localStorage.setItem(SEARCH_STORAGE_KEY, v) })
 
 // `/` shortcut focuses the search input — same convention as GitHub, GitLab,
 // Slack. Skipped when the user is already typing into a form field so we
