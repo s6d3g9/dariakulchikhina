@@ -178,6 +178,41 @@ pnpm test:host-bridge-smoke && echo "Bridge smoke: OK"
 | 6 | Crash recovery (offset dedup) | Bridge restart reads from persisted byte-offset; no duplicate events in DB |
 | 7 | Cross-talk regression | Interleaved events with identical timestamps → each event lands on the correct runId |
 
+## Restarts
+
+`pm2 restart daria-host-session-v2` is safe. The supervisor handles SIGTERM
+gracefully:
+
+1. Sets an internal `isShuttingDown` flag — no new tail children are spawned.
+2. Sends SIGTERM to all active tail children in parallel.
+3. PATCHes every active run to `completed` with `reason=shutdown` via the
+   provisioning API (parallel, non-blocking).
+4. Waits for all children to exit.
+5. Writes the final `sessions.json` (every still-running entry → `completed`).
+6. Exits 0.
+
+A **hard 5-second cap** is set at shutdown start. If the supervisor hasn't
+finished by then it exits 1 so PM2 records an unclean restart. In practice
+the sequence above completes in well under a second.
+
+After restart you should see lines like:
+
+```
+[shutdown] received signal — stopping new spawns, N child(ren) active
+[shutdown] SIGTERM sent to N child(ren)
+[shutdown] patched N run(s) to completed
+[shutdown] all children exited
+[shutdown] flushed N run(s) to sessions.json
+```
+
+To verify no stuck runs after restart:
+
+```sql
+SELECT count(*) FROM agent_runs
+WHERE status = 'running' AND updated_at < now() - interval '1 minute';
+-- expect: 0
+```
+
 ### v1 Sunset checklist (A5 criteria)
 
 Before retiring the v1 bridge (`host-session-bridge.sh` + pre-provisioned IDs):
