@@ -25,6 +25,7 @@ const props = defineProps<{
   agentLogin: string
   conversationId?: string | null
   collapsed?: boolean
+  openRunId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -445,6 +446,13 @@ watch(() => resolvedAgent.value?.id, () => {
   knowledgePreset.value = null
   knowledgeError.value = ''
 }, { immediate: true })
+
+// When chat asks to show a specific run, navigate to the runs section and open it
+watch(() => props.openRunId, async (runId) => {
+  if (!runId) return
+  activeSection.value = 'runs'
+  await openRunDetail(runId)
+})
 
 watch(() => props.conversationId, () => {
   settingsDraft.model = currentConversation.value?.policy?.model || resolvedAgent.value?.settings.model || 'claude-sonnet-4-6'

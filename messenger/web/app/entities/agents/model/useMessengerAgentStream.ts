@@ -22,6 +22,8 @@ interface AgentStreamEvent {
   message?: string
   // complete event field
   finalText?: string
+  // run_start may carry a prompt excerpt from the ingest payload
+  prompt?: string
 }
 
 export interface AgentToolUseEntry {
@@ -32,57 +34,136 @@ export interface AgentToolUseEntry {
   input?: Record<string, unknown>
 }
 
+export interface RunState {
+  substate: AgentSubstate
+  streamingDraft: string
+  toolUses: AgentToolUseEntry[]
+  tokenCount: { input: number; output: number; total: number; contextPct: number; cacheRead: number; cacheWrite: number }
+  costUsd: number
+  startedAt: number
+  lastEventAt: number
+  errors: string[]
+  status: 'active' | 'completed' | 'error'
+  promptExcerpt: string
+}
+
+export interface ActiveRun {
+  runId: string
+  state: RunState
+}
+
 const CONTEXT_WINDOW = 200_000
+const COMPLETED_RUN_TTL_MS = 30_000
+// Fallback key for events that carry no runId (pre-W2 backend)
+const DEFAULT_RUN_KEY = '__default__'
 
 export function useMessengerAgentStream(agentId: Ref<string>) {
   const config = useRuntimeConfig()
   const auth = useMessengerAuth()
 
-  const substate = ref<AgentSubstate>('idle')
-  const tokenCount = ref({ input: 0, output: 0, total: 0, contextPct: 0, cacheRead: 0, cacheWrite: 0 })
-  const costUsd = ref(0)
-  const streamingDraft = ref('')
-  const toolUses = ref<AgentToolUseEntry[]>([])
-  const runStartedAt = ref<number>(0)
-  const errors = ref<string[]>([])
+  // Per-run state — reactive Map so computed() tracks Map mutations
+  const runStates = reactive(new Map<string, RunState>())
+  const cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   let ws: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
   let boundAgentId = ''
 
-  function teardown() {
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
-    if (ws) {
-      ws.close()
-      ws = null
+  function makeRunState(promptExcerpt = ''): RunState {
+    return {
+      substate: 'idle',
+      streamingDraft: '',
+      toolUses: [],
+      tokenCount: { input: 0, output: 0, total: 0, contextPct: 0, cacheRead: 0, cacheWrite: 0 },
+      costUsd: 0,
+      startedAt: Date.now(),
+      lastEventAt: Date.now(),
+      errors: [],
+      status: 'active',
+      promptExcerpt,
     }
   }
 
+  function getOrCreateRun(runId: string): RunState {
+    if (!runStates.has(runId)) {
+      runStates.set(runId, makeRunState())
+    }
+    return runStates.get(runId)!
+  }
+
+  function scheduleCleanup(runId: string) {
+    if (cleanupTimers.has(runId)) clearTimeout(cleanupTimers.get(runId)!)
+    cleanupTimers.set(runId, setTimeout(() => {
+      cleanupTimers.delete(runId)
+      runStates.delete(runId)
+    }, COMPLETED_RUN_TTL_MS))
+  }
+
+  // ── Backward-compat computed refs ────────────────────────────────────────
+  // Derive from the most-recently-active run so single-run agents are unchanged.
+  const primaryRunState = computed<RunState | null>(() => {
+    let latest: RunState | null = null
+    for (const rs of runStates.values()) {
+      if (rs.status === 'active') {
+        if (!latest || rs.lastEventAt > latest.lastEventAt) latest = rs
+      }
+    }
+    if (latest) return latest
+    // Fallback to any run for done-trace display
+    for (const rs of runStates.values()) {
+      if (!latest || rs.lastEventAt > latest.lastEventAt) latest = rs
+    }
+    return latest
+  })
+
+  const substate = computed(() => primaryRunState.value?.substate ?? 'idle')
+  const tokenCount = computed(() => primaryRunState.value?.tokenCount ?? { input: 0, output: 0, total: 0, contextPct: 0, cacheRead: 0, cacheWrite: 0 })
+  const costUsd = computed(() => primaryRunState.value?.costUsd ?? 0)
+  const streamingDraft = computed(() => primaryRunState.value?.streamingDraft ?? '')
+  const toolUses = computed(() => primaryRunState.value?.toolUses ?? [])
+  const runStartedAt = computed(() => primaryRunState.value?.startedAt ?? 0)
+  const errors = computed(() => primaryRunState.value?.errors ?? [])
+
+  // All currently active runs sorted by start time (for multi-run panel)
+  const activeRuns = computed<ActiveRun[]>(() => {
+    const result: ActiveRun[] = []
+    for (const [runId, state] of runStates.entries()) {
+      if (state.status === 'active') result.push({ runId, state })
+    }
+    return result.sort((a, b) => a.state.startedAt - b.state.startedAt)
+  })
+
+  function getRunState(runId: string): RunState | null {
+    return runStates.get(runId) ?? null
+  }
+
+  // ── WebSocket plumbing ───────────────────────────────────────────────────
+  function teardown() {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
+    if (ws) { ws.close(); ws = null }
+  }
+
   function handleEvent(event: AgentStreamEvent) {
+    const runId = event.runId || DEFAULT_RUN_KEY
+
     if (event.type === 'run_start') {
-      substate.value = 'idle'
-      tokenCount.value = { input: 0, output: 0, total: 0, contextPct: 0, cacheRead: 0, cacheWrite: 0 }
-      costUsd.value = 0
-      streamingDraft.value = ''
-      toolUses.value = []
-      errors.value = []
-      runStartedAt.value = Date.now()
+      if (cleanupTimers.has(runId)) { clearTimeout(cleanupTimers.get(runId)!); cleanupTimers.delete(runId) }
+      const excerpt = typeof event.prompt === 'string' ? event.prompt.slice(0, 80) : ''
+      runStates.set(runId, makeRunState(excerpt))
       return
     }
 
+    const rs = getOrCreateRun(runId)
+    rs.lastEventAt = Date.now()
+
     if (event.type === 'substate' && event.substate) {
-      substate.value = event.substate
+      rs.substate = event.substate
       return
     }
 
     if (event.type === 'delta' && event.delta) {
-      streamingDraft.value += event.delta
-      if (substate.value !== 'streaming') {
-        substate.value = 'streaming'
-      }
+      rs.streamingDraft += event.delta
+      if (rs.substate !== 'streaming') rs.substate = 'streaming'
       return
     }
 
@@ -98,72 +179,61 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
         typeof input?.description === 'string' ? String(input.description).slice(0, 100) :
         ''
       const now = Date.now()
-      const prev = toolUses.value.length > 0 ? toolUses.value[toolUses.value.length - 1] : null
-      const updated = prev && !prev.endAt ? [...toolUses.value.slice(0, -1), { ...prev, endAt: now }] : [...toolUses.value]
-      toolUses.value = [...updated, { tool: event.tool, descriptor, at: now }]
-      substate.value = 'tool_call'
+      const prev = rs.toolUses.length > 0 ? rs.toolUses[rs.toolUses.length - 1] : null
+      if (prev && !prev.endAt) prev.endAt = now
+      rs.toolUses.push({ tool: event.tool, descriptor, at: now })
+      rs.substate = 'tool_call'
       return
     }
 
     if (event.type === 'tokens') {
-      const input = event.tokenIn ?? tokenCount.value.input
-      const output = event.tokenOut ?? tokenCount.value.output
+      const input = event.tokenIn ?? rs.tokenCount.input
+      const output = event.tokenOut ?? rs.tokenCount.output
       const total = input + output
-      tokenCount.value = {
+      rs.tokenCount = {
         input,
         output,
         total,
         contextPct: Math.min(100, Math.round((total / CONTEXT_WINDOW) * 100)),
-        cacheRead: event.cacheRead ?? tokenCount.value.cacheRead,
-        cacheWrite: event.cacheWrite ?? tokenCount.value.cacheWrite,
+        cacheRead: event.cacheRead ?? rs.tokenCount.cacheRead,
+        cacheWrite: event.cacheWrite ?? rs.tokenCount.cacheWrite,
       }
-      if (event.costUsd !== undefined) {
-        costUsd.value = event.costUsd
-      }
+      if (event.costUsd !== undefined) rs.costUsd = event.costUsd
       return
     }
 
     if (event.type === 'complete') {
-      substate.value = 'idle'
-      streamingDraft.value = ''
-      // Stamp endAt on last tool use if still open
-      if (toolUses.value.length > 0) {
-        const last = toolUses.value[toolUses.value.length - 1]
-        if (!last.endAt) {
-          toolUses.value = [...toolUses.value.slice(0, -1), { ...last, endAt: Date.now() }]
-        }
+      rs.substate = 'idle'
+      rs.streamingDraft = ''
+      rs.status = 'completed'
+      if (rs.toolUses.length > 0) {
+        const last = rs.toolUses[rs.toolUses.length - 1]
+        if (!last.endAt) last.endAt = Date.now()
       }
+      scheduleCleanup(runId)
       return
     }
 
     if (event.type === 'error') {
-      if (toolUses.value.length > 0) {
-        const last = toolUses.value[toolUses.value.length - 1]
-        if (!last.endAt) {
-          toolUses.value = [...toolUses.value.slice(0, -1), { ...last, endAt: Date.now() }]
-        }
+      if (rs.toolUses.length > 0) {
+        const last = rs.toolUses[rs.toolUses.length - 1]
+        if (!last.endAt) last.endAt = Date.now()
       }
-      substate.value = 'error'
-      errors.value = [...errors.value, event.message || 'Unknown stream error']
-      streamingDraft.value = ''
+      rs.substate = 'error'
+      rs.status = 'error'
+      rs.errors.push(event.message || 'Unknown stream error')
+      rs.streamingDraft = ''
+      scheduleCleanup(runId)
     }
   }
 
   function scheduleReconnect() {
-    if (!import.meta.client || reconnectTimer || !auth.token.value || boundAgentId !== agentId.value) {
-      return
-    }
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null
-      connect()
-    }, 1500)
+    if (!import.meta.client || reconnectTimer || !auth.token.value || boundAgentId !== agentId.value) return
+    reconnectTimer = setTimeout(() => { reconnectTimer = null; connect() }, 1500)
   }
 
   function connect() {
-    if (!import.meta.client || !auth.token.value || !agentId.value) {
-      return
-    }
-
+    if (!import.meta.client || !auth.token.value || !agentId.value) return
     teardown()
     boundAgentId = agentId.value
 
@@ -186,17 +256,11 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
     })
 
     socket.addEventListener('close', () => {
-      if (ws === socket) {
-        ws = null
-        scheduleReconnect()
-      }
+      if (ws === socket) { ws = null; scheduleReconnect() }
     })
 
     socket.addEventListener('error', () => {
-      if (ws === socket) {
-        ws = null
-        scheduleReconnect()
-      }
+      if (ws === socket) { ws = null; scheduleReconnect() }
     })
   }
 
@@ -214,16 +278,29 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
       connect()
     } else {
       teardown()
-      substate.value = 'idle'
-      streamingDraft.value = ''
-      toolUses.value = []
-      errors.value = []
+      runStates.clear()
     }
   }, { immediate: true })
 
   onUnmounted(() => {
     teardown()
+    for (const timer of cleanupTimers.values()) clearTimeout(timer)
+    cleanupTimers.clear()
   })
 
-  return { substate, tokenCount, costUsd, streamingDraft, toolUses, runStartedAt, errors, cancel }
+  return {
+    // Backward-compat flat refs (derived from the primary / most-recent active run)
+    substate,
+    tokenCount,
+    costUsd,
+    streamingDraft,
+    toolUses,
+    runStartedAt,
+    errors,
+    // Multi-run API
+    activeRuns,
+    getRunState,
+    // Actions
+    cancel,
+  }
 }
