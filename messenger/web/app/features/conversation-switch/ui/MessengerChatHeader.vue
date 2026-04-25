@@ -170,6 +170,7 @@ const emit = defineEmits<{
   'select-agent-effort': [value: 'low' | 'medium' | 'high' | 'xhigh' | 'max']
   'toggle-monitor-panel': []
   'open-monitor-session': [slug: string]
+  'open-monitor-section': []
   'open-shared-gallery': [section?: 'photos' | 'stickers' | 'documents' | 'links' | 'keys']
   'open-chat-search': []
 }>()
@@ -888,6 +889,14 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
             <span class="chat-header-sheet__row-label">
               {{ monitorPanelOpen ? 'Скрыть боковую панель' : 'Развернуть полную панель' }}
             </span>
+          </button>
+          <button
+            type="button"
+            class="chat-header-sheet__monitor-action"
+            @click="emit('open-monitor-section'); close()"
+          >
+            <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-monitor-dashboard</VIcon>
+            <span class="chat-header-sheet__row-label">Открыть полный монитор</span>
           </button>
         </div>
 

@@ -178,6 +178,9 @@ async function logout() {
           <MessengerAidevSection
             v-show="navigation.activeSection.value === 'aidev'"
           />
+          <MessengerMonitorSection
+            v-show="navigation.activeSection.value === 'monitor'"
+          />
           <MessengerSettingsSection
             v-show="navigation.activeSection.value === 'settings'"
             @logout="logout"

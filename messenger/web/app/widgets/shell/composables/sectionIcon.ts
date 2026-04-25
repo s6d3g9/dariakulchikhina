@@ -12,6 +12,8 @@ export function sectionIcon(section: MessengerSectionKey): string {
       return 'mdi-robot-outline'
     case 'aidev':
       return 'mdi-rocket-launch-outline'
+    case 'monitor':
+      return 'mdi-monitor-dashboard'
     case 'settings':
       return 'mdi-cog-outline'
   }

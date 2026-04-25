@@ -2925,6 +2925,7 @@ onBeforeUnmount(() => {
         @select-agent-effort="onEffortSelect($event)"
         @toggle-monitor-panel="sessNavCollapsed = !sessNavCollapsed"
         @open-monitor-session="onMonitorSessionOpen($event)"
+        @open-monitor-section="navigation.openSection('monitor')"
         @pointerdown="handleChatAreaPointerDown"
       />
 

@@ -1,4 +1,4 @@
-export type MessengerSectionKey = 'chat' | 'chats' | 'contacts' | 'agents' | 'aidev' | 'settings'
+export type MessengerSectionKey = 'chat' | 'chats' | 'contacts' | 'agents' | 'aidev' | 'monitor' | 'settings'
 
 export interface MessengerSectionItem {
   key: MessengerSectionKey
@@ -41,6 +41,12 @@ export function useMessengerSections() {
       shortTitle: 'AIDev',
       description: 'Проектная AI-разработка: composer проекта, ресурсы и агенты.',
     }
+    const monitor: MessengerSectionItem = {
+      key: 'monitor',
+      title: 'Монитор',
+      shortTitle: 'Монитор',
+      description: 'Дерево живых сессий агентов: composer → orchestrator → worker, токены и активность.',
+    }
     const settings: MessengerSectionItem = {
       key: 'settings',
       title: 'Настройки',
@@ -51,10 +57,10 @@ export function useMessengerSections() {
     // Without the agents feature flag we still show AIDev (it's the
     // project-centric dev flow, independent of the global agents tab).
     if (!agentsEnabled.value) {
-      return [chat, chats, contacts, aidev, settings]
+      return [chat, chats, contacts, aidev, monitor, settings]
     }
 
-    return [chat, chats, contacts, agents, aidev, settings]
+    return [chat, chats, contacts, agents, aidev, monitor, settings]
   })
 
   return { sections }
