@@ -14,11 +14,21 @@ const mode = ref<MonitorMode>('live')
 
 const sessionsRef = computed(() => sessionsModel.sessions.value)
 const activeSlugRef = computed(() => activeSlug.value)
-const { bySlug, ancestryFor, childrenFor, byRootRunId } = provideMonitorTopology(
+const { bySlug, ancestryFor, childrenFor, byRootRunId, counters } = provideMonitorTopology(
   sessionsRef,
   mode,
   activeSlugRef,
 )
+
+// Slack-style unread badge in the browser tab title. Shows total count of
+// rows that demand attention (awaiting + crashed) so the user notices new
+// "ждёт ответа" sessions even when this tab is not focused.
+useHead(() => {
+  const pending = counters.value.awaiting + counters.value.crashed
+  return {
+    title: pending > 0 ? `(${pending}) Daria Messenger` : 'Daria Messenger',
+  }
+})
 
 const activeSession = computed(() => activeSlug.value ? bySlug.value.get(activeSlug.value) ?? null : null)
 const activeAncestry = computed(() => activeSlug.value ? ancestryFor(activeSlug.value) : [])
