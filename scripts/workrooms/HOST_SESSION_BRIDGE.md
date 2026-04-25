@@ -128,3 +128,62 @@ does not attempt any database connection.
   project filter.
 - Calling `bridge-projects set` at any time takes effect for the _next_ bridge
   restart; in-flight sessions are not retroactively re-associated.
+
+## Validation
+
+### Running the E2E smoke harness
+
+The smoke harness validates all v2 bridge scenarios against a live database.
+It starts an embedded Fastify server (no external processes required), inserts
+a temporary test user, runs 7 scenarios, then cleans up.
+
+**Prerequisites:**
+
+- PostgreSQL reachable at `MESSENGER_DB_URL` or `DATABASE_URL` (reads `.env` automatically)
+- `HOST_BRIDGE_TOKEN` ≥ 32 chars (defaults to a test value if not set)
+- `HOST_BRIDGE_OWNER_USER_ID` (optional — test inserts its own user by default)
+
+**Run:**
+
+```bash
+# From repo root
+pnpm test:host-bridge-smoke
+
+# With explicit token (recommended for CI)
+HOST_BRIDGE_TOKEN=your-32-char-token pnpm test:host-bridge-smoke
+
+# Against a pre-existing owner user (skips user insert/delete)
+HOST_BRIDGE_TOKEN=your-32-char-token \
+HOST_BRIDGE_OWNER_USER_ID=<uuid> \
+pnpm test:host-bridge-smoke
+```
+
+### Repeated regression check
+
+Run after every change to host-session bridge code:
+
+```bash
+pnpm test:host-bridge-smoke && echo "Bridge smoke: OK"
+```
+
+### Scenarios covered
+
+| # | Scenario | What it validates |
+|---|----------|-------------------|
+| 1 | Single session basic | Provision creates one agent with correct `hostname:basename` name; events delivered; run completes |
+| 2 | Two parallel sessions, different cwd | Two cwds → two distinct agentIds; events never cross |
+| 3 | Two parallel sessions, same cwd | Same cwd → same agentId, two distinct runIds; events stay in correct run |
+| 4 | Idle reaping | `PATCH /runs/:id/complete?reason=idle` → run transitions to `completed` |
+| 5 | Re-activation | After idle reaping, new session on same cwd → new runId, same agentId |
+| 6 | Crash recovery (offset dedup) | Bridge restart reads from persisted byte-offset; no duplicate events in DB |
+| 7 | Cross-talk regression | Interleaved events with identical timestamps → each event lands on the correct runId |
+
+### v1 Sunset checklist (A5 criteria)
+
+Before retiring the v1 bridge (`host-session-bridge.sh` + pre-provisioned IDs):
+
+- [ ] All 7 smoke scenarios pass on production DB (`MESSENGER_DB_URL=...`)
+- [ ] `clicore2messenger bridge-projects scan` shows no unmapped active cwds
+- [ ] PM2 `daria-host-session` process replaced by v2 supervisor using `HOST_BRIDGE_TOKEN` provision flow
+- [ ] `HOST_AGENT_ID`, `HOST_INGEST_TOKEN`, `HOST_RUN_ID`, `HOST_CONV_ID` vars removed from `.host-session-bridge.env`
+- [ ] Smoke test runs clean in nightly CI job (not PR gate — too heavy) for ≥ 5 consecutive days
