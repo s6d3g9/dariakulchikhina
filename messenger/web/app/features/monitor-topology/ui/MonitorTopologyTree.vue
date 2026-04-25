@@ -353,6 +353,7 @@ function onTreeKeydown(ev: KeyboardEvent) {
             :row="item"
             :active="activeSlug === item.session.slug"
             :in-trace="activeTrace.has(item.session.slug)"
+            :search-query="normalizedSearch"
             @open-session="(slug) => emit('open-session', slug)"
           />
         </template>

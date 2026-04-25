@@ -6,6 +6,7 @@ const props = defineProps<{
   row: MonitorRow
   active?: boolean
   inTrace?: boolean
+  searchQuery?: string
 }>()
 
 const emit = defineEmits<{
@@ -28,6 +29,30 @@ const costLabel = computed(() => {
 })
 
 const title = computed(() => props.row.session.agentDisplayName || props.row.session.slug)
+
+// Split the title into [match | non-match] segments so the template can
+// render <mark> for matches without resorting to v-html. Case-insensitive
+// match preserves original casing in the output.
+const titleParts = computed<Array<{ text: string, match: boolean }>>(() => {
+  const q = props.searchQuery ?? ''
+  const t = title.value
+  if (!q) return [{ text: t, match: false }]
+  const lowerT = t.toLowerCase()
+  const lowerQ = q.toLowerCase()
+  const out: Array<{ text: string, match: boolean }> = []
+  let i = 0
+  while (i < t.length) {
+    const idx = lowerT.indexOf(lowerQ, i)
+    if (idx === -1) {
+      out.push({ text: t.slice(i), match: false })
+      break
+    }
+    if (idx > i) out.push({ text: t.slice(i, idx), match: false })
+    out.push({ text: t.slice(idx, idx + q.length), match: true })
+    i = idx + q.length
+  }
+  return out
+})
 
 // awaiting / crashed are the two states with side-effects on the whole row
 // (background tint, weight, tooltip target). Kept as flags so the template
@@ -119,7 +144,18 @@ const tooltipText = computed(() => {
       :color="meta.color"
       size="13"
     />
-    <span class="monitor-row__title">{{ title }}</span>
+    <span class="monitor-row__title">
+      <template
+        v-for="(part, idx) in titleParts"
+        :key="idx"
+      >
+        <mark
+          v-if="part.match"
+          class="monitor-row__title-mark"
+        >{{ part.text }}</mark>
+        <template v-else>{{ part.text }}</template>
+      </template>
+    </span>
     <span
       v-if="row.hasChildren"
       class="monitor-row__chip monitor-row__chip--children"
@@ -193,6 +229,13 @@ const tooltipText = computed(() => {
 .monitor-row--done .monitor-row__title,
 .monitor-row--state-idle-deep .monitor-row__title {
   color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.monitor-row__title-mark {
+  background: color-mix(in srgb, rgb(var(--v-theme-warning)) 32%, transparent);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
 }
 
 /* ---- Left accent strip — the at-a-glance liveness signal ---- */
