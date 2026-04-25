@@ -52,6 +52,7 @@ const props = withDefaults(defineProps<{
   monitorSessionCount?: number
   monitorAwaitingCount?: number
   monitorCrashedCount?: number
+  monitorBellPreview?: ReadonlyArray<{ slug: string; name: string; hint: string; state: 'awaiting' | 'crashed' }>
   galleryPhotos?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
   galleryStickers?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
   galleryDocuments?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
@@ -74,6 +75,7 @@ const props = withDefaults(defineProps<{
   monitorSessionCount: 0,
   monitorAwaitingCount: 0,
   monitorCrashedCount: 0,
+  monitorBellPreview: () => [],
   galleryPhotos: () => [],
   galleryStickers: () => [],
   galleryDocuments: () => [],
@@ -483,6 +485,46 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
                     :class="`chat-header__agent-btn-badge--${monitorBadgeSeverity}`"
                     aria-hidden="true"
                   >{{ monitorBadgeCount }}</span>
+                  <v-menu
+                    v-if="monitorBellPreview.length > 0 && headerSheetKind !== 'monitor'"
+                    activator="parent"
+                    open-on-hover
+                    :open-on-click="false"
+                    :close-on-content-click="false"
+                    location="bottom end"
+                    open-delay="280"
+                    close-delay="120"
+                    transition="fade-transition"
+                  >
+                    <div
+                      class="chat-header__bell-preview"
+                      :class="`chat-header__bell-preview--${monitorBadgeSeverity}`"
+                      role="group"
+                      :aria-label="monitorBadgeSeverity === 'crashed' ? 'Сессий с ошибкой' : 'Сессий, ждущих ответа'"
+                    >
+                      <div class="chat-header__bell-preview-head">
+                        <v-icon
+                          :icon="monitorBadgeSeverity === 'crashed' ? 'mdi-alert-circle-outline' : 'mdi-hand-back-right-outline'"
+                          size="14"
+                          class="me-1"
+                        />
+                        {{ monitorBadgeSeverity === 'crashed' ? 'Сессии с ошибкой' : 'Ждут вас' }}
+                      </div>
+                      <div
+                        v-for="item in monitorBellPreview"
+                        :key="item.slug"
+                        class="chat-header__bell-preview-row"
+                      >
+                        <span class="chat-header__bell-preview-name">{{ item.name }}</span>
+                        <span class="chat-header__bell-preview-hint">{{ item.hint }}</span>
+                      </div>
+                      <div
+                        v-if="monitorBadgeCount > monitorBellPreview.length"
+                        class="chat-header__bell-preview-more"
+                      >+ ещё {{ monitorBadgeCount - monitorBellPreview.length }}</div>
+                      <div class="chat-header__bell-preview-foot">Открыть монитор — клик</div>
+                    </div>
+                  </v-menu>
                 </VBtn>
                 <VBtn
                   v-if="showCallActions && showCallAnalysis"

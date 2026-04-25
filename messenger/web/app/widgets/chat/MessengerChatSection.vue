@@ -882,6 +882,55 @@ const monitorCrashedCount = computed(() => {
   return n
 })
 
+// Bell hover preview: top-3 sessions in the worst-current-severity bucket.
+// Crashed wins over awaiting (matches badge colour). Awaiting sorts by
+// longest idle first; crashed by most-recent failure. Empty array hides
+// the menu in the header.
+type MonitorBellPreview = {
+  slug: string
+  name: string
+  hint: string
+  state: 'awaiting' | 'crashed'
+}
+function fmtIdleHint(ms: number): string {
+  if (ms < 60_000) return `${Math.floor(ms / 1000)} с`
+  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)} мин`
+  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)} ч`
+  return `${Math.floor(ms / 86_400_000)} д`
+}
+const monitorBellPreview = computed<ReadonlyArray<MonitorBellPreview>>(() => {
+  const sessions = cliSessionsModel.sessions.value
+  if (monitorCrashedCount.value > 0) {
+    return sessions
+      .filter(s => deriveLiveness(s).state === 'crashed')
+      .sort((a, b) => {
+        const ta = a.finishedAt ? Date.parse(a.finishedAt) : 0
+        const tb = b.finishedAt ? Date.parse(b.finishedAt) : 0
+        return tb - ta
+      })
+      .slice(0, 3)
+      .map(s => ({
+        slug: s.slug,
+        name: s.agentDisplayName || s.slug,
+        hint: s.runError ? s.runError.slice(0, 60) : 'упала',
+        state: 'crashed' as const,
+      }))
+  }
+  if (monitorAwaitingCount.value > 0) {
+    return sessions
+      .filter(s => deriveLiveness(s).state === 'awaiting-user')
+      .sort((a, b) => (b.idleForMs ?? 0) - (a.idleForMs ?? 0))
+      .slice(0, 3)
+      .map(s => ({
+        slug: s.slug,
+        name: s.agentDisplayName || s.slug,
+        hint: s.idleForMs ? `ждёт ${fmtIdleHint(s.idleForMs)}` : 'ждёт ввода',
+        state: 'awaiting' as const,
+      }))
+  }
+  return []
+})
+
 // --- Thinking indicator ---------------------------------------------------
 // Show a pulsing bubble after the user sends to an agent chat until the reply
 // arrives. Bubble shows agent name + model name (mini-caption).
@@ -2910,6 +2959,7 @@ onBeforeUnmount(() => {
         :monitor-session-count="monitorActiveCurrentProjectCount || monitorActiveTotalCount"
         :monitor-awaiting-count="monitorAwaitingCount"
         :monitor-crashed-count="monitorCrashedCount"
+        :monitor-bell-preview="monitorBellPreview"
         :gallery-photos="sharedContent.photos"
         :gallery-stickers="sharedContent.stickers"
         :gallery-documents="sharedContent.documents"

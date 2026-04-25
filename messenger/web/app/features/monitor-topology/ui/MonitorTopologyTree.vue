@@ -70,6 +70,24 @@ function onGlobalKeydown(ev: KeyboardEvent) {
     searchInputRef.value?.select()
     return
   }
+  // j/k mirror ArrowDown/Up (vim, gmail, discord). When nothing in the tree
+  // is focused, j enters the tree at row 0 — the only entry point that
+  // doesn't require a mouse click first.
+  if (ev.key === 'j' || ev.key === 'k') {
+    const inTree = target?.matches('[role="treeitem"]')
+    if (inTree && target instanceof HTMLElement) {
+      ev.preventDefault()
+      focusRowByOffset(target, ev.key === 'j' ? 1 : -1)
+      return
+    }
+    const first = scrollerRef.value?.querySelector<HTMLElement>('[role="treeitem"]')
+    if (first) {
+      ev.preventDefault()
+      first.focus()
+      first.scrollIntoView({ block: 'nearest' })
+    }
+    return
+  }
   if (applyFilterShortcut(ev.key)) ev.preventDefault()
 }
 
