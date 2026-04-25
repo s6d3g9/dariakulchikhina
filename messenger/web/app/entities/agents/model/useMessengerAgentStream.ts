@@ -66,7 +66,10 @@ export interface ActiveRun {
 }
 
 const CONTEXT_WINDOW = 200_000
-const COMPLETED_RUN_TTL_MS = 30_000
+// Safety fallback: clean up run state 5 minutes after completion. In practice
+// the chat section calls cleanupRun() as soon as the message with this runId
+// appears in the thread, so this timer almost never fires.
+const COMPLETED_RUN_FALLBACK_TTL_MS = 5 * 60_000
 // Fallback key for events that carry no runId (pre-W2 backend)
 const DEFAULT_RUN_KEY = '__default__'
 
@@ -109,7 +112,15 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
     cleanupTimers.set(runId, setTimeout(() => {
       cleanupTimers.delete(runId)
       runStates.delete(runId)
-    }, COMPLETED_RUN_TTL_MS))
+    }, COMPLETED_RUN_FALLBACK_TTL_MS))
+  }
+
+  // Called by the chat section when the message with this runId appears in the
+  // thread — immediately removes the ephemeral run state so the bubble
+  // disappears without waiting for the fallback TTL.
+  function cleanupRun(runId: string) {
+    if (cleanupTimers.has(runId)) { clearTimeout(cleanupTimers.get(runId)!); cleanupTimers.delete(runId) }
+    runStates.delete(runId)
   }
 
   // ── Backward-compat computed refs ────────────────────────────────────────
@@ -142,6 +153,18 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
     const result: ActiveRun[] = []
     for (const [runId, state] of runStates.entries()) {
       if (state.status === 'active') result.push({ runId, state })
+    }
+    return result.sort((a, b) => a.state.startedAt - b.state.startedAt)
+  })
+
+  // All tracked runs (active + completed, before cleanup). Used by the chat
+  // section to render one bubble per run and dismiss them on message arrival.
+  // Excludes the legacy __default__ key used for pre-W2 events without runId.
+  const allRuns = computed<ActiveRun[]>(() => {
+    const result: ActiveRun[] = []
+    for (const [runId, state] of runStates.entries()) {
+      if (runId === DEFAULT_RUN_KEY) continue
+      result.push({ runId, state })
     }
     return result.sort((a, b) => a.state.startedAt - b.state.startedAt)
   })
@@ -219,19 +242,15 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
       rs.substate = 'idle'
       rs.streamingDraft = ''
       rs.status = 'completed'
-      if (rs.toolUses.length > 0) {
-        const last = rs.toolUses[rs.toolUses.length - 1]
-        if (!last.endAt) last.endAt = Date.now()
-      }
+      const last = rs.toolUses[rs.toolUses.length - 1]
+      if (last && !last.endAt) last.endAt = Date.now()
       scheduleCleanup(runId)
       return
     }
 
     if (event.type === 'error') {
-      if (rs.toolUses.length > 0) {
-        const last = rs.toolUses[rs.toolUses.length - 1]
-        if (!last.endAt) last.endAt = Date.now()
-      }
+      const last = rs.toolUses[rs.toolUses.length - 1]
+      if (last && !last.endAt) last.endAt = Date.now()
       rs.substate = 'error'
       rs.status = 'error'
       rs.errors.push(event.message || 'Unknown stream error')
@@ -331,8 +350,10 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
     errors,
     // Multi-run API
     activeRuns,
+    allRuns,
     getRunState,
     // Actions
     cancel,
+    cleanupRun,
   }
 }

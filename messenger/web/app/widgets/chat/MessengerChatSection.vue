@@ -3,6 +3,7 @@ import type { MessengerAttachmentKlipyPayload, MessengerConversationMessage } fr
 import type { MessengerKlipyItem } from '../../entities/messages/model/useMessengerKlipy'
 import type { MessengerConversationSecuritySummary } from '../../entities/messages/model/useMessengerCrypto'
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
+import type { AgentToolUseEntry } from '../../entities/agents/model/useMessengerAgentStream'
 import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
 import { getSessionKindMeta, type MessengerCliSession } from '../../entities/sessions/model/useMessengerCliSessions'
 import { deriveLiveness } from '../../features/monitor-topology/model/liveness'
@@ -963,37 +964,75 @@ const activeAgentModelLabel = computed(() => {
 // Live reasoning stream for chat agent
 const chatAgentIdRef = computed(() => conversations.activeConversation.value?.peerUserId || '')
 const chatAgentStream = useMessengerAgentStream(chatAgentIdRef as any)
-const chatReasoningExpanded = ref(false)
-const { groups: chatGroups, distinctFiles: chatDistinctFiles, formatDuration: chatFormatDuration } = useReasoningGroups(chatAgentStream.toolUses as any)
-const chatRunDuration = computed(() => {
-  const start = chatAgentStream.runStartedAt.value
-  if (!start) return ''
-  return chatFormatDuration(Date.now() - start)
-})
-const chatSubstateLabel = computed(() => {
-  if (chatDoneTrace.value) return 'Завершено'
-  const s = chatAgentStream.substate.value as string
-  return ({
-    idle: 'Готов',
-    thinking: 'Думает…',
-    tool_call: 'Запускает инструменты…',
-    awaiting_input: 'Ждёт ввод',
-    streaming: 'Отвечает…',
-    error: 'Ошибка',
-  } as Record<string, string>)[s] || 'Работает…'
-})
-// True when a run has completed and there's a trace to browse (but no active run)
-const chatDoneTrace = computed(() =>
-  !awaitingAgentReply.value &&
-  chatAgentStream.substate.value === 'idle' &&
-  (chatAgentStream.toolUses.value.length > 0 || chatAgentStream.tokenCount.value.total > 0),
-)
+const { formatDuration: chatFormatDuration } = useReasoningGroups(chatAgentStream.toolUses as any)
 
+const CHAT_SUBSTATE_LABELS: Record<string, string> = {
+  thinking: 'Думает…',
+  tool_call: 'Запускает инструменты…',
+  awaiting_input: 'Ждёт ввод',
+  streaming: 'Отвечает…',
+  error: 'Ошибка',
+}
 
-function toggleChatReasoning() { chatReasoningExpanded.value = !chatReasoningExpanded.value }
+const FILE_TOOLS = new Set(['Read', 'Write', 'Edit', 'NotebookEdit'])
+const CMD_TOOLS = new Set(['Bash'])
+const SEARCH_TOOLS = new Set(['Grep', 'Glob'])
+const WEB_TOOLS = new Set(['WebFetch', 'WebSearch'])
+const SUBAGENT_TOOLS = new Set(['Task', 'AskUserQuestion'])
+
+function groupRunToolUses(toolUses: AgentToolUseEntry[]) {
+  const files: AgentToolUseEntry[] = [], commands: AgentToolUseEntry[] = [], searches: AgentToolUseEntry[] = []
+  const web: AgentToolUseEntry[] = [], subagents: AgentToolUseEntry[] = [], other: AgentToolUseEntry[] = []
+  for (const t of toolUses) {
+    if (FILE_TOOLS.has(t.tool)) files.push(t)
+    else if (CMD_TOOLS.has(t.tool)) commands.push(t)
+    else if (SEARCH_TOOLS.has(t.tool)) searches.push(t)
+    else if (WEB_TOOLS.has(t.tool)) web.push(t)
+    else if (SUBAGENT_TOOLS.has(t.tool)) subagents.push(t)
+    else other.push(t)
+  }
+  const result = []
+  if (files.length)     result.push({ key: 'files',     label: 'Файлы',      icon: '📁', entries: files })
+  if (commands.length)  result.push({ key: 'commands',  label: 'Команды',    icon: '⚙️', entries: commands })
+  if (searches.length)  result.push({ key: 'searches',  label: 'Поиск',      icon: '🔍', entries: searches })
+  if (web.length)       result.push({ key: 'web',       label: 'Веб',        icon: '🌐', entries: web })
+  if (subagents.length) result.push({ key: 'subagents', label: 'Суб-агенты', icon: '🤖', entries: subagents })
+  if (other.length)     result.push({ key: 'other',     label: 'Прочее',     icon: '➤',  entries: other })
+  return result
+}
+
+const chatRunExpanded = ref<Record<string, boolean>>({})
 const chatGroupsExpanded = ref<Record<string, boolean>>({})
-function chatGroupExpanded(key: string) { return chatGroupsExpanded.value[key] ?? true }
-function toggleChatGroup(key: string) { chatGroupsExpanded.value = { ...chatGroupsExpanded.value, [key]: !chatGroupExpanded(key) } }
+function isChatRunExpanded(runId: string) { return chatRunExpanded.value[runId] ?? true }
+function toggleChatRun(runId: string) { chatRunExpanded.value = { ...chatRunExpanded.value, [runId]: !isChatRunExpanded(runId) } }
+function isChatGroupExpanded(runId: string, key: string) { return chatGroupsExpanded.value[`${runId}:${key}`] ?? true }
+function toggleChatGroup(runId: string, key: string) {
+  const k = `${runId}:${key}`
+  chatGroupsExpanded.value = { ...chatGroupsExpanded.value, [k]: !isChatGroupExpanded(runId, key) }
+}
+
+const chatRunsData = computed(() =>
+  chatAgentStream.allRuns.value.map(run => {
+    const s = run.state
+    const isDone = s.status !== 'active'
+    const duration = s.startedAt ? chatFormatDuration(Date.now() - s.startedAt) : ''
+    const groups = groupRunToolUses(s.toolUses)
+    const distinctFileCount = new Set(
+      s.toolUses
+        .map(t => (t.input as Record<string, unknown> | undefined)?.file_path)
+        .filter((fp): fp is string => typeof fp === 'string' && fp.length > 0),
+    ).size
+    return {
+      runId: run.runId,
+      state: s,
+      isDone,
+      substateLabel: isDone ? 'Завершено' : (CHAT_SUBSTATE_LABELS[s.substate] ?? 'Работает…'),
+      duration,
+      groups,
+      distinctFileCount,
+    }
+  }),
+)
 
 // When the agent stream goes idle: refresh sessions, reload messages so the
 // committed reply appears in the thread, and always clear the thinking bubble
@@ -1004,12 +1043,12 @@ watch(chatAgentStream.substate, (next, prev) => {
     cliSessionsModel.refresh()
     void conversations.loadMessages()
     awaitingAgentReply.value = false
-    chatReasoningExpanded.value = false
   }
-  // Expand automatically when a new run starts
-  if (next !== 'idle' && prev === 'idle') {
-    chatReasoningExpanded.value = true
-  }
+})
+
+// Clear awaitingAgentReply as soon as any run is tracked (stream confirmed active)
+watch(() => chatAgentStream.allRuns.value.length, (len) => {
+  if (len > 0) awaitingAgentReply.value = false
 })
 
 // Restore thinking bubble if there's an active run for current agent on
@@ -1031,15 +1070,23 @@ watch(chatAgentIdRef, async (newId) => {
   if (newId) await probeChatActiveRun()
 }, { immediate: true })
 
-// Clear when a new agent message arrives after our lastSentAt.
+// Clear when a new agent message arrives after our lastSentAt; also clean up
+// completed runs whose final message has appeared in the thread.
 watch(() => conversations.messages.value, (list) => {
-  if (!awaitingAgentReply.value) return
-  for (let i = list.length - 1; i >= 0; i--) {
-    const m = list[i] as unknown as { own?: boolean; createdAt?: string }
-    const ts = m?.createdAt ? new Date(m.createdAt).getTime() : 0
-    if (m?.own === false && ts >= agentReplyAwaitSince.value - 500) {
-      awaitingAgentReply.value = false
-      return
+  if (awaitingAgentReply.value) {
+    for (let i = list.length - 1; i >= 0; i--) {
+      const m = list[i] as unknown as { own?: boolean; createdAt?: string }
+      const ts = m?.createdAt ? new Date(m.createdAt).getTime() : 0
+      if (m?.own === false && ts >= agentReplyAwaitSince.value - 500) {
+        awaitingAgentReply.value = false
+        break
+      }
+    }
+  }
+  for (const run of chatAgentStream.allRuns.value) {
+    if (run.state.status !== 'active') {
+      const hasMsg = list.some((m: unknown) => (m as Record<string, unknown>)?.runId === run.runId)
+      if (hasMsg) chatAgentStream.cleanupRun(run.runId)
     }
   }
 }, { deep: true })
@@ -3375,87 +3422,107 @@ onBeforeUnmount(() => {
             />
           </template>
 
-          <!-- Thinking indicator — active run OR collapsed trace of last completed run -->
+          <!-- Loading indicator before first run is tracked -->
           <div
-            v-if="awaitingAgentReply || chatDoneTrace"
+            v-if="awaitingAgentReply && chatAgentStream.allRuns.value.length === 0"
             class="chat-thinking-bubble-row"
-            :class="{ 'chat-thinking-bubble-row--done': chatDoneTrace }"
             aria-live="polite"
             aria-label="Агент думает"
           >
             <div class="chat-thinking-bubble">
-              <button
-                type="button"
-                class="chat-thinking-bubble__header chat-thinking-bubble__header--btn"
-                :aria-expanded="chatReasoningExpanded"
-                @click="toggleChatReasoning"
-              >
+              <div class="chat-thinking-bubble__header">
                 <VIcon size="14" class="chat-thinking-bubble__icon">mdi-robot-outline</VIcon>
                 <span class="chat-thinking-bubble__name">{{ activePeerName }}</span>
                 <span class="chat-thinking-bubble__model">· {{ activeAgentModelLabel }}</span>
-                <span class="chat-thinking-bubble__state">· {{ chatSubstateLabel }}</span>
-                <VIcon size="14" class="chat-thinking-bubble__chevron">
-                  {{ chatReasoningExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
-                </VIcon>
-              </button>
-
-              <div v-if="!chatReasoningExpanded" class="chat-thinking-bubble__dots" aria-hidden="true">
-                <span></span><span></span><span></span>
               </div>
-
-              <div v-else class="chat-thinking-bubble__expand">
-                <div v-if="chatRunDuration || chatAgentStream.tokenCount.value.total" class="chat-thinking-meta">
-                  <span v-if="chatRunDuration" class="chat-thinking-meta-chip" title="Длительность">⏱ {{ chatRunDuration }}</span>
-                  <span v-if="chatAgentStream.tokenCount.value.total" class="chat-thinking-meta-chip" title="Токены in/out">🧠 {{ chatAgentStream.tokenCount.value.input }}↓ / {{ chatAgentStream.tokenCount.value.output }}↑</span>
-                  <span v-if="chatAgentStream.tokenCount.value.contextPct" class="chat-thinking-meta-chip" title="Контекст">📊 {{ chatAgentStream.tokenCount.value.contextPct }}%</span>
-                  <span v-if="chatDistinctFiles.length" class="chat-thinking-meta-chip" title="Файлов задействовано">📁 {{ chatDistinctFiles.length }}</span>
-                </div>
-                <div v-for="group in chatGroups" :key="group.key" class="chat-thinking-group">
-                  <button
-                    type="button"
-                    class="chat-thinking-group-title chat-thinking-group-title--btn"
-                    :aria-expanded="chatGroupExpanded(group.key)"
-                    @click="toggleChatGroup(group.key)"
-                  >
-                    <span class="chat-thinking-bubble__icon">{{ group.icon }}</span>
-                    <span class="chat-thinking-bubble__name">{{ group.label }}</span>
-                    <span class="chat-thinking-group-count">{{ group.entries.length }}</span>
-                    <VIcon size="12" class="chat-thinking-bubble__chevron">
-                      {{ chatGroupExpanded(group.key) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
-                    </VIcon>
-                  </button>
-                  <template v-if="chatGroupExpanded(group.key)">
-                    <div
-                      v-for="(t, idx) in group.entries"
-                      :key="idx"
-                      class="chat-thinking-plate"
-                      :class="{
-                        'chat-thinking-plate--active': chatAgentStream.toolUses.value.length > 0 && t.at === chatAgentStream.toolUses.value[chatAgentStream.toolUses.value.length - 1].at,
-                        'chat-thinking-plate--done':   chatAgentStream.toolUses.value.length > 0 && t.at !== chatAgentStream.toolUses.value[chatAgentStream.toolUses.value.length - 1].at,
-                      }"
-                    >
-                      <span class="chat-thinking-plate__dot" aria-hidden="true"></span>
-                      <span class="chat-thinking-bubble__tool-name">{{ t.tool }}</span>
-                      <span v-if="t.descriptor" class="chat-thinking-bubble__tool-desc"> {{ t.descriptor }}</span>
-                      <span class="chat-thinking-plate__time">
-                        {{ new Date(t.at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) }}
-                        <template v-if="t.endAt"> · {{ chatFormatDuration(t.endAt - t.at) }}</template>
-                      </span>
-                    </div>
-                  </template>
-                </div>
-                <div v-if="chatAgentStream.substate.value === 'awaiting_input'" class="chat-thinking-plate chat-thinking-plate--awaiting">
-                  <span class="chat-thinking-plate__dot" aria-hidden="true"></span>
-                  <span>⏳ Ждёт ввод</span>
-                </div>
-                <div v-if="chatAgentStream.streamingDraft.value" class="chat-thinking-bubble__stream">{{ chatAgentStream.streamingDraft.value }}<span class="chat-thinking-bubble__caret">▍</span></div>
-                <div v-if="!chatAgentStream.toolUses.value.length && !chatAgentStream.streamingDraft.value" class="chat-thinking-bubble__waiting">
-                  <span class="chat-thinking-bubble__dots chat-thinking-bubble__dots--inline" aria-hidden="true"><span></span><span></span><span></span></span>
-                  <span>Ожидание событий стрима…</span>
-                </div>
+              <div class="chat-thinking-bubble__dots" aria-hidden="true">
+                <span></span><span></span><span></span>
               </div>
             </div>
           </div>
+
+          <!-- One thinking bubble per run (active or recently completed) -->
+          <template v-for="rd in chatRunsData" :key="rd.runId">
+            <div
+              class="chat-thinking-bubble-row"
+              :class="{ 'chat-thinking-bubble-row--done': rd.isDone }"
+              aria-live="polite"
+              aria-label="Агент думает"
+            >
+              <div class="chat-thinking-bubble">
+                <button
+                  type="button"
+                  class="chat-thinking-bubble__header chat-thinking-bubble__header--btn"
+                  :aria-expanded="isChatRunExpanded(rd.runId)"
+                  @click="toggleChatRun(rd.runId)"
+                >
+                  <VIcon size="14" class="chat-thinking-bubble__icon">mdi-robot-outline</VIcon>
+                  <span class="chat-thinking-bubble__name">{{ activePeerName }}</span>
+                  <span class="chat-thinking-bubble__model">· {{ activeAgentModelLabel }}</span>
+                  <span class="chat-thinking-bubble__state">· {{ rd.substateLabel }}</span>
+                  <VIcon size="14" class="chat-thinking-bubble__chevron">
+                    {{ isChatRunExpanded(rd.runId) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                  </VIcon>
+                </button>
+
+                <div v-if="!isChatRunExpanded(rd.runId)" class="chat-thinking-bubble__dots" aria-hidden="true">
+                  <span></span><span></span><span></span>
+                </div>
+
+                <div v-else class="chat-thinking-bubble__expand">
+                  <div v-if="rd.duration || rd.state.tokenCount.total" class="chat-thinking-meta">
+                    <span v-if="rd.duration" class="chat-thinking-meta-chip" title="Длительность">⏱ {{ rd.duration }}</span>
+                    <span v-if="rd.state.tokenCount.total" class="chat-thinking-meta-chip" title="Токены in/out">🧠 {{ rd.state.tokenCount.input }}↓ / {{ rd.state.tokenCount.output }}↑</span>
+                    <span v-if="rd.state.tokenCount.contextPct" class="chat-thinking-meta-chip" title="Контекст">📊 {{ rd.state.tokenCount.contextPct }}%</span>
+                    <span v-if="rd.distinctFileCount" class="chat-thinking-meta-chip" title="Файлов задействовано">📁 {{ rd.distinctFileCount }}</span>
+                  </div>
+                  <div v-for="group in rd.groups" :key="group.key" class="chat-thinking-group">
+                    <button
+                      type="button"
+                      class="chat-thinking-group-title chat-thinking-group-title--btn"
+                      :aria-expanded="isChatGroupExpanded(rd.runId, group.key)"
+                      @click="toggleChatGroup(rd.runId, group.key)"
+                    >
+                      <span class="chat-thinking-bubble__icon">{{ group.icon }}</span>
+                      <span class="chat-thinking-bubble__name">{{ group.label }}</span>
+                      <span class="chat-thinking-group-count">{{ group.entries.length }}</span>
+                      <VIcon size="12" class="chat-thinking-bubble__chevron">
+                        {{ isChatGroupExpanded(rd.runId, group.key) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                      </VIcon>
+                    </button>
+                    <template v-if="isChatGroupExpanded(rd.runId, group.key)">
+                      <div
+                        v-for="(t, idx) in group.entries"
+                        :key="idx"
+                        class="chat-thinking-plate"
+                        :class="{
+                          'chat-thinking-plate--active': rd.state.toolUses.length > 0 && t.at === rd.state.toolUses[rd.state.toolUses.length - 1].at,
+                          'chat-thinking-plate--done':   rd.state.toolUses.length > 0 && t.at !== rd.state.toolUses[rd.state.toolUses.length - 1].at,
+                        }"
+                      >
+                        <span class="chat-thinking-plate__dot" aria-hidden="true"></span>
+                        <span class="chat-thinking-bubble__tool-name">{{ t.tool }}</span>
+                        <span v-if="t.descriptor" class="chat-thinking-bubble__tool-desc"> {{ t.descriptor }}</span>
+                        <span class="chat-thinking-plate__time">
+                          {{ new Date(t.at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) }}
+                          <template v-if="t.endAt"> · {{ chatFormatDuration(t.endAt - t.at) }}</template>
+                        </span>
+                      </div>
+                    </template>
+                  </div>
+                  <div v-if="rd.state.substate === 'awaiting_input'" class="chat-thinking-plate chat-thinking-plate--awaiting">
+                    <span class="chat-thinking-plate__dot" aria-hidden="true"></span>
+                    <span>⏳ Ждёт ввод</span>
+                  </div>
+                  <div v-if="rd.state.streamingDraft" class="chat-thinking-bubble__stream">{{ rd.state.streamingDraft }}<span class="chat-thinking-bubble__caret">▍</span></div>
+                  <div v-if="!rd.state.toolUses.length && !rd.state.streamingDraft" class="chat-thinking-bubble__waiting">
+                    <span class="chat-thinking-bubble__dots chat-thinking-bubble__dots--inline" aria-hidden="true"><span></span><span></span><span></span></span>
+                    <span>Ожидание событий стрима…</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
 
           <div v-if="!conversations.activeConversation.value" class="empty-state">
             <p class="empty-state__title">Чат не выбран</p>
@@ -3545,7 +3612,6 @@ onBeforeUnmount(() => {
         :agent-login="conversations.activeConversation.value.peerLogin"
         :conversation-id="conversations.activeConversation.value.id"
         :collapsed="agentWorkspaceCollapsed"
-        :open-run-id="workspaceOpenRunId"
         @update:collapsed="agentWorkspaceCollapsed = $event"
       />
 
