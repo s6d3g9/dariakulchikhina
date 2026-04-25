@@ -43,6 +43,51 @@ clicore2messenger \
 | `--cli-session-id` | | | CLI session slug for logging |
 | `--adapter` | | `claude` | Adapter name |
 
+## bridge-cleanup — disk hygiene for Claude project dirs
+
+Cleans up stale `~/.claude/projects/*/` directories and completed session records.
+No messenger credentials required — runs standalone.
+
+### Commands
+
+```bash
+# List all project dirs with staleness info (default: 30-day threshold)
+clicore2messenger bridge-cleanup scan-projects --days 7
+
+# Preview which dirs would be archived (dry-run, no files moved)
+clicore2messenger bridge-cleanup archive-projects --days 60 --dest /tmp/archive --dry-run
+
+# Archive stale dirs whose cwd no longer exists
+clicore2messenger bridge-cleanup archive-projects --days 60 --dest ~/.claude-archive
+
+# Preview old completed sessions to purge
+clicore2messenger bridge-cleanup purge-sessions --days 90 --dry-run
+
+# Purge completed sessions older than 90 days from sessions.json
+clicore2messenger bridge-cleanup purge-sessions --days 90
+```
+
+### Rules
+
+- A project dir is archiveable only when **both** conditions hold:
+  1. Newest `*.jsonl` mtime is older than `--days` days.
+  2. The original `cwd` no longer exists on disk.
+- A session that was active within the **last 30 minutes** is never archived, even with `--days 1`.
+- `archive-projects` moves dirs to `<dest>/` — originals disappear but can be restored by moving back.
+- `purge-sessions` only removes entries with `runStatus='completed'`. The agent_runs in the messenger DB are untouched.
+
+### Recommended cron (weekly auto-archive)
+
+Add to `crontab -e`:
+
+```cron
+# Archive stale Claude project dirs every Sunday at 03:00
+0 3 * * 0 /home/claudecode/bin/clicore2messenger bridge-cleanup archive-projects --days 60 --dest ~/.claude-archive >> ~/.claude-archive/cleanup.log 2>&1
+
+# Purge old completed session records every Sunday at 03:05
+5 3 * * 0 /home/claudecode/bin/clicore2messenger bridge-cleanup purge-sessions --days 90 >> ~/.claude-archive/cleanup.log 2>&1
+```
+
 ## Wiring sessions
 
 Two session orchestrators live at `scripts/workrooms/`:

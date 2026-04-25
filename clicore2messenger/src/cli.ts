@@ -5,9 +5,16 @@ import { claudeAdapter } from "./adapters/claude.ts";
 import { claudeTranscriptAdapter } from "./adapters/claude-transcript.ts";
 import { copilotAdapter } from "./adapters/copilot.ts";
 import { runSpawnMode, runPipeMode, runTailMode } from "./core.ts";
+import { runBridgeCleanup } from "./bridge-cleanup.ts";
 
 export async function main(argv: string[]): Promise<void> {
   const args = argv.slice(2);
+
+  // bridge-cleanup is a standalone subcommand — no messenger credentials needed.
+  if (args[0] === "bridge-cleanup") {
+    runBridgeCleanup(args.slice(1));
+    return;
+  }
 
   const get = (flag: string, alias?: string): string | undefined => {
     for (const f of alias ? [flag, alias] : [flag]) {
