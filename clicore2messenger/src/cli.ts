@@ -7,6 +7,7 @@ import { copilotAdapter } from "./adapters/copilot.ts";
 import { runSpawnMode, runPipeMode, runTailMode } from "./core.ts";
 import { runBridgeCleanup } from "./bridge-cleanup.ts";
 import { runBridgeProjects } from "./bridge-projects.ts";
+import { runBridgeDlq } from "./bridge-dlq.ts";
 
 export async function main(argv: string[]): Promise<void> {
   const args = argv.slice(2);
@@ -19,6 +20,11 @@ export async function main(argv: string[]): Promise<void> {
 
   if (args[0] === "bridge-projects") {
     runBridgeProjects(args.slice(1));
+    return;
+  }
+
+  if (args[0] === "dlq") {
+    await runBridgeDlq(args.slice(1));
     return;
   }
 

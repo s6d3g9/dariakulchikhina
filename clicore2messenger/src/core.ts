@@ -5,6 +5,23 @@ import * as path from "node:path";
 import * as readline from "node:readline";
 import type { CliAdapter, IngestEvent } from "./types.ts";
 
+interface SessionMeta {
+  runId: string;
+  agentId: string;
+  ingestToken: string;
+  messengerUrl: string;
+  startedAt: string;
+}
+
+function writeSessionMeta(stateDir: string, meta: SessionMeta): void {
+  try {
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.writeFileSync(path.join(stateDir, `${meta.runId}.session.json`), JSON.stringify(meta) + "\n");
+  } catch (err) {
+    console.error(`[bridge] failed to write session meta: ${err}`);
+  }
+}
+
 export async function post(baseUrl: string, agentId: string, token: string, event: IngestEvent): Promise<void> {
   const body = JSON.stringify(event);
   const MAX_ATTEMPTS = 3;
@@ -64,7 +81,9 @@ export interface SpawnModeOpts {
 
 export async function runSpawnMode(opts: SpawnModeOpts): Promise<number> {
   const { adapter, model, resume, effort, prompt, runId, conversationId, agentId, messengerUrl, token } = opts;
-  const dlqPath = path.join(os.homedir(), "state", "claude-bridge", `${runId}.dlq.ndjson`);
+  const spawnStateDir = path.join(os.homedir(), "state", "claude-bridge");
+  const dlqPath = path.join(spawnStateDir, `${runId}.dlq.ndjson`);
+  writeSessionMeta(spawnStateDir, { runId, agentId, ingestToken: token, messengerUrl, startedAt: new Date().toISOString() });
 
   const send = async (event: IngestEvent) => {
     await post(messengerUrl, agentId, token, event).catch(() => writeDlq(dlqPath, event));
@@ -155,7 +174,9 @@ export interface PipeModeOpts {
 
 export async function runPipeMode(opts: PipeModeOpts): Promise<void> {
   const { adapter, runId, agentId, messengerUrl, token } = opts;
-  const dlqPath = path.join(os.homedir(), "state", "claude-bridge", `${runId}.dlq.ndjson`);
+  const pipeStateDir = path.join(os.homedir(), "state", "claude-bridge");
+  const dlqPath = path.join(pipeStateDir, `${runId}.dlq.ndjson`);
+  writeSessionMeta(pipeStateDir, { runId, agentId, ingestToken: token, messengerUrl, startedAt: new Date().toISOString() });
 
   const send = async (event: IngestEvent) => {
     await post(messengerUrl, agentId, token, event).catch(() => writeDlq(dlqPath, event));
@@ -237,6 +258,7 @@ export async function runTailMode(opts: TailModeOpts): Promise<void> {
   } = opts;
   const stateDir = opts.stateDir ?? path.join(os.homedir(), "state", "claude-bridge");
   fs.mkdirSync(stateDir, { recursive: true });
+  writeSessionMeta(stateDir, { runId, agentId, ingestToken: token, messengerUrl, startedAt: new Date().toISOString() });
   // Offset is keyed by (agentId, filename) so switching to a new transcript
   // (new session) starts fresh without risking a stale offset against a file
   // that happens to be larger than the prior one.
