@@ -63,6 +63,10 @@ const props = withDefaults(defineProps<{
       costUsd?: number
     }>
   }>
+  galleryPhotos?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
+  galleryStickers?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
+  galleryDocuments?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
+  galleryLinks?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
 }>(), {
   floating: false,
   showBackButton: true,
@@ -82,6 +86,10 @@ const props = withDefaults(defineProps<{
   monitorPanelOpen: false,
   monitorSessionCount: 0,
   monitorSessionGroups: () => [],
+  galleryPhotos: () => [],
+  galleryStickers: () => [],
+  galleryDocuments: () => [],
+  galleryLinks: () => [],
 })
 
 const showOtherProjects = ref(false)
@@ -165,9 +173,40 @@ const emit = defineEmits<{
 }>()
 
 const overflowMenuOpen = ref(false)
-type HeaderSheetKind = 'model' | 'monitor' | 'overflow' | 'contact' | null
+type HeaderSheetKind = 'model' | 'monitor' | 'overflow' | 'contact' | 'gallery' | null
 const headerSheetKind = ref<HeaderSheetKind>(null)
 const isHeaderSheetOpen = computed(() => headerSheetKind.value !== null)
+
+type GallerySection = 'photos' | 'stickers' | 'documents' | 'links'
+const gallerySection = ref<GallerySection>('photos')
+
+function openInlineGallery(section: GallerySection) {
+  gallerySection.value = section
+  headerSheetKind.value = 'gallery'
+}
+
+const GALLERY_SECTIONS: Array<{ value: GallerySection; label: string; icon: string }> = [
+  { value: 'photos',    label: 'Фото',     icon: 'mdi-image-multiple-outline' },
+  { value: 'stickers',  label: 'Стикеры',  icon: 'mdi-sticker-emoji' },
+  { value: 'documents', label: 'Файлы',    icon: 'mdi-file-document-outline' },
+  { value: 'links',     label: 'Ссылки',   icon: 'mdi-link-variant' },
+]
+
+const galleryItems = computed(() => {
+  switch (gallerySection.value) {
+    case 'photos': return props.galleryPhotos
+    case 'stickers': return props.galleryStickers
+    case 'documents': return props.galleryDocuments
+    case 'links': return props.galleryLinks
+  }
+})
+
+const gallerySectionCounts = computed(() => ({
+  photos: props.galleryPhotos.length,
+  stickers: props.galleryStickers.length,
+  documents: props.galleryDocuments.length,
+  links: props.galleryLinks.length,
+}))
 
 const isOverflowOpen = computed(() =>
   overflowMenuOpen.value || headerSheetKind.value === 'overflow',
@@ -560,26 +599,29 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
             <button
               type="button"
               class="chat-header-sheet__row"
-              @click="emit('open-shared-gallery', 'photos'); close()"
+              @click="openInlineGallery('photos')"
             >
               <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-image-multiple-outline</VIcon>
               <span class="chat-header-sheet__row-label">Фото и стикеры</span>
+              <span class="chat-header-sheet__row-hint label-small">{{ galleryPhotos.length + galleryStickers.length }}</span>
             </button>
             <button
               type="button"
               class="chat-header-sheet__row"
-              @click="emit('open-shared-gallery', 'documents'); close()"
+              @click="openInlineGallery('documents')"
             >
               <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-file-document-outline</VIcon>
               <span class="chat-header-sheet__row-label">Файлы</span>
+              <span class="chat-header-sheet__row-hint label-small">{{ galleryDocuments.length }}</span>
             </button>
             <button
               type="button"
               class="chat-header-sheet__row"
-              @click="emit('open-shared-gallery', 'links'); close()"
+              @click="openInlineGallery('links')"
             >
               <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-link-variant</VIcon>
               <span class="chat-header-sheet__row-label">Ссылки</span>
+              <span class="chat-header-sheet__row-hint label-small">{{ galleryLinks.length }}</span>
             </button>
             <div class="chat-header-sheet__divider" aria-hidden="true" />
             <button type="button" class="chat-header-sheet__row" disabled>
@@ -837,6 +879,94 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
           </button>
         </div>
 
+        <div v-else-if="kind === 'gallery'" class="chat-header-sheet__gallery">
+          <div class="chat-header-sheet__gallery-header">
+            <button
+              type="button"
+              class="chat-header-sheet__gallery-back"
+              :aria-label="'Назад к контакту'"
+              @click="headerSheetKind = 'contact'"
+            >
+              <VIcon :size="20">mdi-arrow-left</VIcon>
+            </button>
+            <span class="chat-header-sheet__gallery-title title-small">Галерея</span>
+            <button
+              type="button"
+              class="chat-header-sheet__gallery-expand"
+              title="Открыть полную галерею в боковой панели"
+              @click="emit('open-shared-gallery', gallerySection); close()"
+            >
+              <VIcon :size="18">mdi-arrow-expand</VIcon>
+            </button>
+          </div>
+
+          <div class="chat-header-sheet__gallery-tabs" role="tablist">
+            <button
+              v-for="tab in GALLERY_SECTIONS"
+              :key="tab.value"
+              type="button"
+              role="tab"
+              :aria-selected="tab.value === gallerySection"
+              class="chat-header-sheet__gallery-tab"
+              :class="{ 'chat-header-sheet__gallery-tab--active': tab.value === gallerySection }"
+              @click="gallerySection = tab.value"
+            >
+              <VIcon :size="16">{{ tab.icon }}</VIcon>
+              <span>{{ tab.label }}</span>
+              <span class="chat-header-sheet__gallery-tab-count">{{ gallerySectionCounts[tab.value] }}</span>
+            </button>
+          </div>
+
+          <div v-if="galleryItems.length === 0" class="chat-header-sheet__gallery-empty label-small">
+            Пока нет {{ gallerySection === 'photos' ? 'фото' : gallerySection === 'stickers' ? 'стикеров' : gallerySection === 'documents' ? 'файлов' : 'ссылок' }} в этой переписке
+          </div>
+
+          <div
+            v-else-if="gallerySection === 'photos' || gallerySection === 'stickers'"
+            class="chat-header-sheet__gallery-grid"
+          >
+            <a
+              v-for="item in galleryItems"
+              :key="item.id"
+              :href="item.href"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="chat-header-sheet__gallery-thumb"
+              :title="item.title"
+            >
+              <img
+                v-if="item.previewUrl"
+                :src="item.previewUrl"
+                :alt="item.title"
+                loading="lazy"
+              >
+              <VIcon v-else :size="22">mdi-image-off-outline</VIcon>
+            </a>
+          </div>
+
+          <div v-else class="chat-header-sheet__gallery-list">
+            <a
+              v-for="item in galleryItems"
+              :key="item.id"
+              :href="item.href"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="chat-header-sheet__gallery-row"
+              :title="item.title"
+            >
+              <VIcon
+                :size="20"
+                class="chat-header-sheet__gallery-row-icon"
+              >{{ gallerySection === 'documents' ? 'mdi-file-document-outline' : 'mdi-link-variant' }}</VIcon>
+              <span class="chat-header-sheet__gallery-row-body">
+                <span class="chat-header-sheet__gallery-row-title">{{ item.title }}</span>
+                <span class="chat-header-sheet__gallery-row-meta label-small">{{ item.meta }}</span>
+              </span>
+              <VIcon :size="16" class="chat-header-sheet__gallery-row-chevron">mdi-chevron-right</VIcon>
+            </a>
+          </div>
+        </div>
+
         <div v-else-if="kind === 'overflow'" class="chat-header-sheet__list">
           <button
             type="button"
@@ -849,26 +979,29 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
           <button
             type="button"
             class="chat-header-sheet__row"
-            @click="emit('open-shared-gallery', 'photos'); close()"
+            @click="openInlineGallery('photos')"
           >
             <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-image-multiple-outline</VIcon>
             <span class="chat-header-sheet__row-label">Фото и стикеры</span>
+            <span class="chat-header-sheet__row-hint label-small">{{ galleryPhotos.length + galleryStickers.length }}</span>
           </button>
           <button
             type="button"
             class="chat-header-sheet__row"
-            @click="emit('open-shared-gallery', 'documents'); close()"
+            @click="openInlineGallery('documents')"
           >
             <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-file-document-outline</VIcon>
             <span class="chat-header-sheet__row-label">Файлы</span>
+            <span class="chat-header-sheet__row-hint label-small">{{ galleryDocuments.length }}</span>
           </button>
           <button
             type="button"
             class="chat-header-sheet__row"
-            @click="emit('open-shared-gallery', 'links'); close()"
+            @click="openInlineGallery('links')"
           >
             <VIcon :size="20" class="chat-header-sheet__row-icon">mdi-link-variant</VIcon>
             <span class="chat-header-sheet__row-label">Ссылки</span>
+            <span class="chat-header-sheet__row-hint label-small">{{ galleryLinks.length }}</span>
           </button>
           <div class="chat-header-sheet__divider" aria-hidden="true" />
           <button type="button" class="chat-header-sheet__row" disabled>
