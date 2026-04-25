@@ -195,6 +195,17 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
+      <!-- Last message preview — closes the gap between filter row and full
+           agent chat: lets the user triage why a session is awaiting / what
+           it just said without having to "Open chat" first. -->
+      <div
+        v-if="session.lastMessagePreview"
+        class="trace-details__preview"
+        :title="session.lastMessagePreview"
+      >
+        {{ session.lastMessagePreview }}
+      </div>
+
       <!-- Trace totals — sum across all sessions sharing rootRunId -->
       <div
         v-if="traceMembers.length > 1"
@@ -651,6 +662,22 @@ onBeforeUnmount(() => {
 .trace-details__copy:hover {
   background: color-mix(in srgb, rgb(var(--v-theme-primary)) 12%, transparent);
   color: rgb(var(--v-theme-primary));
+}
+
+.trace-details__preview {
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.4;
+  color: rgb(var(--v-theme-on-surface-variant));
+  background: color-mix(in srgb, rgb(var(--v-theme-surface-variant)) 35%, transparent);
+  border-left: 2px solid color-mix(in srgb, rgb(var(--v-theme-primary)) 40%, transparent);
+  padding: 8px 10px;
+  margin: 0 12px 8px;
+  border-radius: 0 6px 6px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .trace-details__empty {
