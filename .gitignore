@@ -15,3 +15,7 @@ builds/
 .claude/settings.local.json
 .claude/worktrees/
 TASK.md
+
+# Claude Code balancing — local config + enforcer audit log
+.claude-balancing.json
+.claude-balancing.audit.log
