@@ -6,13 +6,19 @@ import { claudeTranscriptAdapter } from "./adapters/claude-transcript.ts";
 import { copilotAdapter } from "./adapters/copilot.ts";
 import { runSpawnMode, runPipeMode, runTailMode } from "./core.ts";
 import { runBridgeCleanup } from "./bridge-cleanup.ts";
+import { runBridgeProjects } from "./bridge-projects.ts";
 
 export async function main(argv: string[]): Promise<void> {
   const args = argv.slice(2);
 
-  // bridge-cleanup is a standalone subcommand — no messenger credentials needed.
+  // Standalone subcommands — no messenger credentials needed.
   if (args[0] === "bridge-cleanup") {
     runBridgeCleanup(args.slice(1));
+    return;
+  }
+
+  if (args[0] === "bridge-projects") {
+    runBridgeProjects(args.slice(1));
     return;
   }
 

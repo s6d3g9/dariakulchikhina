@@ -479,6 +479,15 @@ export default tseslint.config(
     },
   },
 
+  // clicore2messenger — standalone Node CLI tool; not part of the Nuxt
+  // runtime. process.env reads are intentional (CLI args / env config).
+  {
+    files: ['clicore2messenger/**/*.{ts,js,mjs,cjs}'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+
   // Scripts — relax size limits and default-export ban; they are
   // intentional data-migration helpers invoked by shell or node directly.
   {
