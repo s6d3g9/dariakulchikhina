@@ -101,6 +101,8 @@ const envSchema = z.object({
   HOST_BRIDGE_TOKEN: z.string().min(32).optional(),
   HOST_BRIDGE_OWNER_USER_ID: z.string().uuid().optional(),
   HOST_BRIDGE_PROJECTS_FILE: z.string().optional(),
+  // DLQ state directory — where bridge-dlq.ts writes *.dlq.ndjson files
+  DLQ_STATE_DIR: z.string().optional(),
 })
 
 export function readMessengerConfig() {

@@ -178,6 +178,72 @@ pnpm test:host-bridge-smoke && echo "Bridge smoke: OK"
 | 6 | Crash recovery (offset dedup) | Bridge restart reads from persisted byte-offset; no duplicate events in DB |
 | 7 | Cross-talk regression | Interleaved events with identical timestamps → each event lands on the correct runId |
 
+## Health monitoring
+
+The bridge exposes a read-only health endpoint on messenger-core:
+
+```
+GET /agents/host-session/health
+Authorization: Bearer $HOST_BRIDGE_TOKEN
+```
+
+### Example curl
+
+```bash
+curl -s -H "Authorization: Bearer $HOST_BRIDGE_TOKEN" \
+  http://localhost:4300/agents/host-session/health | jq .
+```
+
+Example response:
+
+```json
+{
+  "ok": true,
+  "activeRunsCount": 3,
+  "activeAgentsCount": 2,
+  "lastDlqAt": "2026-04-26T10:23:00.000Z",
+  "dlqCount24h": 1,
+  "lastProvisionAt": "2026-04-26T11:05:00.000Z",
+  "uptime": { "messengerCore": 123456 }
+}
+```
+
+- `activeRunsCount` — number of runs with `status = 'running'` (host-session agents only).
+- `activeAgentsCount` — number of distinct agents with at least one running run.
+- `lastDlqAt` — mtime of the most recently written DLQ file (`*.dlq.ndjson`) in `DLQ_STATE_DIR`, or `null` if no DLQ files exist.
+- `dlqCount24h` — number of DLQ files modified in the last 24 hours.
+- `lastProvisionAt` — `started_at` of the most recently provisioned host-session run.
+- `uptime.messengerCore` — messenger-core process uptime in milliseconds.
+
+Without a valid bearer token the endpoint returns 401.
+
+### Suggested Grafana panel (Stat)
+
+```json
+{
+  "type": "stat",
+  "title": "Host-session bridge",
+  "targets": [
+    {
+      "datasource": { "type": "grafana-simple-json-datasource" },
+      "url": "http://messenger-core:4300/agents/host-session/health",
+      "method": "GET",
+      "headers": [{ "name": "Authorization", "value": "Bearer ${HOST_BRIDGE_TOKEN}" }]
+    }
+  ],
+  "fieldConfig": {
+    "defaults": {
+      "mappings": [
+        { "type": "value", "options": { "true": { "text": "UP", "color": "green" } } }
+      ]
+    }
+  },
+  "options": { "reduceOptions": { "fields": "ok" } }
+}
+```
+
+For a simpler uptime-kuma setup, use the HTTP(s) monitor type pointing at the health URL; the endpoint returns 200 when the bridge is healthy and 401 (not 5xx) without auth.
+
 ### v1 Sunset checklist (A5 criteria)
 
 Before retiring the v1 bridge (`host-session-bridge.sh` + pre-provisioned IDs):

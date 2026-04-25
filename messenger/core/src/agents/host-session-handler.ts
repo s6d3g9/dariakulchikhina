@@ -1,5 +1,7 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { readMessengerConfig } from '../config.ts'
@@ -50,6 +52,40 @@ const provisionBodySchema = z.object({
 const completeBodySchema = z.object({
   reason: z.enum(['idle', 'rotated', 'shutdown']).optional(),
 })
+
+interface DlqStats {
+  lastDlqAt: string | null
+  dlqCount24h: number
+}
+
+function readDlqStats(stateDir: string): DlqStats {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000
+  let lastMtime = 0
+  let count24h = 0
+
+  let entries: string[]
+  try {
+    entries = readdirSync(stateDir)
+  } catch {
+    return { lastDlqAt: null, dlqCount24h: 0 }
+  }
+
+  for (const entry of entries) {
+    if (!entry.endsWith('.dlq.ndjson')) continue
+    try {
+      const mtime = statSync(join(stateDir, entry)).mtimeMs
+      if (mtime > lastMtime) lastMtime = mtime
+      if (mtime > cutoff) count24h++
+    } catch {
+      // ignore unreadable entries
+    }
+  }
+
+  return {
+    lastDlqAt: lastMtime > 0 ? new Date(lastMtime).toISOString() : null,
+    dlqCount24h: count24h,
+  }
+}
 
 export function registerHostSessionRoutes(app: FastifyInstance) {
   const config = readMessengerConfig()
@@ -273,4 +309,43 @@ export function registerHostSessionRoutes(app: FastifyInstance) {
       return reply.code(200).send({ ok: true, runId })
     },
   )
+
+  app.get('/agents/host-session/health', async (request, reply) => {
+    if (!verifyBridgeToken(request.headers.authorization, bridgeToken)) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const db = useIngestDb()
+
+    const rows = await db.execute(sql`
+      SELECT
+        COUNT(*)::int       FILTER (WHERE r.status = 'running')          AS active_runs_count,
+        COUNT(DISTINCT r.agent_id) FILTER (WHERE r.status = 'running')   AS active_agents_count,
+        MAX(r.started_at)                                                  AS last_provision_at
+      FROM messenger_agent_runs r
+      JOIN messenger_agents a ON r.agent_id = a.id
+      WHERE a.config->>'type' = 'host-session'
+        AND r.deleted_at IS NULL
+        AND a.deleted_at IS NULL
+    `)
+
+    const row = rows[0] as {
+      active_runs_count: number
+      active_agents_count: number
+      last_provision_at: Date | null
+    } | undefined
+
+    const stateDir = config.DLQ_STATE_DIR ?? join(homedir(), 'state', 'claude-bridge')
+    const dlq = readDlqStats(stateDir)
+
+    return reply.code(200).send({
+      ok: true,
+      activeRunsCount: row?.active_runs_count ?? 0,
+      activeAgentsCount: row?.active_agents_count ?? 0,
+      lastDlqAt: dlq.lastDlqAt,
+      dlqCount24h: dlq.dlqCount24h,
+      lastProvisionAt: row?.last_provision_at ? new Date(row.last_provision_at).toISOString() : null,
+      uptime: { messengerCore: Math.floor(process.uptime() * 1000) },
+    })
+  })
 }
