@@ -981,6 +981,22 @@ const chatDoneTrace = computed(() =>
   chatAgentStream.substate.value === 'idle' &&
   (chatAgentStream.toolUses.value.length > 0 || chatAgentStream.tokenCount.value.total > 0),
 )
+
+// Multi-run: parallel active runs + timeline filter
+const chatActiveRuns = computed(() => chatAgentStream.activeRuns.value)
+const activeRunFilter = ref<string | null>(null)
+const workspaceOpenRunId = ref<string | null>(null)
+function toggleActiveRunFilter(runId: string) {
+  activeRunFilter.value = activeRunFilter.value === runId ? null : runId
+}
+function openRunInWorkspace(runId: string) {
+  workspaceOpenRunId.value = runId
+}
+const SUBSTATE_LABELS: Record<string, string> = {
+  idle: 'Готов', thinking: 'Думает…', tool_call: 'Инструменты…',
+  awaiting_input: 'Ждёт ввод', streaming: 'Отвечает…', error: 'Ошибка',
+}
+
 function toggleChatReasoning() { chatReasoningExpanded.value = !chatReasoningExpanded.value }
 const chatGroupsExpanded = ref<Record<string, boolean>>({})
 function chatGroupExpanded(key: string) { return chatGroupsExpanded.value[key] ?? true }
@@ -1210,6 +1226,25 @@ const threadedMessages = computed<MessengerThreadMessage[]>(() => {
   }
 
   return roots
+})
+
+// Filtered view when a run is selected in the active-runs panel
+const filteredThreadedMessages = computed(() => {
+  if (!activeRunFilter.value) return threadedMessages.value
+  return threadedMessages.value.filter(msg => msg.own || !msg.runId || msg.runId === activeRunFilter.value)
+})
+
+// IDs of messages where runId changes between consecutive agent messages → divider before them
+const runDividerSet = computed(() => {
+  const dividers = new Set<string>()
+  let prevRunId: string | undefined
+  for (const msg of filteredThreadedMessages.value) {
+    if (!msg.own && msg.runId) {
+      if (prevRunId !== undefined && msg.runId !== prevRunId) dividers.add(msg.id)
+      prevRunId = msg.runId
+    }
+  }
+  return dividers
 })
 
 const composerRelationMessage = computed(() => {
@@ -3321,32 +3356,61 @@ onBeforeUnmount(() => {
         </Transition>
 
         <div ref="messageListEl" class="message-list message-list--chat-scroll">
-          <MessengerMessageThread
-            v-for="entry in threadedMessages"
-            :key="entry.id"
-            :entry="entry"
-            :active-message-actions-id="activeMessageActionsId"
-            :active-reaction-overlay-id="activeReactionOverlayId"
-            :editing-message-id="editingMessageId"
-            :editing-draft="editingDraft"
-            :message-pending="conversations.messagePending.value"
-            :allow-forward="canForwardFromActiveConversation"
-            :allow-mutual-delete="allowMutualDelete"
-            :reaction-options="messageReactionOptions"
-            @toggle-actions="toggleMessageActions"
-            @toggle-reaction-overlay="toggleReactionOverlay"
-            @comment="activateComposerRelation('comment', $event)"
-            @reply="activateComposerRelation('reply', $event)"
-            @forward="openForwardPicker"
-            @edit="startEditingMessage"
-            @remove="removeMessage"
-            @react="(messageId, emoji) => reactToMessage(messageId, emoji)"
-            @edit-draft="editingDraft = $event"
-            @edit-keydown="handleEditKeydown"
-            @save-edit="saveEditedMessage"
-            @copy-link="(href, label) => copyLink(href, label)"
-            @open-photo="openPhotoGallery"
-          />
+          <template v-for="entry in filteredThreadedMessages" :key="entry.id">
+            <div v-if="runDividerSet.has(entry.id)" class="run-divider" :title="`Run ${entry.runId}`">
+              <span class="run-divider__label">── Прогон {{ entry.runId?.slice(0, 8) }} ──</span>
+            </div>
+            <MessengerMessageThread
+              :entry="entry"
+              :active-message-actions-id="activeMessageActionsId"
+              :active-reaction-overlay-id="activeReactionOverlayId"
+              :editing-message-id="editingMessageId"
+              :editing-draft="editingDraft"
+              :message-pending="conversations.messagePending.value"
+              :allow-forward="canForwardFromActiveConversation"
+              :allow-mutual-delete="allowMutualDelete"
+              :reaction-options="messageReactionOptions"
+              @toggle-actions="toggleMessageActions"
+              @toggle-reaction-overlay="toggleReactionOverlay"
+              @comment="activateComposerRelation('comment', $event)"
+              @reply="activateComposerRelation('reply', $event)"
+              @forward="openForwardPicker"
+              @edit="startEditingMessage"
+              @remove="removeMessage"
+              @react="(messageId, emoji) => reactToMessage(messageId, emoji)"
+              @edit-draft="editingDraft = $event"
+              @edit-keydown="handleEditKeydown"
+              @save-edit="saveEditedMessage"
+              @copy-link="(href, label) => copyLink(href, label)"
+              @open-photo="openPhotoGallery"
+            />
+          </template>
+
+          <!-- Active runs panel — shown only when 2+ runs are live simultaneously -->
+          <div v-if="chatActiveRuns.length > 1" class="active-runs-panel" aria-label="Параллельные прогоны">
+            <div
+              v-for="run in chatActiveRuns"
+              :key="run.runId"
+              class="active-run-row"
+              :class="{ 'active-run-row--filtered': activeRunFilter === run.runId }"
+              role="button"
+              tabindex="0"
+              :aria-pressed="activeRunFilter === run.runId"
+              @click="toggleActiveRunFilter(run.runId)"
+              @keydown.enter.space.prevent="toggleActiveRunFilter(run.runId)"
+            >
+              <span class="active-run-row__dot" aria-hidden="true"></span>
+              <span class="active-run-row__id">{{ run.runId.slice(0, 8) }}</span>
+              <span class="active-run-row__state">{{ SUBSTATE_LABELS[run.state.substate] || run.state.substate }}</span>
+              <span v-if="run.state.streamingDraft" class="active-run-row__draft">{{ run.state.streamingDraft.slice(0, 60) }}…</span>
+              <button
+                type="button"
+                class="active-run-row__runs-link"
+                title="Открыть в Прогонах"
+                @click.stop="openRunInWorkspace(run.runId)"
+              >Прогоны ↗</button>
+            </div>
+          </div>
 
           <!-- Thinking indicator — active run OR collapsed trace of last completed run -->
           <div
@@ -3518,6 +3582,7 @@ onBeforeUnmount(() => {
         :agent-login="conversations.activeConversation.value.peerLogin"
         :conversation-id="conversations.activeConversation.value.id"
         :collapsed="agentWorkspaceCollapsed"
+        :open-run-id="workspaceOpenRunId"
         @update:collapsed="agentWorkspaceCollapsed = $event"
       />
 
@@ -3874,4 +3939,85 @@ onBeforeUnmount(() => {
   font-size: 11px;
   color: #ef4444;
 }
+
+/* ── Run divider ─────────────────────────────────────────────────── */
+.run-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 16px;
+  pointer-events: none;
+}
+.run-divider__label {
+  font-size: 11px;
+  color: rgba(255,255,255,.35);
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+/* ── Active runs panel (multi-run) ───────────────────────────────── */
+.active-runs-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px 4px;
+}
+.active-run-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 120ms, border-color 120ms;
+  user-select: none;
+}
+.active-run-row:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); }
+.active-run-row--filtered { border-color: rgba(99,179,237,.5); background: rgba(99,179,237,.08); }
+.active-run-row__dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #63b3ed;
+  flex-shrink: 0;
+  animation: run-dot-pulse 1.4s ease-in-out infinite;
+}
+@keyframes run-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+.active-run-row__id {
+  font-family: monospace;
+  color: rgba(255,255,255,.5);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.active-run-row__state {
+  color: rgba(255,255,255,.75);
+  flex-shrink: 0;
+}
+.active-run-row__draft {
+  color: rgba(255,255,255,.45);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  font-style: italic;
+}
+.active-run-row__runs-link {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255,255,255,.55);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.active-run-row__runs-link:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); }
 </style>
