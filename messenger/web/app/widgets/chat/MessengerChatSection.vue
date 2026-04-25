@@ -593,31 +593,71 @@ onMounted(() => { subsModel.hydrate().catch(() => {}) })
 
 const currentSubscriptionLabel = computed(() => subsModel.defaultSubscription.value?.label ?? '')
 
+// Derive subscription usage live from running CLI sessions instead of the
+// localStorage-backed `recordUsage` ledger, which is never written today.
+// We treat every session whose model belongs to the default subscription's
+// provider as work charged to that subscription, then aggregate token totals
+// (cumulative per session) and use `lastActivityAt` as a per-session activity
+// timestamp for the 5h/week windows.
+const WINDOW_5H_MS = 5 * 60 * 60 * 1000
+const WINDOW_WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
+function currentMonthStart(): number {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+}
+
+const sessionsForCurrentSubscription = computed(() => {
+  const sub = subsModel.defaultSubscription.value
+  if (!sub) return [] as MessengerCliSession[]
+  const modelIds = new Set(subsModel.modelsByProvider(sub.provider).map(m => m.id))
+  return cliSessionsModel.sessions.value.filter((s) => {
+    if (!s.model) return false
+    return modelIds.has(s.model)
+  })
+})
+
 const currentUsage5h = computed(() => {
   const sub = subsModel.defaultSubscription.value
   if (!sub) return { requests: 0, limit: 0 }
-  const u = subsModel.getUsage5h(sub.id)
+  const cutoff = Date.now() - WINDOW_5H_MS
+  const requests = sessionsForCurrentSubscription.value.filter((s) => {
+    const t = s.lastActivityAt ? new Date(s.lastActivityAt).getTime() : 0
+    return t >= cutoff
+  }).length
   const limits = subsModel.limitsFor(sub)
-  return { requests: u.requestCount, limit: limits.requestsPer5h }
+  return { requests, limit: limits.requestsPer5h }
 })
 
 const currentUsageWeek = computed(() => {
   const sub = subsModel.defaultSubscription.value
   if (!sub) return { requests: 0, limit: 0 }
-  const u = subsModel.getUsageWeek(sub.id)
+  const cutoff = Date.now() - WINDOW_WEEK_MS
+  const requests = sessionsForCurrentSubscription.value.filter((s) => {
+    const t = s.lastActivityAt ? new Date(s.lastActivityAt).getTime() : 0
+    return t >= cutoff
+  }).length
   const limits = subsModel.limitsFor(sub)
-  return { requests: u.requestCount, limit: limits.requestsPerWeek }
+  return { requests, limit: limits.requestsPerWeek }
 })
 
 const currentUsageMonth = computed(() => {
   const sub = subsModel.defaultSubscription.value
   if (!sub) return { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, tokensLimit: 0 }
-  const u = subsModel.getUsage(sub.id)
+  const monthStart = currentMonthStart()
+  let inputTokens = 0
+  let outputTokens = 0
+  for (const s of sessionsForCurrentSubscription.value) {
+    const created = s.created ? new Date(s.created).getTime() : 0
+    if (created < monthStart) continue
+    inputTokens += s.tokenInTotal || 0
+    outputTokens += s.tokenOutTotal || 0
+  }
   const limits = subsModel.limitsFor(sub)
   return {
-    inputTokens: u.inputTokens,
-    outputTokens: u.outputTokens,
-    cacheReadTokens: u.cacheReadTokens,
+    inputTokens,
+    outputTokens,
+    cacheReadTokens: 0,
     tokensLimit: limits.tokensPerMonth,
   }
 })
@@ -681,10 +721,20 @@ function sessNavDotClass(sess: { status: string; agentId: string | null }) {
 }
 
 // Open the chat for a session-bound agent when its chip is clicked.
+// If the session has no agent yet (still spinning up), surface a visible
+// toast instead of a silent no-op — the dropdown previously felt broken.
 async function onSessionChipClick(sess: { agentId: string | null }) {
-  if (!sess.agentId) return
+  if (!sess.agentId) {
+    modelSetError.value = 'У этой сессии ещё нет чата — агент инициализируется'
+    setTimeout(() => { modelSetError.value = '' }, 3000)
+    return
+  }
   try { await conversations.openAgentConversation(sess.agentId) }
-  catch (err) { console.warn('[chat] could not open agent conversation', err) }
+  catch (err) {
+    console.warn('[chat] could not open agent conversation', err)
+    modelSetError.value = 'Не удалось открыть чат сессии'
+    setTimeout(() => { modelSetError.value = '' }, 3000)
+  }
 }
 
 type MonitorSessionItem = {
@@ -785,7 +835,11 @@ const monitorActiveCurrentProjectCount = computed(() => {
 
 async function onMonitorSessionOpen(slug: string) {
   const sess = cliSessionsModel.sessions.value.find(s => s.slug === slug)
-  if (!sess) return
+  if (!sess) {
+    modelSetError.value = 'Сессия больше не доступна'
+    setTimeout(() => { modelSetError.value = '' }, 3000)
+    return
+  }
   await onSessionChipClick(sess)
 }
 
