@@ -3738,6 +3738,34 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   letter-spacing: 0;
 }
 
+.chat-header-sheet__monitor-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 2px;
+  margin: 6px 8px 0;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.chat-header-sheet__monitor-section-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.chat-header-sheet__monitor-section-dot--live {
+  background: rgb(var(--v-theme-success));
+  box-shadow: 0 0 0 2px rgba(var(--v-theme-success), 0.18);
+}
+
+.chat-header-sheet__monitor-section-dot--idle {
+  background: rgba(var(--v-theme-on-surface), 0.32);
+}
+
 .chat-header-sheet__monitor-toggle {
   display: flex;
   align-items: center;

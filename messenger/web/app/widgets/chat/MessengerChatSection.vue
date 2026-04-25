@@ -540,7 +540,11 @@ const currentModelMeta = computed(() => {
 
 async function onModelSelect(model: string) {
   const sess = activeAgentSession.value
-  if (!sess) return
+  if (!sess) {
+    modelSetError.value = 'Нет активной сессии для смены модели'
+    setTimeout(() => { modelSetError.value = '' }, 3000)
+    return
+  }
   modelSetPending.value = true
   modelSetError.value = ''
   try {
@@ -565,7 +569,11 @@ const currentSessionEffort = computed<'low' | 'medium' | 'high' | 'xhigh' | 'max
 
 async function onEffortSelect(effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max') {
   const sess = activeAgentSession.value
-  if (!sess) return
+  if (!sess) {
+    modelSetError.value = 'Нет активной сессии для смены effort'
+    setTimeout(() => { modelSetError.value = '' }, 3000)
+    return
+  }
   effortSetPending.value = true
   modelSetError.value = ''
   try {
@@ -760,12 +768,19 @@ const monitorSessionGroups = computed<MonitorGroup[]>(() => {
   })
 })
 
-const monitorTotalCount = computed(() =>
-  monitorSessionGroups.value.reduce((acc, g) => acc + g.sessions.length, 0),
+// "Active" in the badge means: actively responding now (isActive). Sessions
+// that are merely running (tmux alive) but idle don't count — the user
+// repeatedly pointed out that "9 active" was misleading when nothing was
+// actually working.
+const monitorActiveTotalCount = computed(() =>
+  monitorSessionGroups.value.reduce(
+    (acc, g) => acc + g.sessions.filter(s => s.isActive).length,
+    0,
+  ),
 )
-const monitorCurrentProjectCount = computed(() => {
+const monitorActiveCurrentProjectCount = computed(() => {
   const cur = monitorSessionGroups.value.find(g => g.isCurrent)
-  return cur ? cur.sessions.length : 0
+  return cur ? cur.sessions.filter(s => s.isActive).length : 0
 })
 
 async function onMonitorSessionOpen(slug: string) {
@@ -2801,7 +2816,7 @@ onBeforeUnmount(() => {
         :agent-usage-week="currentUsageWeek"
         :agent-usage-month="currentUsageMonth"
         :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
-        :monitor-session-count="monitorCurrentProjectCount || monitorTotalCount"
+        :monitor-session-count="monitorActiveCurrentProjectCount || monitorActiveTotalCount"
         :monitor-session-groups="monitorSessionGroups"
         @toggle-details="toggleDetails"
         @open-shared-gallery="openSharedGallery"

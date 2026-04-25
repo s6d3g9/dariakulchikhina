@@ -85,16 +85,28 @@ const props = withDefaults(defineProps<{
 })
 
 const showOtherProjects = ref(false)
-const visibleMonitorGroups = computed(() =>
-  showOtherProjects.value
+const showIdleSessions = ref(false)
+const visibleMonitorGroups = computed(() => {
+  const base = showOtherProjects.value
     ? props.monitorSessionGroups
-    : props.monitorSessionGroups.filter(g => g.isCurrent),
-)
+    : props.monitorSessionGroups.filter(g => g.isCurrent)
+  return base.map(g => ({
+    ...g,
+    activeSessions: g.sessions.filter(s => s.isActive),
+    idleSessions: g.sessions.filter(s => !s.isActive),
+  }))
+})
 const hasCurrentProjectGroup = computed(() => props.monitorSessionGroups.some(g => g.isCurrent))
 const otherProjectsCount = computed(() =>
   props.monitorSessionGroups
     .filter(g => !g.isCurrent)
     .reduce((acc, g) => acc + g.sessions.length, 0),
+)
+const totalIdleInVisible = computed(() =>
+  visibleMonitorGroups.value.reduce((acc, g) => acc + g.idleSessions.length, 0),
+)
+const totalActiveInVisible = computed(() =>
+  visibleMonitorGroups.value.reduce((acc, g) => acc + g.activeSessions.length, 0),
 )
 
 type EffortValue = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
@@ -598,7 +610,7 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
               class="chat-header-sheet__row"
               :class="{ 'chat-header-sheet__row--active': opt.value === agentModelCurrentValue }"
               :disabled="agentModelPending || opt.value === agentModelCurrentValue"
-              @click="emit('select-agent-model', opt.value); close()"
+              @click="emit('select-agent-model', opt.value)"
             >
               <VIcon :color="opt.color" :size="20" class="chat-header-sheet__row-icon">{{ opt.icon }}</VIcon>
               <span class="chat-header-sheet__row-label">{{ opt.label }}</span>
@@ -682,7 +694,7 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
           <div class="chat-header-sheet__monitor-summary">
             <span class="chat-header-sheet__monitor-count">{{ monitorSessionCount }}</span>
             <span class="chat-header-sheet__monitor-caption">
-              {{ monitorSessionCount === 1 ? 'активная сессия' : 'активных сессий' }}
+              {{ monitorSessionCount === 1 ? 'отвечает сейчас' : 'отвечают сейчас' }}
               <template v-if="hasCurrentProjectGroup"> в проекте</template>
             </span>
           </div>
@@ -690,6 +702,11 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
           <div v-if="visibleMonitorGroups.length === 0" class="chat-header-sheet__monitor-empty label-small">
             <template v-if="hasCurrentProjectGroup">Нет запущенных сессий в этом проекте</template>
             <template v-else>Нет запущенных сессий</template>
+          </div>
+
+          <div v-else-if="totalActiveInVisible === 0 && !showIdleSessions" class="chat-header-sheet__monitor-empty label-small">
+            Сейчас нет активно отвечающих сессий.
+            <template v-if="totalIdleInVisible > 0"> Есть {{ totalIdleInVisible }} запущенных, но idle.</template>
           </div>
 
           <div
@@ -704,27 +721,27 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
                 class="chat-header-sheet__monitor-group-icon"
               >{{ group.isCurrent ? 'mdi-folder-star-outline' : (group.projectId ? 'mdi-folder-outline' : 'mdi-folder-question-outline') }}</VIcon>
               <span class="chat-header-sheet__monitor-group-label">{{ group.projectLabel }}</span>
-              <span class="chat-header-sheet__monitor-group-count">{{ group.sessions.length }}</span>
+              <span class="chat-header-sheet__monitor-group-count">{{ group.activeSessions.length }}/{{ group.sessions.length }}</span>
             </div>
-            <div class="chat-header-sheet__monitor-list">
+
+            <div v-if="group.activeSessions.length > 0" class="chat-header-sheet__monitor-section-title label-small">
+              <span class="chat-header-sheet__monitor-section-dot chat-header-sheet__monitor-section-dot--live" aria-hidden="true" />
+              Активные
+            </div>
+            <div v-if="group.activeSessions.length > 0" class="chat-header-sheet__monitor-list">
               <button
-                v-for="sess in group.sessions"
+                v-for="sess in group.activeSessions"
                 :key="sess.slug"
                 type="button"
                 class="chat-header-sheet__monitor-item"
                 :class="{
-                  'chat-header-sheet__monitor-item--idle': sess.isIdle,
                   'chat-header-sheet__monitor-item--tier-1': sess.tier === 1,
                   'chat-header-sheet__monitor-item--tier-2': sess.tier === 2,
                 }"
                 :title="sess.slug"
                 @click="emit('open-monitor-session', sess.slug); close()"
               >
-                <span
-                  class="chat-header-sheet__monitor-dot"
-                  :class="sess.isIdle ? 'chat-header-sheet__monitor-dot--idle' : 'chat-header-sheet__monitor-dot--live'"
-                  aria-hidden="true"
-                />
+                <span class="chat-header-sheet__monitor-dot chat-header-sheet__monitor-dot--live" aria-hidden="true" />
                 <VIcon :color="sess.color" :size="18" class="chat-header-sheet__monitor-icon">{{ sess.icon }}</VIcon>
                 <div class="chat-header-sheet__monitor-body">
                   <div class="chat-header-sheet__monitor-row-top">
@@ -733,7 +750,7 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
                   </div>
                   <div class="chat-header-sheet__monitor-row-bottom label-small">
                     <span v-if="sess.lastTool" class="chat-header-sheet__monitor-tool" :title="sess.lastTool">{{ sess.lastTool }}</span>
-                    <span v-else class="chat-header-sheet__monitor-tool chat-header-sheet__monitor-tool--idle">{{ sess.isIdle ? 'idle' : 'active' }}</span>
+                    <span v-else class="chat-header-sheet__monitor-tool">active</span>
                     <span v-if="(sess.tokenIn ?? 0) + (sess.tokenOut ?? 0) > 0" class="chat-header-sheet__monitor-tokens">
                       Σ {{ fmtTokens((sess.tokenIn ?? 0) + (sess.tokenOut ?? 0)) }}
                     </span>
@@ -744,7 +761,54 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
                 </div>
               </button>
             </div>
+
+            <div v-if="showIdleSessions && group.idleSessions.length > 0" class="chat-header-sheet__monitor-section-title label-small">
+              <span class="chat-header-sheet__monitor-section-dot chat-header-sheet__monitor-section-dot--idle" aria-hidden="true" />
+              Idle
+            </div>
+            <div v-if="showIdleSessions && group.idleSessions.length > 0" class="chat-header-sheet__monitor-list">
+              <button
+                v-for="sess in group.idleSessions"
+                :key="sess.slug"
+                type="button"
+                class="chat-header-sheet__monitor-item chat-header-sheet__monitor-item--idle"
+                :class="{
+                  'chat-header-sheet__monitor-item--tier-1': sess.tier === 1,
+                  'chat-header-sheet__monitor-item--tier-2': sess.tier === 2,
+                }"
+                :title="sess.slug"
+                @click="emit('open-monitor-session', sess.slug); close()"
+              >
+                <span class="chat-header-sheet__monitor-dot chat-header-sheet__monitor-dot--idle" aria-hidden="true" />
+                <VIcon :color="sess.color" :size="18" class="chat-header-sheet__monitor-icon">{{ sess.icon }}</VIcon>
+                <div class="chat-header-sheet__monitor-body">
+                  <div class="chat-header-sheet__monitor-row-top">
+                    <span class="chat-header-sheet__monitor-label">{{ sess.label }}</span>
+                    <span v-if="sess.model" class="chat-header-sheet__monitor-model label-small">{{ sess.model }}</span>
+                  </div>
+                  <div class="chat-header-sheet__monitor-row-bottom label-small">
+                    <span v-if="sess.lastTool" class="chat-header-sheet__monitor-tool" :title="sess.lastTool">{{ sess.lastTool }}</span>
+                    <span v-else class="chat-header-sheet__monitor-tool chat-header-sheet__monitor-tool--idle">idle</span>
+                    <span v-if="(sess.tokenIn ?? 0) + (sess.tokenOut ?? 0) > 0" class="chat-header-sheet__monitor-tokens">
+                      Σ {{ fmtTokens((sess.tokenIn ?? 0) + (sess.tokenOut ?? 0)) }}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
+
+          <button
+            v-if="totalIdleInVisible > 0"
+            type="button"
+            class="chat-header-sheet__monitor-toggle label-small"
+            @click="showIdleSessions = !showIdleSessions"
+          >
+            <VIcon :size="14">{{ showIdleSessions ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</VIcon>
+            <span>
+              {{ showIdleSessions ? 'Скрыть idle' : `Показать idle (${totalIdleInVisible})` }}
+            </span>
+          </button>
 
           <button
             v-if="hasCurrentProjectGroup && otherProjectsCount > 0"
