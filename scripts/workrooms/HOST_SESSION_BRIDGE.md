@@ -206,3 +206,45 @@ GROUP BY run_id;
 pm2 logs daria-host-session-v2 --lines 100
 # Children prefix their output: [child:<8-char sessionId>]
 ```
+
+---
+
+## Subagent visibility
+
+The supervisor scans not only top-level session JSONLs but also subagent
+transcripts produced when Claude Code calls the Agent tool:
+
+```
+~/.claude/projects/
+  -home-claudecode-daria/
+    <parentSessionId>.jsonl           ─→ parent run  (normal)
+    <parentSessionId>/
+      subagents/
+        agent-<subagentUUID>.jsonl    ─→ subagent run (isSubagent:true)
+```
+
+### What is covered
+
+- Each active `agent-*.jsonl` file found under `<projectDir>/<parentUUID>/subagents/`
+  produces a **separate `messenger_agent_run`** under the same project-agent as
+  the parent session.
+- The run's `session_metadata` carries `isSubagent: true` and, when the parent
+  session's run is still active, `parentRunId: <uuid>`.
+- Parallel subagent calls (multiple Agent tool invocations) each get their own
+  run — the existing W3 grouping renders them as parallel runs.
+- If the parent session has already completed (idle-reaped) before the subagent
+  file is discovered, the subagent run is provisioned as a standalone run
+  (`parentRunId` absent) — the bridge does not fail.
+
+### What is NOT covered (out of scope)
+
+- **UI tree view** — subagent runs currently appear as parallel runs alongside
+  the parent in the timeline, not as nested children. A dedicated frontend task
+  (W11) would add collapsible subagent branches.
+- **Recursive sub-subagents** — if a subagent itself calls the Agent tool the
+  resulting sub-subagent JSONL is one more level deeper. The current scan
+  (`<parentUUID>/subagents/`) captures only one level of nesting.
+- **Backfill** — only subagent files written after the supervisor is deployed
+  are picked up. Existing historical files are ignored.
+- **DLQ** — subagent runs flow through the same ingest path as normal runs; W5
+  DLQ coverage applies equally.

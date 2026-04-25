@@ -45,6 +45,8 @@ const provisionBodySchema = z.object({
   gitBranch: z.string().optional(),
   sessionVersion: z.string().optional(),
   sessionStartedAt: z.string().optional(),
+  parentRunId: z.string().uuid().optional(),
+  isSubagent: z.boolean().optional(),
 })
 
 const completeBodySchema = z.object({
@@ -71,7 +73,7 @@ export function registerHostSessionRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: 'INVALID_PAYLOAD', issues: parsed.error.issues })
     }
 
-    const { sessionId, cwd, hostname, gitBranch, sessionVersion, sessionStartedAt } = parsed.data
+    const { sessionId, cwd, hostname, gitBranch, sessionVersion, sessionStartedAt, parentRunId, isSubagent } = parsed.data
 
     if (!cwd.startsWith('/') || cwd.includes('..')) {
       return reply.code(400).send({ error: 'INVALID_CWD' })
@@ -217,6 +219,8 @@ export function registerHostSessionRoutes(app: FastifyInstance) {
           gitBranch: gitBranch ?? null,
           sessionVersion: sessionVersion ?? null,
           sessionStartedAt: sessionStartedAt ?? null,
+          ...(parentRunId !== undefined ? { parentRunId } : {}),
+          ...(isSubagent !== undefined ? { isSubagent } : {}),
         },
         startedAt: new Date(),
       })

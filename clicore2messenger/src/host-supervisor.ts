@@ -59,6 +59,10 @@ const __dirname = path.dirname(__filename);
 // Resolve compiled CLI binary relative to this file's location in dist/ or src/
 const CLI_BIN = path.resolve(__dirname, "../dist/cli.js");
 
+// UUID v4 pattern — used to identify parentSessionId directories
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -78,6 +82,10 @@ interface SessionEntry {
   runStatus: "running" | "completed";
   completedAt?: string;
   pid?: number;
+  /** Set for subagent runs — the runId of the parent session's run */
+  parentRunId?: string;
+  /** true when this entry tracks a subagent JSONL (isSidechain:true envelope) */
+  isSubagent?: boolean;
 }
 
 interface SessionsStore {
@@ -219,6 +227,8 @@ async function provision(
   gitBranch: string | undefined,
   sessionVersion: string | undefined,
   sessionStartedAt: string | undefined,
+  parentRunId?: string,
+  isSubagent?: boolean,
 ): Promise<ProvisionResponse> {
   const res = await fetch(`${HOST_BRIDGE_URL}/agents/host-session/provision`, {
     method: "POST",
@@ -233,6 +243,8 @@ async function provision(
       gitBranch,
       sessionVersion,
       sessionStartedAt,
+      ...(parentRunId !== undefined ? { parentRunId } : {}),
+      ...(isSubagent !== undefined ? { isSubagent } : {}),
     }),
   });
   if (!res.ok) {
@@ -347,6 +359,9 @@ interface ActiveFile {
   sessionId: string;
   filePath: string;
   mtimeMs: number;
+  /** Set for subagent files — the UUID of the parent session directory */
+  parentSessionId?: string;
+  isSubagent?: boolean;
 }
 
 function scanActiveFiles(): ActiveFile[] {
@@ -364,28 +379,65 @@ function scanActiveFiles(): ActiveFile[] {
 
   for (const dir of projectDirs) {
     const dirPath = path.join(TRANSCRIPT_ROOT, dir.name);
-    let files: fs.Dirent[];
+    let entries: fs.Dirent[];
     try {
-      files = fs
-        .readdirSync(dirPath, { withFileTypes: true })
-        .filter((f) => f.isFile() && f.name.endsWith(".jsonl"));
+      entries = fs.readdirSync(dirPath, { withFileTypes: true });
     } catch {
       continue;
     }
 
-    for (const file of files) {
-      const filePath = path.join(dirPath, file.name);
+    // Top-level session JSOLs: <projectDir>/<sessionId>.jsonl
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith(".jsonl")) continue;
+      const filePath = path.join(dirPath, entry.name);
       try {
         const stat = fs.statSync(filePath);
         if (now - stat.mtimeMs <= HOST_SESSION_IDLE_MIN_MS) {
           result.push({
-            sessionId: file.name.slice(0, -".jsonl".length),
+            sessionId: entry.name.slice(0, -".jsonl".length),
             filePath,
             mtimeMs: stat.mtimeMs,
           });
         }
       } catch {
         continue;
+      }
+    }
+
+    // Subagent JSONLs: <projectDir>/<parentSessionUUID>/subagents/agent-*.jsonl
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !UUID_RE.test(entry.name)) continue;
+      const subagentsPath = path.join(dirPath, entry.name, "subagents");
+      let agentFiles: fs.Dirent[];
+      try {
+        agentFiles = fs
+          .readdirSync(subagentsPath, { withFileTypes: true })
+          .filter((f) => f.isFile() && f.name.endsWith(".jsonl"));
+      } catch {
+        continue;
+      }
+
+      for (const file of agentFiles) {
+        const filePath = path.join(subagentsPath, file.name);
+        const stem = file.name.slice(0, -".jsonl".length);
+        // Accept "agent-<uuid>" or plain "<uuid>"
+        const sessionId = stem.startsWith("agent-") ? stem.slice("agent-".length) : stem;
+        if (!UUID_RE.test(sessionId)) continue;
+
+        try {
+          const stat = fs.statSync(filePath);
+          if (now - stat.mtimeMs <= HOST_SESSION_IDLE_MIN_MS) {
+            result.push({
+              sessionId,
+              filePath,
+              mtimeMs: stat.mtimeMs,
+              parentSessionId: entry.name,
+              isSubagent: true,
+            });
+          }
+        } catch {
+          continue;
+        }
       }
     }
   }
@@ -405,27 +457,47 @@ async function tick(): Promise<void> {
     const sessions = loadSessions();
 
     // 1. Process active files — provision + spawn
-    for (const { sessionId, filePath, mtimeMs } of activeFiles) {
+    for (const { sessionId, filePath, mtimeMs, isSubagent, parentSessionId } of activeFiles) {
       const existing = sessions[sessionId];
 
       if (!existing) {
         // New session — provision then spawn
         const info = await readEnvelopeInfo(filePath);
-        if (!info) {
+
+        // For subagents, fall back to parent session's cwd if not in envelope
+        const parentEntry =
+          isSubagent && parentSessionId ? sessions[parentSessionId] : undefined;
+        const cwd = info?.cwd ?? parentEntry?.cwd;
+
+        if (!cwd) {
           console.warn(
             `[host-supervisor] skip ${sessionId.slice(0, 8)}: no cwd in envelope`,
           );
           continue;
         }
 
+        // Resolve parentRunId from the sessions store (only if parent is running)
+        const parentRunId =
+          isSubagent && parentSessionId && parentEntry?.runStatus === "running"
+            ? parentEntry.runId
+            : undefined;
+
+        if (isSubagent && !parentRunId) {
+          console.log(
+            `[host-supervisor] subagent ${sessionId.slice(0, 8)}: parent run not active — provisioning as standalone`,
+          );
+        }
+
         let prov: ProvisionResponse;
         try {
           prov = await provision(
             sessionId,
-            info.cwd,
-            info.gitBranch,
-            info.version,
+            cwd,
+            info?.gitBranch ?? parentEntry?.gitBranch,
+            info?.version ?? parentEntry?.sessionVersion,
             new Date(mtimeMs).toISOString(),
+            parentRunId,
+            isSubagent,
           );
         } catch (err) {
           console.error(
@@ -437,16 +509,17 @@ async function tick(): Promise<void> {
         const entry: SessionEntry = {
           sessionId,
           filePath,
-          cwd: info.cwd,
+          cwd,
           hostname: HOST_NAME,
-          gitBranch: info.gitBranch,
-          sessionVersion: info.version,
+          gitBranch: info?.gitBranch ?? parentEntry?.gitBranch,
+          sessionVersion: info?.version ?? parentEntry?.sessionVersion,
           sessionStartedAt: new Date(mtimeMs).toISOString(),
           agentId: prov.agentId,
           conversationId: prov.conversationId,
           runId: prov.runId,
           ingestToken: prov.ingestToken,
           runStatus: "running",
+          ...(isSubagent ? { isSubagent: true, parentRunId } : {}),
         };
 
         const proc = spawnChild(entry);
@@ -464,6 +537,14 @@ async function tick(): Promise<void> {
           : 0;
         if (mtimeMs <= completedAt) continue;
 
+        // For re-activated subagent runs, re-resolve parentRunId from live sessions
+        const reactivatedParentRunId =
+          existing.isSubagent && parentSessionId
+            ? (sessions[parentSessionId]?.runStatus === "running"
+                ? sessions[parentSessionId].runId
+                : undefined)
+            : undefined;
+
         let prov: ProvisionResponse;
         try {
           prov = await provision(
@@ -472,6 +553,8 @@ async function tick(): Promise<void> {
             existing.gitBranch,
             existing.sessionVersion,
             new Date(mtimeMs).toISOString(),
+            reactivatedParentRunId,
+            existing.isSubagent,
           );
         } catch (err) {
           console.error(
@@ -487,6 +570,7 @@ async function tick(): Promise<void> {
           ingestToken: prov.ingestToken,
           runStatus: "running",
           completedAt: undefined,
+          ...(existing.isSubagent ? { parentRunId: reactivatedParentRunId } : {}),
         };
 
         const proc = spawnChild(entry);
