@@ -39,6 +39,18 @@ export interface SubscriptionRouteContext {
   modelOverride?: string
 }
 
+const REPLY_SUGGESTIONS_INSTRUCTION =
+  'When natural quick replies exist (yes/no, choosing between options, follow-up questions), '
+  + 'append up to 3 short suggestions on the last line as: '
+  + '<reply-suggestions>option 1|option 2|option 3</reply-suggestions>. '
+  + 'Use the user\'s language. Keep each option under 30 chars. Omit the tag entirely when no obvious quick replies fit.'
+
+function withReplySuggestionsInstruction(systemPrompt: string | undefined): string {
+  return systemPrompt
+    ? `${systemPrompt}\n\n${REPLY_SUGGESTIONS_INSTRUCTION}`
+    : REPLY_SUGGESTIONS_INSTRUCTION
+}
+
 export interface RoutingInfo {
   provider: string
   model: string
@@ -130,6 +142,8 @@ export async function routeAgentReply(ctx: SubscriptionRouteContext): Promise<st
     effectiveModel,
   )
 
+  const augmentedSystemPrompt = withReplySuggestionsInstruction(ctx.systemPrompt)
+
   // ── CLI-based providers ────────────────────────────────────────────────
   if (routing.adapter === 'claude-cli' || routing.adapter === 'copilot-cli') {
     if (!ctx.claudeSessionSlug) {
@@ -138,7 +152,7 @@ export async function routeAgentReply(ctx: SubscriptionRouteContext): Promise<st
     return await callClaudeSessionReply({
       slug: ctx.claudeSessionSlug,
       model: modelArg,
-      systemPrompt: ctx.systemPrompt,
+      systemPrompt: augmentedSystemPrompt,
       history: ctx.history,
       message: ctx.message,
     })
@@ -146,7 +160,7 @@ export async function routeAgentReply(ctx: SubscriptionRouteContext): Promise<st
 
   // ── API-based providers (openai-compat, ollama) ────────────────────────
   const messages: MessengerAgentLlmMessage[] = [
-    ...(ctx.systemPrompt ? [{ role: 'system' as const, content: ctx.systemPrompt }] : []),
+    ...(augmentedSystemPrompt ? [{ role: 'system' as const, content: augmentedSystemPrompt }] : []),
     ...ctx.history.map(h => ({
       role: h.role as 'user' | 'assistant',
       content: h.content,
