@@ -475,10 +475,17 @@ function recomputeSessNavEdges() {
   sessNavEdges.value = edges
 }
 
+// Note: no { deep: true } here. The previous version traversed
+// projectScopedHierarchy reactively at watch-init time, but
+// projectScopedHierarchy is declared ~230 lines below — Vue would call the
+// source getter immediately to seed deep tracking and hit a TDZ
+// "Cannot access 'ia' before initialization" before setup finished.
+// Reference-equality is enough: projectScopedHierarchy is a computed that
+// produces a fresh array on every dependency change, so the watcher fires
+// whenever the hierarchy actually changes.
 watch(
   [() => projectScopedHierarchy.value, () => sessNavCollapsed.value],
   () => { void nextTick(() => recomputeSessNavEdges()) },
-  { deep: true },
 )
 // The elapsed-time counter in each capsule changes every second, which can
 // shift tab widths. Retick edges ~once a second to keep lines attached.
