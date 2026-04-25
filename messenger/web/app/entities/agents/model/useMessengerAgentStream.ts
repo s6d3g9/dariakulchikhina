@@ -1,5 +1,18 @@
 import type { Ref } from 'vue'
+import type { MessengerAgentRun } from './useMessengerAgentRuns'
 import { buildMessengerWsUrl } from '../../../utils/messenger-url'
+
+/** Groups runs by parentRunId. Root-level runs (no parent) are keyed under 'root'. */
+export function selectRunsByParent(runs: MessengerAgentRun[]): Map<string, MessengerAgentRun[]> {
+  const map = new Map<string, MessengerAgentRun[]>()
+  for (const run of runs) {
+    const key = run.parentRunId ?? 'root'
+    const bucket = map.get(key) ?? []
+    bucket.push(run)
+    map.set(key, bucket)
+  }
+  return map
+}
 
 export type AgentSubstate = 'idle' | 'thinking' | 'tool_call' | 'awaiting_input' | 'streaming' | 'error'
 
