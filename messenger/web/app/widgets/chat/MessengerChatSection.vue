@@ -607,6 +607,75 @@ const activeSessionUsage = computed(() => {
   }
 })
 
+// Per-subscription aggregate spend across every CLI session we know about.
+// Sessions don't carry an explicit subscriptionId — they only know their model
+// id — so we derive the subscription by matching the model against each
+// subscription's declared model list (first match wins). Sessions whose model
+// can't be mapped land in a synthetic "unknown" bucket, keeping the totals
+// honest instead of silently dropping them.
+const subscriptionUsages = computed(() => {
+  const subs = subsModel.subscriptions.value
+  if (subs.length === 0) return []
+  const modelToSubId = new Map<string, string>()
+  for (const sub of subs) {
+    const meta = subsModel.providerOf(sub)
+    for (const m of meta?.models ?? []) {
+      if (!modelToSubId.has(m.id)) modelToSubId.set(m.id, sub.id)
+    }
+  }
+  type Bucket = {
+    id: string
+    label: string
+    icon: string
+    color: string
+    tokenIn: number
+    tokenOut: number
+    costUsd: number
+    sessionCount: number
+  }
+  const buckets = new Map<string, Bucket>()
+  for (const sub of subs) {
+    const meta = subsModel.providerOf(sub)
+    buckets.set(sub.id, {
+      id: sub.id,
+      label: sub.label,
+      icon: meta?.icon ?? 'mdi-account-circle-outline',
+      color: meta?.color ?? '#888',
+      tokenIn: 0,
+      tokenOut: 0,
+      costUsd: 0,
+      sessionCount: 0,
+    })
+  }
+  for (const s of cliSessionsModel.sessions.value) {
+    const subId = s.model ? modelToSubId.get(s.model) : undefined
+    const key = subId ?? '__unknown__'
+    let b = buckets.get(key)
+    if (!b) {
+      b = {
+        id: key,
+        label: 'Прочее',
+        icon: 'mdi-help-circle-outline',
+        color: '#888',
+        tokenIn: 0,
+        tokenOut: 0,
+        costUsd: 0,
+        sessionCount: 0,
+      }
+      buckets.set(key, b)
+    }
+    b.tokenIn += s.tokenInTotal || 0
+    b.tokenOut += s.tokenOutTotal || 0
+    b.costUsd += s.costUsd || 0
+    b.sessionCount += 1
+  }
+  // Drop empty buckets so the panel doesn't flood with zero rows for
+  // subscriptions the user has never used. Sort by total tokens desc.
+  return [...buckets.values()]
+    .filter(b => b.sessionCount > 0 && (b.tokenIn + b.tokenOut > 0 || b.costUsd > 0))
+    .sort((a, z) => (z.tokenIn + z.tokenOut) - (a.tokenIn + a.tokenOut))
+})
+
 // Project-scoped hierarchy for the in-chat session nav.
 // Rules (tightened per user request):
 //   1. Only sessions that are BOTH currently running AND actively working
@@ -2812,6 +2881,7 @@ onBeforeUnmount(() => {
         :agent-effort-pending="effortSetPending"
         :agent-subscription-label="currentSubscriptionLabel"
         :agent-session-usage="activeSessionUsage"
+        :agent-subscription-usages="subscriptionUsages"
         :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
         :monitor-session-count="monitorActiveCurrentProjectCount || monitorActiveTotalCount"
         :monitor-session-groups="monitorSessionGroups"

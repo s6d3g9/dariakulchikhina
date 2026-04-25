@@ -39,6 +39,16 @@ const props = withDefaults(defineProps<{
   agentEffortPending?: boolean
   agentSubscriptionLabel?: string
   agentSessionUsage?: { tokenIn: number; tokenOut: number; costUsd: number; model: string } | null
+  agentSubscriptionUsages?: ReadonlyArray<{
+    id: string
+    label: string
+    icon: string
+    color: string
+    tokenIn: number
+    tokenOut: number
+    costUsd: number
+    sessionCount: number
+  }>
   monitorPanelOpen?: boolean
   monitorSessionCount?: number
   monitorSessionGroups?: ReadonlyArray<{
@@ -79,6 +89,7 @@ const props = withDefaults(defineProps<{
   agentEffortPending: false,
   agentSubscriptionLabel: '',
   agentSessionUsage: () => null,
+  agentSubscriptionUsages: () => [],
   monitorPanelOpen: false,
   monitorSessionCount: 0,
   monitorSessionGroups: () => [],
@@ -705,6 +716,32 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
           <div v-else class="chat-header-sheet__session-tokens-empty label-small">
             Нет активной сессии
           </div>
+
+          <template v-if="agentSubscriptionUsages.length > 0">
+            <div class="chat-header-sheet__divider" aria-hidden="true" />
+            <div class="chat-header-sheet__section-title label-small">
+              Подписки
+              <span class="chat-header-sheet__section-hint">{{ agentSubscriptionUsages.length }}</span>
+            </div>
+            <div class="chat-header-sheet__sub-usage">
+              <div
+                v-for="sub in agentSubscriptionUsages"
+                :key="sub.id"
+                class="chat-header-sheet__sub-usage-row"
+              >
+                <span class="chat-header-sheet__sub-usage-head">
+                  <VIcon :size="14" :color="sub.color" class="chat-header-sheet__sub-usage-icon">{{ sub.icon }}</VIcon>
+                  <span class="chat-header-sheet__sub-usage-label" :title="sub.label">{{ sub.label }}</span>
+                  <span class="chat-header-sheet__sub-usage-count label-small">×{{ sub.sessionCount }}</span>
+                </span>
+                <span class="chat-header-sheet__sub-usage-stats label-small">
+                  <span class="chat-header-sheet__sub-usage-stat" title="Входящие токены">↓ {{ fmtTokens(sub.tokenIn) }}</span>
+                  <span class="chat-header-sheet__sub-usage-stat" title="Исходящие токены">↑ {{ fmtTokens(sub.tokenOut) }}</span>
+                  <span v-if="sub.costUsd > 0" class="chat-header-sheet__sub-usage-stat chat-header-sheet__sub-usage-stat--cost" title="Стоимость">{{ fmtCost(sub.costUsd) }}</span>
+                </span>
+              </div>
+            </div>
+          </template>
         </div>
 
         <div v-else-if="kind === 'monitor'" class="chat-header-sheet__monitor">
