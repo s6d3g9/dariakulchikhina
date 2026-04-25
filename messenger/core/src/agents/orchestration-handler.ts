@@ -933,6 +933,15 @@ export function registerOrchestrationRoutes(
 
       await execFile('/home/claudecode/bin/claude-session', ['set-model', slug, model!], { timeout: 10000 })
 
+      // Write the new model to DB right away so the UI reflects the change
+      // without waiting for the next ingest event (set-model just kills tmux,
+      // and the agent-runs table is only updated on the next assistant turn).
+      await db
+        .update(messengerCliSessions)
+        .set({ model: model! })
+        .where(and(eq(messengerCliSessions.slug, slug), isNull(messengerCliSessions.deletedAt)))
+      publishSessionDelta({ slug, reason: 'patched', ts: new Date().toISOString() })
+
       return { slug, model, effort }
     },
   )

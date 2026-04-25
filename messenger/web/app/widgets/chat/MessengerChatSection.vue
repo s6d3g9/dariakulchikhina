@@ -679,25 +679,42 @@ async function onSessionChipClick(sess: { agentId: string | null }) {
   catch (err) { console.warn('[chat] could not open agent conversation', err) }
 }
 
-const monitorSessions = computed(() => {
-  const items: Array<{
-    slug: string
-    label: string
-    kind: string
-    icon: string
-    color: string
-    isActive: boolean
-    isIdle: boolean
-    tier: number
-    model?: string
-    lastTool?: string | null
-    tokenIn?: number
-    tokenOut?: number
-    costUsd?: number
-  }> = []
+type MonitorSessionItem = {
+  slug: string
+  label: string
+  kind: string
+  icon: string
+  color: string
+  isActive: boolean
+  isIdle: boolean
+  tier: number
+  model?: string
+  lastTool?: string | null
+  tokenIn?: number
+  tokenOut?: number
+  costUsd?: number
+}
+type MonitorGroup = {
+  projectId: string | null
+  projectLabel: string
+  sessions: MonitorSessionItem[]
+  isCurrent: boolean
+}
+
+// Sessions are grouped by project so the user sees "what is running in this
+// project" first, then other projects collapsed. Sessions without a
+// project_id land in a final "Без проекта" group.
+const monitorSessionGroups = computed<MonitorGroup[]>(() => {
+  const currentProjectId = activeAgentProjectId.value
+  const groups = new Map<string, MonitorGroup>()
+
+  function groupKey(pid: string | null): string {
+    return pid ?? '__none__'
+  }
+
   for (const s of cliSessionsModel.runningSessions.value) {
     const meta = getSessionKindMeta(s.kind, s.slug)
-    items.push({
+    const item: MonitorSessionItem = {
       slug: s.slug,
       label: s.agentDisplayName || s.slug,
       kind: s.kind,
@@ -711,10 +728,44 @@ const monitorSessions = computed(() => {
       tokenIn: s.tokenInTotal,
       tokenOut: s.tokenOutTotal,
       costUsd: s.costUsd,
-    })
+    }
+    const pid = s.agentProjectId ?? null
+    const key = groupKey(pid)
+    let g = groups.get(key)
+    if (!g) {
+      const project = pid ? projectsModel.projects.value.find(p => p.id === pid) : null
+      g = {
+        projectId: pid,
+        projectLabel: project?.name ?? (pid ? pid : 'Без проекта'),
+        sessions: [],
+        isCurrent: pid !== null && pid === currentProjectId,
+      }
+      groups.set(key, g)
+    }
+    g.sessions.push(item)
   }
-  // Composers first, then orchestrators, then workers; within tier, active before idle.
-  return items.sort((a, b) => (a.tier - b.tier) || (Number(a.isIdle) - Number(b.isIdle)) || a.label.localeCompare(b.label))
+
+  for (const g of groups.values()) {
+    g.sessions.sort((a, b) =>
+      (a.tier - b.tier)
+      || (Number(a.isIdle) - Number(b.isIdle))
+      || a.label.localeCompare(b.label),
+    )
+  }
+
+  return [...groups.values()].sort((a, b) => {
+    if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1
+    if ((a.projectId === null) !== (b.projectId === null)) return a.projectId === null ? 1 : -1
+    return a.projectLabel.localeCompare(b.projectLabel)
+  })
+})
+
+const monitorTotalCount = computed(() =>
+  monitorSessionGroups.value.reduce((acc, g) => acc + g.sessions.length, 0),
+)
+const monitorCurrentProjectCount = computed(() => {
+  const cur = monitorSessionGroups.value.find(g => g.isCurrent)
+  return cur ? cur.sessions.length : 0
 })
 
 async function onMonitorSessionOpen(slug: string) {
@@ -2750,8 +2801,8 @@ onBeforeUnmount(() => {
         :agent-usage-week="currentUsageWeek"
         :agent-usage-month="currentUsageMonth"
         :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
-        :monitor-session-count="monitorSessions.length"
-        :monitor-sessions="monitorSessions"
+        :monitor-session-count="monitorCurrentProjectCount || monitorTotalCount"
+        :monitor-session-groups="monitorSessionGroups"
         @toggle-details="toggleDetails"
         @open-shared-gallery="openSharedGallery"
         @open-chat-search="openChatSearch"
