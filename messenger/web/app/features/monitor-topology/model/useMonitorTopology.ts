@@ -1,8 +1,10 @@
 import type { Ref } from 'vue'
 import type { MessengerCliSession } from '../../../entities/sessions/model/useMessengerCliSessions'
 import { getSessionKindMeta } from '../../../entities/sessions/model/useMessengerCliSessions'
+import { deriveLiveness, type LivenessMeta } from './liveness'
 
 export type MonitorMode = 'live' | 'today'
+export type MonitorFilter = 'all' | 'awaiting' | 'crashed'
 
 export interface MonitorRow {
   session: MessengerCliSession
@@ -11,6 +13,7 @@ export interface MonitorRow {
   hasChildren: boolean
   childCount: number
   isLastSibling: boolean
+  liveness: LivenessMeta
 }
 
 function startOfTodayMs(): number {
@@ -104,6 +107,7 @@ export function useMonitorTopology(
         hasChildren: children.length > 0,
         childCount: children.length,
         isLastSibling: isLast,
+        liveness: deriveLiveness(node),
       })
       for (let i = 0; i < children.length; i++) {
         pushSubtree(children[i]!, depth + 1, node.agentId, i === children.length - 1)
@@ -125,6 +129,7 @@ export function useMonitorTopology(
           hasChildren: false,
           childCount: 0,
           isLastSibling: true,
+          liveness: deriveLiveness(s),
         })
       }
     }
@@ -189,6 +194,28 @@ export function useMonitorTopology(
     return byParentAgentId.value.get(cur.agentId) ?? []
   }
 
+  const livenessIndex = computed<Map<string, LivenessMeta>>(() => {
+    const map = new Map<string, LivenessMeta>()
+    for (const s of filtered.value) map.set(s.slug, deriveLiveness(s))
+    return map
+  })
+
+  const awaitingSlugs = computed<Set<string>>(() => {
+    const set = new Set<string>()
+    for (const [slug, l] of livenessIndex.value) {
+      if (l.state === 'awaiting-user') set.add(slug)
+    }
+    return set
+  })
+
+  const crashedSlugs = computed<Set<string>>(() => {
+    const set = new Set<string>()
+    for (const [slug, l] of livenessIndex.value) {
+      if (l.state === 'crashed') set.add(slug)
+    }
+    return set
+  })
+
   const counters = computed(() => {
     let composers = 0
     let orchestrators = 0
@@ -207,6 +234,8 @@ export function useMonitorTopology(
       orchestrators,
       workers,
       active,
+      awaiting: awaitingSlugs.value.size,
+      crashed: crashedSlugs.value.size,
     }
   })
 
@@ -220,6 +249,9 @@ export function useMonitorTopology(
     bySlug,
     byAgentId,
     activeTrace,
+    awaitingSlugs,
+    crashedSlugs,
+    livenessIndex,
     ancestryFor,
     childrenFor,
   }

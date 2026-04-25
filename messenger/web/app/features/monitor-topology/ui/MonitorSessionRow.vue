@@ -27,24 +27,30 @@ const costLabel = computed(() => {
   return c >= 0.01 ? `$${c.toFixed(2)}` : `$${c.toFixed(4)}`
 })
 
-const elapsedLabel = computed(() => {
-  const ms = props.row.session.idleForMs
-  if (ms == null || ms < 0) return null
-  if (ms < 60_000) return `${Math.floor(ms / 1000)}s`
-  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m`
-  return `${Math.floor(ms / 3_600_000)}h`
+const title = computed(() => props.row.session.agentDisplayName || props.row.session.slug)
+
+// awaiting / crashed are the two states with side-effects on the whole row
+// (background tint, weight, tooltip target). Kept as flags so the template
+// stays declarative.
+const liveness = computed(() => props.row.liveness)
+const isAwaiting = computed(() => liveness.value.state === 'awaiting-user')
+const isCrashed = computed(() => liveness.value.state === 'crashed')
+const isDone = computed(() => liveness.value.state === 'done')
+
+// Accessible label that screen readers get on focus — packs identity + state.
+const ariaLabel = computed(() => {
+  const parts = [
+    `${meta.value.label} ${title.value}`,
+    liveness.value.srLabel,
+  ]
+  if (props.row.session.runError) parts.push(`Ошибка: ${props.row.session.runError}`)
+  if (props.row.hasChildren) parts.push(`${props.row.childCount} дочерних сессий`)
+  return parts.join('. ')
 })
 
-const dotClass = computed(() => {
-  const s = props.row.session
-  if (s.status === 'done') return 'monitor-row__dot--done'
-  if (s.isActive) return 'monitor-row__dot--active'
-  if (s.isIdle) return 'monitor-row__dot--idle'
-  return 'monitor-row__dot--running'
-})
-
-const title = computed(() => {
-  return props.row.session.agentDisplayName || props.row.session.slug
+const tooltipText = computed(() => {
+  if (isCrashed.value && props.row.session.runError) return props.row.session.runError
+  return liveness.value.srLabel
 })
 </script>
 
@@ -54,13 +60,32 @@ const title = computed(() => {
     :class="{
       'monitor-row--active': active,
       'monitor-row--in-trace': inTrace && !active,
+      'monitor-row--awaiting': isAwaiting,
+      'monitor-row--crashed': isCrashed,
+      'monitor-row--done': isDone,
+      [`monitor-row--state-${liveness.state}`]: true,
     }"
-    role="button"
+    role="treeitem"
+    :aria-level="row.depth + 1"
+    :aria-selected="active ?? false"
+    :aria-label="ariaLabel"
+    :title="tooltipText"
     tabindex="0"
     @click="emit('open-session', row.session.slug)"
-    @keydown.enter="emit('open-session', row.session.slug)"
+    @keydown.enter.prevent="emit('open-session', row.session.slug)"
+    @keydown.space.prevent="emit('open-session', row.session.slug)"
   >
-    <span class="monitor-row__rails" :style="{ width: `${row.depth * 18}px` }" aria-hidden="true">
+    <span
+      class="monitor-row__accent"
+      :class="`monitor-row__accent--${liveness.color}`"
+      :data-animated="liveness.animated || null"
+      aria-hidden="true"
+    />
+    <span
+      class="monitor-row__rails"
+      :style="{ width: `${row.depth * 18}px` }"
+      aria-hidden="true"
+    >
       <span
         v-for="d in row.depth"
         :key="d"
@@ -74,29 +99,59 @@ const title = computed(() => {
         :style="{ left: `${(row.depth - 1) * 18 + 9}px` }"
       />
     </span>
-    <span class="monitor-row__dot" :class="dotClass" aria-hidden="true" />
-    <v-icon class="monitor-row__icon" :icon="meta.icon" :color="meta.color" size="14" />
+    <span
+      class="monitor-row__state"
+      :class="`monitor-row__state--${liveness.color}`"
+      aria-hidden="true"
+    >
+      <v-icon
+        :icon="liveness.icon"
+        size="13"
+      />
+      <span
+        v-if="liveness.animated"
+        class="monitor-row__state-pulse"
+      />
+    </span>
+    <v-icon
+      class="monitor-row__kind"
+      :icon="meta.icon"
+      :color="meta.color"
+      size="13"
+    />
     <span class="monitor-row__title">{{ title }}</span>
     <span
       v-if="row.hasChildren"
       class="monitor-row__chip monitor-row__chip--children"
       :title="`${row.childCount} дочерних сессий`"
     >+{{ row.childCount }}</span>
-    <span v-if="row.session.lastTool" class="monitor-row__meta monitor-row__meta--tool">{{ row.session.lastTool }}</span>
-    <span v-if="row.session.lastSubstate" class="monitor-row__meta monitor-row__meta--substate">{{ row.session.lastSubstate }}</span>
+    <span
+      class="monitor-row__liveness"
+      :class="`monitor-row__liveness--${liveness.color}`"
+    >{{ liveness.label }}</span>
+    <span
+      v-if="row.session.lastTool && liveness.state !== 'tool'"
+      class="monitor-row__tool"
+    >{{ row.session.lastTool }}</span>
     <span class="monitor-row__spacer" />
-    <span v-if="elapsedLabel" class="monitor-row__meta monitor-row__meta--elapsed">{{ elapsedLabel }}</span>
-    <span v-if="tokenLabel" class="monitor-row__meta monitor-row__meta--tokens">{{ tokenLabel }}</span>
-    <span v-if="costLabel" class="monitor-row__meta monitor-row__meta--cost">{{ costLabel }}</span>
+    <span
+      v-if="tokenLabel"
+      class="monitor-row__meta monitor-row__meta--tokens"
+    >{{ tokenLabel }}</span>
+    <span
+      v-if="costLabel"
+      class="monitor-row__meta monitor-row__meta--cost"
+    >{{ costLabel }}</span>
   </div>
 </template>
 
 <style scoped>
 .monitor-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 12px;
+  padding: 4px 12px 4px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
@@ -122,6 +177,55 @@ const title = computed(() => {
 .monitor-row--in-trace {
   background: color-mix(in srgb, rgb(var(--v-theme-primary)) 5%, transparent);
 }
+
+.monitor-row--awaiting {
+  background: color-mix(in srgb, rgb(var(--v-theme-warning)) 12%, transparent);
+}
+
+.monitor-row--awaiting:hover {
+  background: color-mix(in srgb, rgb(var(--v-theme-warning)) 18%, transparent);
+}
+
+.monitor-row--crashed {
+  background: color-mix(in srgb, rgb(var(--v-theme-error)) 8%, transparent);
+}
+
+.monitor-row--done .monitor-row__title,
+.monitor-row--state-idle-deep .monitor-row__title {
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+/* ---- Left accent strip — the at-a-glance liveness signal ---- */
+
+.monitor-row__accent {
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 2px;
+  background: rgb(var(--v-theme-outline));
+}
+
+.monitor-row__accent--primary  { background: rgb(var(--v-theme-primary)); }
+.monitor-row__accent--secondary{ background: rgb(var(--v-theme-secondary)); }
+.monitor-row__accent--warning  { background: rgb(var(--v-theme-warning)); }
+.monitor-row__accent--error    { background: rgb(var(--v-theme-error)); }
+.monitor-row__accent--success  { background: rgb(var(--v-theme-success)); }
+.monitor-row__accent--on-surface-variant {
+  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 22%, transparent);
+}
+
+.monitor-row__accent[data-animated] {
+  animation: monitor-accent-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes monitor-accent-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+/* ---- Tree connectors ---- */
 
 .monitor-row__rails {
   position: relative;
@@ -149,39 +253,47 @@ const title = computed(() => {
   background: color-mix(in srgb, rgb(var(--v-theme-outline)) 30%, transparent);
 }
 
-.monitor-row__dot {
+/* ---- State icon — semantic, not just a coloured dot ---- */
+
+.monitor-row__state {
+  position: relative;
   flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: rgb(var(--v-theme-outline));
 }
 
-.monitor-row__dot--running {
-  background: rgb(var(--v-theme-primary));
+.monitor-row__state--primary           { color: rgb(var(--v-theme-primary)); }
+.monitor-row__state--secondary         { color: rgb(var(--v-theme-secondary)); }
+.monitor-row__state--warning           { color: rgb(var(--v-theme-warning)); }
+.monitor-row__state--error             { color: rgb(var(--v-theme-error)); }
+.monitor-row__state--success           { color: rgb(var(--v-theme-success)); }
+.monitor-row__state--on-surface-variant{ color: rgb(var(--v-theme-on-surface-variant)); }
+
+.monitor-row__state-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: monitor-state-pulse 1.6s ease-in-out infinite;
 }
 
-.monitor-row__dot--active {
-  background: rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-primary)) 55%, transparent);
-  animation: monitor-row-pulse 1.6s ease-in-out infinite;
+.monitor-row__state--primary   .monitor-row__state-pulse { box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-primary)) 50%, transparent); }
+.monitor-row__state--secondary .monitor-row__state-pulse { box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-secondary)) 50%, transparent); }
+.monitor-row__state--warning   .monitor-row__state-pulse { box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-warning)) 55%, transparent); }
+
+@keyframes monitor-state-pulse {
+  0%   { box-shadow: 0 0 0 0 currentColor; }
+  70%  { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
 
-.monitor-row__dot--idle {
-  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 30%, transparent);
-}
+/* ---- Identity, title, chips ---- */
 
-.monitor-row__dot--done {
-  background: rgb(var(--v-theme-success, 76 175 80));
-}
-
-@keyframes monitor-row-pulse {
-  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-primary)) 50%, transparent); }
-  70%  { box-shadow: 0 0 0 5px color-mix(in srgb, rgb(var(--v-theme-primary)) 0%, transparent); }
-  100% { box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-primary)) 0%, transparent); }
-}
-
-.monitor-row__icon {
+.monitor-row__kind {
   flex: 0 0 auto;
 }
 
@@ -210,40 +322,63 @@ const title = computed(() => {
   max-width: 220px;
 }
 
-.monitor-row__meta {
-  font-size: 11px;
-  color: rgb(var(--v-theme-on-surface-variant));
-  white-space: nowrap;
+.monitor-row--awaiting .monitor-row__title {
+  font-weight: 600;
 }
 
-.monitor-row__meta--tool {
+/* ---- Liveness label — the inline narration of state ---- */
+
+.monitor-row__liveness {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.monitor-row__liveness--primary   { color: rgb(var(--v-theme-primary)); }
+.monitor-row__liveness--secondary { color: rgb(var(--v-theme-secondary)); }
+.monitor-row__liveness--warning   { color: rgb(var(--v-theme-warning)); font-weight: 600; }
+.monitor-row__liveness--error     { color: rgb(var(--v-theme-error)); font-weight: 600; }
+.monitor-row__liveness--success   { color: rgb(var(--v-theme-success)); }
+
+.monitor-row__tool {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
   padding: 1px 6px;
   border-radius: 4px;
   background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 8%, transparent);
+  color: rgb(var(--v-theme-on-surface-variant));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
-.monitor-row__meta--substate {
-  font-style: italic;
-}
-
-.monitor-row__meta--cost {
-  font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.monitor-row__meta--tokens {
-  font-variant-numeric: tabular-nums;
-}
-
-.monitor-row__meta--elapsed {
-  font-variant-numeric: tabular-nums;
-  opacity: 0.8;
-}
+/* ---- Right-side metrics ---- */
 
 .monitor-row__spacer {
   flex: 1 1 auto;
   min-width: 8px;
+}
+
+.monitor-row__meta {
+  font-size: 11px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.monitor-row__meta--cost {
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monitor-row__accent[data-animated],
+  .monitor-row__state-pulse {
+    animation: none !important;
+  }
 }
 </style>

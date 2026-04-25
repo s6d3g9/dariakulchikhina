@@ -34,7 +34,28 @@ onMounted(() => {
   if (sessionsModel.sessions.value.length === 0) {
     void sessionsModel.refresh()
   }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', onGlobalKeydown)
+  }
 })
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', onGlobalKeydown)
+  }
+})
+
+function onGlobalKeydown(ev: KeyboardEvent) {
+  // Esc closes the trace pane; ignore when typing into form fields so we
+  // don't fight other components for the same key.
+  if (ev.key !== 'Escape') return
+  const target = ev.target as HTMLElement | null
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+  if (activeSlug.value) {
+    ev.preventDefault()
+    activeSlug.value = null
+  }
+}
 
 function selectSession(slug: string) {
   activeSlug.value = slug
@@ -65,10 +86,16 @@ const lastFetchedLabel = computed(() => {
 </script>
 
 <template>
-  <section class="section-block section-block--monitor" aria-label="Monitor section">
+  <section
+    class="section-block section-block--monitor"
+    aria-label="Monitor section"
+  >
     <header class="monitor-section__header">
       <div class="monitor-section__title">
-        <v-icon icon="mdi-monitor-dashboard" size="20" />
+        <v-icon
+          icon="mdi-monitor-dashboard"
+          size="20"
+        />
         <span class="title-medium">Монитор сессий</span>
         <v-chip
           v-if="sessionsModel.streamConnected.value"
@@ -77,7 +104,11 @@ const lastFetchedLabel = computed(() => {
           variant="tonal"
           class="monitor-section__chip"
         >
-          <v-icon icon="mdi-circle" size="6" class="me-1" />
+          <v-icon
+            icon="mdi-circle"
+            size="6"
+            class="me-1"
+          />
           live
         </v-chip>
         <v-chip
@@ -91,7 +122,10 @@ const lastFetchedLabel = computed(() => {
         </v-chip>
       </div>
       <div class="monitor-section__meta">
-        <span v-if="lastFetchedLabel" class="monitor-section__hint">{{ lastFetchedLabel }}</span>
+        <span
+          v-if="lastFetchedLabel"
+          class="monitor-section__hint"
+        >{{ lastFetchedLabel }}</span>
         <v-btn
           variant="text"
           size="small"
@@ -103,12 +137,17 @@ const lastFetchedLabel = computed(() => {
       </div>
     </header>
 
-    <div class="monitor-section__split" :class="{ 'monitor-section__split--has-active': !!activeSlug }">
+    <div
+      class="monitor-section__split"
+      :class="{ 'monitor-section__split--has-active': !!activeSlug }"
+    >
       <MonitorTopologyTree
         v-model="mode"
         class="monitor-section__tree"
         :sessions="sessionsModel.sessions.value"
         :active-slug="activeSlug"
+        :stream-connected="sessionsModel.streamConnected.value"
+        :last-delta-at="sessionsModel.lastDeltaAt.value"
         @open-session="selectSession"
       />
       <MonitorTraceDetails

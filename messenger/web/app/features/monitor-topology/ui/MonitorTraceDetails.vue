@@ -68,7 +68,10 @@ const finishedLabel = computed(() => {
 </script>
 
 <template>
-  <aside class="trace-details" :aria-hidden="!session">
+  <aside
+    class="trace-details"
+    :aria-hidden="!session"
+  >
     <header class="trace-details__header">
       <button
         type="button"
@@ -76,9 +79,15 @@ const finishedLabel = computed(() => {
         aria-label="Закрыть детали"
         @click="emit('close')"
       >
-        <v-icon icon="mdi-close" size="18" />
+        <v-icon
+          icon="mdi-close"
+          size="18"
+        />
       </button>
-      <div v-if="session" class="trace-details__title">
+      <div
+        v-if="session"
+        class="trace-details__title"
+      >
         <v-icon
           v-if="sessionMeta"
           :icon="sessionMeta.icon"
@@ -87,39 +96,78 @@ const finishedLabel = computed(() => {
         />
         <span class="title-medium">{{ session.agentDisplayName || session.slug }}</span>
       </div>
-      <span v-else class="trace-details__title trace-details__title--empty">
-        <v-icon icon="mdi-cursor-default-click-outline" size="18" />
+      <span
+        v-else
+        class="trace-details__title trace-details__title--empty"
+      >
+        <v-icon
+          icon="mdi-cursor-default-click-outline"
+          size="18"
+        />
         Выберите сессию
       </span>
     </header>
 
-    <div v-if="!session" class="trace-details__placeholder">
+    <div
+      v-if="!session"
+      class="trace-details__placeholder"
+    >
       Нажмите на любую строку слева, чтобы увидеть полную трассировку:
       родителя, дочерние сессии и дерево agent-runs.
     </div>
 
-    <div v-else class="trace-details__body">
+    <div
+      v-else
+      class="trace-details__body"
+    >
       <!-- Trace summary bar -->
       <div class="trace-details__summary">
         <div class="trace-details__summary-row">
-          <span class="trace-details__chip" :class="`trace-details__chip--tier-${sessionMeta?.tier ?? 2}`">
+          <span
+            class="trace-details__chip"
+            :class="`trace-details__chip--tier-${sessionMeta?.tier ?? 2}`"
+          >
             {{ sessionMeta?.label ?? session.kind }}
           </span>
-          <span v-if="session.model" class="trace-details__chip trace-details__chip--mono">{{ session.model }}</span>
-          <span v-if="session.status === 'running'" class="trace-details__chip trace-details__chip--running">running</span>
-          <span v-else-if="session.status === 'done'" class="trace-details__chip trace-details__chip--done">done</span>
+          <span
+            v-if="session.model"
+            class="trace-details__chip trace-details__chip--mono"
+          >{{ session.model }}</span>
+          <span
+            v-if="session.status === 'running'"
+            class="trace-details__chip trace-details__chip--running"
+          >running</span>
+          <span
+            v-else-if="session.status === 'done'"
+            class="trace-details__chip trace-details__chip--done"
+          >done</span>
         </div>
         <div class="trace-details__summary-row trace-details__summary-row--meta">
-          <span v-if="startedLabel" title="Начата">↘ {{ startedLabel }}</span>
-          <span v-if="finishedLabel" title="Завершена">✓ {{ finishedLabel }}</span>
-          <span v-if="session.lastTool" class="trace-details__mono">{{ session.lastTool }}</span>
+          <span
+            v-if="startedLabel"
+            title="Начата"
+          >↘ {{ startedLabel }}</span>
+          <span
+            v-if="finishedLabel"
+            title="Завершена"
+          >✓ {{ finishedLabel }}</span>
+          <span
+            v-if="session.lastTool"
+            class="trace-details__mono"
+          >{{ session.lastTool }}</span>
         </div>
       </div>
 
       <!-- Trace totals — sum across all sessions sharing rootRunId -->
-      <div v-if="traceMembers.length > 1" class="trace-details__trace-totals">
+      <div
+        v-if="traceMembers.length > 1"
+        class="trace-details__trace-totals"
+      >
         <div class="trace-details__trace-totals-title">
-          <v-icon icon="mdi-call-split" size="14" />
+          <v-icon
+            icon="mdi-call-split"
+            size="14"
+          />
           Трассировка ({{ traceMembers.length }} сессий, общий rootRunId)
         </div>
         <div class="trace-details__trace-totals-row">
@@ -129,9 +177,15 @@ const finishedLabel = computed(() => {
       </div>
 
       <!-- Ancestry chain -->
-      <section v-if="ancestry.length" class="trace-details__section">
+      <section
+        v-if="ancestry.length"
+        class="trace-details__section"
+      >
         <div class="trace-details__section-title">
-          <v-icon icon="mdi-arrow-up-thin-circle-outline" size="14" />
+          <v-icon
+            icon="mdi-arrow-up-thin-circle-outline"
+            size="14"
+          />
           Родительская цепочка
         </div>
         <div class="trace-details__chain">
@@ -159,9 +213,15 @@ const finishedLabel = computed(() => {
       </section>
 
       <!-- Direct children -->
-      <section v-if="children.length" class="trace-details__section">
+      <section
+        v-if="children.length"
+        class="trace-details__section"
+      >
         <div class="trace-details__section-title">
-          <v-icon icon="mdi-source-branch" size="14" />
+          <v-icon
+            icon="mdi-source-branch"
+            size="14"
+          />
           Запущенные сессии ({{ children.length }})
         </div>
         <ul class="trace-details__list">
@@ -175,23 +235,36 @@ const finishedLabel = computed(() => {
               class="trace-details__list-button"
               @click="emit('open-session', child.slug)"
             >
-              <span class="trace-details__list-dot" :class="child.isActive ? 'is-active' : (child.status === 'done' ? 'is-done' : '')" aria-hidden="true" />
+              <span
+                class="trace-details__list-dot"
+                :class="child.isActive ? 'is-active' : (child.status === 'done' ? 'is-done' : '')"
+                aria-hidden="true"
+              />
               <v-icon
                 :icon="getSessionKindMeta(child.kind, child.slug).icon"
                 :color="getSessionKindMeta(child.kind, child.slug).color"
                 size="14"
               />
               <span class="trace-details__list-label">{{ child.agentDisplayName || child.slug }}</span>
-              <span v-if="child.lastTool" class="trace-details__mono">{{ child.lastTool }}</span>
+              <span
+                v-if="child.lastTool"
+                class="trace-details__mono"
+              >{{ child.lastTool }}</span>
             </button>
           </li>
         </ul>
       </section>
 
       <!-- Agent run tree (rootRunId scope) -->
-      <section v-if="runTreeBound" class="trace-details__section">
+      <section
+        v-if="runTreeBound"
+        class="trace-details__section"
+      >
         <div class="trace-details__section-title">
-          <v-icon icon="mdi-graph-outline" size="14" />
+          <v-icon
+            icon="mdi-graph-outline"
+            size="14"
+          />
           Дерево agent runs
         </div>
         <AgentRunTree
