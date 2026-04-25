@@ -1,3 +1,6 @@
+// DEPRECATED 2026-04-25: superseded by daria-host-session-v2 (clicore2messenger/src/host-supervisor.ts).
+// Kept for rollback during migration. See scripts/workrooms/HOST_SESSION_BRIDGE.md.
+//
 // PM2 config for the host-session bridge — tails the newest Claude Code CLI
 // transcript on this machine and streams events into the messenger as the
 // dedicated "Host Session Monitor" agent.

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# DEPRECATED 2026-04-25: superseded by daria-host-session-v2 (clicore2messenger/src/host-supervisor.ts).
+# Kept for rollback during migration. See scripts/workrooms/HOST_SESSION_BRIDGE.md.
+#
 # Supervisor that tails the newest host Claude Code session transcript and
 # streams events into the messenger via the clicore2messenger bridge.
 #
