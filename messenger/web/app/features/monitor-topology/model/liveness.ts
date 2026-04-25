@@ -81,16 +81,21 @@ export function deriveLiveness(session: MessengerCliSession): LivenessMeta {
   }
 
   // Awaiting-user — pre-empts every running state because nothing on the
-  // server side will move it forward without a human.
+  // server side will move it forward without a human. We surface how long
+  // it has been waiting so the user can triage longest-waiting first.
   if (isAwaitingSubstate(session.lastSubstate)) {
+    const waitedFor = elapsedToHuman(session.idleForMs)
+    const idle = session.idleForMs ?? 0
     return {
       state: 'awaiting-user',
-      label: 'ждёт ответа',
+      label: idle >= 30_000 ? `ждёт ${waitedFor}` : 'ждёт ответа',
       color: 'warning',
       icon: 'mdi-hand-back-right-outline',
       animated: true,
       demandsAttention: true,
-      srLabel: 'Сессия ждёт вашего ответа',
+      srLabel: idle >= 30_000
+        ? `Сессия ждёт вашего ответа уже ${waitedFor}`
+        : 'Сессия ждёт вашего ответа',
     }
   }
 
