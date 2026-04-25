@@ -192,6 +192,34 @@ export function registerOrchestrationRoutes(
     },
   )
 
+  // GET /agents/:agentId/active-runs — all pending/running runs for an agent.
+  // Used by the monitor trace pane to show live activity per selected session.
+  app.get<{ Params: { agentId: string } }>(
+    '/agents/:agentId/active-runs',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+      const { agentId } = request.params
+      const runs = await db
+        .select({
+          id: messengerAgentRuns.id,
+          status: messengerAgentRuns.status,
+          prompt: messengerAgentRuns.prompt,
+          createdAt: messengerAgentRuns.createdAt,
+          conversationId: messengerAgentRuns.conversationId,
+        })
+        .from(messengerAgentRuns)
+        .where(and(
+          eq(messengerAgentRuns.agentId, agentId),
+          isNull(messengerAgentRuns.deletedAt),
+          or(eq(messengerAgentRuns.status, 'pending'), eq(messengerAgentRuns.status, 'running')),
+        ))
+        .orderBy(desc(messengerAgentRuns.createdAt))
+      return { runs }
+    },
+  )
+
   // POST /agents/:agentId/runs/:runId/cancel
   app.post<{ Params: { agentId: string; runId: string } }>(
     '/agents/:agentId/runs/:runId/cancel',

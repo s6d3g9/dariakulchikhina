@@ -989,20 +989,6 @@ const chatDoneTrace = computed(() =>
   (chatAgentStream.toolUses.value.length > 0 || chatAgentStream.tokenCount.value.total > 0),
 )
 
-// Multi-run: parallel active runs + timeline filter
-const chatActiveRuns = computed(() => chatAgentStream.activeRuns.value)
-const activeRunFilter = ref<string | null>(null)
-const workspaceOpenRunId = ref<string | null>(null)
-function toggleActiveRunFilter(runId: string) {
-  activeRunFilter.value = activeRunFilter.value === runId ? null : runId
-}
-function openRunInWorkspace(runId: string) {
-  workspaceOpenRunId.value = runId
-}
-const SUBSTATE_LABELS: Record<string, string> = {
-  idle: 'Готов', thinking: 'Думает…', tool_call: 'Инструменты…',
-  awaiting_input: 'Ждёт ввод', streaming: 'Отвечает…', error: 'Ошибка',
-}
 
 function toggleChatReasoning() { chatReasoningExpanded.value = !chatReasoningExpanded.value }
 const chatGroupsExpanded = ref<Record<string, boolean>>({})
@@ -1235,11 +1221,7 @@ const threadedMessages = computed<MessengerThreadMessage[]>(() => {
   return roots
 })
 
-// Filtered view when a run is selected in the active-runs panel
-const filteredThreadedMessages = computed(() => {
-  if (!activeRunFilter.value) return threadedMessages.value
-  return threadedMessages.value.filter(msg => msg.own || !msg.runId || msg.runId === activeRunFilter.value)
-})
+const filteredThreadedMessages = computed(() => threadedMessages.value)
 
 // IDs of messages where runId changes between consecutive agent messages → divider before them
 const runDividerSet = computed(() => {
@@ -3422,24 +3404,6 @@ onBeforeUnmount(() => {
               </div>
 
               <div v-else class="chat-thinking-bubble__expand">
-                <!-- Parallel runs selector — shown when 2+ active runs are live -->
-                <div v-if="chatActiveRuns.length > 1" class="thinking-runs-selector" aria-label="Параллельные прогоны">
-                  <div
-                    v-for="run in chatActiveRuns"
-                    :key="run.runId"
-                    class="thinking-run-chip"
-                    :class="{ 'thinking-run-chip--active': activeRunFilter === run.runId }"
-                    role="button"
-                    tabindex="0"
-                    :aria-pressed="activeRunFilter === run.runId"
-                    @click="toggleActiveRunFilter(run.runId)"
-                    @keydown.enter.space.prevent="toggleActiveRunFilter(run.runId)"
-                  >
-                    <span class="thinking-run-chip__id">{{ run.runId.slice(0, 8) }}</span>
-                    <span class="thinking-run-chip__state">{{ SUBSTATE_LABELS[run.state.substate] || run.state.substate }}</span>
-                    <span v-if="run.state.streamingDraft" class="thinking-run-chip__draft">{{ run.state.streamingDraft.slice(0, 60) }}</span>
-                  </div>
-                </div>
                 <div v-if="chatRunDuration || chatAgentStream.tokenCount.value.total" class="chat-thinking-meta">
                   <span v-if="chatRunDuration" class="chat-thinking-meta-chip" title="Длительность">⏱ {{ chatRunDuration }}</span>
                   <span v-if="chatAgentStream.tokenCount.value.total" class="chat-thinking-meta-chip" title="Токены in/out">🧠 {{ chatAgentStream.tokenCount.value.input }}↓ / {{ chatAgentStream.tokenCount.value.output }}↑</span>
@@ -3954,46 +3918,4 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-/* ── Thinking bubble: parallel runs selector ─────────────────────── */
-.thinking-runs-selector {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  padding: 6px 0 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.thinking-runs-selector::-webkit-scrollbar { display: none; }
-.thinking-run-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.08);
-  cursor: pointer;
-  font-size: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: background 120ms, border-color 120ms;
-  user-select: none;
-}
-.thinking-run-chip:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); }
-.thinking-run-chip--active { border-color: rgba(99,179,237,.6); background: rgba(99,179,237,.10); }
-.thinking-run-chip__id {
-  font-family: monospace;
-  color: rgba(255,255,255,.5);
-  font-size: 11px;
-}
-.thinking-run-chip__state {
-  color: rgba(255,255,255,.75);
-}
-.thinking-run-chip__draft {
-  color: rgba(255,255,255,.4);
-  font-style: italic;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 160px;
-}
 </style>

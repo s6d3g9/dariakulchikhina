@@ -3,6 +3,8 @@ import type { MessengerCliSession } from '../../../entities/sessions/model/useMe
 import { getSessionKindMeta } from '../../../entities/sessions/model/useMessengerCliSessions'
 import { deriveLiveness } from '../model/liveness'
 
+const auth = useMessengerAuth()
+
 const props = defineProps<{
   session: MessengerCliSession | null
   ancestry: MessengerCliSession[]
@@ -96,7 +98,40 @@ onBeforeUnmount(() => {
 watch(() => props.session?.slug, () => {
   copiedSlug.value = false
   if (copiedTimer) { clearTimeout(copiedTimer); copiedTimer = null }
+  void fetchActiveRuns()
 })
+
+// Active runs for the selected session, fetched from /agents/:agentId/active-runs.
+interface ActiveRunRow {
+  id: string
+  status: string
+  prompt: string | null
+  createdAt: string
+  conversationId: string | null
+}
+const activeRuns = ref<ActiveRunRow[]>([])
+const activeRunsLoading = ref(false)
+
+async function fetchActiveRuns() {
+  const id = agentId.value
+  if (!id) { activeRuns.value = []; return }
+  activeRunsLoading.value = true
+  try {
+    const res = await auth.request<{ runs: ActiveRunRow[] }>(`/agents/${id}/active-runs`)
+    activeRuns.value = res.runs
+  }
+  catch { activeRuns.value = [] }
+  finally { activeRunsLoading.value = false }
+}
+
+onMounted(() => { void fetchActiveRuns() })
+
+function fmtTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  }
+  catch { return iso }
+}
 
 </script>
 
@@ -307,6 +342,49 @@ watch(() => props.session?.slug, () => {
                 :class="`trace-details__live-label--${deriveLiveness(child).state}`"
               >{{ deriveLiveness(child).label }}</span>
             </button>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Active runs for this session -->
+      <section
+        v-if="agentId && (activeRuns.length > 0 || activeRunsLoading)"
+        class="trace-details__section"
+      >
+        <div class="trace-details__section-title">
+          <v-icon
+            icon="mdi-run-fast"
+            size="14"
+          />
+          Активные прогоны
+          <span
+            v-if="activeRunsLoading"
+            class="trace-details__hint"
+          >загрузка…</span>
+          <span
+            v-else
+            class="trace-details__hint"
+          >{{ activeRuns.length }}</span>
+        </div>
+        <ul class="trace-details__list">
+          <li
+            v-for="run in activeRuns"
+            :key="run.id"
+            class="trace-details__list-item"
+          >
+            <div class="trace-details__active-run">
+              <span
+                class="trace-details__list-dot is-active"
+                aria-hidden="true"
+              />
+              <span class="trace-details__mono trace-details__run-id">{{ run.id.slice(0, 8) }}</span>
+              <span class="trace-details__run-status">{{ run.status }}</span>
+              <span class="trace-details__run-time">{{ fmtTime(run.createdAt) }}</span>
+              <span
+                v-if="run.prompt"
+                class="trace-details__run-prompt"
+              >{{ run.prompt.slice(0, 80) }}</span>
+            </div>
           </li>
         </ul>
       </section>
@@ -699,6 +777,44 @@ watch(() => props.session?.slug, () => {
   font-size: 12px;
   color: rgb(var(--v-theme-on-surface-variant));
   padding: 8px;
+}
+
+.trace-details__active-run {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 6%, transparent);
+  font-size: 12px;
+}
+
+.trace-details__run-id {
+  flex-shrink: 0;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.trace-details__run-status {
+  flex-shrink: 0;
+  font-weight: 500;
+  color: rgb(var(--v-theme-primary));
+}
+
+.trace-details__run-time {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-variant-numeric: tabular-nums;
+}
+
+.trace-details__run-prompt {
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .trace-details__actions {
