@@ -40,6 +40,20 @@ const { bySlug, ancestryFor, childrenFor, byRootRunId, counters } = provideMonit
   activeSlugRef,
 )
 
+// Drop a stale `?session=ghost` slug once sessions have loaded — otherwise
+// the trace pane shows the empty placeholder while the URL still claims a
+// selection. We only run this once after the first refresh so the watcher
+// doesn't fight live deletions (those should keep the pane open until the
+// user closes it manually).
+const initialSessionResolved = ref(false)
+watch([sessionsRef, () => sessionsModel.lastFetchedAt.value], ([sessions, fetchedAt]) => {
+  if (initialSessionResolved.value || !fetchedAt || !sessions.length) return
+  initialSessionResolved.value = true
+  if (activeSlug.value && !bySlug.value.has(activeSlug.value)) {
+    activeSlug.value = null
+  }
+})
+
 // Slack-style unread badge in the browser tab title. Shows total count of
 // rows that demand attention (awaiting + crashed) so the user notices new
 // "ждёт ответа" sessions even when this tab is not focused.
