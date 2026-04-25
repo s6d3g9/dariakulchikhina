@@ -8,6 +8,9 @@ export interface MonitorRow {
   session: MessengerCliSession
   depth: number
   parentAgentId: string | null
+  hasChildren: boolean
+  childCount: number
+  isLastSibling: boolean
 }
 
 function startOfTodayMs(): number {
@@ -29,6 +32,7 @@ function lastActivityMs(s: MessengerCliSession): number {
 export function useMonitorTopology(
   sessions: Ref<MessengerCliSession[]>,
   mode: Ref<MonitorMode>,
+  activeSlug?: Ref<string | null>,
 ) {
   const filtered = computed<MessengerCliSession[]>(() => {
     const todayStart = startOfTodayMs()
@@ -89,24 +93,101 @@ export function useMonitorTopology(
     const seen = new Set<string>()
     const childrenMap = byParentAgentId.value
 
-    function pushSubtree(node: MessengerCliSession, depth: number, parentAgentId: string | null) {
+    function pushSubtree(node: MessengerCliSession, depth: number, parentAgentId: string | null, isLast: boolean) {
       if (seen.has(node.slug)) return
       seen.add(node.slug)
-      rows.push({ session: node, depth, parentAgentId })
-      if (!node.agentId) return
-      const children = childrenMap.get(node.agentId)
-      if (!children?.length) return
-      for (const child of children) pushSubtree(child, depth + 1, node.agentId)
+      const children = node.agentId ? (childrenMap.get(node.agentId) ?? []) : []
+      rows.push({
+        session: node,
+        depth,
+        parentAgentId,
+        hasChildren: children.length > 0,
+        childCount: children.length,
+        isLastSibling: isLast,
+      })
+      for (let i = 0; i < children.length; i++) {
+        pushSubtree(children[i]!, depth + 1, node.agentId, i === children.length - 1)
+      }
     }
 
-    for (const root of roots.value) pushSubtree(root, 0, null)
+    const roots_ = roots.value
+    for (let i = 0; i < roots_.length; i++) {
+      pushSubtree(roots_[i]!, 0, null, i === roots_.length - 1)
+    }
 
     // Append any sessions we haven't visited (defensive — should be empty).
     for (const s of filtered.value) {
-      if (!seen.has(s.slug)) rows.push({ session: s, depth: 0, parentAgentId: s.parentAgentId ?? null })
+      if (!seen.has(s.slug)) {
+        rows.push({
+          session: s,
+          depth: 0,
+          parentAgentId: s.parentAgentId ?? null,
+          hasChildren: false,
+          childCount: 0,
+          isLastSibling: true,
+        })
+      }
     }
     return rows
   })
+
+  const byRootRunId = computed<Map<string, MessengerCliSession[]>>(() => {
+    const map = new Map<string, MessengerCliSession[]>()
+    for (const s of filtered.value) {
+      const key = s.rootRunId
+      if (!key) continue
+      const list = map.get(key) ?? []
+      list.push(s)
+      map.set(key, list)
+    }
+    return map
+  })
+
+  const bySlug = computed<Map<string, MessengerCliSession>>(() => {
+    const map = new Map<string, MessengerCliSession>()
+    for (const s of filtered.value) map.set(s.slug, s)
+    return map
+  })
+
+  const byAgentId = computed<Map<string, MessengerCliSession>>(() => {
+    const map = new Map<string, MessengerCliSession>()
+    for (const s of filtered.value) {
+      if (s.agentId) map.set(s.agentId, s)
+    }
+    return map
+  })
+
+  // Set of slugs that share a trace (rootRunId) with the active session.
+  const activeTrace = computed<Set<string>>(() => {
+    if (!activeSlug?.value) return new Set()
+    const cur = bySlug.value.get(activeSlug.value)
+    if (!cur?.rootRunId) return new Set([activeSlug.value])
+    const members = byRootRunId.value.get(cur.rootRunId) ?? []
+    return new Set(members.map(s => s.slug))
+  })
+
+  // Walk parent chain via parentAgentId (CLI session lineage).
+  function ancestryFor(slug: string): MessengerCliSession[] {
+    const chain: MessengerCliSession[] = []
+    let cur = bySlug.value.get(slug) ?? null
+    const seen = new Set<string>()
+    while (cur && !seen.has(cur.slug)) {
+      seen.add(cur.slug)
+      const parentId = cur.parentAgentId
+      if (!parentId) break
+      const parent = byAgentId.value.get(parentId)
+      if (!parent) break
+      chain.push(parent)
+      cur = parent
+    }
+    return chain.reverse()
+  }
+
+  function childrenFor(slug: string): MessengerCliSession[] {
+    const cur = bySlug.value.get(slug)
+    if (!cur?.agentId) return []
+    return byParentAgentId.value.get(cur.agentId) ?? []
+  }
 
   const counters = computed(() => {
     let composers = 0
@@ -129,5 +210,17 @@ export function useMonitorTopology(
     }
   })
 
-  return { filtered, roots, byParentAgentId, flatSorted, counters }
+  return {
+    filtered,
+    roots,
+    byParentAgentId,
+    flatSorted,
+    counters,
+    byRootRunId,
+    bySlug,
+    byAgentId,
+    activeTrace,
+    ancestryFor,
+    childrenFor,
+  }
 }

@@ -6,19 +6,22 @@ import { useMonitorTopology, type MonitorMode } from '../model/useMonitorTopolog
 const props = defineProps<{
   sessions: MessengerCliSession[]
   activeSlug?: string | null
+  modelValue?: MonitorMode
 }>()
 
 const emit = defineEmits<{
   'open-session': [slug: string]
-  'mode-change': [mode: MonitorMode]
+  'update:modelValue': [mode: MonitorMode]
 }>()
 
 const sessionsRef = computed(() => props.sessions) as Ref<MessengerCliSession[]>
-const mode = ref<MonitorMode>('live')
+const activeSlugRef = computed(() => props.activeSlug ?? null)
+const mode = computed<MonitorMode>({
+  get: () => props.modelValue ?? 'live',
+  set: (v) => emit('update:modelValue', v),
+})
 
-const { flatSorted, counters } = useMonitorTopology(sessionsRef, mode)
-
-watch(mode, (m) => emit('mode-change', m))
+const { flatSorted, counters, activeTrace } = useMonitorTopology(sessionsRef, mode, activeSlugRef)
 </script>
 
 <template>
@@ -72,6 +75,7 @@ watch(mode, (m) => emit('mode-change', m))
         <MonitorSessionRow
           :row="item"
           :active="activeSlug === item.session.slug"
+          :in-trace="activeTrace.has(item.session.slug)"
           @open-session="(slug) => emit('open-session', slug)"
         />
       </template>

@@ -5,6 +5,7 @@ import { getSessionKindMeta } from '../../../entities/sessions/model/useMessenge
 const props = defineProps<{
   row: MonitorRow
   active?: boolean
+  inTrace?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -50,19 +51,37 @@ const title = computed(() => {
 <template>
   <div
     class="monitor-row"
-    :class="{ 'monitor-row--active': active }"
-    :style="{ '--depth': row.depth }"
+    :class="{
+      'monitor-row--active': active,
+      'monitor-row--in-trace': inTrace && !active,
+    }"
     role="button"
     tabindex="0"
     @click="emit('open-session', row.session.slug)"
     @keydown.enter="emit('open-session', row.session.slug)"
   >
-    <span class="monitor-row__indent" :style="{ width: `${row.depth * 18}px` }" aria-hidden="true">
-      <span v-if="row.depth > 0" class="monitor-row__elbow" />
+    <span class="monitor-row__rails" :style="{ width: `${row.depth * 18}px` }" aria-hidden="true">
+      <span
+        v-for="d in row.depth"
+        :key="d"
+        class="monitor-row__rail"
+        :class="{ 'monitor-row__rail--last': d === row.depth && row.isLastSibling }"
+        :style="{ left: `${(d - 1) * 18 + 9}px` }"
+      />
+      <span
+        v-if="row.depth > 0"
+        class="monitor-row__elbow"
+        :style="{ left: `${(row.depth - 1) * 18 + 9}px` }"
+      />
     </span>
     <span class="monitor-row__dot" :class="dotClass" aria-hidden="true" />
     <v-icon class="monitor-row__icon" :icon="meta.icon" :color="meta.color" size="14" />
     <span class="monitor-row__title">{{ title }}</span>
+    <span
+      v-if="row.hasChildren"
+      class="monitor-row__chip monitor-row__chip--children"
+      :title="`${row.childCount} дочерних сессий`"
+    >+{{ row.childCount }}</span>
     <span v-if="row.session.lastTool" class="monitor-row__meta monitor-row__meta--tool">{{ row.session.lastTool }}</span>
     <span v-if="row.session.lastSubstate" class="monitor-row__meta monitor-row__meta--substate">{{ row.session.lastSubstate }}</span>
     <span class="monitor-row__spacer" />
@@ -97,30 +116,35 @@ const title = computed(() => {
 }
 
 .monitor-row--active {
-  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 10%, transparent);
+  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 14%, transparent);
 }
 
-.monitor-row__indent {
+.monitor-row--in-trace {
+  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 5%, transparent);
+}
+
+.monitor-row__rails {
   position: relative;
   flex: 0 0 auto;
-  height: 100%;
+  align-self: stretch;
+}
+
+.monitor-row__rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, rgb(var(--v-theme-outline)) 24%, transparent);
+}
+
+.monitor-row__rail--last {
+  bottom: 50%;
 }
 
 .monitor-row__elbow {
   position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 50%;
-  width: 1px;
-  background: color-mix(in srgb, rgb(var(--v-theme-outline)) 30%, transparent);
-}
-
-.monitor-row__elbow::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 100%;
-  width: 8px;
+  top: 50%;
+  width: 9px;
   height: 1px;
   background: color-mix(in srgb, rgb(var(--v-theme-outline)) 30%, transparent);
 }
@@ -159,6 +183,23 @@ const title = computed(() => {
 
 .monitor-row__icon {
   flex: 0 0 auto;
+}
+
+.monitor-row__chip {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 10%, transparent);
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-variant-numeric: tabular-nums;
+}
+
+.monitor-row__chip--children {
+  background: color-mix(in srgb, rgb(var(--v-theme-secondary)) 18%, transparent);
+  color: rgb(var(--v-theme-secondary));
 }
 
 .monitor-row__title {

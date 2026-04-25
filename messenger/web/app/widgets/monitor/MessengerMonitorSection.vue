@@ -1,13 +1,33 @@
 <script setup lang="ts">
 // Monitor — full-screen view of all live agent CLI sessions arranged as a
-// composer → orchestrator → worker tree, with live token / cost counters.
-// Built on top of useMessengerCliSessions (SSE + delta merge), so the tree
-// is always in sync with the existing session stream.
+// composer → orchestrator → worker tree, with live token / cost counters
+// and a right-side trace details pane showing parents, children and the
+// rootRunId-scoped agent run tree for the selected session.
+
+import { useMonitorTopology, type MonitorMode } from '../../features/monitor-topology/model/useMonitorTopology'
 
 const sessionsModel = useMessengerCliSessions()
 const conversations = useMessengerConversations()
 
 const activeSlug = ref<string | null>(null)
+const mode = ref<MonitorMode>('live')
+
+const sessionsRef = computed(() => sessionsModel.sessions.value)
+const activeSlugRef = computed(() => activeSlug.value)
+const { bySlug, ancestryFor, childrenFor, byRootRunId } = useMonitorTopology(
+  sessionsRef,
+  mode,
+  activeSlugRef,
+)
+
+const activeSession = computed(() => activeSlug.value ? bySlug.value.get(activeSlug.value) ?? null : null)
+const activeAncestry = computed(() => activeSlug.value ? ancestryFor(activeSlug.value) : [])
+const activeChildren = computed(() => activeSlug.value ? childrenFor(activeSlug.value) : [])
+const activeTraceMembers = computed(() => {
+  const sess = activeSession.value
+  if (!sess?.rootRunId) return sess ? [sess] : []
+  return byRootRunId.value.get(sess.rootRunId) ?? [sess]
+})
 
 onMounted(() => {
   sessionsModel.connectStream()
@@ -16,16 +36,23 @@ onMounted(() => {
   }
 })
 
-async function openSession(slug: string) {
+function selectSession(slug: string) {
   activeSlug.value = slug
+}
+
+async function openChatForSession(slug: string) {
   const session = sessionsModel.sessions.value.find(s => s.slug === slug)
   if (!session?.agentId) return
   try {
     await conversations.openAgentConversation(session.agentId)
   }
   catch {
-    // agents disabled — silently ignore; row click is a no-op in that case
+    // agents disabled — no-op
   }
+}
+
+function closeDetails() {
+  activeSlug.value = null
 }
 
 const lastFetchedLabel = computed(() => {
@@ -76,12 +103,25 @@ const lastFetchedLabel = computed(() => {
       </div>
     </header>
 
-    <MonitorTopologyTree
-      class="monitor-section__tree"
-      :sessions="sessionsModel.sessions.value"
-      :active-slug="activeSlug"
-      @open-session="openSession"
-    />
+    <div class="monitor-section__split" :class="{ 'monitor-section__split--has-active': !!activeSlug }">
+      <MonitorTopologyTree
+        v-model="mode"
+        class="monitor-section__tree"
+        :sessions="sessionsModel.sessions.value"
+        :active-slug="activeSlug"
+        @open-session="selectSession"
+      />
+      <MonitorTraceDetails
+        class="monitor-section__details"
+        :session="activeSession"
+        :ancestry="activeAncestry"
+        :children="activeChildren"
+        :trace-members="activeTraceMembers"
+        @open-session="selectSession"
+        @open-chat="openChatForSession"
+        @close="closeDetails"
+      />
+    </div>
   </section>
 </template>
 
@@ -124,8 +164,37 @@ const lastFetchedLabel = computed(() => {
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
-.monitor-section__tree {
+.monitor-section__split {
   flex: 1 1 auto;
   min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 0;
+  transition: grid-template-columns 220ms ease;
+  overflow: hidden;
+}
+
+.monitor-section__split--has-active {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+}
+
+.monitor-section__tree {
+  min-width: 0;
+  min-height: 0;
+}
+
+.monitor-section__details {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .monitor-section__split--has-active {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+
+  .monitor-section__split--has-active .monitor-section__tree {
+    visibility: hidden;
+  }
 }
 </style>
