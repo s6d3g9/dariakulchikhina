@@ -135,6 +135,19 @@ const staleLabel = computed(() => {
 // items via arrow keys; v-virtual-scroll handles the scrolling once focus
 // crosses the viewport edge thanks to scrollIntoView({block:'nearest'}).
 const scrollerRef = ref<HTMLElement | null>(null)
+const virtualScrollRef = ref<{ scrollToIndex: (idx: number) => void } | null>(null)
+
+// When the parent selects a session (click in tree, deep link, or trace pane
+// follow-up), make sure that row is visible. v-virtual-scroll only renders
+// items inside its viewport, so we ask it to scroll the selected index into
+// view. Wait one tick because filter changes can shift indexes the same frame.
+watch(() => props.activeSlug, (slug) => {
+  if (!slug) return
+  void nextTick(() => {
+    const idx = visibleRows.value.findIndex(r => r.session.slug === slug)
+    if (idx >= 0) virtualScrollRef.value?.scrollToIndex(idx)
+  })
+})
 
 function focusRowByOffset(currentEl: HTMLElement, offset: number) {
   const root = scrollerRef.value
@@ -334,6 +347,7 @@ function onTreeKeydown(ev: KeyboardEvent) {
     >
       <v-virtual-scroll
         v-if="visibleRows.length"
+        ref="virtualScrollRef"
         :items="visibleRows"
         :item-height="32"
         class="monitor-tree__scroller"
