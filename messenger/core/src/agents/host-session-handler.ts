@@ -1,8 +1,9 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto'
 import { readFileSync, existsSync } from 'node:fs'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { readMessengerConfig } from '../config.ts'
+import { readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
 import {
   useIngestDb,
   messengerAgents,
@@ -11,6 +12,7 @@ import {
   and,
   isNull,
   sql,
+  desc,
 } from './ingest-db.ts'
 // eslint-disable-next-line no-restricted-imports
 import { messengerConversations } from '../../../../server/db/schema/messenger.ts'
@@ -22,6 +24,17 @@ function verifyBridgeToken(authHeader: string | undefined, expected: string): bo
   const eBuf = Buffer.from(expected)
   if (tBuf.length !== eBuf.length) return false
   return timingSafeEqual(tBuf, eBuf)
+}
+
+function resolveSessionAuth(request: FastifyRequest) {
+  const config = readMessengerConfig()
+  let token = readBearerToken(request.headers.authorization ?? '')
+  if (!token) {
+    const q = (request.query ?? {}) as { token?: string }
+    if (typeof q.token === 'string' && q.token) token = q.token
+  }
+  if (!token) return null
+  return verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET)
 }
 
 function loadProjectsMap(filePath: string | undefined): Record<string, string> {
@@ -273,4 +286,49 @@ export function registerHostSessionRoutes(app: FastifyInstance) {
       return reply.code(200).send({ ok: true, runId })
     },
   )
+
+  app.get('/agents/host-session/runs/active', async (request, reply) => {
+    const session = resolveSessionAuth(request)
+    if (!session) return reply.code(401).send({ error: 'UNAUTHORIZED' })
+
+    const db = useIngestDb()
+
+    const rows = await db
+      .select({
+        id: messengerAgentRuns.id,
+        agentId: messengerAgentRuns.agentId,
+        agentName: messengerAgents.name,
+        createdAt: messengerAgentRuns.createdAt,
+        sessionMetadata: messengerAgentRuns.sessionMetadata,
+      })
+      .from(messengerAgentRuns)
+      .innerJoin(messengerAgents, eq(messengerAgentRuns.agentId, messengerAgents.id))
+      .where(
+        and(
+          eq(messengerAgentRuns.status, 'running'),
+          sql`${messengerAgents.config}->>'type' = 'host-session'`,
+          eq(messengerAgents.ownerUserId, session.sub),
+          isNull(messengerAgentRuns.deletedAt),
+          isNull(messengerAgents.deletedAt),
+        ),
+      )
+      .orderBy(desc(messengerAgentRuns.createdAt))
+      .limit(100)
+
+    const runs = rows.map((r) => {
+      const meta = (r.sessionMetadata ?? {}) as Record<string, unknown>
+      return {
+        id: r.id,
+        agentId: r.agentId,
+        agentName: r.agentName,
+        createdAt: r.createdAt,
+        sessionId: typeof meta.sessionId === 'string' ? meta.sessionId : null,
+        cwd: typeof meta.cwd === 'string' ? meta.cwd : null,
+        parentRunId: typeof meta.parentRunId === 'string' ? meta.parentRunId : null,
+        isSubagent: meta.isSubagent === true,
+      }
+    })
+
+    return reply.code(200).send({ runs })
+  })
 }

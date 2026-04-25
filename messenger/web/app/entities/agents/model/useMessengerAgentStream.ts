@@ -232,10 +232,29 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
     reconnectTimer = setTimeout(() => { reconnectTimer = null; connect() }, 1500)
   }
 
+  async function hydrateFromRest() {
+    if (!import.meta.client || !auth.token.value || !agentId.value) return
+    try {
+      const res = await auth.request<{ runs: Array<{ id: string; agentId: string; createdAt: string; sessionId: string | null; cwd: string | null }> }>(
+        '/agents/host-session/runs/active',
+      )
+      for (const run of res.runs) {
+        if (run.agentId !== agentId.value) continue
+        if (runStates.has(run.id)) continue
+        const rs = makeRunState(run.cwd ?? run.sessionId ?? '')
+        rs.startedAt = new Date(run.createdAt).getTime() || Date.now()
+        runStates.set(run.id, rs)
+      }
+    } catch {
+      // non-host-session agents return 401/404 — silently ignore
+    }
+  }
+
   function connect() {
     if (!import.meta.client || !auth.token.value || !agentId.value) return
     teardown()
     boundAgentId = agentId.value
+    void hydrateFromRest()
 
     const wsUrl = buildMessengerWsUrl(
       config.public.messengerCoreBaseUrl,
