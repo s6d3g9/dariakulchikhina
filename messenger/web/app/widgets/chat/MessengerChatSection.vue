@@ -589,9 +589,24 @@ async function onEffortSelect(effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max
 }
 
 const subsModel = useMessengerSubscriptions()
-onMounted(() => { subsModel.hydrate().catch(() => {}) })
+
+let claudeUsageTimer: ReturnType<typeof setInterval> | null = null
+function shouldPollClaudeUsage(): boolean {
+  return subsModel.defaultSubscription.value?.provider === 'claude-code-cli'
+}
+onMounted(() => {
+  subsModel.hydrate().catch(() => {})
+  const tick = () => { if (shouldPollClaudeUsage()) subsModel.fetchClaudeUsage().catch(() => {}) }
+  tick()
+  claudeUsageTimer = setInterval(tick, 60_000)
+})
+onBeforeUnmount(() => { if (claudeUsageTimer) clearInterval(claudeUsageTimer) })
 
 const currentSubscriptionLabel = computed(() => subsModel.defaultSubscription.value?.label ?? '')
+const currentClaudeUsage = computed(() => {
+  if (!shouldPollClaudeUsage()) return null
+  return subsModel.claudeUsage.value
+})
 
 // Derive subscription usage live from running CLI sessions instead of the
 // localStorage-backed `recordUsage` ledger, which is never written today.
@@ -2869,6 +2884,7 @@ onBeforeUnmount(() => {
         :agent-usage5h="currentUsage5h"
         :agent-usage-week="currentUsageWeek"
         :agent-usage-month="currentUsageMonth"
+        :agent-claude-usage="currentClaudeUsage"
         :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
         :monitor-session-count="monitorActiveCurrentProjectCount || monitorActiveTotalCount"
         :monitor-session-groups="monitorSessionGroups"

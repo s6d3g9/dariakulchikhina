@@ -41,6 +41,15 @@ const props = withDefaults(defineProps<{
   agentUsage5h?: { requests: number; limit: number }
   agentUsageWeek?: { requests: number; limit: number }
   agentUsageMonth?: { inputTokens: number; outputTokens: number; cacheReadTokens: number; tokensLimit: number }
+  agentClaudeUsage?: {
+    fetchedAt: number
+    subscriptionType: string
+    rateLimitTier: string
+    five_hour: { utilization: number; resets_at: number } | null
+    seven_day: { utilization: number; resets_at: number } | null
+    seven_day_opus: { utilization: number; resets_at: number } | null
+    seven_day_sonnet: { utilization: number; resets_at: number } | null
+  } | null
   monitorPanelOpen?: boolean
   monitorSessionCount?: number
   monitorSessionGroups?: ReadonlyArray<{
@@ -83,6 +92,7 @@ const props = withDefaults(defineProps<{
   agentUsage5h: () => ({ requests: 0, limit: 0 }),
   agentUsageWeek: () => ({ requests: 0, limit: 0 }),
   agentUsageMonth: () => ({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, tokensLimit: 0 }),
+  agentClaudeUsage: () => null,
   monitorPanelOpen: false,
   monitorSessionCount: 0,
   monitorSessionGroups: () => [],
@@ -146,6 +156,29 @@ function pctClass(p: number): string {
   if (p >= 90) return 'chat-header-sheet__usage-bar--danger'
   if (p >= 70) return 'chat-header-sheet__usage-bar--warn'
   return ''
+}
+
+function utilizationPct(util: number | null | undefined): number {
+  if (!util || util <= 0) return 0
+  return Math.min(100, Math.round(util * 100))
+}
+
+function formatResetIn(ts: number | null | undefined): string {
+  if (!ts) return ''
+  const ms = ts * 1000 - Date.now()
+  if (ms <= 0) return 'скоро'
+  const minutes = Math.floor(ms / 60_000)
+  const days = Math.floor(minutes / (60 * 24))
+  if (days >= 1) {
+    const hours = Math.floor((minutes - days * 24 * 60) / 60)
+    return hours > 0 ? `через ${days} д ${hours} ч` : `через ${days} д`
+  }
+  const hours = Math.floor(minutes / 60)
+  if (hours >= 1) {
+    const mins = minutes - hours * 60
+    return mins > 0 ? `через ${hours} ч ${mins} мин` : `через ${hours} ч`
+  }
+  return `через ${Math.max(1, minutes)} мин`
 }
 
 const emit = defineEmits<{
@@ -691,7 +724,67 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
             Использование
             <span v-if="agentSubscriptionLabel" class="chat-header-sheet__section-hint">{{ agentSubscriptionLabel }}</span>
           </div>
-          <div class="chat-header-sheet__usage">
+          <div v-if="agentClaudeUsage" class="chat-header-sheet__usage">
+            <div class="chat-header-sheet__usage-row">
+              <span class="chat-header-sheet__usage-label">5 ч</span>
+              <div class="chat-header-sheet__usage-track">
+                <div
+                  class="chat-header-sheet__usage-bar"
+                  :class="pctClass(utilizationPct(agentClaudeUsage.five_hour?.utilization))"
+                  :style="{ width: utilizationPct(agentClaudeUsage.five_hour?.utilization) + '%' }"
+                />
+              </div>
+              <span class="chat-header-sheet__usage-value label-small">{{ utilizationPct(agentClaudeUsage.five_hour?.utilization) }}%</span>
+            </div>
+            <div v-if="agentClaudeUsage.five_hour" class="chat-header-sheet__usage-meta label-small">
+              сбросится {{ formatResetIn(agentClaudeUsage.five_hour.resets_at) }}
+            </div>
+
+            <div class="chat-header-sheet__usage-row">
+              <span class="chat-header-sheet__usage-label">7 дн</span>
+              <div class="chat-header-sheet__usage-track">
+                <div
+                  class="chat-header-sheet__usage-bar"
+                  :class="pctClass(utilizationPct(agentClaudeUsage.seven_day?.utilization))"
+                  :style="{ width: utilizationPct(agentClaudeUsage.seven_day?.utilization) + '%' }"
+                />
+              </div>
+              <span class="chat-header-sheet__usage-value label-small">{{ utilizationPct(agentClaudeUsage.seven_day?.utilization) }}%</span>
+            </div>
+            <div v-if="agentClaudeUsage.seven_day" class="chat-header-sheet__usage-meta label-small">
+              сбросится {{ formatResetIn(agentClaudeUsage.seven_day.resets_at) }}
+            </div>
+
+            <div v-if="agentClaudeUsage.seven_day_opus" class="chat-header-sheet__usage-row">
+              <span class="chat-header-sheet__usage-label">7 дн · Opus</span>
+              <div class="chat-header-sheet__usage-track">
+                <div
+                  class="chat-header-sheet__usage-bar"
+                  :class="pctClass(utilizationPct(agentClaudeUsage.seven_day_opus.utilization))"
+                  :style="{ width: utilizationPct(agentClaudeUsage.seven_day_opus.utilization) + '%' }"
+                />
+              </div>
+              <span class="chat-header-sheet__usage-value label-small">{{ utilizationPct(agentClaudeUsage.seven_day_opus.utilization) }}%</span>
+            </div>
+
+            <div v-if="agentClaudeUsage.seven_day_sonnet" class="chat-header-sheet__usage-row">
+              <span class="chat-header-sheet__usage-label">7 дн · Sonnet</span>
+              <div class="chat-header-sheet__usage-track">
+                <div
+                  class="chat-header-sheet__usage-bar"
+                  :class="pctClass(utilizationPct(agentClaudeUsage.seven_day_sonnet.utilization))"
+                  :style="{ width: utilizationPct(agentClaudeUsage.seven_day_sonnet.utilization) + '%' }"
+                />
+              </div>
+              <span class="chat-header-sheet__usage-value label-small">{{ utilizationPct(agentClaudeUsage.seven_day_sonnet.utilization) }}%</span>
+            </div>
+
+            <div class="chat-header-sheet__usage-meta label-small">
+              <VIcon :size="14">mdi-shield-check-outline</VIcon>
+              {{ agentClaudeUsage.subscriptionType }} · {{ agentClaudeUsage.rateLimitTier }}
+            </div>
+          </div>
+          <div v-else class="chat-header-sheet__usage">
             <div class="chat-header-sheet__usage-row">
               <span class="chat-header-sheet__usage-label">5 ч</span>
               <div class="chat-header-sheet__usage-track">
