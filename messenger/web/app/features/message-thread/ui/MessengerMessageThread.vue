@@ -135,10 +135,11 @@ const copiedFlash = ref(false)
 let copiedFlashTimer: ReturnType<typeof setTimeout> | null = null
 
 async function copyMessageBody() {
-  if (!props.entry.body) return
+  const text = parsedBody.value
+  if (!text) return
   try {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(props.entry.body)
+      await navigator.clipboard.writeText(text)
     }
     copiedFlash.value = true
     if (copiedFlashTimer) clearTimeout(copiedFlashTimer)
@@ -179,6 +180,14 @@ function handleBodyClick(event: MouseEvent) {
     }
     if (action === 'copy-code') emit('copy-text', code, 'Код скопирован')
     else if (action === 'quote-code') emit('quote-code', code)
+    return
+  }
+
+  // Markdown-rendered links (<a href>) navigate themselves; just stop the
+  // click from bubbling up to handleBubbleClick (which would also pop the
+  // action menu, since <a> isn't in isInteractiveTarget's selector list).
+  if (target.closest('a[href]')) {
+    event.stopPropagation()
   }
 }
 
@@ -186,7 +195,7 @@ const replySuggestions = computed<string[]>(() => {
   if (props.entry.own) return []
   const match = (props.entry.body ?? '').match(REPLY_SUGGESTIONS_RE)
   if (!match) return []
-  return match[1].split('|').map(s => s.trim()).filter(Boolean).slice(0, 3)
+  return (match[1] ?? '').split('|').map(s => s.trim()).filter(Boolean).slice(0, 3)
 })
 
 const sentTime = computed(() => formatMessageTime(props.entry.createdAt))

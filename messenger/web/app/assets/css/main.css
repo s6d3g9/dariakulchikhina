@@ -4751,7 +4751,12 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 }
 
 /* ── Markdown body (rendered via markdown-it) ────────────── */
+/* Markdown produces its own block layout (<p>/<pre>/<table>…) — drop the
+   parent's pre-wrap so the literal "\n" between rendered tags doesn't show
+   as a blank line, and reset the inherited margin in case it leaks. */
 .message-body {
+  margin: 0;
+  white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
 }

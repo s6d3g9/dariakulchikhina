@@ -8,10 +8,12 @@ function splitByFilePath(text: string): PathSegment[] {
   const parts: PathSegment[] = []
   let last = 0
   for (const m of text.matchAll(FILE_PATH_RE)) {
+    const path = m[1]
+    if (!path) continue
     const idx = m.index ?? 0
     if (idx > last) parts.push({ isPath: false, text: text.slice(last, idx) })
-    parts.push({ isPath: true, text: m[1] })
-    last = idx + m[1].length
+    parts.push({ isPath: true, text: path })
+    last = idx + path.length
   }
   if (last < text.length) parts.push({ isPath: false, text: text.slice(last) })
   return parts
@@ -100,6 +102,29 @@ function getRenderer(): MarkdownIt {
 
   md.renderer.rules.table_open = () => '<div class="md-table-wrap"><table class="md-table">'
   md.renderer.rules.table_close = () => '</table></div>'
+
+  // Markdown-rendered links open in a new tab with safe relationship to keep
+  // the messenger SPA context intact and block tab-nabbing on opener.
+  const defaultLinkOpen = md.renderer.rules.link_open ?? function (tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options)
+  }
+  md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+    const tk = tokens[idx]
+    if (tk) {
+      const setAttr = (name: string, value: string) => {
+        const i = tk.attrIndex(name)
+        if (i < 0) {
+          tk.attrPush([name, value])
+        } else {
+          const pair = tk.attrs?.[i]
+          if (pair) pair[1] = value
+        }
+      }
+      setAttr('target', '_blank')
+      setAttr('rel', 'noopener noreferrer')
+    }
+    return defaultLinkOpen(tokens, idx, options, env, self)
+  }
 
   cachedRenderer = md
   return md
