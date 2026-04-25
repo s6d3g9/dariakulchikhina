@@ -35,16 +35,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="messenger-header-sheet-backdrop">
-      <div
-        v-if="isOpen"
-        class="messenger-header-sheet-backdrop"
-        aria-hidden="true"
-        @click="close"
-      />
-    </Transition>
-  </Teleport>
+  <Transition name="messenger-header-sheet-backdrop">
+    <div
+      v-if="isOpen"
+      class="messenger-header-sheet-backdrop"
+      aria-hidden="true"
+      @click="close"
+    />
+  </Transition>
 
   <Transition name="messenger-header-sheet">
     <section
