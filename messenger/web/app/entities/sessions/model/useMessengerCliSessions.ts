@@ -11,6 +11,9 @@ export interface MessengerCliSession {
   agentId: string | null
   agentDisplayName: string | null
   agentProjectId: string | null
+  agentType: string | null
+  agentArchived: boolean
+  runId: string | null
   lastActivityAt: string | null
   idleForMs: number | null
   isIdle: boolean

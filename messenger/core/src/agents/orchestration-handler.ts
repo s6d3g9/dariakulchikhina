@@ -390,14 +390,16 @@ export function registerOrchestrationRoutes(
       }
       catch {}
 
-      const agentBySlug = new Map<string, { id: string; name: string; displayName: string; projectId: string | null }>()
+      const agentBySlug = new Map<string, { id: string; name: string; displayName: string; projectId: string | null; agentType: string | null; agentArchived: boolean }>()
       const agentById = new Map<string, { id: string; name: string; projectId: string | null; config: unknown }>()
       for (const agent of allAgents) {
         agentById.set(agent.id, agent)
         const cfg = (agent.config ?? {}) as Record<string, unknown>
         const slug = typeof cfg.claudeSessionSlug === 'string' ? cfg.claudeSessionSlug : null
         const displayName = typeof cfg.displayName === 'string' ? cfg.displayName : agent.name
-        if (slug) agentBySlug.set(slug, { id: agent.id, name: agent.name, displayName, projectId: agent.projectId ?? null })
+        const agentType = typeof cfg.type === 'string' ? cfg.type : null
+        const agentArchived = cfg.archived === true
+        if (slug) agentBySlug.set(slug, { id: agent.id, name: agent.name, displayName, projectId: agent.projectId ?? null, agentType, agentArchived })
       }
 
       // Fallback: map slug → agent via messenger_cli_sessions.agent_id for dynamic
@@ -415,7 +417,9 @@ export function registerOrchestrationRoutes(
           if (!agent) continue
           const cfg = (agent.config ?? {}) as Record<string, unknown>
           const displayName = typeof cfg.displayName === 'string' ? cfg.displayName : agent.name
-          agentBySlug.set(row.slug, { id: agent.id, name: agent.name, displayName, projectId: agent.projectId ?? null })
+          const agentType = typeof cfg.type === 'string' ? cfg.type : null
+          const agentArchived = cfg.archived === true
+          agentBySlug.set(row.slug, { id: agent.id, name: agent.name, displayName, projectId: agent.projectId ?? null, agentType, agentArchived })
         }
       } catch {}
 
@@ -696,6 +700,8 @@ export function registerOrchestrationRoutes(
             agentId,
             agentDisplayName: agentBySlug.get(s.slug)?.displayName ?? null,
             agentProjectId: agentBySlug.get(s.slug)?.projectId ?? slugToMessengerProjectId.get(s.slug) ?? s.registryProjectId ?? null,
+            agentType: agentBySlug.get(s.slug)?.agentType ?? null,
+            agentArchived: agentBySlug.get(s.slug)?.agentArchived ?? false,
             lastActivityAt: activity?.lastActivityAt ?? null,
             idleForMs,
             isIdle,
@@ -709,6 +715,7 @@ export function registerOrchestrationRoutes(
             tokenOutTotal: activity?.tokenOutTotal ?? 0,
             costUsd: activity?.costUsd ?? 0,
             // Signal 1 — spawn tree
+            runId: run?.runId ?? null,
             parentRunId: run?.parentRunId ?? null,
             parentAgentId: run?.spawnedByAgentId ?? null,
             rootRunId: run?.rootRunId ?? null,
