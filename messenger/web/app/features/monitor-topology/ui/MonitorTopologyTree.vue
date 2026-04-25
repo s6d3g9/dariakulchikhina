@@ -21,7 +21,7 @@ const mode = computed<MonitorMode>({
 })
 
 // Section owns the topology instance; we just read its slices here.
-const { flatSorted, counters, activeTrace, awaitingSlugs, crashedSlugs } = injectMonitorTopology()
+const { flatSorted, counters, activeTrace, awaitingSlugs, crashedSlugs, activeSlugs, archivedSlugs, hostSlugs } = injectMonitorTopology()
 
 // Filter chips. Awaiting + crashed reset to 'all' when their pool empties so
 // the user is never stuck looking at an empty tree. Filter / mode / search
@@ -31,6 +31,9 @@ const { filter, search, pinnedSlugs, togglePin } = useMonitorPersistence({ mode 
 watchEffect(() => {
   if (filter.value === 'awaiting' && counters.value.awaiting === 0) filter.value = 'all'
   if (filter.value === 'crashed' && counters.value.crashed === 0) filter.value = 'all'
+  if (filter.value === 'active' && counters.value.active === 0) filter.value = 'all'
+  if (filter.value === 'archived' && counters.value.archived === 0) filter.value = 'all'
+  if (filter.value === 'host' && counters.value.host === 0) filter.value = 'all'
 })
 
 // `/` shortcut focuses the search input — same convention as GitHub, GitLab,
@@ -55,6 +58,18 @@ function applyFilterShortcut(key: string): boolean {
   }
   if (key === '3' && counters.value.crashed > 0) {
     filter.value = filter.value === 'crashed' ? 'all' : 'crashed'
+    return true
+  }
+  if (key === '4' && counters.value.active > 0) {
+    filter.value = filter.value === 'active' ? 'all' : 'active'
+    return true
+  }
+  if (key === '5' && counters.value.archived > 0) {
+    filter.value = filter.value === 'archived' ? 'all' : 'archived'
+    return true
+  }
+  if (key === '6' && counters.value.host > 0) {
+    filter.value = filter.value === 'host' ? 'all' : 'host'
     return true
   }
   return false
@@ -140,6 +155,24 @@ const visibleRows = computed(() => {
       .filter(r => crashedSlugs.value.has(r.session.slug))
       .map(r => ({ ...r, depth: 0, isLastSibling: true }))
       .sort((a, b) => finishedMs(b.session) - finishedMs(a.session))
+  } else if (filter.value === 'active') {
+    const actMs = (s: typeof rows[0]['session']) => s.lastActivityAt ? Date.parse(s.lastActivityAt) : 0
+    rows = flatSorted.value
+      .filter(r => activeSlugs.value.has(r.session.slug))
+      .map(r => ({ ...r, depth: 0, isLastSibling: true }))
+      .sort((a, b) => actMs(b.session) - actMs(a.session))
+  } else if (filter.value === 'archived') {
+    const actMs = (s: typeof rows[0]['session']) => s.lastActivityAt ? Date.parse(s.lastActivityAt) : 0
+    rows = flatSorted.value
+      .filter(r => archivedSlugs.value.has(r.session.slug))
+      .map(r => ({ ...r, depth: 0, isLastSibling: true }))
+      .sort((a, b) => actMs(b.session) - actMs(a.session))
+  } else if (filter.value === 'host') {
+    const actMs = (s: typeof rows[0]['session']) => s.lastActivityAt ? Date.parse(s.lastActivityAt) : 0
+    rows = flatSorted.value
+      .filter(r => hostSlugs.value.has(r.session.slug))
+      .map(r => ({ ...r, depth: 0, isLastSibling: true }))
+      .sort((a, b) => actMs(b.session) - actMs(a.session))
   }
   if (q) rows = rows.filter(r => rowMatchesSearch(r, q))
   // Pinned sessions float to the top as a flat depth=0 group, preserving the
@@ -184,21 +217,19 @@ const staleLabel = computed(() => {
   return `${Math.floor(ms / 3_600_000)} ч без обновлений`
 })
 
-// Keyboard navigation across virtual-scroll rows. We move focus among rendered
-// items via arrow keys; v-virtual-scroll handles the scrolling once focus
-// crosses the viewport edge thanks to scrollIntoView({block:'nearest'}).
+// Keyboard navigation across tree rows.
 const scrollerRef = ref<HTMLElement | null>(null)
-const virtualScrollRef = ref<{ scrollToIndex: (idx: number) => void } | null>(null)
 
 // When the parent selects a session (click in tree, deep link, or trace pane
-// follow-up), make sure that row is visible. v-virtual-scroll only renders
-// items inside its viewport, so we ask it to scroll the selected index into
-// view. Wait one tick because filter changes can shift indexes the same frame.
+// follow-up), scroll the row into view. Wait one tick because filter changes
+// can shift the DOM the same frame.
 watch(() => props.activeSlug, (slug) => {
   if (!slug) return
   void nextTick(() => {
     const idx = visibleRows.value.findIndex(r => r.session.slug === slug)
-    if (idx >= 0) virtualScrollRef.value?.scrollToIndex(idx)
+    if (idx < 0) return
+    const items = scrollerRef.value?.querySelectorAll<HTMLElement>('[role="treeitem"]')
+    items?.[idx]?.scrollIntoView({ block: 'nearest' })
   })
 })
 
@@ -322,6 +353,57 @@ function onTreeKeydown(ev: KeyboardEvent) {
           />
           с ошибкой · {{ counters.crashed }}
         </button>
+        <button
+          type="button"
+          class="monitor-tree__filter-chip monitor-tree__filter-chip--active-filter"
+          :class="{ 'is-active': filter === 'active', 'is-empty': counters.active === 0 }"
+          :disabled="counters.active === 0"
+          :aria-pressed="filter === 'active'"
+          :aria-label="`Активных сессий: ${counters.active}`"
+          title="Только активные (4)"
+          @click="filter = filter === 'active' ? 'all' : 'active'"
+        >
+          <v-icon
+            icon="mdi-pulse"
+            size="13"
+            class="me-1"
+          />
+          активные · {{ counters.active }}
+        </button>
+        <button
+          type="button"
+          class="monitor-tree__filter-chip monitor-tree__filter-chip--archived"
+          :class="{ 'is-active': filter === 'archived', 'is-empty': counters.archived === 0 }"
+          :disabled="counters.archived === 0"
+          :aria-pressed="filter === 'archived'"
+          :aria-label="`Архивных агентов: ${counters.archived}`"
+          title="Только архивные агенты (5)"
+          @click="filter = filter === 'archived' ? 'all' : 'archived'"
+        >
+          <v-icon
+            icon="mdi-archive-outline"
+            size="13"
+            class="me-1"
+          />
+          архивные · {{ counters.archived }}
+        </button>
+        <button
+          type="button"
+          class="monitor-tree__filter-chip monitor-tree__filter-chip--host"
+          :class="{ 'is-active': filter === 'host', 'is-empty': counters.host === 0 }"
+          :disabled="counters.host === 0"
+          :aria-pressed="filter === 'host'"
+          :aria-label="`Host-session агентов: ${counters.host}`"
+          title="Только host-session агенты (6)"
+          @click="filter = filter === 'host' ? 'all' : 'host'"
+        >
+          <v-icon
+            icon="mdi-server"
+            size="13"
+            class="me-1"
+          />
+          host · {{ counters.host }}
+        </button>
       </span>
 
       <span class="monitor-tree__counters">
@@ -401,35 +483,31 @@ function onTreeKeydown(ev: KeyboardEvent) {
       aria-label="Дерево сессий агентов"
       @keydown="onTreeKeydown"
     >
-      <v-virtual-scroll
+      <div
         v-if="visibleRows.length"
-        ref="virtualScrollRef"
-        :items="visibleRows"
-        :item-height="32"
         class="monitor-tree__scroller"
       >
-        <template #default="{ item }">
-          <MonitorSessionRow
-            :key="item.session.slug"
-            :row="item"
-            :active="activeSlug === item.session.slug"
-            :in-trace="activeTrace.has(item.session.slug)"
-            :search-query="normalizedSearch"
-            :now-ms="now"
-            :pinned="pinnedSlugs.has(item.session.slug)"
-            @open-session="(slug: string) => emit('open-session', slug)"
-            @open-chat="(slug: string) => emit('open-chat', slug)"
-            @toggle-pin="(slug: string) => togglePin(slug)"
-          />
-        </template>
-      </v-virtual-scroll>
+        <MonitorSessionRow
+          v-for="item in visibleRows"
+          :key="item.session.slug"
+          :row="item"
+          :active="activeSlug === item.session.slug"
+          :in-trace="activeTrace.has(item.session.slug)"
+          :search-query="normalizedSearch"
+          :now-ms="now"
+          :pinned="pinnedSlugs.has(item.session.slug)"
+          @open-session="(slug: string) => emit('open-session', slug)"
+          @open-chat="(slug: string) => emit('open-chat', slug)"
+          @toggle-pin="(slug: string) => togglePin(slug)"
+        />
+      </div>
 
       <div
         v-else
         class="monitor-tree__empty"
       >
         <v-icon
-          :icon="search ? 'mdi-magnify-close' : filter === 'awaiting' ? 'mdi-hand-back-right-outline' : filter === 'crashed' ? 'mdi-alert-circle-outline' : 'mdi-monitor-off'"
+          :icon="search ? 'mdi-magnify-close' : filter === 'awaiting' ? 'mdi-hand-back-right-outline' : filter === 'crashed' ? 'mdi-alert-circle-outline' : filter === 'active' ? 'mdi-pulse' : filter === 'archived' ? 'mdi-archive-outline' : filter === 'host' ? 'mdi-server' : 'mdi-monitor-off'"
           size="32"
           class="mb-2"
         />
@@ -441,6 +519,15 @@ function onTreeKeydown(ev: KeyboardEvent) {
         </div>
         <div v-else-if="filter === 'crashed'">
           Сессий с ошибкой нет
+        </div>
+        <div v-else-if="filter === 'active'">
+          Нет активных сессий
+        </div>
+        <div v-else-if="filter === 'archived'">
+          Нет архивных агентов
+        </div>
+        <div v-else-if="filter === 'host'">
+          Нет host-session агентов
         </div>
         <div v-else>
           {{ mode === 'live' ? 'Нет активных сессий' : 'Сегодня сессий ещё не было' }}
@@ -536,6 +623,36 @@ function onTreeKeydown(ev: KeyboardEvent) {
 .monitor-tree__filter-chip--crashed.is-active {
   background: color-mix(in srgb, rgb(var(--v-theme-error)) 14%, transparent);
   border-color: rgb(var(--v-theme-error));
+}
+
+.monitor-tree__filter-chip--active-filter:not(.is-empty) {
+  border-color: color-mix(in srgb, rgb(var(--v-theme-primary)) 50%, transparent);
+  color: rgb(var(--v-theme-primary));
+}
+
+.monitor-tree__filter-chip--active-filter.is-active {
+  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 16%, transparent);
+  border-color: rgb(var(--v-theme-primary));
+}
+
+.monitor-tree__filter-chip--archived:not(.is-empty) {
+  border-color: color-mix(in srgb, rgb(var(--v-theme-secondary)) 50%, transparent);
+  color: rgb(var(--v-theme-secondary));
+}
+
+.monitor-tree__filter-chip--archived.is-active {
+  background: color-mix(in srgb, rgb(var(--v-theme-secondary)) 14%, transparent);
+  border-color: rgb(var(--v-theme-secondary));
+}
+
+.monitor-tree__filter-chip--host:not(.is-empty) {
+  border-color: color-mix(in srgb, rgb(var(--v-theme-info, 33 150 243)) 50%, transparent);
+  color: rgb(var(--v-theme-info, 33 150 243));
+}
+
+.monitor-tree__filter-chip--host.is-active {
+  background: color-mix(in srgb, rgb(var(--v-theme-info, 33 150 243)) 14%, transparent);
+  border-color: rgb(var(--v-theme-info, 33 150 243));
 }
 
 .monitor-tree__filter-chip.is-empty {
