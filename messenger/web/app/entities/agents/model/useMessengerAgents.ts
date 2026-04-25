@@ -73,6 +73,10 @@ export interface MessengerAgentItem {
   modelOptions: string[]
   settings: MessengerAgentSettings
   conversationId: string | null
+  /** Populated for host-session agents: the working directory path on the bridge host. */
+  cwd?: string
+  /** Populated for host-session agents: the hostname of the bridge machine. */
+  hostname?: string
 }
 
 export interface MessengerAgentGraphNodeInput {

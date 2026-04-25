@@ -30,6 +30,10 @@ export interface MessengerAgentRecord {
    * the live tail of this Claude Code host session).
    */
   agentKind?: string
+  /** Populated for host-session agents: the working directory path on the bridge host. */
+  cwd?: string
+  /** Populated for host-session agents: the hostname of the bridge machine. */
+  hostname?: string
 }
 
 interface MessengerAgentReplyHistoryItem {
@@ -245,6 +249,8 @@ function agentRowToRecord(row: {
     systemPrompt: typeof cfg.systemPrompt === 'string' ? cfg.systemPrompt : '',
     modelOptions: Array.isArray(cfg.modelOptions) ? cfg.modelOptions : [],
     agentKind: typeof cfg.type === 'string' ? cfg.type : undefined,
+    cwd: cfg.type === 'host-session' && typeof cfg.cwd === 'string' ? cfg.cwd : undefined,
+    hostname: cfg.type === 'host-session' && typeof cfg.hostname === 'string' ? cfg.hostname : undefined,
   }
 }
 
