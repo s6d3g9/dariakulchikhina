@@ -38,6 +38,8 @@ const emit = defineEmits<{
   'copy-link': [href: string, label: string]
   'open-photo': [messageId: string]
   react: [messageId: string, emoji: string]
+  'reply-suggestion-click': [text: string]
+  'open-run': [runId: string]
 }>()
 
 const bubbleEl = ref<HTMLElement | null>(null)
@@ -122,6 +124,36 @@ function formatMessageTime(value?: string) {
   })
 }
 
+const REPLY_SUGGESTIONS_RE = /<reply-suggestions>([^<]*)<\/reply-suggestions>\s*$/
+
+const copiedFlash = ref(false)
+let copiedFlashTimer: ReturnType<typeof setTimeout> | null = null
+
+async function copyMessageBody() {
+  if (!props.entry.body) return
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(props.entry.body)
+    }
+    copiedFlash.value = true
+    if (copiedFlashTimer) clearTimeout(copiedFlashTimer)
+    copiedFlashTimer = setTimeout(() => {
+      copiedFlash.value = false
+      copiedFlashTimer = null
+    }, 1500)
+  } catch {
+    // Clipboard write blocked — silently noop, the user can retry.
+  }
+}
+
+const parsedBody = computed(() => (props.entry.body ?? '').replace(REPLY_SUGGESTIONS_RE, '').trimEnd())
+const replySuggestions = computed<string[]>(() => {
+  if (props.entry.own) return []
+  const match = (props.entry.body ?? '').match(REPLY_SUGGESTIONS_RE)
+  if (!match) return []
+  return match[1].split('|').map(s => s.trim()).filter(Boolean).slice(0, 3)
+})
+
 const sentTime = computed(() => formatMessageTime(props.entry.createdAt))
 const readTime = computed(() => props.entry.own ? formatMessageTime(props.entry.readAt) : '')
 const metaStatus = computed(() => {
@@ -191,6 +223,10 @@ onBeforeUnmount(() => {
   if (controlsPlacementFrame !== null) {
     cancelAnimationFrame(controlsPlacementFrame)
     controlsPlacementFrame = null
+  }
+  if (copiedFlashTimer) {
+    clearTimeout(copiedFlashTimer)
+    copiedFlashTimer = null
   }
 })
 </script>
@@ -270,6 +306,18 @@ onBeforeUnmount(() => {
               <MessengerIcon name="forward" :size="18" />
             </VBtn>
             <VBtn
+              v-if="entry.kind === 'text' && entry.body"
+              class="message-action-btn"
+              :class="{ 'message-action-btn--flashed': copiedFlash }"
+              icon
+              variant="text"
+              aria-label="Копировать текст"
+              :title="copiedFlash ? 'Скопировано' : 'Копировать текст'"
+              @click.stop="copyMessageBody"
+            >
+              <MessengerIcon name="copy" :size="18" />
+            </VBtn>
+            <VBtn
               v-if="entry.own && entry.kind === 'text'"
               class="message-action-btn"
               icon
@@ -346,7 +394,18 @@ onBeforeUnmount(() => {
       />
     </div>
     <div v-else class="message-bubble__content">
-      <p class="message-bubble__text">{{ entry.body }}</p>
+      <p class="message-bubble__text">{{ parsedBody }}</p>
+      <div v-if="replySuggestions.length" class="reply-suggestions" data-message-controls="true">
+        <button
+          v-for="(text, idx) in replySuggestions"
+          :key="`${entry.id}-suggestion-${idx}`"
+          type="button"
+          class="reply-suggestion-chip"
+          @click.stop="emit('reply-suggestion-click', text)"
+        >
+          {{ text }}
+        </button>
+      </div>
       <MessengerMessageReasoningPlate
         v-if="entry.agentId && entry.runId"
         :agent-id="entry.agentId"
@@ -356,6 +415,16 @@ onBeforeUnmount(() => {
         <span class="message-bubble__time message-bubble__time--sent">{{ sentTime }}</span>
         <span v-if="metaStatus" class="message-bubble__status">{{ metaStatus }}</span>
         <span v-if="readTime" class="message-bubble__time message-bubble__time--read">{{ readTime }}</span>
+        <button
+          v-if="entry.runId && !entry.own"
+          type="button"
+          class="message-bubble__run-badge"
+          :title="`Открыть прогон ${entry.runId}`"
+          data-message-controls="true"
+          @click.stop="emit('open-run', entry.runId!)"
+        >
+          #{{ entry.runId.slice(0, 8) }}
+        </button>
       </div>
     </div>
 
@@ -400,6 +469,8 @@ onBeforeUnmount(() => {
         @copy-link="(href, label) => emit('copy-link', href, label)"
         @open-photo="emit('open-photo', $event)"
         @react="(messageId, emoji) => emit('react', messageId, emoji)"
+        @reply-suggestion-click="emit('reply-suggestion-click', $event)"
+        @open-run="emit('open-run', $event)"
       />
     </div>
   </article>

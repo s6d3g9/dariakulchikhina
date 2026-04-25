@@ -2253,6 +2253,24 @@ function handleRoleQuickAction(actionLabel: string) {
   })
 }
 
+function handleReplySuggestionClick(text: string) {
+  draft.value = text
+  nextTick(() => {
+    composerInputEl.value?.focus()
+    syncComposerInputHeight()
+  })
+}
+
+const workspaceOpenRunId = ref<string | null>(null)
+function handleOpenRun(runId: string) {
+  // Toggle off→on so re-clicking the same run still triggers the workspace watcher.
+  workspaceOpenRunId.value = null
+  nextTick(() => {
+    workspaceOpenRunId.value = runId
+    agentWorkspaceCollapsed.value = false
+  })
+}
+
 async function handleProjectAction(actionId: ProjectActionId, payload?: ProjectActionExecutePayload) {
   actionError.value = ''
   const result = await projectActions.executeAction(actionId, payload)
@@ -3419,6 +3437,8 @@ onBeforeUnmount(() => {
               @save-edit="saveEditedMessage"
               @copy-link="(href, label) => copyLink(href, label)"
               @open-photo="openPhotoGallery"
+              @reply-suggestion-click="handleReplySuggestionClick"
+              @open-run="handleOpenRun"
             />
           </template>
 
@@ -3612,6 +3632,7 @@ onBeforeUnmount(() => {
         :agent-login="conversations.activeConversation.value.peerLogin"
         :conversation-id="conversations.activeConversation.value.id"
         :collapsed="agentWorkspaceCollapsed"
+        :open-run-id="workspaceOpenRunId"
         @update:collapsed="agentWorkspaceCollapsed = $event"
       />
 

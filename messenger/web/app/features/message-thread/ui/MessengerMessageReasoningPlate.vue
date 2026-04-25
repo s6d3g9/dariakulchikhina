@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VIcon } from 'vuetify/components'
+import { VIcon, VMenu, VCard, VCardText } from 'vuetify/components'
 import type { AgentToolUseEntry } from '../../../entities/agents/model/useMessengerAgentStream'
 import { useReasoningGroups } from '../../../entities/agents/model/useReasoningGroups'
 
@@ -18,8 +18,11 @@ const errorMessage = ref('')
 const toolUses = ref<AgentToolUseEntry[]>([])
 const tokenIn = ref(0)
 const tokenOut = ref(0)
+const cacheRead = ref(0)
+const cacheWrite = ref(0)
 const costUsd = ref(0)
 const runDurationMs = ref(0)
+const tokensMenuOpen = ref(false)
 
 const { groups, distinctFiles, formatDuration } = useReasoningGroups(toolUses)
 
@@ -51,6 +54,8 @@ async function ensureLoaded() {
         } else if (payload.type === 'tokens') {
           tokenIn.value = Number(payload.tokenIn ?? 0)
           tokenOut.value = Number(payload.tokenOut ?? 0)
+          cacheRead.value = Number(payload.cacheRead ?? 0)
+          cacheWrite.value = Number(payload.cacheWrite ?? 0)
           costUsd.value = Number(payload.costUsd ?? 0)
         }
       }
@@ -124,7 +129,34 @@ function formatTime(at: number): string {
         <template v-else-if="loaded">
           <div v-if="hasAnyTrace" class="chat-thinking-meta">
             <span v-if="durationLabel" class="chat-thinking-meta-chip" title="Длительность">⏱ {{ durationLabel }}</span>
-            <span v-if="totalTokens" class="chat-thinking-meta-chip" title="Токены in/out">🧠 {{ tokenIn }}↓ / {{ tokenOut }}↑</span>
+            <VMenu
+              v-if="totalTokens"
+              v-model="tokensMenuOpen"
+              :close-on-content-click="false"
+              location="top"
+            >
+              <template #activator="{ props: menuProps }">
+                <button
+                  type="button"
+                  class="chat-thinking-meta-chip chat-thinking-meta-chip--btn"
+                  title="Подробнее о токенах"
+                  v-bind="menuProps"
+                  @click.stop
+                >
+                  🧠 {{ tokenIn }}↓ / {{ tokenOut }}↑
+                </button>
+              </template>
+              <VCard class="tokens-popover" min-width="220">
+                <VCardText class="tokens-popover__body">
+                  <div class="tokens-popover__row"><span>Вход</span><span>{{ tokenIn.toLocaleString('ru-RU') }}</span></div>
+                  <div class="tokens-popover__row"><span>Выход</span><span>{{ tokenOut.toLocaleString('ru-RU') }}</span></div>
+                  <div v-if="cacheRead" class="tokens-popover__row"><span>Кеш чтение</span><span>{{ cacheRead.toLocaleString('ru-RU') }}</span></div>
+                  <div v-if="cacheWrite" class="tokens-popover__row"><span>Кеш запись</span><span>{{ cacheWrite.toLocaleString('ru-RU') }}</span></div>
+                  <div class="tokens-popover__row tokens-popover__row--sep"><span>Контекст</span><span>{{ contextPct }}%</span></div>
+                  <div v-if="costUsd" class="tokens-popover__row"><span>Стоимость</span><span>${{ costUsd.toFixed(4) }}</span></div>
+                </VCardText>
+              </VCard>
+            </VMenu>
             <span v-if="contextPct" class="chat-thinking-meta-chip" title="Контекст">📊 {{ contextPct }}%</span>
             <span v-if="distinctFiles.length" class="chat-thinking-meta-chip" title="Файлы">📁 {{ distinctFiles.length }}</span>
             <span v-if="costUsd" class="chat-thinking-meta-chip" title="Стоимость">💲 {{ costUsd.toFixed(4) }}</span>
@@ -187,5 +219,44 @@ function formatTime(at: number): string {
 .msg-reasoning-inline :deep(.chat-thinking-bubble__dots--static span) {
   animation: none;
   opacity: 0.45;
+}
+
+.chat-thinking-meta-chip--btn {
+  appearance: none;
+  border: none;
+  background: inherit;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0 8px;
+  height: 22px;
+  border-radius: 11px;
+  transition: background 120ms ease;
+}
+.chat-thinking-meta-chip--btn:hover {
+  background: rgb(var(--v-theme-secondary-container));
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+</style>
+
+<style>
+/* Tokens popover renders into Vuetify's overlay layer (outside scoped scope). */
+.tokens-popover__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px !important;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.tokens-popover__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.tokens-popover__row--sep {
+  border-top: 1px solid rgb(var(--v-theme-outline-variant));
+  padding-top: 4px;
+  margin-top: 4px;
 }
 </style>
