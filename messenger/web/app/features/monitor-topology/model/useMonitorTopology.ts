@@ -1,4 +1,4 @@
-import type { Ref } from 'vue'
+import type { InjectionKey, Ref } from 'vue'
 import type { MessengerCliSession } from '../../../entities/sessions/model/useMessengerCliSessions'
 import { getSessionKindMeta } from '../../../entities/sessions/model/useMessengerCliSessions'
 import { deriveLiveness, type LivenessMeta } from './liveness'
@@ -194,9 +194,12 @@ export function useMonitorTopology(
     return byParentAgentId.value.get(cur.agentId) ?? []
   }
 
+  // Reuse the liveness already computed by flatSorted's pushSubtree pass —
+  // deriving it again from filtered.value would double the deriveLiveness cost
+  // on every SSE delta.
   const livenessIndex = computed<Map<string, LivenessMeta>>(() => {
     const map = new Map<string, LivenessMeta>()
-    for (const s of filtered.value) map.set(s.slug, deriveLiveness(s))
+    for (const row of flatSorted.value) map.set(row.session.slug, row.liveness)
     return map
   })
 
@@ -255,4 +258,28 @@ export function useMonitorTopology(
     ancestryFor,
     childrenFor,
   }
+}
+
+export type MonitorTopology = ReturnType<typeof useMonitorTopology>
+
+// Provide/inject lets the section instantiate useMonitorTopology once and
+// share the result with descendant components (the tree, future slot consumers)
+// instead of each component re-instantiating it. Halves the recompute cost on
+// every SSE delta when both the section and the tree need the same indexes.
+const MONITOR_TOPOLOGY_KEY: InjectionKey<MonitorTopology> = Symbol('monitor-topology')
+
+export function provideMonitorTopology(
+  sessions: Ref<MessengerCliSession[]>,
+  mode: Ref<MonitorMode>,
+  activeSlug?: Ref<string | null>,
+): MonitorTopology {
+  const topology = useMonitorTopology(sessions, mode, activeSlug)
+  provide(MONITOR_TOPOLOGY_KEY, topology)
+  return topology
+}
+
+export function injectMonitorTopology(): MonitorTopology {
+  const t = inject(MONITOR_TOPOLOGY_KEY)
+  if (!t) throw new Error('injectMonitorTopology() must be called inside a provideMonitorTopology() scope')
+  return t
 }

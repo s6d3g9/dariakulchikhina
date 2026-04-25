@@ -4,7 +4,7 @@
 // and a right-side trace details pane showing parents, children and the
 // rootRunId-scoped agent run tree for the selected session.
 
-import { useMonitorTopology, type MonitorMode } from '../../features/monitor-topology/model/useMonitorTopology'
+import { provideMonitorTopology, type MonitorMode } from '../../features/monitor-topology/model/useMonitorTopology'
 
 const sessionsModel = useMessengerCliSessions()
 const conversations = useMessengerConversations()
@@ -14,7 +14,7 @@ const mode = ref<MonitorMode>('live')
 
 const sessionsRef = computed(() => sessionsModel.sessions.value)
 const activeSlugRef = computed(() => activeSlug.value)
-const { bySlug, ancestryFor, childrenFor, byRootRunId } = useMonitorTopology(
+const { bySlug, ancestryFor, childrenFor, byRootRunId } = provideMonitorTopology(
   sessionsRef,
   mode,
   activeSlugRef,
@@ -144,7 +144,6 @@ const lastFetchedLabel = computed(() => {
       <MonitorTopologyTree
         v-model="mode"
         class="monitor-section__tree"
-        :sessions="sessionsModel.sessions.value"
         :active-slug="activeSlug"
         :stream-connected="sessionsModel.streamConnected.value"
         :last-delta-at="sessionsModel.lastDeltaAt.value"

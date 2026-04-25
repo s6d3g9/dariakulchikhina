@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
-import type { MessengerCliSession } from '../../../entities/sessions/model/useMessengerCliSessions'
-import { useMonitorTopology, type MonitorMode, type MonitorFilter } from '../model/useMonitorTopology'
+import { injectMonitorTopology, type MonitorMode, type MonitorFilter } from '../model/useMonitorTopology'
 
 const props = defineProps<{
-  sessions: MessengerCliSession[]
   activeSlug?: string | null
   modelValue?: MonitorMode
   streamConnected?: boolean
@@ -16,18 +13,13 @@ const emit = defineEmits<{
   'update:modelValue': [mode: MonitorMode]
 }>()
 
-const sessionsRef = computed(() => props.sessions) as Ref<MessengerCliSession[]>
-const activeSlugRef = computed(() => props.activeSlug ?? null)
 const mode = computed<MonitorMode>({
   get: () => props.modelValue ?? 'live',
   set: (v) => emit('update:modelValue', v),
 })
 
-const { flatSorted, counters, activeTrace, awaitingSlugs, crashedSlugs } = useMonitorTopology(
-  sessionsRef,
-  mode,
-  activeSlugRef,
-)
+// Section owns the topology instance; we just read its slices here.
+const { flatSorted, counters, activeTrace, awaitingSlugs, crashedSlugs } = injectMonitorTopology()
 
 // Filter chips. Awaiting + crashed reset to 'all' when their pool empties so
 // the user is never stuck looking at an empty tree.
@@ -251,6 +243,7 @@ function onTreeKeydown(ev: KeyboardEvent) {
       >
         <template #default="{ item }">
           <MonitorSessionRow
+            :key="item.session.slug"
             :row="item"
             :active="activeSlug === item.session.slug"
             :in-trace="activeTrace.has(item.session.slug)"
