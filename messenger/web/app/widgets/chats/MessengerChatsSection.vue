@@ -9,6 +9,7 @@ const agentsModel = useMessengerAgents()
 const calls = useMessengerCalls()
 const navigation = useMessengerConversationState()
 const holdActions = useMessengerHoldActions()
+const runtime = useMessengerAgentRuntime()
 const { agentsEnabled } = useMessengerFeatures()
 const searchDraft = ref('')
 const actionError = ref('')
@@ -432,6 +433,46 @@ function setChatMode(mode: ChatMode) {
   }
 }
 
+function isHostSessionChat(chat: MessengerConversationItem): boolean {
+  return chat.peerAgentKind === 'host-session' || chat.peerDisplayName.startsWith('Host Session')
+}
+
+function isLegacyHostSessionChat(chat: MessengerConversationItem): boolean {
+  return chat.peerAgentKind !== 'host-session' && chat.peerDisplayName.startsWith('Host Session')
+}
+
+function hostSessionAgent(chat: MessengerConversationItem) {
+  return agentMap.value.get(chat.peerUserId) ?? null
+}
+
+function hostSessionCwdBasename(chat: MessengerConversationItem): string {
+  const agent = hostSessionAgent(chat)
+  if (agent?.cwd) {
+    return agent.cwd.split('/').filter(Boolean).pop() ?? agent.cwd
+  }
+  // Fallback: parse from displayName format "${hostname}:${projectKey}"
+  const parts = chat.peerDisplayName.split(':')
+  return parts.length >= 2 ? (parts[parts.length - 1] ?? '') : ''
+}
+
+function hostSessionSublabel(chat: MessengerConversationItem): string {
+  if (isLegacyHostSessionChat(chat)) return 'legacy · single-session bridge'
+  const basename = hostSessionCwdBasename(chat)
+  return basename ? `ты сам · ${basename}` : 'ты сам'
+}
+
+function hostSessionTooltip(chat: MessengerConversationItem): string {
+  const agent = hostSessionAgent(chat)
+  const parts: string[] = []
+  const cwd = agent?.cwd
+  const hostname = agent?.hostname
+  if (cwd) parts.push(`cwd: ${cwd}`)
+  if (hostname) parts.push(`host: ${hostname}`)
+  const runCount = Object.keys(runtime.activeRuns.value).filter(id => id === chat.peerUserId).length
+  parts.push(`прогонов: ${runCount}`)
+  return parts.join('\n')
+}
+
 const filteredConversations = computed(() => {
   if (showAgentSystemsDirectory.value || showSessionsDirectory.value) {
     return []
@@ -446,16 +487,30 @@ const filteredConversations = computed(() => {
     : visibleFolders.value.find(item => item.key === activeFolderKey.value) ?? null
   const base = folder ? source.filter(chat => folder.chatIds.includes(chat.id)) : source
 
-  // Pin the host-session agent (live tail of this Claude Code host) at the
-  // top of the agent list so it's always one click away.
+  // Pin host-session agents (own bridge sessions) at the top of the agent list.
   if (activeChatMode.value !== 'agents') return base
   const pinned: typeof base = []
   const rest: typeof base = []
   for (const chat of base) {
-    if (chat.peerAgentKind === 'host-session') pinned.push(chat)
+    if (isHostSessionChat(chat)) pinned.push(chat)
     else rest.push(chat)
   }
   return [...pinned, ...rest]
+})
+
+type ChatGroup = { key: string; label?: string; chats: MessengerConversationItem[] }
+
+const conversationGroups = computed((): ChatGroup[] => {
+  const all = filteredConversations.value
+  if (activeChatMode.value !== 'agents' || showAgentSystemsDirectory.value || showSessionsDirectory.value) {
+    return [{ key: 'all', chats: all }]
+  }
+  const pinned = all.filter(c => isHostSessionChat(c))
+  const rest = all.filter(c => !isHostSessionChat(c))
+  if (!pinned.length) return [{ key: 'all', chats: rest }]
+  const groups: ChatGroup[] = [{ key: 'host-sessions', label: 'Свои сессии', chats: pinned }]
+  if (rest.length) groups.push({ key: 'contacts', chats: rest })
+  return groups
 })
 
 const systemDirectoryCards = computed<AgentSystemCard[]>(() => systemFolders.value
@@ -1280,7 +1335,13 @@ async function openChat(conversationId: string) {
 
   try {
     holdActions.dismiss()
+    const chat = conversations.conversations.value.find(c => c.id === conversationId)
     await conversations.selectConversation(conversationId)
+    if (chat && isHostSessionChat(chat)) {
+      // Auto-open the Runs tab so the operator lands on run history immediately.
+      const agentWorkspaceSection = useState<string>('messenger-agent-chat-workspace-section')
+      agentWorkspaceSection.value = 'runs'
+    }
   } catch {
     actionError.value = 'Не удалось открыть чат.'
   }
@@ -1735,87 +1796,99 @@ function formatChatPreview(chat: MessengerConversationItem) {
           </div>
         </div>
 
-        <VListItem
-          v-for="chat in filteredConversations"
-          :key="chat.id"
-          data-hold-actions-root="true"
-          :class="[
-            'chat-row',
-            {
-              'list-item--hold-open': holdActions.activeItemId.value === chat.id,
-              'chat-row--host-session': chat.peerAgentKind === 'host-session',
-            },
-          ]"
-          @click="openChat(chat.id)"
-          @mousedown.left="startHold(chat.id, $event)"
-          @mouseup="holdActions.cancelHold()"
-          @mouseleave="holdActions.cancelHold()"
-          @touchstart.passive="startHold(chat.id, $event)"
-          @touchend="holdActions.cancelHold()"
-          @touchcancel="holdActions.cancelHold()"
-          @touchmove="holdActions.cancelHold()"
-          @contextmenu.prevent="holdActions.open(chat.id)"
-        >
-          <template #prepend>
-            <VAvatar
-              :color="chat.peerAgentKind === 'host-session' ? 'tertiary' : 'primary'"
-              variant="tonal"
-              size="48"
-            >
-              <VIcon v-if="chat.peerAgentKind === 'host-session'">mdi-console-line</VIcon>
-              <template v-else>{{ resolveChatAvatar(chat.peerDisplayName) }}</template>
-            </VAvatar>
-          </template>
-          <template #title>
-            <div class="chat-row__titlebar">
-              <div class="chat-row__titlemain">
-                <span class="title-small chat-row__display-name">{{ chat.peerDisplayName }}</span>
-                <span v-if="chat.peerAgentKind === 'host-session'" class="chat-row__host-badge" title="Live tail этой сессии Claude Code">ты сам</span>
-                <MessengerIcon v-if="chat.secret" class="chat-secret-marker" name="shield" :size="14" aria-hidden="true" />
-              </div>
-
-              <div
-                v-if="holdActions.activeItemId.value === chat.id"
-                class="hold-actions hold-actions--inline"
-                data-hold-actions-menu="true"
-                @pointerdown.stop
+        <template v-for="group in conversationGroups" :key="group.key">
+          <VListSubheader v-if="group.label" class="chat-section-header">{{ group.label }}</VListSubheader>
+          <VListItem
+            v-for="chat in group.chats"
+            :key="chat.id"
+            data-hold-actions-root="true"
+            :class="[
+              'chat-row',
+              {
+                'list-item--hold-open': holdActions.activeItemId.value === chat.id,
+                'chat-row--host-session': isHostSessionChat(chat),
+              },
+            ]"
+            @click="openChat(chat.id)"
+            @mousedown.left="startHold(chat.id, $event)"
+            @mouseup="holdActions.cancelHold()"
+            @mouseleave="holdActions.cancelHold()"
+            @touchstart.passive="startHold(chat.id, $event)"
+            @touchend="holdActions.cancelHold()"
+            @touchcancel="holdActions.cancelHold()"
+            @touchmove="holdActions.cancelHold()"
+            @contextmenu.prevent="holdActions.open(chat.id)"
+          >
+            <VTooltip
+              v-if="isHostSessionChat(chat)"
+              activator="parent"
+              location="right"
+              :text="hostSessionTooltip(chat)"
+              content-class="host-session-tooltip"
+            />
+            <template #prepend>
+              <VAvatar
+                :color="isHostSessionChat(chat) ? 'tertiary' : 'primary'"
+                variant="tonal"
+                size="48"
               >
-                <button
-                  v-if="chat.peerType !== 'agent'"
-                  type="button"
-                  class="hold-actions__icon-btn"
-                  aria-label="Аудиозвонок"
-                  @click.stop="startChatCall(chat.id, 'audio')"
+                <VIcon v-if="isHostSessionChat(chat)">mdi-console-line</VIcon>
+                <template v-else>{{ resolveChatAvatar(chat.peerDisplayName) }}</template>
+              </VAvatar>
+            </template>
+            <template #title>
+              <div class="chat-row__titlebar">
+                <div class="chat-row__titlemain" :class="{ 'chat-row__titlemain--with-sublabel': isHostSessionChat(chat) }">
+                  <div class="chat-row__titlemain-top">
+                    <span class="title-small chat-row__display-name">{{ chat.peerDisplayName }}</span>
+                    <MessengerIcon v-if="chat.secret" class="chat-secret-marker" name="shield" :size="14" aria-hidden="true" />
+                  </div>
+                  <span v-if="isHostSessionChat(chat)" class="chat-row__host-sublabel">{{ hostSessionSublabel(chat) }}</span>
+                </div>
+
+                <div
+                  v-if="holdActions.activeItemId.value === chat.id"
+                  class="hold-actions hold-actions--inline"
+                  data-hold-actions-menu="true"
+                  @pointerdown.stop
                 >
-                  <MessengerIcon class="hold-actions__icon" name="phone" :size="22" />
-                </button>
-                <button
-                  v-if="chat.peerType !== 'agent'"
-                  type="button"
-                  class="hold-actions__icon-btn"
-                  aria-label="Видеозвонок"
-                  @click.stop="startChatCall(chat.id, 'video')"
-                >
-                  <MessengerIcon class="hold-actions__icon" name="video" :size="22" />
-                </button>
-                <button
-                  type="button"
-                  class="hold-actions__icon-btn hold-actions__icon-btn--danger"
-                  aria-label="Удалить чат"
-                  @click.stop="removeChat(chat.id)"
-                >
-                  <MessengerIcon class="hold-actions__icon hold-actions__icon--danger" name="delete" :size="22" />
-                </button>
+                  <button
+                    v-if="chat.peerType !== 'agent'"
+                    type="button"
+                    class="hold-actions__icon-btn"
+                    aria-label="Аудиозвонок"
+                    @click.stop="startChatCall(chat.id, 'audio')"
+                  >
+                    <MessengerIcon class="hold-actions__icon" name="phone" :size="22" />
+                  </button>
+                  <button
+                    v-if="chat.peerType !== 'agent'"
+                    type="button"
+                    class="hold-actions__icon-btn"
+                    aria-label="Видеозвонок"
+                    @click.stop="startChatCall(chat.id, 'video')"
+                  >
+                    <MessengerIcon class="hold-actions__icon" name="video" :size="22" />
+                  </button>
+                  <button
+                    type="button"
+                    class="hold-actions__icon-btn hold-actions__icon-btn--danger"
+                    aria-label="Удалить чат"
+                    @click.stop="removeChat(chat.id)"
+                  >
+                    <MessengerIcon class="hold-actions__icon hold-actions__icon--danger" name="delete" :size="22" />
+                  </button>
+                </div>
               </div>
-            </div>
-          </template>
-          <template #subtitle>
-            <span class="chat-row__preview on-surface-variant">{{ formatChatPreview(chat) }}</span>
-          </template>
-          <template #append>
-            <span v-if="holdActions.activeItemId.value !== chat.id" class="chat-row__time on-surface-variant">{{ formatConversationTimestamp(chat.updatedAt) }}</span>
-          </template>
-        </VListItem>
+            </template>
+            <template #subtitle>
+              <span class="chat-row__preview on-surface-variant">{{ formatChatPreview(chat) }}</span>
+            </template>
+            <template #append>
+              <span v-if="holdActions.activeItemId.value !== chat.id" class="chat-row__time on-surface-variant">{{ formatConversationTimestamp(chat.updatedAt) }}</span>
+            </template>
+          </VListItem>
+        </template>
 
         <div v-if="!filteredConversations.length" class="empty-state">
           <p class="empty-state__title">{{ emptyStateTitle }}</p>

@@ -1024,6 +1024,18 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   color: rgb(var(--v-theme-warning));
 }
 
+/* ── Chat section header (e.g. "Свои сессии") ────────────── */
+.chat-section-header {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  opacity: 0.55;
+  padding: 8px 16px 2px !important;
+  min-height: unset !important;
+  pointer-events: none;
+}
+
 /* ── Host session (self-monitor) row ─────────────────────── */
 .chat-row--host-session {
   border-left: 3px solid rgb(var(--v-theme-tertiary));
@@ -1048,6 +1060,45 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   color: rgb(var(--v-theme-on-tertiary-container));
   background: rgb(var(--v-theme-tertiary-container));
   white-space: nowrap;
+}
+
+.chat-row__titlemain--with-sublabel {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.chat-row__titlemain-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.chat-row__titlemain-top .title-small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-row__host-sublabel {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.host-session-tooltip {
+  white-space: pre-line;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
 }
 
 /* ── Contact Row ─────────────────────────────────────────── */
