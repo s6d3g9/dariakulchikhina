@@ -862,16 +862,6 @@ const monitorActiveCurrentProjectCount = computed(() => {
   return cur ? cur.sessions.filter(s => s.isActive).length : 0
 })
 
-async function onMonitorSessionOpen(slug: string) {
-  const sess = cliSessionsModel.sessions.value.find(s => s.slug === slug)
-  if (!sess) {
-    modelSetError.value = 'Сессия больше не доступна'
-    setTimeout(() => { modelSetError.value = '' }, 3000)
-    return
-  }
-  await onSessionChipClick(sess)
-}
-
 // --- Thinking indicator ---------------------------------------------------
 // Show a pulsing bubble after the user sends to an agent chat until the reply
 // arrives. Bubble shows agent name + model name (mini-caption).
@@ -2897,9 +2887,7 @@ onBeforeUnmount(() => {
         :agent-subscription-label="currentSubscriptionLabel"
         :agent-session-usage="activeSessionUsage"
         :agent-subscription-usages="subscriptionUsages"
-        :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
         :monitor-session-count="monitorActiveCurrentProjectCount || monitorActiveTotalCount"
-        :monitor-session-groups="monitorSessionGroups"
         :gallery-photos="sharedContent.photos"
         :gallery-stickers="sharedContent.stickers"
         :gallery-documents="sharedContent.documents"
@@ -2923,9 +2911,6 @@ onBeforeUnmount(() => {
         @update:overflow-menu-open="headerOverflowMenuOpen = $event"
         @select-agent-model="onModelSelect($event)"
         @select-agent-effort="onEffortSelect($event)"
-        @toggle-monitor-panel="sessNavCollapsed = !sessNavCollapsed"
-        @open-monitor-session="onMonitorSessionOpen($event)"
-        @open-monitor-section="navigation.openSection('monitor')"
         @pointerdown="handleChatAreaPointerDown"
       />
 
