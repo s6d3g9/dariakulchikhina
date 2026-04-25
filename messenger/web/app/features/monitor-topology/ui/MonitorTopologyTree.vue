@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'open-session': [slug: string]
+  'open-chat': [slug: string]
   'update:modelValue': [mode: MonitorMode]
 }>()
 
@@ -355,6 +356,7 @@ function onTreeKeydown(ev: KeyboardEvent) {
             :in-trace="activeTrace.has(item.session.slug)"
             :search-query="normalizedSearch"
             @open-session="(slug) => emit('open-session', slug)"
+            @open-chat="(slug) => emit('open-chat', slug)"
           />
         </template>
       </v-virtual-scroll>

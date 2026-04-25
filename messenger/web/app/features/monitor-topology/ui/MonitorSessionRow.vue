@@ -11,7 +11,30 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'open-session': [slug: string]
+  'open-chat': [slug: string]
 }>()
+
+// Cmd/Ctrl+Enter and double-click are shortcuts for "open the chat with this
+// agent directly", skipping the trace pane. For awaiting rows this is the
+// most frequent next action, and one click is better than two.
+function onActivate(ev: MouseEvent | KeyboardEvent) {
+  const slug = props.row.session.slug
+  if ('detail' in ev && ev.detail >= 2) {
+    emit('open-chat', slug)
+    return
+  }
+  if ('key' in ev && ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
+    ev.preventDefault()
+    emit('open-chat', slug)
+    return
+  }
+  if ('key' in ev) {
+    ev.preventDefault()
+    emit('open-session', slug)
+    return
+  }
+  emit('open-session', slug)
+}
 
 const meta = computed(() => getSessionKindMeta(props.row.session.kind, props.row.session.slug))
 
@@ -96,8 +119,8 @@ const tooltipText = computed(() => {
     :aria-label="ariaLabel"
     :title="tooltipText"
     tabindex="0"
-    @click="emit('open-session', row.session.slug)"
-    @keydown.enter.prevent="emit('open-session', row.session.slug)"
+    @click="onActivate($event)"
+    @keydown.enter="onActivate($event)"
     @keydown.space.prevent="emit('open-session', row.session.slug)"
   >
     <span

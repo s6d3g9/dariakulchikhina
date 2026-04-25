@@ -148,6 +148,7 @@ const lastFetchedLabel = computed(() => {
         :stream-connected="sessionsModel.streamConnected.value"
         :last-delta-at="sessionsModel.lastDeltaAt.value"
         @open-session="selectSession"
+        @open-chat="openChatForSession"
       />
       <MonitorTraceDetails
         class="monitor-section__details"
