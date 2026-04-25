@@ -8,9 +8,28 @@ import type { MonitorMode, MonitorFilter } from './useMonitorTopology'
 const FILTER_STORAGE_KEY = 'daria.monitor.filter'
 const MODE_STORAGE_KEY = 'daria.monitor.mode'
 const SEARCH_STORAGE_KEY = 'daria.monitor.search'
+const PINNED_STORAGE_KEY = 'daria.monitor.pinned'
 
 const FILTERS = ['all', 'awaiting', 'crashed'] as const
 const MODES = ['live', 'today'] as const
+
+function readPinned(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  const raw = window.localStorage.getItem(PINNED_STORAGE_KEY)
+  if (!raw) return new Set()
+  try {
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? new Set(arr.filter(v => typeof v === 'string')) : new Set()
+  }
+  catch {
+    return new Set()
+  }
+}
+
+function writePinned(set: Set<string>) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify([...set]))
+}
 
 function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   if (typeof window === 'undefined') return fallback
@@ -34,6 +53,14 @@ export function useMonitorPersistence(opts: UseMonitorPersistenceOptions) {
   const search = ref<string>(
     typeof window !== 'undefined' ? window.localStorage.getItem(SEARCH_STORAGE_KEY) ?? '' : '',
   )
+  const pinnedSlugs = ref<Set<string>>(readPinned())
+
+  function togglePin(slug: string) {
+    const next = new Set(pinnedSlugs.value)
+    if (next.has(slug)) next.delete(slug)
+    else next.add(slug)
+    pinnedSlugs.value = next
+  }
 
   // Mode hydration happens once on mount: we can't read it via readStored at
   // setup time because `mode` is parent-owned and the parent's initial value
@@ -46,6 +73,7 @@ export function useMonitorPersistence(opts: UseMonitorPersistenceOptions) {
   watch(filter, v => writeStored(FILTER_STORAGE_KEY, v))
   watch(opts.mode, v => writeStored(MODE_STORAGE_KEY, v))
   watch(search, v => writeStored(SEARCH_STORAGE_KEY, v))
+  watch(pinnedSlugs, v => writePinned(v))
 
-  return { filter, search }
+  return { filter, search, pinnedSlugs, togglePin }
 }

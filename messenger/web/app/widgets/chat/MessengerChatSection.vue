@@ -5,6 +5,7 @@ import type { MessengerConversationSecuritySummary } from '../../entities/messag
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
 import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
 import { getSessionKindMeta, type MessengerCliSession } from '../../entities/sessions/model/useMessengerCliSessions'
+import { deriveLiveness } from '../../features/monitor-topology/model/liveness'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -860,6 +861,25 @@ const monitorActiveTotalCount = computed(() =>
 const monitorActiveCurrentProjectCount = computed(() => {
   const cur = monitorSessionGroups.value.find(g => g.isCurrent)
   return cur ? cur.sessions.filter(s => s.isActive).length : 0
+})
+
+// Severity counters drive the bell badge color. They span ALL sessions
+// (not project-scoped) — a crashed worker in some other project is still
+// the user's attention sink, and we don't want it hiding behind the
+// "active in current project" filter.
+const monitorAwaitingCount = computed(() => {
+  let n = 0
+  for (const s of cliSessionsModel.sessions.value) {
+    if (deriveLiveness(s).state === 'awaiting-user') n++
+  }
+  return n
+})
+const monitorCrashedCount = computed(() => {
+  let n = 0
+  for (const s of cliSessionsModel.sessions.value) {
+    if (deriveLiveness(s).state === 'crashed') n++
+  }
+  return n
 })
 
 // --- Thinking indicator ---------------------------------------------------
@@ -2888,6 +2908,8 @@ onBeforeUnmount(() => {
         :agent-session-usage="activeSessionUsage"
         :agent-subscription-usages="subscriptionUsages"
         :monitor-session-count="monitorActiveCurrentProjectCount || monitorActiveTotalCount"
+        :monitor-awaiting-count="monitorAwaitingCount"
+        :monitor-crashed-count="monitorCrashedCount"
         :gallery-photos="sharedContent.photos"
         :gallery-stickers="sharedContent.stickers"
         :gallery-documents="sharedContent.documents"

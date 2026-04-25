@@ -50,6 +50,8 @@ const props = withDefaults(defineProps<{
     sessionCount: number
   }>
   monitorSessionCount?: number
+  monitorAwaitingCount?: number
+  monitorCrashedCount?: number
   galleryPhotos?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
   galleryStickers?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
   galleryDocuments?: ReadonlyArray<{ id: string; title: string; meta: string; href: string; previewUrl?: string }>
@@ -70,6 +72,8 @@ const props = withDefaults(defineProps<{
   agentSessionUsage: () => null,
   agentSubscriptionUsages: () => [],
   monitorSessionCount: 0,
+  monitorAwaitingCount: 0,
+  monitorCrashedCount: 0,
   galleryPhotos: () => [],
   galleryStickers: () => [],
   galleryDocuments: () => [],
@@ -163,6 +167,22 @@ const gallerySectionCounts = computed(() => ({
 const isOverflowOpen = computed(() =>
   overflowMenuOpen.value || headerSheetKind.value === 'overflow',
 )
+
+// Bell badge severity: crashed wins over awaiting wins over plain active.
+// Picking the max-severity bucket means the displayed number always
+// matches the colour — the user never has to wonder "is that 7 active
+// or 7 crashed?".
+type MonitorBadgeSeverity = 'crashed' | 'awaiting' | 'neutral'
+const monitorBadgeSeverity = computed<MonitorBadgeSeverity>(() => {
+  if (props.monitorCrashedCount > 0) return 'crashed'
+  if (props.monitorAwaitingCount > 0) return 'awaiting'
+  return 'neutral'
+})
+const monitorBadgeCount = computed(() => {
+  if (monitorBadgeSeverity.value === 'crashed') return props.monitorCrashedCount
+  if (monitorBadgeSeverity.value === 'awaiting') return props.monitorAwaitingCount
+  return props.monitorSessionCount
+})
 
 watch(isOverflowOpen, (open) => {
   emit('update:overflow-menu-open', open)
@@ -457,7 +477,12 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
                   @click="toggleHeaderSheet('monitor')"
                 >
                   <VIcon>mdi-layers-outline</VIcon>
-                  <span v-if="monitorSessionCount > 0" class="chat-header__agent-btn-badge" aria-hidden="true">{{ monitorSessionCount }}</span>
+                  <span
+                    v-if="monitorBadgeCount > 0"
+                    class="chat-header__agent-btn-badge"
+                    :class="`chat-header__agent-btn-badge--${monitorBadgeSeverity}`"
+                    aria-hidden="true"
+                  >{{ monitorBadgeCount }}</span>
                 </VBtn>
                 <VBtn
                   v-if="showCallActions && showCallAnalysis"

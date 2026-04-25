@@ -3301,6 +3301,27 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   text-align: center;
   pointer-events: none;
 }
+
+/* Severity variants. Awaiting/crashed pulse to grab the eye; neutral stays
+ * static so a normal "5 sessions running" doesn't feel like an alarm.
+ */
+.chat-header__agent-btn-badge--awaiting {
+  background: rgb(var(--v-theme-warning));
+  color: rgb(var(--v-theme-on-warning));
+  animation: chat-header-badge-pulse 1.8s ease-in-out infinite;
+}
+
+.chat-header__agent-btn-badge--crashed {
+  background: rgb(var(--v-theme-error));
+  color: rgb(var(--v-theme-on-error));
+  animation: chat-header-badge-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes chat-header-badge-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.0); transform: scale(1); }
+  60%  { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.0); transform: scale(1.08); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.0); transform: scale(1); }
+}
 .chat-header__agent-menu {
   min-width: 200px;
 }

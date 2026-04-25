@@ -7,12 +7,20 @@ const props = defineProps<{
   active?: boolean
   inTrace?: boolean
   searchQuery?: string
+  nowMs?: number
+  pinned?: boolean
 }>()
 
 const emit = defineEmits<{
   'open-session': [slug: string]
   'open-chat': [slug: string]
+  'toggle-pin': [slug: string]
 }>()
+
+function onTogglePin(ev: MouseEvent) {
+  ev.stopPropagation()
+  emit('toggle-pin', props.row.session.slug)
+}
 
 // Cmd/Ctrl+Enter and double-click are shortcuts for "open the chat with this
 // agent directly", skipping the trace pane. For awaiting rows this is the
@@ -37,6 +45,23 @@ function onActivate(ev: MouseEvent | KeyboardEvent) {
 }
 
 const meta = computed(() => getSessionKindMeta(props.row.session.kind, props.row.session.slug))
+
+// "Since X" — the gap between now and lastActivityAt. Drives a tiny chip
+// that's the fastest signal for "this session has been silent for hours".
+// Re-derives via the parent's 5s clock tick passed as `nowMs`; when the
+// prop is absent we still render a snapshot label without ticking.
+const sinceLabel = computed<string | null>(() => {
+  const last = props.row.session.lastActivityAt
+  if (!last) return null
+  const t = Date.parse(last)
+  if (!Number.isFinite(t)) return null
+  const ms = (props.nowMs ?? Date.now()) - t
+  if (ms < 5_000) return 'сейчас'
+  if (ms < 60_000) return `${Math.floor(ms / 1000)}с`
+  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}м`
+  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}ч`
+  return `${Math.floor(ms / 86_400_000)}д`
+})
 
 const tokenLabel = computed(() => {
   const inT = props.row.session.tokenInTotal ?? 0
@@ -111,6 +136,7 @@ const tooltipText = computed(() => {
       'monitor-row--awaiting': isAwaiting,
       'monitor-row--crashed': isCrashed,
       'monitor-row--done': isDone,
+      'monitor-row--pinned': pinned,
       [`monitor-row--state-${liveness.state}`]: true,
     }"
     role="treeitem"
@@ -194,6 +220,11 @@ const tooltipText = computed(() => {
     >{{ row.session.lastTool }}</span>
     <span class="monitor-row__spacer" />
     <span
+      v-if="sinceLabel"
+      class="monitor-row__meta monitor-row__meta--since"
+      :title="row.session.lastActivityAt ?? ''"
+    >{{ sinceLabel }}</span>
+    <span
       v-if="tokenLabel"
       class="monitor-row__meta monitor-row__meta--tokens"
     >{{ tokenLabel }}</span>
@@ -201,6 +232,22 @@ const tooltipText = computed(() => {
       v-if="costLabel"
       class="monitor-row__meta monitor-row__meta--cost"
     >{{ costLabel }}</span>
+    <button
+      type="button"
+      class="monitor-row__pin"
+      :class="{ 'is-pinned': pinned }"
+      :aria-pressed="pinned ?? false"
+      :aria-label="pinned ? 'Открепить сессию' : 'Закрепить сессию'"
+      :title="pinned ? 'Открепить' : 'Закрепить наверху'"
+      @click="onTogglePin"
+      @keydown.enter.stop
+      @keydown.space.stop
+    >
+      <v-icon
+        :icon="pinned ? 'mdi-pin' : 'mdi-pin-outline'"
+        size="13"
+      />
+    </button>
   </div>
 </template>
 
@@ -439,6 +486,61 @@ const tooltipText = computed(() => {
 .monitor-row__meta--cost {
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
+}
+
+.monitor-row__meta--since {
+  opacity: 0.75;
+}
+
+.monitor-row--state-idle-deep .monitor-row__meta--since {
+  opacity: 1;
+  color: rgb(var(--v-theme-warning));
+}
+
+/* ---- Pin button — pinned rows float to the top ---- */
+
+.monitor-row__pin {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: rgb(var(--v-theme-on-surface-variant));
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.monitor-row:hover .monitor-row__pin,
+.monitor-row:focus-within .monitor-row__pin,
+.monitor-row__pin.is-pinned,
+.monitor-row__pin:focus-visible {
+  opacity: 1;
+}
+
+.monitor-row__pin:hover {
+  background: rgb(var(--v-theme-surface-container));
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.monitor-row__pin.is-pinned {
+  color: rgb(var(--v-theme-primary));
+}
+
+.monitor-row--pinned {
+  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 6%, transparent);
+}
+
+.monitor-row--pinned.monitor-row--awaiting {
+  background: color-mix(in srgb, rgb(var(--v-theme-warning)) 12%, transparent);
+}
+
+.monitor-row--pinned.monitor-row--active {
+  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 14%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

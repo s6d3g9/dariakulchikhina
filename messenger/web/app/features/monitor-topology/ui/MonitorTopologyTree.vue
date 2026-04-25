@@ -26,7 +26,7 @@ const { flatSorted, counters, activeTrace, awaitingSlugs, crashedSlugs } = injec
 // Filter chips. Awaiting + crashed reset to 'all' when their pool empties so
 // the user is never stuck looking at an empty tree. Filter / mode / search
 // state is hydrated from + persisted to localStorage by useMonitorPersistence.
-const { filter, search } = useMonitorPersistence({ mode })
+const { filter, search, pinnedSlugs, togglePin } = useMonitorPersistence({ mode })
 
 watchEffect(() => {
   if (filter.value === 'awaiting' && counters.value.awaiting === 0) filter.value = 'all'
@@ -124,7 +124,18 @@ const visibleRows = computed(() => {
       .sort((a, b) => finishedMs(b.session) - finishedMs(a.session))
   }
   if (q) rows = rows.filter(r => rowMatchesSearch(r, q))
-  return rows
+  // Pinned sessions float to the top as a flat depth=0 group, preserving the
+  // current sort within each partition. We don't dedupe — a pinned row is
+  // hidden from its tree position so it doesn't appear twice.
+  const pinned = pinnedSlugs.value
+  if (pinned.size === 0) return rows
+  const top: typeof rows = []
+  const rest: typeof rows = []
+  for (const r of rows) {
+    if (pinned.has(r.session.slug)) top.push({ ...r, depth: 0, isLastSibling: true })
+    else rest.push(r)
+  }
+  return [...top, ...rest]
 })
 
 // Stale-overlay: SSE went silent. We treat "no delta for ≥45 s after we lost
@@ -386,8 +397,11 @@ function onTreeKeydown(ev: KeyboardEvent) {
             :active="activeSlug === item.session.slug"
             :in-trace="activeTrace.has(item.session.slug)"
             :search-query="normalizedSearch"
-            @open-session="(slug) => emit('open-session', slug)"
-            @open-chat="(slug) => emit('open-chat', slug)"
+            :now-ms="now"
+            :pinned="pinnedSlugs.has(item.session.slug)"
+            @open-session="(slug: string) => emit('open-session', slug)"
+            @open-chat="(slug: string) => emit('open-chat', slug)"
+            @toggle-pin="(slug: string) => togglePin(slug)"
           />
         </template>
       </v-virtual-scroll>
