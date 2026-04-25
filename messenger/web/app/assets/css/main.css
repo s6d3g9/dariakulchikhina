@@ -3531,66 +3531,37 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   letter-spacing: .02em;
 }
 
-.chat-header-sheet__usage {
+.chat-header-sheet__session-tokens {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   padding: 4px 16px 12px;
 }
 
-.chat-header-sheet__usage-row {
+.chat-header-sheet__session-tokens-row {
   display: grid;
-  grid-template-columns: 84px 1fr auto;
+  grid-template-columns: 84px 1fr;
   align-items: center;
   gap: 10px;
 }
 
-.chat-header-sheet__usage-label {
-  font-size: 12px;
+.chat-header-sheet__session-tokens-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: rgb(var(--v-theme-on-surface-variant));
   font-weight: 500;
 }
 
-.chat-header-sheet__usage-track {
-  height: 6px;
-  border-radius: 999px;
-  background: rgb(var(--v-theme-surface-container-highest));
-  overflow: hidden;
-}
-
-.chat-header-sheet__usage-bar {
-  height: 100%;
-  background: rgb(var(--v-theme-primary));
-  border-radius: inherit;
-  transition: width 240ms ease, background-color 240ms ease;
-}
-
-.chat-header-sheet__usage-bar--warn {
-  background: rgb(var(--v-theme-warning, 245 158 11));
-}
-
-.chat-header-sheet__usage-bar--danger {
-  background: rgb(var(--v-theme-error));
-}
-
-.chat-header-sheet__usage-value {
+.chat-header-sheet__session-tokens-value {
   font-variant-numeric: tabular-nums;
   color: rgb(var(--v-theme-on-surface));
   font-weight: 600;
 }
 
-.chat-header-sheet__usage-limit {
+.chat-header-sheet__session-tokens-empty {
+  padding: 4px 16px 12px;
   color: rgb(var(--v-theme-on-surface-variant));
-  font-weight: 400;
-  margin-left: 2px;
-}
-
-.chat-header-sheet__usage-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: rgb(var(--v-theme-on-surface-variant));
-  padding-top: 2px;
 }
 
 .chat-header-sheet__contact {

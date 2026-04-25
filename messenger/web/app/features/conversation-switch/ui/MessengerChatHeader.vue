@@ -38,18 +38,7 @@ const props = withDefaults(defineProps<{
   agentEffortValue?: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
   agentEffortPending?: boolean
   agentSubscriptionLabel?: string
-  agentUsage5h?: { requests: number; limit: number }
-  agentUsageWeek?: { requests: number; limit: number }
-  agentUsageMonth?: { inputTokens: number; outputTokens: number; cacheReadTokens: number; tokensLimit: number }
-  agentClaudeUsage?: {
-    fetchedAt: number
-    subscriptionType: string
-    rateLimitTier: string
-    five_hour: { utilization: number; resets_at: number } | null
-    seven_day: { utilization: number; resets_at: number } | null
-    seven_day_opus: { utilization: number; resets_at: number } | null
-    seven_day_sonnet: { utilization: number; resets_at: number } | null
-  } | null
+  agentSessionUsage?: { tokenIn: number; tokenOut: number; costUsd: number; model: string } | null
   monitorPanelOpen?: boolean
   monitorSessionCount?: number
   monitorSessionGroups?: ReadonlyArray<{
@@ -89,10 +78,7 @@ const props = withDefaults(defineProps<{
   agentEffortValue: 'medium',
   agentEffortPending: false,
   agentSubscriptionLabel: '',
-  agentUsage5h: () => ({ requests: 0, limit: 0 }),
-  agentUsageWeek: () => ({ requests: 0, limit: 0 }),
-  agentUsageMonth: () => ({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, tokensLimit: 0 }),
-  agentClaudeUsage: () => null,
+  agentSessionUsage: () => null,
   monitorPanelOpen: false,
   monitorSessionCount: 0,
   monitorSessionGroups: () => [],
@@ -147,38 +133,10 @@ function fmtTokens(n: number): string {
   return `${n}`
 }
 
-function pct(n: number, limit: number): number {
-  if (!limit || limit <= 0) return 0
-  return Math.min(100, Math.round((n / limit) * 100))
-}
-
-function pctClass(p: number): string {
-  if (p >= 90) return 'chat-header-sheet__usage-bar--danger'
-  if (p >= 70) return 'chat-header-sheet__usage-bar--warn'
-  return ''
-}
-
-function utilizationPct(util: number | null | undefined): number {
-  if (!util || util <= 0) return 0
-  return Math.min(100, Math.round(util * 100))
-}
-
-function formatResetIn(ts: number | null | undefined): string {
-  if (!ts) return ''
-  const ms = ts * 1000 - Date.now()
-  if (ms <= 0) return 'скоро'
-  const minutes = Math.floor(ms / 60_000)
-  const days = Math.floor(minutes / (60 * 24))
-  if (days >= 1) {
-    const hours = Math.floor((minutes - days * 24 * 60) / 60)
-    return hours > 0 ? `через ${days} д ${hours} ч` : `через ${days} д`
-  }
-  const hours = Math.floor(minutes / 60)
-  if (hours >= 1) {
-    const mins = minutes - hours * 60
-    return mins > 0 ? `через ${hours} ч ${mins} мин` : `через ${hours} ч`
-  }
-  return `через ${Math.max(1, minutes)} мин`
+function fmtCost(n: number): string {
+  if (n >= 100) return `$${n.toFixed(0)}`
+  if (n >= 10) return `$${n.toFixed(1)}`
+  return `$${n.toFixed(2)}`
 }
 
 const emit = defineEmits<{
@@ -721,107 +679,31 @@ const transcriptionToggleDisabled = computed(() => !props.transcriptionActive &&
 
           <div class="chat-header-sheet__divider" aria-hidden="true" />
           <div class="chat-header-sheet__section-title label-small">
-            Использование
+            Сессия
             <span v-if="agentSubscriptionLabel" class="chat-header-sheet__section-hint">{{ agentSubscriptionLabel }}</span>
           </div>
-          <div v-if="agentClaudeUsage" class="chat-header-sheet__usage">
-            <div class="chat-header-sheet__usage-row">
-              <span class="chat-header-sheet__usage-label">5 ч</span>
-              <div class="chat-header-sheet__usage-track">
-                <div
-                  class="chat-header-sheet__usage-bar"
-                  :class="pctClass(utilizationPct(agentClaudeUsage.five_hour?.utilization))"
-                  :style="{ width: utilizationPct(agentClaudeUsage.five_hour?.utilization) + '%' }"
-                />
-              </div>
-              <span class="chat-header-sheet__usage-value label-small">{{ utilizationPct(agentClaudeUsage.five_hour?.utilization) }}%</span>
+          <div v-if="agentSessionUsage" class="chat-header-sheet__session-tokens">
+            <div class="chat-header-sheet__session-tokens-row">
+              <span class="chat-header-sheet__session-tokens-label label-small">
+                <VIcon :size="14">mdi-arrow-down-thin</VIcon> in
+              </span>
+              <span class="chat-header-sheet__session-tokens-value">{{ fmtTokens(agentSessionUsage.tokenIn) }}</span>
             </div>
-            <div v-if="agentClaudeUsage.five_hour" class="chat-header-sheet__usage-meta label-small">
-              сбросится {{ formatResetIn(agentClaudeUsage.five_hour.resets_at) }}
+            <div class="chat-header-sheet__session-tokens-row">
+              <span class="chat-header-sheet__session-tokens-label label-small">
+                <VIcon :size="14">mdi-arrow-up-thin</VIcon> out
+              </span>
+              <span class="chat-header-sheet__session-tokens-value">{{ fmtTokens(agentSessionUsage.tokenOut) }}</span>
             </div>
-
-            <div class="chat-header-sheet__usage-row">
-              <span class="chat-header-sheet__usage-label">7 дн</span>
-              <div class="chat-header-sheet__usage-track">
-                <div
-                  class="chat-header-sheet__usage-bar"
-                  :class="pctClass(utilizationPct(agentClaudeUsage.seven_day?.utilization))"
-                  :style="{ width: utilizationPct(agentClaudeUsage.seven_day?.utilization) + '%' }"
-                />
-              </div>
-              <span class="chat-header-sheet__usage-value label-small">{{ utilizationPct(agentClaudeUsage.seven_day?.utilization) }}%</span>
-            </div>
-            <div v-if="agentClaudeUsage.seven_day" class="chat-header-sheet__usage-meta label-small">
-              сбросится {{ formatResetIn(agentClaudeUsage.seven_day.resets_at) }}
-            </div>
-
-            <div v-if="agentClaudeUsage.seven_day_opus" class="chat-header-sheet__usage-row">
-              <span class="chat-header-sheet__usage-label">7 дн · Opus</span>
-              <div class="chat-header-sheet__usage-track">
-                <div
-                  class="chat-header-sheet__usage-bar"
-                  :class="pctClass(utilizationPct(agentClaudeUsage.seven_day_opus.utilization))"
-                  :style="{ width: utilizationPct(agentClaudeUsage.seven_day_opus.utilization) + '%' }"
-                />
-              </div>
-              <span class="chat-header-sheet__usage-value label-small">{{ utilizationPct(agentClaudeUsage.seven_day_opus.utilization) }}%</span>
-            </div>
-
-            <div v-if="agentClaudeUsage.seven_day_sonnet" class="chat-header-sheet__usage-row">
-              <span class="chat-header-sheet__usage-label">7 дн · Sonnet</span>
-              <div class="chat-header-sheet__usage-track">
-                <div
-                  class="chat-header-sheet__usage-bar"
-                  :class="pctClass(utilizationPct(agentClaudeUsage.seven_day_sonnet.utilization))"
-                  :style="{ width: utilizationPct(agentClaudeUsage.seven_day_sonnet.utilization) + '%' }"
-                />
-              </div>
-              <span class="chat-header-sheet__usage-value label-small">{{ utilizationPct(agentClaudeUsage.seven_day_sonnet.utilization) }}%</span>
-            </div>
-
-            <div class="chat-header-sheet__usage-meta label-small">
-              <VIcon :size="14">mdi-shield-check-outline</VIcon>
-              {{ agentClaudeUsage.subscriptionType }} · {{ agentClaudeUsage.rateLimitTier }}
+            <div class="chat-header-sheet__session-tokens-row">
+              <span class="chat-header-sheet__session-tokens-label label-small">
+                <VIcon :size="14">mdi-currency-usd</VIcon> cost
+              </span>
+              <span class="chat-header-sheet__session-tokens-value">{{ fmtCost(agentSessionUsage.costUsd) }}</span>
             </div>
           </div>
-          <div v-else class="chat-header-sheet__usage">
-            <div class="chat-header-sheet__usage-row">
-              <span class="chat-header-sheet__usage-label">5 ч</span>
-              <div class="chat-header-sheet__usage-track">
-                <div
-                  class="chat-header-sheet__usage-bar"
-                  :class="pctClass(pct(agentUsage5h.requests, agentUsage5h.limit))"
-                  :style="{ width: pct(agentUsage5h.requests, agentUsage5h.limit) + '%' }"
-                />
-              </div>
-              <span class="chat-header-sheet__usage-value label-small">{{ agentUsage5h.requests }}<span v-if="agentUsage5h.limit" class="chat-header-sheet__usage-limit">/{{ agentUsage5h.limit }}</span></span>
-            </div>
-            <div class="chat-header-sheet__usage-row">
-              <span class="chat-header-sheet__usage-label">Неделя</span>
-              <div class="chat-header-sheet__usage-track">
-                <div
-                  class="chat-header-sheet__usage-bar"
-                  :class="pctClass(pct(agentUsageWeek.requests, agentUsageWeek.limit))"
-                  :style="{ width: pct(agentUsageWeek.requests, agentUsageWeek.limit) + '%' }"
-                />
-              </div>
-              <span class="chat-header-sheet__usage-value label-small">{{ agentUsageWeek.requests }}<span v-if="agentUsageWeek.limit" class="chat-header-sheet__usage-limit">/{{ agentUsageWeek.limit }}</span></span>
-            </div>
-            <div class="chat-header-sheet__usage-row">
-              <span class="chat-header-sheet__usage-label">Токены / мес</span>
-              <div class="chat-header-sheet__usage-track">
-                <div
-                  class="chat-header-sheet__usage-bar"
-                  :class="pctClass(pct(agentUsageMonth.inputTokens + agentUsageMonth.outputTokens, agentUsageMonth.tokensLimit))"
-                  :style="{ width: pct(agentUsageMonth.inputTokens + agentUsageMonth.outputTokens, agentUsageMonth.tokensLimit) + '%' }"
-                />
-              </div>
-              <span class="chat-header-sheet__usage-value label-small">{{ fmtTokens(agentUsageMonth.inputTokens + agentUsageMonth.outputTokens) }}<span v-if="agentUsageMonth.tokensLimit" class="chat-header-sheet__usage-limit">/{{ fmtTokens(agentUsageMonth.tokensLimit) }}</span></span>
-            </div>
-            <div v-if="agentUsageMonth.cacheReadTokens > 0" class="chat-header-sheet__usage-meta label-small">
-              <VIcon :size="14">mdi-database-arrow-down-outline</VIcon>
-              кэш-чтение: {{ fmtTokens(agentUsageMonth.cacheReadTokens) }}
-            </div>
+          <div v-else class="chat-header-sheet__session-tokens-empty label-small">
+            Нет активной сессии
           </div>
         </div>
 

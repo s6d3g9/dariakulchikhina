@@ -589,91 +589,21 @@ async function onEffortSelect(effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max
 }
 
 const subsModel = useMessengerSubscriptions()
-
-let claudeUsageTimer: ReturnType<typeof setInterval> | null = null
-function shouldPollClaudeUsage(): boolean {
-  return subsModel.defaultSubscription.value?.provider === 'claude-code-cli'
-}
-onMounted(() => {
-  subsModel.hydrate().catch(() => {})
-  const tick = () => { if (shouldPollClaudeUsage()) subsModel.fetchClaudeUsage().catch(() => {}) }
-  tick()
-  claudeUsageTimer = setInterval(tick, 60_000)
-})
-onBeforeUnmount(() => { if (claudeUsageTimer) clearInterval(claudeUsageTimer) })
+onMounted(() => { subsModel.hydrate().catch(() => {}) })
 
 const currentSubscriptionLabel = computed(() => subsModel.defaultSubscription.value?.label ?? '')
-const currentClaudeUsage = computed(() => {
-  if (!shouldPollClaudeUsage()) return null
-  return subsModel.claudeUsage.value
-})
 
-// Derive subscription usage live from running CLI sessions instead of the
-// localStorage-backed `recordUsage` ledger, which is never written today.
-// We treat every session whose model belongs to the default subscription's
-// provider as work charged to that subscription, then aggregate token totals
-// (cumulative per session) and use `lastActivityAt` as a per-session activity
-// timestamp for the 5h/week windows.
-const WINDOW_5H_MS = 5 * 60 * 60 * 1000
-const WINDOW_WEEK_MS = 7 * 24 * 60 * 60 * 1000
-
-function currentMonthStart(): number {
-  const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), 1).getTime()
-}
-
-const sessionsForCurrentSubscription = computed(() => {
-  const sub = subsModel.defaultSubscription.value
-  if (!sub) return [] as MessengerCliSession[]
-  const modelIds = new Set(subsModel.modelsByProvider(sub.provider).map(m => m.id))
-  return cliSessionsModel.sessions.value.filter((s) => {
-    if (!s.model) return false
-    return modelIds.has(s.model)
-  })
-})
-
-const currentUsage5h = computed(() => {
-  const sub = subsModel.defaultSubscription.value
-  if (!sub) return { requests: 0, limit: 0 }
-  const cutoff = Date.now() - WINDOW_5H_MS
-  const requests = sessionsForCurrentSubscription.value.filter((s) => {
-    const t = s.lastActivityAt ? new Date(s.lastActivityAt).getTime() : 0
-    return t >= cutoff
-  }).length
-  const limits = subsModel.limitsFor(sub)
-  return { requests, limit: limits.requestsPer5h }
-})
-
-const currentUsageWeek = computed(() => {
-  const sub = subsModel.defaultSubscription.value
-  if (!sub) return { requests: 0, limit: 0 }
-  const cutoff = Date.now() - WINDOW_WEEK_MS
-  const requests = sessionsForCurrentSubscription.value.filter((s) => {
-    const t = s.lastActivityAt ? new Date(s.lastActivityAt).getTime() : 0
-    return t >= cutoff
-  }).length
-  const limits = subsModel.limitsFor(sub)
-  return { requests, limit: limits.requestsPerWeek }
-})
-
-const currentUsageMonth = computed(() => {
-  const sub = subsModel.defaultSubscription.value
-  if (!sub) return { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, tokensLimit: 0 }
-  const monthStart = currentMonthStart()
-  let inputTokens = 0
-  let outputTokens = 0
-  for (const s of sessionsForCurrentSubscription.value) {
-    const created = s.created ? new Date(s.created).getTime() : 0
-    if (created < monthStart) continue
-    inputTokens += s.tokenInTotal || 0
-    outputTokens += s.tokenOutTotal || 0
-  }
-  const limits = subsModel.limitsFor(sub)
+// Per-session token counter for the active agent's CLI session. We can't
+// fetch real Claude rate-limit data without intercepting /v1/messages traffic,
+// so we just show what we already track per session: tokens in/out and cost.
+const activeSessionUsage = computed(() => {
+  const sess = activeAgentSession.value
+  if (!sess) return null
   return {
-    inputTokens,
-    outputTokens,
-    cacheReadTokens: 0,
-    tokensLimit: limits.tokensPerMonth,
+    tokenIn: sess.tokenInTotal || 0,
+    tokenOut: sess.tokenOutTotal || 0,
+    costUsd: sess.costUsd || 0,
+    model: sess.model || '',
   }
 })
 
@@ -2881,10 +2811,7 @@ onBeforeUnmount(() => {
         :agent-effort-value="currentSessionEffort"
         :agent-effort-pending="effortSetPending"
         :agent-subscription-label="currentSubscriptionLabel"
-        :agent-usage5h="currentUsage5h"
-        :agent-usage-week="currentUsageWeek"
-        :agent-usage-month="currentUsageMonth"
-        :agent-claude-usage="currentClaudeUsage"
+        :agent-session-usage="activeSessionUsage"
         :monitor-panel-open="!sessNavCollapsed && chatSessNavVisible"
         :monitor-session-count="monitorActiveCurrentProjectCount || monitorActiveTotalCount"
         :monitor-session-groups="monitorSessionGroups"

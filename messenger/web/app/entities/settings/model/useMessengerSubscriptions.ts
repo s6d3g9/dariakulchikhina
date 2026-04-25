@@ -181,21 +181,6 @@ export interface MessengerWindowedUsage {
   requestCount: number
 }
 
-export interface ClaudeUsageBucket {
-  utilization: number
-  resets_at: number
-}
-
-export interface ClaudeUsageSnapshot {
-  fetchedAt: number
-  subscriptionType: string
-  rateLimitTier: string
-  five_hour: ClaudeUsageBucket | null
-  seven_day: ClaudeUsageBucket | null
-  seven_day_opus: ClaudeUsageBucket | null
-  seven_day_sonnet: ClaudeUsageBucket | null
-}
-
 export const SUBSCRIPTION_LIMITS_BY_PROVIDER: Record<MessengerSubscriptionProvider, MessengerSubscriptionLimits> = {
   // Claude.ai Pro: ~45 messages / 5h, ~225 / week. Max plans 5x. Defaulting to Pro tier.
   'claude-code-cli':  { requestsPer5h: 45,  requestsPerWeek: 225,  tokensPerMonth: 5_000_000  },
@@ -308,9 +293,6 @@ export function useMessengerSubscriptions() {
   const pending = useState<boolean>('messenger-subscriptions-pending', () => false)
   const usageMap = useState<Record<string, MessengerSubscriptionUsage>>('messenger-sub-usage', () => ({}))
   const eventsMap = useState<Record<string, MessengerUsageEvent[]>>('messenger-sub-events', () => ({}))
-  const claudeUsage = useState<ClaudeUsageSnapshot | null>('messenger-claude-usage', () => null)
-  const claudeUsagePending = useState<boolean>('messenger-claude-usage-pending', () => false)
-  const claudeUsageError = useState<string | null>('messenger-claude-usage-error', () => null)
 
   function hydrateUsage() {
     usageMap.value = readUsageStored()
@@ -376,25 +358,6 @@ export function useMessengerSubscriptions() {
 
   function limitsFor(sub: MessengerSubscription): MessengerSubscriptionLimits {
     return SUBSCRIPTION_LIMITS_BY_PROVIDER[sub.provider] ?? SUBSCRIPTION_LIMITS_BY_PROVIDER.custom
-  }
-
-  async function fetchClaudeUsage(): Promise<ClaudeUsageSnapshot | null> {
-    if (!auth.token.value) return null
-    if (claudeUsagePending.value) return claudeUsage.value
-    claudeUsagePending.value = true
-    claudeUsageError.value = null
-    try {
-      const res = await auth.request<ClaudeUsageSnapshot>('/claude-usage', { method: 'GET' })
-      claudeUsage.value = res
-      return res
-    }
-    catch (err) {
-      claudeUsageError.value = err instanceof Error ? err.message : 'fetch_failed'
-      return null
-    }
-    finally {
-      claudeUsagePending.value = false
-    }
   }
 
   async function hydrate() {
@@ -506,11 +469,7 @@ export function useMessengerSubscriptions() {
     ready,
     pending,
     usageMap,
-    claudeUsage,
-    claudeUsagePending,
-    claudeUsageError,
     hydrate,
-    fetchClaudeUsage,
     providerOf,
     modelsOf,
     modelsByProvider,

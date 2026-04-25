@@ -37,7 +37,6 @@ import { registerIngestRoutes } from '../agents/ingest-handler.ts'
 import { registerManifestRoutes } from '../integrations/manifest-handler.ts'
 import { registerOrchestrationRoutes } from '../agents/orchestration-handler.ts'
 import { registerBalancingRoutes } from '../balancing/balancing-handler.ts'
-import { registerClaudeUsageRoutes } from '../agents/claude-usage-handler.ts'
 import { startAutoArchive } from '../agents/auto-archive-sessions.ts'
 import { useIngestDb } from '../agents/ingest-db.ts'
 import { registerProjectsRoutes } from '../projects/projects-handler.ts'
@@ -3403,7 +3402,6 @@ export async function createMessengerServer() {
   registerProjectKnowledgeRoutes(app)
   registerManifestRoutes(app)
   registerBalancingRoutes(app)
-  registerClaudeUsageRoutes(app)
 
   startAutoArchive(useIngestDb(), app.log)
 
