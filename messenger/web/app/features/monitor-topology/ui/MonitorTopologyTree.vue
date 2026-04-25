@@ -22,22 +22,60 @@ const mode = computed<MonitorMode>({
 const { flatSorted, counters, activeTrace, awaitingSlugs, crashedSlugs } = injectMonitorTopology()
 
 // Filter chips. Awaiting + crashed reset to 'all' when their pool empties so
-// the user is never stuck looking at an empty tree.
-const filter = ref<MonitorFilter>('all')
+// the user is never stuck looking at an empty tree. Persisted to localStorage
+// so the user's "ждут вас" view survives a reload (and so does Live/Today).
+const FILTER_STORAGE_KEY = 'daria.monitor.filter'
+const MODE_STORAGE_KEY = 'daria.monitor.mode'
+const SEARCH_STORAGE_KEY = 'daria.monitor.search'
+
+function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  if (typeof window === 'undefined') return fallback
+  const v = window.localStorage.getItem(key)
+  return (v && (allowed as readonly string[]).includes(v)) ? v as T : fallback
+}
+
+const filter = ref<MonitorFilter>(readStored(FILTER_STORAGE_KEY, ['all', 'awaiting', 'crashed'] as const, 'all'))
+const search = ref<string>(typeof window !== 'undefined' ? window.localStorage.getItem(SEARCH_STORAGE_KEY) ?? '' : '')
+
+// Hydrate mode from storage once (first render after mount). We can't simply
+// initialise it via readStored above because mode is owned by the parent and
+// gets passed through props/v-model — so we emit an update once.
+onMounted(() => {
+  const stored = readStored(MODE_STORAGE_KEY, ['live', 'today'] as const, mode.value)
+  if (stored !== mode.value) mode.value = stored
+})
 
 watchEffect(() => {
   if (filter.value === 'awaiting' && counters.value.awaiting === 0) filter.value = 'all'
   if (filter.value === 'crashed' && counters.value.crashed === 0) filter.value = 'all'
 })
 
+watch(filter, (v) => { if (typeof window !== 'undefined') window.localStorage.setItem(FILTER_STORAGE_KEY, v) })
+watch(mode, (v) => { if (typeof window !== 'undefined') window.localStorage.setItem(MODE_STORAGE_KEY, v) })
+watch(search, (v) => { if (typeof window !== 'undefined') window.localStorage.setItem(SEARCH_STORAGE_KEY, v) })
+
+const normalizedSearch = computed(() => search.value.trim().toLowerCase())
+function rowMatchesSearch(row: typeof flatSorted.value[number], q: string): boolean {
+  if (!q) return true
+  const s = row.session
+  return (
+    s.slug.toLowerCase().includes(q)
+    || (s.agentDisplayName ?? '').toLowerCase().includes(q)
+    || (s.kind ?? '').toLowerCase().includes(q)
+    || (s.lastMessagePreview ?? '').toLowerCase().includes(q)
+  )
+}
+
 const visibleRows = computed(() => {
+  const q = normalizedSearch.value
+  let rows = flatSorted.value
   if (filter.value === 'awaiting') {
-    return flatSorted.value.filter(r => awaitingSlugs.value.has(r.session.slug))
+    rows = rows.filter(r => awaitingSlugs.value.has(r.session.slug))
+  } else if (filter.value === 'crashed') {
+    rows = rows.filter(r => crashedSlugs.value.has(r.session.slug))
   }
-  if (filter.value === 'crashed') {
-    return flatSorted.value.filter(r => crashedSlugs.value.has(r.session.slug))
-  }
-  return flatSorted.value
+  if (q) rows = rows.filter(r => rowMatchesSearch(r, q))
+  return rows
 })
 
 // Stale-overlay: SSE went silent. We treat "no delta for ≥45 s after we lost
@@ -227,6 +265,38 @@ function onTreeKeydown(ev: KeyboardEvent) {
       </span>
     </div>
 
+    <div class="monitor-tree__search">
+      <v-icon
+        icon="mdi-magnify"
+        size="16"
+        class="monitor-tree__search-icon"
+      />
+      <input
+        v-model="search"
+        type="search"
+        class="monitor-tree__search-input"
+        placeholder="Поиск по имени, slug, kind…"
+        aria-label="Поиск по сессиям"
+      >
+      <button
+        v-if="search"
+        type="button"
+        class="monitor-tree__search-clear"
+        aria-label="Очистить поиск"
+        @click="search = ''"
+      >
+        <v-icon
+          icon="mdi-close-circle"
+          size="14"
+        />
+      </button>
+      <span
+        v-if="search"
+        class="monitor-tree__search-count"
+        aria-live="polite"
+      >{{ visibleRows.length }} из {{ flatSorted.length }}</span>
+    </div>
+
     <div
       ref="scrollerRef"
       class="monitor-tree__scroller-wrap"
@@ -257,11 +327,14 @@ function onTreeKeydown(ev: KeyboardEvent) {
         class="monitor-tree__empty"
       >
         <v-icon
-          :icon="filter === 'awaiting' ? 'mdi-hand-back-right-outline' : filter === 'crashed' ? 'mdi-alert-circle-outline' : 'mdi-monitor-off'"
+          :icon="search ? 'mdi-magnify-close' : filter === 'awaiting' ? 'mdi-hand-back-right-outline' : filter === 'crashed' ? 'mdi-alert-circle-outline' : 'mdi-monitor-off'"
           size="32"
           class="mb-2"
         />
-        <div v-if="filter === 'awaiting'">
+        <div v-if="search">
+          Ничего не нашлось по «{{ search }}»
+        </div>
+        <div v-else-if="filter === 'awaiting'">
           Никто не ждёт ответа
         </div>
         <div v-else-if="filter === 'crashed'">
@@ -417,6 +490,70 @@ function onTreeKeydown(ev: KeyboardEvent) {
   0%   { box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-primary)) 50%, transparent); }
   70%  { box-shadow: 0 0 0 5px color-mix(in srgb, rgb(var(--v-theme-primary)) 0%, transparent); }
   100% { box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--v-theme-primary)) 0%, transparent); }
+}
+
+/* ---- Search ---- */
+
+.monitor-tree__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, rgb(var(--v-theme-outline)) 14%, transparent);
+  background: rgb(var(--v-theme-surface));
+}
+
+.monitor-tree__search-icon {
+  color: rgb(var(--v-theme-on-surface-variant));
+  flex: 0 0 auto;
+}
+
+.monitor-tree__search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: rgb(var(--v-theme-on-surface));
+  padding: 4px 0;
+}
+
+.monitor-tree__search-input::placeholder {
+  color: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.7;
+}
+
+/* Hide native search clear (we render our own button). */
+.monitor-tree__search-input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.monitor-tree__search-clear {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: rgb(var(--v-theme-on-surface-variant));
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.monitor-tree__search-clear:hover {
+  color: rgb(var(--v-theme-on-surface));
+  background: rgb(var(--v-theme-surface-container));
+}
+
+.monitor-tree__search-count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ---- Scroller + stale overlay ---- */
