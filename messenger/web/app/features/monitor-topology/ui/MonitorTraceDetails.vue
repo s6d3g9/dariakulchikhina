@@ -66,6 +66,30 @@ const finishedLabel = computed(() => {
   catch { return null }
 })
 
+// Inline copy feedback: flip the icon to a checkmark for ~1.2 s after a
+// successful clipboard write so the user sees their action landed without
+// us having to plumb a toast/snackbar through the section.
+const copiedSlug = ref(false)
+let copiedTimer: ReturnType<typeof setTimeout> | null = null
+async function copySlug() {
+  const slug = props.session?.slug
+  if (!slug || typeof navigator === 'undefined' || !navigator.clipboard) return
+  try {
+    await navigator.clipboard.writeText(slug)
+    copiedSlug.value = true
+    if (copiedTimer) clearTimeout(copiedTimer)
+    copiedTimer = setTimeout(() => { copiedSlug.value = false }, 1200)
+  }
+  catch {
+    // Clipboard refused (insecure context, no permission) — silently no-op
+    // since this is an opportunistic affordance, not a critical action.
+  }
+}
+
+onBeforeUnmount(() => {
+  if (copiedTimer) clearTimeout(copiedTimer)
+})
+
 </script>
 
 <template>
@@ -96,6 +120,18 @@ const finishedLabel = computed(() => {
           size="20"
         />
         <span class="title-medium">{{ session.agentDisplayName || session.slug }}</span>
+        <button
+          type="button"
+          class="trace-details__copy"
+          :title="copiedSlug ? 'Скопировано' : `Скопировать slug: ${session.slug}`"
+          :aria-label="copiedSlug ? 'Slug скопирован' : 'Скопировать slug сессии'"
+          @click="copySlug"
+        >
+          <v-icon
+            :icon="copiedSlug ? 'mdi-check' : 'mdi-content-copy'"
+            size="14"
+          />
+        </button>
       </div>
       <span
         v-else
@@ -595,6 +631,26 @@ const finishedLabel = computed(() => {
 
 .trace-details__live-label--done {
   opacity: 0.7;
+}
+
+.trace-details__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  cursor: pointer;
+  margin-left: 4px;
+  transition: background 120ms, color 120ms;
+}
+
+.trace-details__copy:hover {
+  background: color-mix(in srgb, rgb(var(--v-theme-primary)) 12%, transparent);
+  color: rgb(var(--v-theme-primary));
 }
 
 .trace-details__empty {
