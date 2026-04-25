@@ -14,6 +14,7 @@
     "messenger:core:build": "pnpm -C messenger/core build",
     "messenger:core:start": "pnpm -C messenger/core start",
     "ingest:smoke": "node --experimental-strip-types messenger/core/src/agents/__tests__/ingest-handler.smoke.ts",
+    "test:messenger:host-session": "node --experimental-strip-types messenger/core/src/agents/__tests__/host-session-handler.test.ts",
     "test:server:admin": "node --experimental-strip-types server/modules/__tests__/admin.repositories.test.ts",
     "test:server:documents-gallery": "node --env-file=.env --experimental-strip-types --import ./server/modules/ai/__tests__/tilde-resolver.mjs server/modules/__tests__/documents-gallery.repositories.test.ts",
     "messenger:export:standalone": "bash scripts/export-messenger-standalone.sh",
