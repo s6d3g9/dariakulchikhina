@@ -97,6 +97,9 @@ const envSchema = z.object({
   MESSENGER_CORE_SECRETS_KEY: z.string().length(64).optional(),
   // Service-to-service token for internal worker routes (e.g. /projects/:id/api-key)
   MESSENGER_CORE_SERVICE_TOKEN: z.string().min(16).optional(),
+  // Host-bridge supervisor auth token and owner user id
+  HOST_BRIDGE_TOKEN: z.string().min(32).optional(),
+  HOST_BRIDGE_OWNER_USER_ID: z.string().uuid().optional(),
 })
 
 export function readMessengerConfig() {
