@@ -8,9 +8,29 @@ import { provideMonitorTopology, type MonitorMode } from '../../features/monitor
 
 const sessionsModel = useMessengerCliSessions()
 const conversations = useMessengerConversations()
+const route = useRoute()
+const router = useRouter()
 
-const activeSlug = ref<string | null>(null)
+// `?session=<slug>` makes the trace pane deep-linkable: opening such a URL
+// auto-selects the row, scrolls it into view (slice M), and reveals the
+// trace details. We hydrate from the URL once on mount and replace (not
+// push) the query as the selection changes so the back button stays usable.
+const initialSlug = (() => {
+  const v = route.query.session
+  return typeof v === 'string' && v ? v : null
+})()
+const activeSlug = ref<string | null>(initialSlug)
 const mode = ref<MonitorMode>('live')
+
+watch(activeSlug, (slug) => {
+  const current = route.query.session
+  const same = slug ? current === slug : !current
+  if (same) return
+  const next = { ...route.query }
+  if (slug) next.session = slug
+  else delete next.session
+  void router.replace({ query: next })
+})
 
 const sessionsRef = computed(() => sessionsModel.sessions.value)
 const activeSlugRef = computed(() => activeSlug.value)
