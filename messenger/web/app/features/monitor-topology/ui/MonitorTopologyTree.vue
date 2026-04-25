@@ -101,13 +101,25 @@ function rowMatchesSearch(row: typeof flatSorted.value[number], q: string): bool
   )
 }
 
+// In awaiting/crashed filters the tree shape stops being useful (parent rows
+// are hidden, so the indentation rails dangle). We flatten to depth=0 and
+// resort: awaiting → longest-waiting first (idleForMs desc), crashed → most
+// recently failed first (finishedAt desc). This makes the filter act as a
+// priority queue rather than a partial tree.
 const visibleRows = computed(() => {
   const q = normalizedSearch.value
   let rows = flatSorted.value
   if (filter.value === 'awaiting') {
-    rows = rows.filter(r => awaitingSlugs.value.has(r.session.slug))
+    rows = flatSorted.value
+      .filter(r => awaitingSlugs.value.has(r.session.slug))
+      .map(r => ({ ...r, depth: 0, isLastSibling: true }))
+      .sort((a, b) => (b.session.idleForMs ?? 0) - (a.session.idleForMs ?? 0))
   } else if (filter.value === 'crashed') {
-    rows = rows.filter(r => crashedSlugs.value.has(r.session.slug))
+    const finishedMs = (s: typeof rows[0]['session']) => s.finishedAt ? Date.parse(s.finishedAt) : 0
+    rows = flatSorted.value
+      .filter(r => crashedSlugs.value.has(r.session.slug))
+      .map(r => ({ ...r, depth: 0, isLastSibling: true }))
+      .sort((a, b) => finishedMs(b.session) - finishedMs(a.session))
   }
   if (q) rows = rows.filter(r => rowMatchesSearch(r, q))
   return rows
