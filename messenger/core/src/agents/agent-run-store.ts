@@ -41,7 +41,6 @@ export interface MessengerAgentRunEventRecord {
 
 export interface MessengerAgentRunRecord {
   runId: string
-  parentRunId?: string
   conversationId?: string
   agentId: string
   parentRunId?: string
@@ -162,10 +161,24 @@ export async function createMessengerAgentRun(input: {
 }): Promise<string> {
   const db = useIngestDb()
   const runId = randomUUID()
+  // Propagate rootRunId from parent so the trace tree stays connected. Without
+  // this, the orchestration POST /agents/:id/runs path created top-level rows
+  // with NULL rootRunId and the monitor's rootRunId-scoped grouping fell
+  // apart for any session started by a parent agent.
+  let rootRunId: string = runId
+  if (input.parentRunId) {
+    const [parent] = await db
+      .select({ rootRunId: messengerAgentRuns.rootRunId })
+      .from(messengerAgentRuns)
+      .where(and(eq(messengerAgentRuns.id, input.parentRunId), isNull(messengerAgentRuns.deletedAt)))
+      .limit(1)
+    if (parent?.rootRunId) rootRunId = parent.rootRunId as string
+  }
   await db.insert(messengerAgentRuns).values({
     id: runId,
     agentId: input.agentId,
     parentRunId: input.parentRunId ?? null,
+    rootRunId,
     status: 'pending',
     prompt: input.prompt ?? null,
     model: input.model ?? null,

@@ -12,7 +12,7 @@ import { readBearerToken, verifyMessengerToken } from '../auth/auth.ts'
 import { readMessengerConfig } from '../config.ts'
 import {
   createMessengerAgentRun,
-  listMessengerAgentRunSubtree,
+  listSubtree,
   listMessengerAgentRunEventsPaginated,
   updateMessengerAgentRunStatus,
 } from './agent-run-store.ts'
@@ -23,6 +23,7 @@ import {
   messengerAgents,
   messengerCliSessions,
   messengerAgentRuns,
+  messengerAgentRunEvents,
   messengerAgentTaskCompletions,
   eq,
   and,
@@ -312,21 +313,18 @@ export function registerOrchestrationRoutes(
         return reply.code(401).send({ error: 'UNAUTHORIZED' })
       }
 
-      const { agentId } = request.params
       const { rootRunId, cursor, limit } = request.query
 
       if (!rootRunId) {
         return reply.code(400).send({ error: 'rootRunId_REQUIRED' })
       }
 
-      const result = await listMessengerAgentRunSubtree({
-        agentId,
-        rootRunId,
-        cursor,
-        limit: limit ? parseInt(limit, 10) : undefined,
-      })
-
-      return result
+      // We scope by rootRunId only (not agentId) so cross-agent subagent trees
+      // — composer → orchestrator → workers — render as one tree even when
+      // the children belong to different agents. The frontend expects a `runs`
+      // field; we rename `items` here to keep the contract.
+      const result = await listSubtree(rootRunId, cursor ?? null, limit ? parseInt(limit, 10) : 100)
+      return { runs: result.items, nextCursor: result.nextCursor }
     },
   )
 
@@ -1199,12 +1197,23 @@ export function registerOrchestrationRoutes(
     },
   )
 
-  // --- tmux reconciler ---
-  // Runs every 30s. For any session DB row with status='running' whose tmux
-  // window is no longer in `tmux list-windows -t cc`, flips status to
-  // 'stopped' and publishes a delta so the UI updates instantly. This closes
-  // the gap where a session dies without emitting a `complete`/`error` event.
+  // --- tmux + activity reconciler ---
+  // Runs every 30s. Marks `status='stopped'` in three cases, each closing a
+  // distinct way a session can become a UI zombie:
+  //   1. `tmuxWindow` is set but the window is gone (clean death).
+  //   2. `tmuxWindow` is null/empty (orphan row — no tmux to ever reconcile).
+  //   3. `tmuxWindow` is alive but no run events arrived in STALE_ACTIVITY_MS
+  //      (tmux pane was kept open but the Claude process inside has been idle
+  //      for too long — same as if the window died). Without this, sessions
+  //      where the operator forgets to `tmux kill-window` linger forever as
+  //      "running" in the monitor.
   const RECONCILE_INTERVAL_MS = 30_000
+  // 24 h: long enough that intentionally idle "watcher" sessions survive an
+  // overnight gap, short enough that a forgotten orchestrator gets garbage-
+  // collected within a day. Tuned from the field: sux-orch had its last
+  // event 2026-04-23 but the row stayed running through 2026-04-26 because
+  // the tmux window was kept alive by an attached pane.
+  const STALE_ACTIVITY_MS = 24 * 60 * 60 * 1000
   const reconcileTick = async () => {
     try {
       const { execFileSync } = await import('node:child_process')
@@ -1220,16 +1229,65 @@ export function registerOrchestrationRoutes(
         return
       }
       const runningRows = await db
-        .select({ id: messengerCliSessions.id, slug: messengerCliSessions.slug, window: messengerCliSessions.tmuxWindow })
+        .select({
+          id: messengerCliSessions.id,
+          slug: messengerCliSessions.slug,
+          window: messengerCliSessions.tmuxWindow,
+          agentId: messengerCliSessions.agentId,
+          createdAt: messengerCliSessions.createdAt,
+        })
         .from(messengerCliSessions)
         .where(and(eq(messengerCliSessions.status, 'running'), isNull(messengerCliSessions.deletedAt)))
+      if (runningRows.length === 0) return
+
+      // Per-agent last-event timestamp — used for the stale-activity check.
+      // `messenger_agent_run_events` has no agent_id column (events are scoped
+      // to a run); we group by `messenger_agent_runs.agent_id` via join. We pull
+      // all in one shot so reconciler cost is O(running rows + 1).
+      const agentIds = Array.from(new Set(runningRows.map(r => r.agentId)))
+      const lastEventByAgent = new Map<string, number>()
+      if (agentIds.length > 0) {
+        // postgres-js returns max(timestamptz) as an ISO string, not a Date —
+        // hence Date.parse rather than `+row.lastEventAt`, which would coerce
+        // the string to NaN and silently disable the stale-activity check.
+        const eventRows = await db
+          .select({
+            agentId: messengerAgentRuns.agentId,
+            lastEventAt: sql<string | null>`max(${messengerAgentRunEvents.occurredAt})`,
+          })
+          .from(messengerAgentRunEvents)
+          .innerJoin(messengerAgentRuns, eq(messengerAgentRuns.id, messengerAgentRunEvents.runId))
+          .where(inArray(messengerAgentRuns.agentId, agentIds))
+          .groupBy(messengerAgentRuns.agentId)
+        for (const row of eventRows) {
+          if (!row.lastEventAt) continue
+          const ms = row.lastEventAt instanceof Date ? row.lastEventAt.getTime() : Date.parse(String(row.lastEventAt))
+          if (Number.isFinite(ms)) lastEventByAgent.set(row.agentId, ms)
+        }
+      }
+
       const now = new Date()
+      const nowMs = now.getTime()
       for (const row of runningRows) {
-        if (!row.window || liveWindows.has(row.window)) continue
+        let reason: 'tmux-gone' | 'no-window' | 'stale-activity' | null = null
+        if (!row.window) {
+          // Row never had (or lost) its tmux linkage — no way to reconcile
+          // through the live-window check; treat as definitively stopped.
+          reason = 'no-window'
+        } else if (!liveWindows.has(row.window)) {
+          reason = 'tmux-gone'
+        } else {
+          // Window is alive — gate on activity instead.
+          const lastEv = lastEventByAgent.get(row.agentId)
+          const baseline = lastEv ?? +row.createdAt
+          if (nowMs - baseline > STALE_ACTIVITY_MS) reason = 'stale-activity'
+        }
+        if (!reason) continue
         await db
           .update(messengerCliSessions)
           .set({ status: 'stopped', stoppedAt: now })
           .where(eq(messengerCliSessions.id, row.id))
+        app.log.info({ slug: row.slug, reason }, 'reconciler marked session stopped')
         publishSessionDelta({ slug: row.slug, reason: 'stopped', ts: now.toISOString() })
       }
     } catch (err) {
