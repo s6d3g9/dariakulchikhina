@@ -158,15 +158,30 @@ function extractReplySuggestions(body: string): string[] {
 // Per-component markdown render cache keyed by message id + body hash.
 // Reactions, read receipts, and meta updates re-run `burstEntries` but
 // don't change the body, so we serve the cached HTML instead of re-parsing.
-// Entries are evicted when the source body actually changes (edit) or the
-// component unmounts (closure scope).
+// Entries are evicted when the source body actually changes (edit), the
+// LRU cap is exceeded (oldest insertion drops), or the component unmounts.
+//
+// The cap is sized for a typical thread: a bubble plus its comment subtree
+// rarely exceeds ~50 distinct messages. 200 covers heavy threads while
+// keeping memory bounded on long-lived sessions.
+const RENDER_CACHE_MAX = 200
 const renderCache = new Map<string, { body: string, html: string }>()
 
 function renderCached(id: string, body: string): string {
   const hit = renderCache.get(id)
-  if (hit && hit.body === body) return hit.html
+  if (hit && hit.body === body) {
+    // Re-insert to refresh insertion order — Map iteration is FIFO, so
+    // this turns it into a poor-man's LRU.
+    renderCache.delete(id)
+    renderCache.set(id, hit)
+    return hit.html
+  }
   const html = renderMarkdown(body)
   renderCache.set(id, { body, html })
+  if (renderCache.size > RENDER_CACHE_MAX) {
+    const oldest = renderCache.keys().next().value
+    if (oldest !== undefined) renderCache.delete(oldest)
+  }
   return html
 }
 

@@ -1,15 +1,7 @@
 {
-  "generatedAt": "2026-04-25T16:14:45.173Z",
-  "totalErrors": 17,
+  "generatedAt": "2026-04-26T09:15:18.216Z",
+  "totalErrors": 5,
   "perFile": {
-    "clicore2messenger/dist/adapters/claude-transcript.js": 1,
-    "clicore2messenger/dist/adapters/claude.js": 1,
-    "clicore2messenger/dist/adapters/copilot.js": 2,
-    "clicore2messenger/dist/cli.js": 2,
-    "clicore2messenger/src/adapters/claude-transcript.ts": 1,
-    "clicore2messenger/src/adapters/claude.ts": 1,
-    "clicore2messenger/src/adapters/copilot.ts": 2,
-    "clicore2messenger/src/cli.ts": 2,
     "messenger/core/src/agents/agent-run-store.ts": 2,
     "messenger/core/src/agents/orchestration-handler.ts": 1,
     "messenger/web/app/features/conversation-switch/ui/MessengerChatHeader.vue": 1,

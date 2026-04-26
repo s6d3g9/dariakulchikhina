@@ -1274,6 +1274,15 @@ const threadedMessages = computed<MessengerThreadMessage[]>(() => {
 // single "burst" so a long task that spans multiple runs (or parallel
 // sub-agents that all surface as separate messages) shows up as one bubble
 // instead of N bubbles + N reasoning plates.
+//
+// The proper grouping signal is server-side `rootRunId` on each message,
+// but `MessengerConversationMessage` doesn't expose it yet (TODO: extend
+// the messenger/core API contract). As a pragmatic stand-in we cap the
+// fold-window at 30 min — within one task, runs typically fire within
+// seconds of each other; a half-hour gap is almost certainly a separate
+// task started without a user prompt in between (autonomous orchestration).
+const BURST_MAX_GAP_MS = 30 * 60 * 1000
+
 function shouldFoldIntoBurst(prev: MessengerThreadMessage, next: MessengerThreadMessage): boolean {
   if (prev.own || next.own) return false
   if (!prev.agentId || !next.agentId) return false
@@ -1290,6 +1299,14 @@ function shouldFoldIntoBurst(prev: MessengerThreadMessage, next: MessengerThread
   if (next.reactions && next.reactions.length > 0) return false
   if (next.comments && next.comments.length > 0) return false
   if (next.editedAt) return false
+  // Time-gap heuristic: only fold runs that happen close together. Defends
+  // against an agent finishing one task and starting an unrelated one
+  // without any user message between them (autonomous orchestration).
+  const prevTime = Date.parse(prev.createdAt)
+  const nextTime = Date.parse(next.createdAt)
+  if (!Number.isNaN(prevTime) && !Number.isNaN(nextTime)) {
+    if (nextTime - prevTime > BURST_MAX_GAP_MS) return false
+  }
   return true
 }
 
