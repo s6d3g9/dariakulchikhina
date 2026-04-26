@@ -5,6 +5,16 @@
 // rootRunId-scoped agent run tree for the selected session.
 
 import { provideMonitorTopology, type MonitorMode } from '../../features/monitor-topology/model/useMonitorTopology'
+import { useMonitorPersistence } from '../../features/monitor-topology/model/useMonitorPersistence'
+
+const props = withDefaults(defineProps<{
+  // When set, the monitor is scoped to a single project — only sessions whose
+  // `agentProjectId` matches are shown. When null (the default), the global
+  // monitor view applies the persisted "hide orphans" toggle instead.
+  projectScopeId?: string | null
+}>(), {
+  projectScopeId: null,
+})
 
 const sessionsModel = useMessengerCliSessions()
 const conversations = useMessengerConversations()
@@ -34,10 +44,19 @@ watch(activeSlug, (slug) => {
 
 const sessionsRef = computed(() => sessionsModel.sessions.value)
 const activeSlugRef = computed(() => activeSlug.value)
+const projectScopeIdRef = computed(() => props.projectScopeId ?? null)
+
+// `hideOrphans` is parent-owned (this section) so the topology composable can
+// react to it; the tree component reads the same singleton via
+// `useMonitorPersistence`. Without the singleton, section + tree would each
+// own a private ref and the toggle wouldn't reach the topology filter.
+const { hideOrphans } = useMonitorPersistence({ mode })
+
 const { bySlug, ancestryFor, childrenFor, byRootRunId, counters } = provideMonitorTopology(
   sessionsRef,
   mode,
   activeSlugRef,
+  { projectScopeId: projectScopeIdRef, hideOrphans },
 )
 
 // Drop a stale `?session=ghost` slug once sessions have loaded — otherwise
@@ -191,6 +210,7 @@ const lastFetchedLabel = computed(() => {
         :active-slug="activeSlug"
         :stream-connected="sessionsModel.streamConnected.value"
         :last-delta-at="sessionsModel.lastDeltaAt.value"
+        :project-scoped="props.projectScopeId !== null"
         @open-session="selectSession"
         @open-chat="openChatForSession"
       />

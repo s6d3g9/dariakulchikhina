@@ -178,8 +178,16 @@ async function logout() {
           <MessengerAidevSection
             v-show="navigation.activeSection.value === 'aidev'"
           />
+          <!-- Global monitor tab: no project scope. The "project-only" default
+               is enforced by the persisted `hideOrphans` toggle inside the
+               section, so first-time visitors still see only project sessions.
+               Project-workspace scoping (passing `:project-scope-id` here when
+               the user is inside a project) is wired in a follow-up — the
+               messenger shell currently has no project workspace section,
+               only the standalone `/projects/:slug` page route. -->
           <MessengerMonitorSection
             v-show="navigation.activeSection.value === 'monitor'"
+            :project-scope-id="null"
           />
           <MessengerSettingsSection
             v-show="navigation.activeSection.value === 'settings'"

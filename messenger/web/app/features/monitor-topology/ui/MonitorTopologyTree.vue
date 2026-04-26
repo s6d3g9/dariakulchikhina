@@ -7,6 +7,10 @@ const props = defineProps<{
   modelValue?: MonitorMode
   streamConnected?: boolean
   lastDeltaAt?: number
+  // True when the parent has restricted the topology to a specific project
+  // (`projectScopeId !== null`). The "hide orphans" toggle becomes redundant
+  // in that case — scope already implies project-only — so we hide it.
+  projectScoped?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -26,7 +30,9 @@ const { flatSorted, counters, activeTrace, awaitingSlugs, crashedSlugs, activeSl
 // Filter chips. Awaiting + crashed reset to 'all' when their pool empties so
 // the user is never stuck looking at an empty tree. Filter / mode / search
 // state is hydrated from + persisted to localStorage by useMonitorPersistence.
-const { filter, search, pinnedSlugs, togglePin } = useMonitorPersistence({ mode })
+// `hideOrphans` is shared with the parent section (via `useState` inside the
+// composable) so toggling it here propagates to `provideMonitorTopology`.
+const { filter, search, pinnedSlugs, togglePin, hideOrphans } = useMonitorPersistence({ mode })
 
 watchEffect(() => {
   if (filter.value === 'awaiting' && counters.value.awaiting === 0) filter.value = 'all'
@@ -404,6 +410,31 @@ function onTreeKeydown(ev: KeyboardEvent) {
           />
           host · {{ counters.host }}
         </button>
+
+        <button
+          v-if="!projectScoped"
+          type="button"
+          class="monitor-tree__filter-chip monitor-tree__filter-chip--orphans"
+          :class="{ 'is-active': hideOrphans }"
+          :aria-pressed="hideOrphans"
+          :aria-label="hideOrphans
+            ? `Скрыты host-session без проекта: ${counters.orphans}`
+            : `Показаны host-session без проекта: ${counters.orphans}`"
+          :title="hideOrphans
+            ? 'Только сессии проекта (host-session без проекта скрыты). Нажмите, чтобы показать.'
+            : 'Показать только сессии проекта (скрыть host-session без проекта).'"
+          @click="hideOrphans = !hideOrphans"
+        >
+          <v-icon
+            :icon="hideOrphans ? 'mdi-folder-eye-outline' : 'mdi-eye-off-outline'"
+            size="13"
+            class="me-1"
+          />
+          только проект<span
+            v-if="counters.orphans > 0"
+            class="monitor-tree__orphan-hint"
+          > · −{{ counters.orphans }}</span>
+        </button>
       </span>
 
       <span class="monitor-tree__counters">
@@ -658,6 +689,22 @@ function onTreeKeydown(ev: KeyboardEvent) {
 .monitor-tree__filter-chip.is-empty {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.monitor-tree__filter-chip--orphans {
+  border-color: color-mix(in srgb, rgb(var(--v-theme-tertiary, 121 87 200)) 50%, transparent);
+  color: rgb(var(--v-theme-tertiary, 121 87 200));
+}
+
+.monitor-tree__filter-chip--orphans.is-active {
+  background: color-mix(in srgb, rgb(var(--v-theme-tertiary, 121 87 200)) 14%, transparent);
+  border-color: rgb(var(--v-theme-tertiary, 121 87 200));
+}
+
+.monitor-tree__orphan-hint {
+  margin-left: 2px;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
 }
 
 @keyframes monitor-awaiting-pulse {
