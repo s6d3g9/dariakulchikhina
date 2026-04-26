@@ -1,6 +1,8 @@
 import { spawnSync as _spawnSync, execFile as _execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { readFileSync } from 'node:fs'
+import { writeFile, access } from 'node:fs/promises'
+import { constants as fsConstants } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { randomUUID } from 'node:crypto'
@@ -114,6 +116,17 @@ const cliSessionBody = z.object({
   claudeSessionUuid: z.string().optional(),
   logPath: z.string().optional(),
   runId: z.string().uuid().optional(),
+})
+
+// Body for POST /cli-sessions/quick-launch — operator-triggered drop into the
+// claude-queue-daemon's pending dir from the messenger UI. Slug shape mirrors
+// the daemon's task_id constraint and the existing cli-sessions slug regex.
+const quickLaunchBody = z.object({
+  slug: z.string().regex(/^[a-z0-9-]{1,40}$/),
+  prompt: z.string().min(1).max(20_000),
+  model: z.enum(['haiku', 'sonnet', 'opus']),
+  workroom: z.string().regex(/^[a-z0-9-]{1,40}$/).optional(),
+  sourceMessageId: z.string().optional(),
 })
 
 // --- route registration ---
@@ -978,6 +991,65 @@ export function registerOrchestrationRoutes(
       publishSessionDelta({ slug, reason: 'patched', ts: new Date().toISOString() })
 
       return { slug, model, effort }
+    },
+  )
+
+  // POST /cli-sessions/quick-launch — drop a task spec into the claude-queue
+  // daemon's pending dir from the messenger UI. Used by the "Запустить агентом"
+  // affordance on agent messages. Refuses on slug collision so an operator
+  // double-click doesn't stack two tasks for the same prompt.
+  app.post<{ Body: unknown }>(
+    '/cli-sessions/quick-launch',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+      const parsed = quickLaunchBody.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'INVALID_PAYLOAD', issues: parsed.error.issues })
+      }
+      const { slug, prompt, model, workroom, sourceMessageId } = parsed.data
+
+      const queuePath = join(homedir(), 'state', 'queue', 'pending', `${slug}.md`)
+      try {
+        await access(queuePath, fsConstants.F_OK)
+        return reply.code(409).send({ error: 'QUEUE_FILE_EXISTS', queuePath })
+      } catch {
+        // not present — proceed
+      }
+
+      const baseBranch = workroom ? `claude/workroom-${workroom}` : 'main'
+      const frontmatter = [
+        '---',
+        `id: ${slug}`,
+        `model: ${model}`,
+        `base_branch: ${baseBranch}`,
+        'priority: 50',
+        'auto_push: true',
+        ...(sourceMessageId ? [`source_message_id: ${sourceMessageId}`] : []),
+        '---',
+        '',
+      ].join('\n')
+      const body = [
+        `# Quick launch: ${slug}`,
+        '',
+        '## Prompt',
+        '',
+        prompt.trim(),
+        '',
+      ].join('\n')
+
+      try {
+        await writeFile(queuePath, frontmatter + body, { encoding: 'utf8', flag: 'wx' })
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code
+        if (code === 'EEXIST') {
+          return reply.code(409).send({ error: 'QUEUE_FILE_EXISTS', queuePath })
+        }
+        request.log?.warn?.({ err, slug }, 'quick-launch write failed')
+        return reply.code(500).send({ error: 'WRITE_FAILED' })
+      }
+      return { slug, queued: true as const, queuePath }
     },
   )
 
