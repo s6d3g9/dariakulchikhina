@@ -92,7 +92,7 @@ export interface MessengerMessageRecord {
   senderUserId: string
   body: string
   encryptedBody?: MessengerEncryptedPayload
-  kind: 'text' | 'file'
+  kind: 'text' | 'file' | 'system.agent_launched'
   attachment?: {
     name: string
     mimeType: string
@@ -125,6 +125,12 @@ export interface MessengerMessageRecord {
       klipy?: MessengerKlipyAttachmentRecord
     }
   }
+  system?: {
+    slug: string
+    model: 'haiku' | 'sonnet' | 'opus'
+    projectId: string
+    sourceMessageId?: string
+  }
 }
 
 export interface ConversationOverviewItem {
@@ -152,7 +158,7 @@ export interface ConversationMessageOverviewItem {
   id: string
   body: string
   encryptedBody?: MessengerEncryptedPayload
-  kind: 'text' | 'file'
+  kind: 'text' | 'file' | 'system.agent_launched'
   createdAt: string
   readAt?: string
   editedAt?: string
@@ -171,6 +177,12 @@ export interface ConversationMessageOverviewItem {
     count: number
     own: boolean
   }>
+  system?: {
+    slug: string
+    model: 'haiku' | 'sonnet' | 'opus'
+    projectId: string
+    sourceMessageId?: string
+  }
   replyTo?: {
     id: string
     body: string
@@ -573,6 +585,7 @@ export async function listMessagesForConversation(conversationId: string, actor:
         forwardedFrom: message.forwardedFrom,
         runId: (message as unknown as { runId?: string }).runId,
         agentId: (message as unknown as { agentId?: string }).agentId,
+        system: (message as unknown as { system?: ConversationMessageOverviewItem['system'] }).system,
       } satisfies ConversationMessageOverviewItem
     }),
   )
@@ -661,6 +674,31 @@ export async function addAgentMessageToConversation(
     senderUserId: null,
     payload: payload as never,
     plaintext: options?.plaintext,
+  })
+  await updateConversationTimestamp(conversationId)
+  return rowToMessengerMessageRecord(row) as MessengerMessageRecord
+}
+
+export async function addSystemAgentLaunchedMessage(
+  conversationId: string,
+  agent: MessengerAgentRecord,
+  system: { slug: string; model: 'haiku' | 'sonnet' | 'opus'; projectId: string; sourceMessageId?: string },
+): Promise<MessengerMessageRecord> {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) throw new Error('CONVERSATION_NOT_FOUND')
+  if (conversation.kind !== 'agent' || conversation.userBId !== agent.id) throw new Error('CONVERSATION_FORBIDDEN')
+
+  const row = await insertMessage({
+    conversationId,
+    senderUserId: null,
+    payload: {
+      body: '',
+      kind: 'system.agent_launched',
+      agentId: agent.id,
+      system,
+    },
+    // Plaintext: skip the encryption envelope; system bubbles carry no body.
+    plaintext: true,
   })
   await updateConversationTimestamp(conversationId)
   return rowToMessengerMessageRecord(row) as MessengerMessageRecord

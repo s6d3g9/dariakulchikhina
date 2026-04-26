@@ -3,6 +3,7 @@ import type { MessengerConversationMessage } from '../../../entities/conversatio
 import { useMessengerMarkdown } from '../lib/useMessengerMarkdown'
 import { extractNumberedOptions, shouldShowQuickLaunch } from '../lib/numberedOptions'
 import MessengerMessageReasoningPlate from './MessengerMessageReasoningPlate.vue'
+import MessengerQuickLaunchDialog from './MessengerQuickLaunchDialog.vue'
 
 export interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -24,11 +25,24 @@ const props = withDefaults(defineProps<{
   allowForward?: boolean
   allowMutualDelete?: boolean
   reactionOptions?: string[]
+  // Id of the message whose inline quick-launch panel is currently expanded.
+  // Lifted to the chat section so only one panel is open at a time across
+  // the whole thread; this component reflects that state read-only.
+  expandedQuickLaunchMessageId?: string | null
+  // Conversation context forwarded to the panel — slug seeds the slug field,
+  // project + agent ids feed the queue payload.
+  quickLaunchConversationSlug?: string | null
+  quickLaunchProjectId?: string | null
+  quickLaunchAgentId?: string | null
 }>(), {
   depth: 0,
   allowForward: true,
   allowMutualDelete: false,
   reactionOptions: () => ['👍', '❤️', '🔥', '😂', '👏', '😮'],
+  expandedQuickLaunchMessageId: null,
+  quickLaunchConversationSlug: null,
+  quickLaunchProjectId: null,
+  quickLaunchAgentId: null,
 })
 
 const emit = defineEmits<{
@@ -50,6 +64,12 @@ const emit = defineEmits<{
   'copy-text': [value: string, toast: string]
   'quote-code': [code: string]
   'quick-launch': [payload: { messageId: string; body: string }]
+  // Bubbled up from the inline quick-launch panel.
+  'quick-launch-close': []
+  'quick-launch-launched': [payload: { slug: string }]
+  // Centered system bubble action — navigate to the monitor section and
+  // highlight the spawned session row.
+  'open-monitor': [payload: { slug: string }]
 }>()
 
 const { render: renderMarkdown } = useMessengerMarkdown()
@@ -388,6 +408,53 @@ function emitQuickLaunch() {
   emit('quick-launch', { messageId: last.id, body: last.rawBody })
 }
 
+const isQuickLaunchExpanded = computed(() => {
+  if (!props.expandedQuickLaunchMessageId) return false
+  // Match against any burst entry id — the launch trigger emits the LAST
+  // burst entry's id, but the panel's anchor is the head bubble. We accept
+  // both so the panel survives a burst rebalance between turns.
+  if (props.expandedQuickLaunchMessageId === props.entry.id) return true
+  return burstEntryIds.value.includes(props.expandedQuickLaunchMessageId)
+})
+
+const quickLaunchExpandedMessageId = computed(() => {
+  return isQuickLaunchExpanded.value
+    ? (props.expandedQuickLaunchMessageId ?? props.entry.id)
+    : props.entry.id
+})
+
+const quickLaunchExpandedBody = computed(() => {
+  if (!isQuickLaunchExpanded.value) return ''
+  const targetId = props.expandedQuickLaunchMessageId
+  const hit = burstEntries.value.find(e => e.id === targetId)
+  return hit?.rawBody ?? burstEntries.value[burstEntries.value.length - 1]?.rawBody ?? ''
+})
+
+// --- system.agent_launched bubble -----------------------------------------
+
+// Live status of the spawned session — sourced from the cli-sessions store
+// when present. Renders as a small chip suffix on the system card so the
+// operator sees at a glance whether the run is still alive.
+const cliSessionsStore = useMessengerCliSessions()
+
+const systemSessionStatus = computed<{ label: string; color: string } | null>(() => {
+  if (props.entry.kind !== 'system.agent_launched') return null
+  const slug = props.entry.system?.slug
+  if (!slug) return null
+  const sess = cliSessionsStore.sessions.value.find(s => s.slug === slug)
+  if (!sess) return { label: 'нет в мониторе', color: 'surface-variant' }
+  if (sess.archivedAt) return { label: 'архив', color: 'surface-variant' }
+  if (sess.status === 'running') return { label: 'running', color: 'success' }
+  if (sess.status === 'done') return { label: 'done', color: 'info' }
+  return { label: sess.status, color: 'surface-variant' }
+})
+
+function openMonitorForSystemBubble() {
+  const slug = props.entry.system?.slug
+  if (!slug) return
+  emit('open-monitor', { slug })
+}
+
 const sentTime = computed(() => formatMessageTime(props.entry.createdAt))
 const lastBurstTime = computed(() => {
   const list = burstEntries.value
@@ -478,7 +545,50 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <aside
+    v-if="entry.kind === 'system.agent_launched'"
+    class="system-launch-card"
+    :data-message-id="entry.id"
+  >
+    <VIcon :size="18" class="system-launch-card__icon">mdi-rocket-launch</VIcon>
+    <span class="system-launch-card__label">Запущен агент</span>
+    <code v-if="entry.system?.slug" class="system-launch-card__slug" :title="entry.system.slug">
+      {{ entry.system.slug }}
+    </code>
+    <VChip
+      v-if="entry.system?.model"
+      size="x-small"
+      label
+      color="secondary"
+      variant="tonal"
+      class="system-launch-card__chip"
+    >
+      {{ entry.system.model }}
+    </VChip>
+    <VChip
+      v-if="systemSessionStatus"
+      size="x-small"
+      label
+      :color="systemSessionStatus.color"
+      variant="tonal"
+      class="system-launch-card__chip"
+    >
+      {{ systemSessionStatus.label }}
+    </VChip>
+    <VSpacer />
+    <VBtn
+      size="x-small"
+      variant="tonal"
+      color="primary"
+      prepend-icon="mdi-eye-outline"
+      :disabled="!entry.system?.slug"
+      @click.stop="openMonitorForSystemBubble"
+    >
+      Открыть монитор
+    </VBtn>
+  </aside>
   <article
+    v-else
     ref="bubbleEl"
     class="message-bubble"
     :class="{
@@ -783,6 +893,18 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <MessengerQuickLaunchDialog
+      v-if="isQuickLaunchExpanded"
+      :open="true"
+      :message-id="quickLaunchExpandedMessageId"
+      :body="quickLaunchExpandedBody"
+      :conversation-slug="quickLaunchConversationSlug"
+      :default-project-id="quickLaunchProjectId"
+      :default-agent-id="quickLaunchAgentId"
+      @close="emit('quick-launch-close')"
+      @launched="emit('quick-launch-launched', $event)"
+    />
+
     <div v-if="entry.reactions?.length" class="message-reactions">
       <button
         v-for="reaction in entry.reactions"
@@ -811,6 +933,10 @@ onBeforeUnmount(() => {
         :allow-forward="allowForward"
         :allow-mutual-delete="allowMutualDelete"
         :reaction-options="reactionOptions"
+        :expanded-quick-launch-message-id="expandedQuickLaunchMessageId"
+        :quick-launch-conversation-slug="quickLaunchConversationSlug"
+        :quick-launch-project-id="quickLaunchProjectId"
+        :quick-launch-agent-id="quickLaunchAgentId"
         @toggle-actions="(messageId, event) => emit('toggle-actions', messageId, event)"
         @toggle-reaction-overlay="emit('toggle-reaction-overlay', $event)"
         @comment="emit('comment', $event)"
@@ -829,6 +955,9 @@ onBeforeUnmount(() => {
         @copy-text="(value, toast) => emit('copy-text', value, toast)"
         @quote-code="emit('quote-code', $event)"
         @quick-launch="emit('quick-launch', $event)"
+        @quick-launch-close="emit('quick-launch-close')"
+        @quick-launch-launched="emit('quick-launch-launched', $event)"
+        @open-monitor="emit('open-monitor', $event)"
       />
     </div>
   </article>

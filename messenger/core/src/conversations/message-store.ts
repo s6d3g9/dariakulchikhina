@@ -13,7 +13,7 @@ import type {
 export interface MessagePayload {
   body: string
   encryptedBody?: MessengerEncryptedPayload
-  kind: 'text' | 'file'
+  kind: 'text' | 'file' | 'system.agent_launched'
   attachment?: {
     name: string
     mimeType: string
@@ -51,6 +51,14 @@ export interface MessagePayload {
   // client can fold sequential agent messages from the same logical task into
   // a single bubble (see messenger/web `shouldFoldIntoBurst`).
   rootRunId?: string
+  // System-message envelope for kind='system.agent_launched'. Body stays empty
+  // so list previews don't surface it; the client renders from `system`.
+  system?: {
+    slug: string
+    model: 'haiku' | 'sonnet' | 'opus'
+    projectId: string
+    sourceMessageId?: string
+  }
 }
 
 export interface StoredMessageRow {
@@ -115,6 +123,7 @@ export function rowToMessengerMessageRecord(row: StoredMessageRow) {
     runId: row.deletedAt ? undefined : (payload as MessagePayload).runId,
     rootRunId: row.deletedAt ? undefined : (payload as MessagePayload).rootRunId,
     agentId: row.deletedAt ? undefined : (agentId as string | undefined),
+    system: row.deletedAt ? undefined : (payload as MessagePayload).system,
   }
 }
 

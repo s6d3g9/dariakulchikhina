@@ -179,6 +179,9 @@ export function useMessengerCliSessions() {
     projectId: string
     workroom?: string
     sourceMessageId?: string
+    // Active chat agent id — backend uses it to emit a persistent
+    // `system.agent_launched` bubble into that conversation.
+    agentId?: string
   }) {
     // Defensive client-side check so callers can't accidentally drop the
     // project id and end up with a 400 from the server. The server is still

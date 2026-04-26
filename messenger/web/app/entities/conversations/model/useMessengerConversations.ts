@@ -91,11 +91,24 @@ interface MessengerForwardedMessagePreview {
   }
 }
 
+export interface MessengerSystemAgentLaunchedPayload {
+  // Slug of the spawned CLI session — links the bubble to the live monitor row.
+  slug: string
+  model: string
+  projectId: string
+  // Original assistant message that the operator launched from. Used by the
+  // renderer to scroll back to context if the operator clicks the bubble.
+  sourceMessageId?: string
+}
+
 export interface MessengerConversationMessage {
   id: string
   body: string
   encryptedBody?: MessengerEncryptedPayload
-  kind: 'text' | 'file'
+  // 'system.agent_launched' is emitted by messenger/core right after a
+  // successful quick-launch queue write. It replaces the old transient
+  // snackbar with a persistent in-thread receipt.
+  kind: 'text' | 'file' | 'system.agent_launched'
   createdAt: string
   readAt?: string
   editedAt?: string
@@ -123,6 +136,10 @@ export interface MessengerConversationMessage {
   // single bubble. Falls back to time-gap heuristic when missing.
   rootRunId?: string
   agentId?: string
+  // Populated only for `kind === 'system.agent_launched'`. Carries the
+  // payload the launch panel submitted so the renderer can show slug/model
+  // and offer a deep-link to the monitor row.
+  system?: MessengerSystemAgentLaunchedPayload
 }
 
 function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: string; size: number; url: string } }>(

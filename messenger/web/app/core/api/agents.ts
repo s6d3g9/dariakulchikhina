@@ -102,6 +102,10 @@ export function useAgentsApi() {
     projectId: string
     workroom?: string
     sourceMessageId?: string
+    // Active chat agent id. When present the backend appends a persistent
+    // `system.agent_launched` bubble into that conversation so the operator
+    // sees the launch in-place without a transient snackbar.
+    agentId?: string
   }) {
     return auth.request<{ slug: string; queued: true; queuePath: string }>(
       '/cli-sessions/quick-launch',

@@ -34,6 +34,11 @@ import {
   inArray,
 } from './ingest-db.ts'
 import { registerCliSession, SessionRegistryError } from './session-registry.ts'
+import { findMessengerAgentById } from './agent-store.ts'
+import {
+  findOrCreateAgentConversation,
+  addSystemAgentLaunchedMessage,
+} from '../conversations/conversation-store.ts'
 
 const execFile = promisify(_execFile)
 
@@ -134,6 +139,10 @@ const quickLaunchBody = z.object({
   projectId: z.string().uuid(),
   workroom: z.string().regex(/^[a-z0-9-]{1,40}$/).optional(),
   sourceMessageId: z.string().optional(),
+  // Optional: when present and resolvable, a system bubble is dropped into
+  // the operator<->agent conversation so the launch is visible without a
+  // separate toast surface.
+  agentId: z.string().uuid().optional(),
 })
 
 // --- route registration ---
@@ -1053,7 +1062,7 @@ export function registerOrchestrationRoutes(
       if (!parsed.success) {
         return reply.code(400).send({ error: 'INVALID_PAYLOAD', issues: parsed.error.issues })
       }
-      const { slug, prompt, model, projectId, workroom, sourceMessageId } = parsed.data
+      const { slug, prompt, model, projectId, workroom, sourceMessageId, agentId } = parsed.data
       const ownerUserId = auth.sub
 
       // Validate project: must exist, belong to the authenticated user,
@@ -1137,7 +1146,32 @@ export function registerOrchestrationRoutes(
         request.log?.warn?.({ err, slug }, 'quick-launch write failed')
         return reply.code(500).send({ error: 'WRITE_FAILED' })
       }
-      return { slug, queued: true as const, queuePath }
+
+      // Best-effort: drop a system bubble into the operator<->agent thread so
+      // the running agent is visible without a transient toast. Failure here
+      // must NOT fail the launch — the queue file already landed.
+      let systemMessageId: string | undefined
+      let conversationId: string | undefined
+      if (agentId) {
+        try {
+          const agent = await findMessengerAgentById(agentId)
+          if (agent) {
+            const conversation = await findOrCreateAgentConversation(ownerUserId, agent.id)
+            conversationId = conversation.id
+            const message = await addSystemAgentLaunchedMessage(conversation.id, agent, {
+              slug,
+              model,
+              projectId,
+              sourceMessageId,
+            })
+            systemMessageId = message.id
+          }
+        } catch (err) {
+          request.log?.warn?.({ err, slug, agentId }, 'quick-launch system message failed')
+        }
+      }
+
+      return { slug, queued: true as const, queuePath, systemMessageId, conversationId }
     },
   )
 

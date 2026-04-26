@@ -2293,32 +2293,46 @@ function handleReplySuggestionClick(text: string) {
 }
 
 // --- Quick-launch (start a fresh CLI session from a numbered-options prompt) ---
+//
+// Lifted state for the inline expandable launch panel. Only one panel can be
+// open at a time across the entire thread; storing the message id here (and
+// passing it down) keeps that invariant without per-bubble local state.
 
-const quickLaunchDialogOpen = ref(false)
-const quickLaunchPayload = ref<{ messageId: string; body: string }>({ messageId: '', body: '' })
-const quickLaunchSnackbar = ref<{ slug: string } | null>(null)
+const expandedQuickLaunchMessageId = ref<string | null>(null)
 
 const quickLaunchConversationSlug = computed<string | null>(() => {
   const conv = conversations.activeConversation.value
   return conv?.peerLogin ?? null
 })
 
+const quickLaunchAgentId = computed<string | null>(() => {
+  const conv = conversations.activeConversation.value
+  return conv?.peerType === 'agent' ? (conv.peerUserId ?? null) : null
+})
+
 function handleQuickLaunch(payload: { messageId: string; body: string }) {
-  quickLaunchPayload.value = payload
-  quickLaunchDialogOpen.value = true
+  // Toggle off if the same bubble is already expanded — clicking the rocket
+  // button twice should close the panel rather than re-open it.
+  if (expandedQuickLaunchMessageId.value === payload.messageId) {
+    expandedQuickLaunchMessageId.value = null
+    return
+  }
+  expandedQuickLaunchMessageId.value = payload.messageId
 }
 
-function handleQuickLaunchLaunched({ slug }: { slug: string }) {
-  quickLaunchSnackbar.value = { slug }
-  // Refresh sessions list so the operator sees the row appear once the
-  // queue daemon picks the file up. The daemon polls every few seconds, so
-  // a single immediate refresh is enough — subsequent updates arrive via SSE.
+function closeQuickLaunchPanel() {
+  expandedQuickLaunchMessageId.value = null
+}
+
+function handleQuickLaunchLaunched(_payload: { slug: string }) {
+  // Surface UI is now the persistent system bubble emitted by the backend —
+  // no transient snackbar needed. We still kick a sessions refresh so the
+  // monitor row appears immediately rather than waiting for the next SSE.
   cliSessionsModel.refresh().catch(() => {})
 }
 
-function openMonitorFromSnackbar() {
+function handleOpenMonitorFromSystemBubble(_payload: { slug: string }) {
   navigation.openSection('monitor')
-  quickLaunchSnackbar.value = null
 }
 
 async function copyRunIdToClipboard(runId: string) {
@@ -3523,6 +3537,10 @@ onBeforeUnmount(() => {
               :allow-forward="canForwardFromActiveConversation"
               :allow-mutual-delete="allowMutualDelete"
               :reaction-options="messageReactionOptions"
+              :expanded-quick-launch-message-id="expandedQuickLaunchMessageId"
+              :quick-launch-conversation-slug="quickLaunchConversationSlug"
+              :quick-launch-project-id="activeAgentProjectId"
+              :quick-launch-agent-id="quickLaunchAgentId"
               @toggle-actions="toggleMessageActions"
               @toggle-reaction-overlay="toggleReactionOverlay"
               @comment="activateComposerRelation('comment', $event)"
@@ -3541,6 +3559,9 @@ onBeforeUnmount(() => {
               @copy-text="handleCopyText"
               @quote-code="handleQuoteCode"
               @quick-launch="handleQuickLaunch"
+              @quick-launch-close="closeQuickLaunchPanel"
+              @quick-launch-launched="handleQuickLaunchLaunched"
+              @open-monitor="handleOpenMonitorFromSystemBubble"
             />
           </template>
 
@@ -3884,28 +3905,6 @@ onBeforeUnmount(() => {
       </MessengerChatComposerDock>
     </section>
 
-    <MessengerQuickLaunchDialog
-      v-model="quickLaunchDialogOpen"
-      :message-id="quickLaunchPayload.messageId"
-      :body="quickLaunchPayload.body"
-      :conversation-slug="quickLaunchConversationSlug"
-      :default-project-id="activeAgentProjectId"
-      @launched="handleQuickLaunchLaunched"
-    />
-
-    <VSnackbar
-      :model-value="Boolean(quickLaunchSnackbar)"
-      location="bottom"
-      timeout="6000"
-      @update:model-value="quickLaunchSnackbar = null"
-    >
-      <template v-if="quickLaunchSnackbar">
-        Задача поставлена в очередь: {{ quickLaunchSnackbar.slug }}
-      </template>
-      <template #actions>
-        <VBtn variant="text" color="primary" @click="openMonitorFromSnackbar">Открыть монитор</VBtn>
-      </template>
-    </VSnackbar>
   </section>
 </template>
 
