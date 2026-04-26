@@ -33,13 +33,24 @@ const dialogOpen = computed({
   set: (v: boolean) => emit('update:modelValue', v),
 })
 
+type ModelKey = 'haiku' | 'sonnet' | 'opus'
+
 const slug = ref('')
 const prompt = ref('')
-const model = ref<'haiku' | 'sonnet' | 'opus'>('sonnet')
+const model = ref<ModelKey>('sonnet')
 const workroom = ref('')
 const projectId = ref<string | null>(null)
 const submitting = ref(false)
 const error = ref<string | null>(null)
+
+// Mode-tile entries for the model picker (§4.4.2 pattern in ui-standards).
+// Hints are intentionally short — the tile shows them under the model name
+// at smaller font size.
+const modelOptions: ReadonlyArray<{ value: ModelKey; title: string; hint: string }> = [
+  { value: 'haiku', title: 'Haiku', hint: 'быстрая, для рутины' },
+  { value: 'sonnet', title: 'Sonnet', hint: 'баланс — по умолчанию' },
+  { value: 'opus', title: 'Opus', hint: 'тяжёлый ресёрч / архитектура' },
+]
 
 // Items for the project <VSelect>. Empty until refresh resolves; we kick a
 // refresh on dialog open so a freshly-mounted component sees the list.
@@ -161,7 +172,7 @@ async function submit() {
           v-model="projectId"
           :items="projectItems"
           label="Проект"
-          density="compact"
+          density="comfortable"
           variant="outlined"
           class="mb-3"
           :error="!projectId && Boolean(error)"
@@ -173,7 +184,7 @@ async function submit() {
         <VTextField
           v-model="slug"
           label="Slug"
-          density="compact"
+          density="comfortable"
           variant="outlined"
           hide-details
           class="mb-3"
@@ -184,30 +195,37 @@ async function submit() {
           v-model="prompt"
           label="Prompt"
           rows="6"
-          density="compact"
+          density="comfortable"
           variant="outlined"
           hide-details
           class="mb-3"
         />
 
-        <div class="quick-launch__row">
-          <VSelect
-            v-model="model"
-            :items="['haiku', 'sonnet', 'opus']"
-            label="Модель"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-
-          <VTextField
-            v-model="workroom"
-            label="Workroom"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
+        <!-- Model picker as mode-tile group (ui-standards §4.4.2). -->
+        <div class="quick-launch__field-label">Модель</div>
+        <div class="quick-launch__model-tiles">
+          <button
+            v-for="opt in modelOptions"
+            :key="opt.value"
+            type="button"
+            class="ql-mode-tile"
+            :class="{ 'ql-mode-tile--active': model === opt.value }"
+            :aria-pressed="model === opt.value"
+            @click="model = opt.value"
+          >
+            <span class="ql-mode-tile__title">{{ opt.title }}</span>
+            <span class="ql-mode-tile__hint">{{ opt.hint }}</span>
+          </button>
         </div>
+
+        <VTextField
+          v-model="workroom"
+          label="Workroom"
+          density="comfortable"
+          variant="outlined"
+          hide-details
+          class="mt-3"
+        />
       </VCardText>
 
       <VCardActions class="quick-launch__actions">
@@ -233,10 +251,56 @@ async function submit() {
   padding-top: 20px;
 }
 
-.quick-launch__row {
+.quick-launch__field-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface-variant));
+  margin: 0 0 6px 4px;
+}
+
+.quick-launch__model-tiles {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ql-mode-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.ql-mode-tile:hover:not([disabled]) {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.ql-mode-tile--active {
+  background: rgb(var(--v-theme-secondary-container));
+  border-color: transparent;
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+
+.ql-mode-tile__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ql-mode-tile__hint {
+  font-size: 0.72rem;
+  font-weight: 400;
+  opacity: 0.8;
+  line-height: 1.3;
 }
 
 .quick-launch__actions {
