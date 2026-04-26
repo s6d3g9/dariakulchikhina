@@ -5,6 +5,11 @@ import MessengerMessageReasoningPlate from './MessengerMessageReasoningPlate.vue
 
 export interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
+  // Adjacent agent messages from the same task (sequential continuations
+  // or sibling sub-agent runs) are folded into the head message's `burst`.
+  // The head's own body/runId is rendered first, then each burst entry's
+  // body in stacked order. All runs share one reasoning section.
+  burst?: MessengerThreadMessage[]
 }
 
 const props = withDefaults(defineProps<{
@@ -134,8 +139,60 @@ const REPLY_SUGGESTIONS_RE = /<reply-suggestions>([^<]*)<\/reply-suggestions>\s*
 const copiedFlash = ref(false)
 let copiedFlashTimer: ReturnType<typeof setTimeout> | null = null
 
+interface BurstEntryView {
+  id: string
+  agentId?: string
+  runId?: string
+  createdAt: string
+  parsedBody: string
+  renderedBody: string
+  replySuggestions: string[]
+}
+
+function extractReplySuggestions(body: string): string[] {
+  const match = body.match(REPLY_SUGGESTIONS_RE)
+  if (!match) return []
+  return (match[1] ?? '').split('|').map(s => s.trim()).filter(Boolean).slice(0, 3)
+}
+
+const burstEntries = computed<BurstEntryView[]>(() => {
+  const all = [props.entry, ...(props.entry.burst ?? [])]
+  return all.map((m) => {
+    const raw = m.body ?? ''
+    const parsed = raw.replace(REPLY_SUGGESTIONS_RE, '').trimEnd()
+    return {
+      id: m.id,
+      agentId: m.agentId,
+      runId: m.runId,
+      createdAt: m.createdAt,
+      parsedBody: parsed,
+      renderedBody: renderMarkdown(parsed),
+      replySuggestions: m.own ? [] : extractReplySuggestions(raw),
+    }
+  })
+})
+
+// One reasoning plate per unique runId across the burst (head + folded
+// continuations). Order is preserved so the first run shows up first.
+// Skipped on own messages to avoid surfacing run UI on user-authored bubbles.
+const reasoningPlates = computed(() => {
+  if (props.entry.own) return []
+  const seen = new Set<string>()
+  const plates: { id: string, agentId: string, runId: string }[] = []
+  for (const e of burstEntries.value) {
+    if (e.agentId && e.runId && !seen.has(e.runId)) {
+      seen.add(e.runId)
+      plates.push({ id: `${e.agentId}-${e.runId}`, agentId: e.agentId, runId: e.runId })
+    }
+  }
+  return plates
+})
+
 async function copyMessageBody() {
-  const text = parsedBody.value
+  const text = burstEntries.value
+    .map(e => e.parsedBody)
+    .filter(Boolean)
+    .join('\n\n')
   if (!text) return
   try {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -151,9 +208,6 @@ async function copyMessageBody() {
     // Clipboard write blocked — silently noop, the user can retry.
   }
 }
-
-const parsedBody = computed(() => (props.entry.body ?? '').replace(REPLY_SUGGESTIONS_RE, '').trimEnd())
-const renderedBody = computed(() => renderMarkdown(parsedBody.value))
 
 function handleBodyClick(event: MouseEvent) {
   const target = event.target instanceof HTMLElement ? event.target : null
@@ -191,14 +245,19 @@ function handleBodyClick(event: MouseEvent) {
   }
 }
 
+// Suggestions come from the LAST entry in the burst — the most recent agent
+// turn is the one a user would actually be replying to.
 const replySuggestions = computed<string[]>(() => {
-  if (props.entry.own) return []
-  const match = (props.entry.body ?? '').match(REPLY_SUGGESTIONS_RE)
-  if (!match) return []
-  return (match[1] ?? '').split('|').map(s => s.trim()).filter(Boolean).slice(0, 3)
+  const last = burstEntries.value[burstEntries.value.length - 1]
+  return last ? last.replySuggestions : []
 })
 
 const sentTime = computed(() => formatMessageTime(props.entry.createdAt))
+const lastBurstTime = computed(() => {
+  const list = burstEntries.value
+  if (list.length <= 1) return ''
+  return formatMessageTime(list[list.length - 1]?.createdAt)
+})
 const readTime = computed(() => props.entry.own ? formatMessageTime(props.entry.readAt) : '')
 const metaStatus = computed(() => {
   if (props.entry.deletedAt) {
@@ -438,11 +497,19 @@ onBeforeUnmount(() => {
       />
     </div>
     <div v-else class="message-bubble__content">
-      <div
-        class="message-bubble__text message-body"
-        @click="handleBodyClick"
-        v-html="renderedBody"
-      />
+      <template v-for="(burstEntry, burstIdx) in burstEntries" :key="burstEntry.id">
+        <div
+          v-if="burstIdx > 0"
+          class="message-bubble__burst-divider"
+          :title="formatMessageTime(burstEntry.createdAt)"
+        />
+        <div
+          class="message-bubble__text message-body"
+          :class="{ 'message-bubble__text--continuation': burstIdx > 0 }"
+          @click="handleBodyClick"
+          v-html="burstEntry.renderedBody"
+        />
+      </template>
       <div v-if="replySuggestions.length" class="reply-suggestions" data-message-controls="true">
         <button
           v-for="(text, idx) in replySuggestions"
@@ -455,23 +522,26 @@ onBeforeUnmount(() => {
         </button>
       </div>
       <MessengerMessageReasoningPlate
-        v-if="entry.agentId && entry.runId"
-        :agent-id="entry.agentId"
-        :run-id="entry.runId"
+        v-for="plate in reasoningPlates"
+        :key="plate.id"
+        :agent-id="plate.agentId"
+        :run-id="plate.runId"
       />
       <div class="message-bubble__meta-row">
         <span class="message-bubble__time message-bubble__time--sent">{{ sentTime }}</span>
+        <span v-if="lastBurstTime" class="message-bubble__time message-bubble__time--range">→ {{ lastBurstTime }}</span>
         <span v-if="metaStatus" class="message-bubble__status">{{ metaStatus }}</span>
         <span v-if="readTime" class="message-bubble__time message-bubble__time--read">{{ readTime }}</span>
         <button
-          v-if="entry.runId && !entry.own"
+          v-for="plate in reasoningPlates"
+          :key="`${plate.id}-badge`"
           type="button"
           class="message-bubble__run-badge"
-          :title="`Открыть прогон ${entry.runId}`"
+          :title="`Открыть прогон ${plate.runId}`"
           data-message-controls="true"
-          @click.stop="emit('open-run', entry.runId!)"
+          @click.stop="emit('open-run', plate.runId)"
         >
-          #{{ entry.runId.slice(0, 8) }}
+          #{{ plate.runId.slice(0, 8) }}
         </button>
       </div>
     </div>

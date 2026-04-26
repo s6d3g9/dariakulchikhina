@@ -10,6 +10,7 @@ import { deriveLiveness } from '../../features/monitor-topology/model/liveness'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
+  burst?: MessengerThreadMessage[]
 }
 
 const conversations = useMessengerConversations()
@@ -1268,7 +1269,37 @@ const threadedMessages = computed<MessengerThreadMessage[]>(() => {
   return roots
 })
 
-const filteredThreadedMessages = computed(() => threadedMessages.value)
+// Adjacent agent messages from the same agentId — with no own/user message
+// in between and no comment-thread root in between — are folded into a
+// single "burst" so a long task that spans multiple runs (or parallel
+// sub-agents that all surface as separate messages) shows up as one bubble
+// instead of N bubbles + N reasoning plates.
+function shouldFoldIntoBurst(prev: MessengerThreadMessage, next: MessengerThreadMessage): boolean {
+  if (prev.own || next.own) return false
+  if (!prev.agentId || !next.agentId) return false
+  if (prev.agentId !== next.agentId) return false
+  if (prev.deletedAt || next.deletedAt) return false
+  if (next.commentOn?.id) return false
+  if (next.replyTo?.id) return false
+  if (next.forwardedFrom?.id) return false
+  if (next.attachment) return false
+  if (next.kind && next.kind !== 'text') return false
+  return true
+}
+
+const filteredThreadedMessages = computed<MessengerThreadMessage[]>(() => {
+  const groups: MessengerThreadMessage[] = []
+  for (const msg of threadedMessages.value) {
+    const head = groups.length > 0 ? groups[groups.length - 1] : null
+    if (head && shouldFoldIntoBurst(head, msg)) {
+      const burst = head.burst ? [...head.burst, msg] : [msg]
+      groups[groups.length - 1] = { ...head, burst }
+      continue
+    }
+    groups.push(msg)
+  }
+  return groups
+})
 
 // IDs of messages where runId changes between consecutive agent messages → divider before them
 const runDividerSet = computed(() => {
