@@ -57,20 +57,20 @@ export interface UseMonitorPersistenceOptions {
 export function useMonitorPersistence(opts: UseMonitorPersistenceOptions) {
   const filter = useState<MonitorFilter>(
     'daria.monitor.filter',
-    () => readStored(FILTER_STORAGE_KEY, FILTERS, 'all'),
+    () => readStored(FILTER_STORAGE_KEY, FILTERS, 'active'),
   )
   const search = useState<string>(
     'daria.monitor.search',
     () => (typeof window !== 'undefined' ? window.localStorage.getItem(SEARCH_STORAGE_KEY) ?? '' : ''),
   )
   const pinnedSlugs = useState<Set<string>>('daria.monitor.pinned', () => readPinned())
-  // Default `true` enforces the "project-only by default" invariant — first-time
-  // visitors see a tree without host-session orphans even before they touch
-  // any toggle. Stored as '1'/'0' for symmetry with the other string-keyed
-  // localStorage entries.
+  // Default off until the host-bridge cwd→projectId mapping is populated —
+  // otherwise "hide orphans" wipes every host-session agent (all currently
+  // have project_id NULL) and the monitor looks empty. Operators flip it on
+  // manually after running `bridge-projects add`.
   const hideOrphans = useState<boolean>(
     'daria.monitor.hideOrphans',
-    () => readStored(HIDE_ORPHANS_STORAGE_KEY, BOOL_VALUES, '1') === '1',
+    () => readStored(HIDE_ORPHANS_STORAGE_KEY, BOOL_VALUES, '0') === '1',
   )
 
   function togglePin(slug: string) {
