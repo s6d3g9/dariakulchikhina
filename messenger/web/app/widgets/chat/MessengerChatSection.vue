@@ -1284,6 +1284,12 @@ function shouldFoldIntoBurst(prev: MessengerThreadMessage, next: MessengerThread
   if (next.forwardedFrom?.id) return false
   if (next.attachment) return false
   if (next.kind && next.kind !== 'text') return false
+  // Folding `next` would visually drop these — refuse so the user keeps
+  // seeing them. The head retains its own reactions/comments because we
+  // only spread `...head` into the group; tail entries were at risk.
+  if (next.reactions && next.reactions.length > 0) return false
+  if (next.comments && next.comments.length > 0) return false
+  if (next.editedAt) return false
   return true
 }
 

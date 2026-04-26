@@ -4463,24 +4463,36 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 }
 
 /* Burst continuation: subsequent agent runs folded into the same bubble.
-   The divider is a thin rule in the surrounding text colour at low alpha,
-   visually separating each run while keeping them inside one container. */
+   A thin centered hairline with the run's start time in a small chip —
+   gives the reader an anchor for "when did this next chunk happen". */
 .message-bubble__burst-divider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px -4px 8px;
+}
+
+.message-bubble__burst-divider::before,
+.message-bubble__burst-divider::after {
+  content: '';
+  flex: 1;
   height: 1px;
-  margin: 8px -2px;
   background: currentColor;
   opacity: 0.10;
-  border-radius: 1px;
+}
+
+.message-bubble__burst-divider-time {
+  flex: 0 0 auto;
+  padding: 0 8px;
+  font-size: 10px;
+  opacity: 0.55;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 .message-bubble__text--continuation {
   margin-top: 0;
-}
-
-.message-bubble__time--range {
-  font-size: 11px;
-  opacity: 0.6;
-  letter-spacing: 0.02em;
 }
 
 .message-bubble__meta-row {

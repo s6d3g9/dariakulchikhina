@@ -155,6 +155,21 @@ function extractReplySuggestions(body: string): string[] {
   return (match[1] ?? '').split('|').map(s => s.trim()).filter(Boolean).slice(0, 3)
 }
 
+// Per-component markdown render cache keyed by message id + body hash.
+// Reactions, read receipts, and meta updates re-run `burstEntries` but
+// don't change the body, so we serve the cached HTML instead of re-parsing.
+// Entries are evicted when the source body actually changes (edit) or the
+// component unmounts (closure scope).
+const renderCache = new Map<string, { body: string, html: string }>()
+
+function renderCached(id: string, body: string): string {
+  const hit = renderCache.get(id)
+  if (hit && hit.body === body) return hit.html
+  const html = renderMarkdown(body)
+  renderCache.set(id, { body, html })
+  return html
+}
+
 const burstEntries = computed<BurstEntryView[]>(() => {
   const all = [props.entry, ...(props.entry.burst ?? [])]
   return all.map((m) => {
@@ -166,7 +181,7 @@ const burstEntries = computed<BurstEntryView[]>(() => {
       runId: m.runId,
       createdAt: m.createdAt,
       parsedBody: parsed,
-      renderedBody: renderMarkdown(parsed),
+      renderedBody: renderCached(m.id, parsed),
       replySuggestions: m.own ? [] : extractReplySuggestions(raw),
     }
   })
@@ -498,11 +513,9 @@ onBeforeUnmount(() => {
     </div>
     <div v-else class="message-bubble__content">
       <template v-for="(burstEntry, burstIdx) in burstEntries" :key="burstEntry.id">
-        <div
-          v-if="burstIdx > 0"
-          class="message-bubble__burst-divider"
-          :title="formatMessageTime(burstEntry.createdAt)"
-        />
+        <div v-if="burstIdx > 0" class="message-bubble__burst-divider">
+          <span class="message-bubble__burst-divider-time">{{ formatMessageTime(burstEntry.createdAt) }}</span>
+        </div>
         <div
           class="message-bubble__text message-body"
           :class="{ 'message-bubble__text--continuation': burstIdx > 0 }"
