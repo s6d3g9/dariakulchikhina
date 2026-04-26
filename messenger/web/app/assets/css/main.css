@@ -10035,8 +10035,8 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
 .v-autocomplete__content > .v-list,
 .v-select__content > .v-list {
   border-radius: 8px 8px 16px 16px !important;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgb(var(--v-theme-surface-variant)) !important;
+  border: 0 !important;
   box-shadow:
     0 1px 2px 0 rgba(0, 0, 0, 0.18),
     0 4px 12px 2px rgba(0, 0, 0, 0.12);
@@ -10056,6 +10056,8 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   margin: 2px 0 !important;
   min-height: 40px !important;
   padding-inline: 14px !important;
+  background: transparent !important;
+  border: 0 !important;
   font-weight: 500;
   letter-spacing: 0;
   transition: background-color 140ms ease, color 140ms ease;
@@ -10099,5 +10101,30 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
 .v-menu .v-list-item .v-list-item__prepend > .v-icon {
   font-size: 20px;
   margin-inline-end: 8px;
+}
+
+/* Trigger field for v-select / v-autocomplete (closed state) — match the
+   open dropdown's surface so the picker reads as a single unified surface
+   regardless of state. Strip the outlined variant's border and fill with
+   surface-variant. The trigger's border-radius stays at 10px (set in the
+   global v-field block above). */
+.messenger-v-app .v-select .v-field,
+.messenger-v-app .v-autocomplete .v-field {
+  background: rgb(var(--v-theme-surface-variant)) !important;
+}
+.messenger-v-app .v-select .v-field--variant-outlined .v-field__outline,
+.messenger-v-app .v-autocomplete .v-field--variant-outlined .v-field__outline {
+  --v-field-border-width: 0px;
+  --v-field-border-opacity: 0;
+}
+.messenger-v-app .v-select .v-field--variant-outlined .v-field__outline__start,
+.messenger-v-app .v-select .v-field--variant-outlined .v-field__outline__end,
+.messenger-v-app .v-select .v-field--variant-outlined .v-field__outline__notch::before,
+.messenger-v-app .v-select .v-field--variant-outlined .v-field__outline__notch::after,
+.messenger-v-app .v-autocomplete .v-field--variant-outlined .v-field__outline__start,
+.messenger-v-app .v-autocomplete .v-field--variant-outlined .v-field__outline__end,
+.messenger-v-app .v-autocomplete .v-field--variant-outlined .v-field__outline__notch::before,
+.messenger-v-app .v-autocomplete .v-field--variant-outlined .v-field__outline__notch::after {
+  border: 0 !important;
 }
 
