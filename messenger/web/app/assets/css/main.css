@@ -9987,3 +9987,78 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   text-transform: none;
 }
 
+/* ============================================================
+   Global input + dropdown unification
+   Match the .balancing-preset aesthetic everywhere, not only
+   inside .aidev-dialog. Rounded fields (10px) + soft-surface
+   menus with secondary-container active states.
+   ============================================================ */
+
+/* Vuetify form fields — round all variants globally. */
+.messenger-v-app .v-field,
+.messenger-v-app .v-field--variant-outlined,
+.messenger-v-app .v-field--variant-filled,
+.messenger-v-app .v-field--variant-solo,
+.messenger-v-app .v-field--variant-solo-filled,
+.messenger-v-app .v-field--variant-solo-inverted {
+  border-radius: 10px;
+}
+
+/* Outlined variant — round the segmented border outline pieces too. */
+.messenger-v-app .v-field--variant-outlined .v-field__outline__start {
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+.messenger-v-app .v-field--variant-outlined .v-field__outline__end {
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* Filled / solo variants — clip the underlying surface to the radius. */
+.messenger-v-app .v-field--variant-filled .v-field__overlay,
+.messenger-v-app .v-field--variant-solo .v-field__overlay,
+.messenger-v-app .v-field--variant-solo-filled .v-field__overlay,
+.messenger-v-app .v-field--variant-solo-inverted .v-field__overlay {
+  border-radius: 10px;
+}
+
+/* Dropdown menus / select overlays — soft-surface card aesthetic. */
+.messenger-v-app .v-overlay__content > .v-list,
+.messenger-v-app .v-menu > .v-overlay__content,
+.messenger-v-app .v-menu > .v-overlay__content > .v-list,
+.messenger-v-app .v-autocomplete__content > .v-list,
+.messenger-v-app .v-select__content > .v-list {
+  border-radius: 12px;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  overflow: hidden;
+  padding: 4px;
+}
+
+/* List items inside menus — rounded, snug rows. */
+.messenger-v-app .v-overlay__content > .v-list > .v-list-item,
+.messenger-v-app .v-menu > .v-overlay__content > .v-list > .v-list-item,
+.messenger-v-app .v-autocomplete__content > .v-list > .v-list-item,
+.messenger-v-app .v-select__content > .v-list > .v-list-item {
+  border-radius: 8px;
+  margin: 2px 0;
+  min-height: 36px;
+}
+
+/* Hover state — subtle surface-variant lift, mirrors .balancing-preset hover. */
+.messenger-v-app .v-overlay__content .v-list-item:hover,
+.messenger-v-app .v-menu .v-list-item:hover {
+  background: rgba(var(--v-theme-surface-variant), 0.4);
+}
+
+/* Active/selected state — secondary-container, matches .balancing-preset--active. */
+.messenger-v-app .v-overlay__content .v-list-item--active,
+.messenger-v-app .v-menu .v-list-item--active {
+  background: rgba(var(--v-theme-secondary-container), 0.55);
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+.messenger-v-app .v-overlay__content .v-list-item--active:hover,
+.messenger-v-app .v-menu .v-list-item--active:hover {
+  background: rgba(var(--v-theme-secondary-container), 0.7);
+}
+
