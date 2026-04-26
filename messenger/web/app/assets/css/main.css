@@ -9891,15 +9891,80 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   margin: 0;
 }
 
-/* Inline section card inside dialog body (soft surface-variant panel) */
+/* Inline section card inside dialog body (soft surface-variant panel).
+   Visually identical to .balancing-preset — same padding, radius, border,
+   bg. Body fields live INSIDE these section cards, never as a flat
+   stack. */
 .aidev-dialog__section {
-  padding: 14px 16px;
+  padding: 12px;
   border-radius: 14px;
   background: rgba(var(--v-theme-surface-variant), 0.18);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+/* Active/selected variant — mirrors .balancing-preset--active */
+.aidev-dialog__section--active {
+  border-color: rgb(var(--v-theme-secondary));
+  background: rgba(var(--v-theme-secondary-container), 0.55);
+}
+
+/* Danger variant — for confirm-delete callouts */
+.aidev-dialog__section--danger {
+  border-color: rgba(var(--v-theme-error), 0.4);
+  background: rgba(var(--v-theme-error), 0.06);
+}
+
+/* Card head row — radio/icon + title-wrap + trailing button.
+   Mirrors .balancing-preset__head. */
+.aidev-dialog__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Title + slug-id stack inside head row.
+   Mirrors .balancing-preset__title-wrap. */
+.aidev-dialog__title-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.aidev-dialog__section-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+.aidev-dialog__section-id {
+  font-size: 0.68rem;
+  color: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.7;
+  font-family: var(--messenger-font-mono, ui-monospace, SFMono-Regular, monospace);
+}
+
+/* Chip row helper — mirrors .balancing-preset__chips */
+.aidev-dialog__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* "When to use" / context callout — mirrors .balancing-preset__when */
+.aidev-dialog__when {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgb(var(--v-theme-on-surface-variant));
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+.aidev-dialog__when strong {
+  color: rgb(var(--v-theme-on-surface));
+  font-weight: 600;
 }
 
 /* Soften corners on Vuetify form fields inside dialogs to match the 14px
@@ -9912,5 +9977,13 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
 .aidev-dialog .aidev-dialog__pick--active {
   background: rgb(var(--v-theme-secondary-container));
   color: rgb(var(--v-theme-on-secondary-container));
+}
+
+/* Footer button helpers — minimal Cancel + tonal Submit. Use as helper
+   classes alongside variant="text" / variant="tonal" + density="compact". */
+.aidev-dialog .aidev-dialog__btn-cancel,
+.aidev-dialog .aidev-dialog__btn-submit {
+  letter-spacing: 0;
+  text-transform: none;
 }
 

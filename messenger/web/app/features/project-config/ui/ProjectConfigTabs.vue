@@ -370,13 +370,30 @@ async function submitExtForm() {
 
         <VDialog v-model="agentDialogOpen" max-width="520">
           <VCard class="aidev-dialog">
-            <VCardTitle>Добавить агента</VCardTitle>
+            <VCardTitle>
+              <VIcon start size="20">mdi-robot-outline</VIcon>
+              Добавить агента
+            </VCardTitle>
             <VCardText>
-              <VSelect v-model="agentDraft.type" :items="agentTypeOptions" label="Тип" density="compact" variant="outlined" />
-              <VTextField v-model="agentDraft.name" label="Название" density="compact" variant="outlined" required />
-              <VTextField v-model="agentDraft.description" label="Описание (необязательно)" density="compact" variant="outlined" />
-              <VTextField v-model="agentDraft.model" label="Модель (необязательно)" density="compact" variant="outlined" placeholder="claude-sonnet-4-6" />
-              <VSelect v-model="agentDraft.skillBundleKind" :items="skillBundleOptions" label="Набор навыков" density="compact" variant="outlined" />
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Идентификация</div>
+                <VSelect v-model="agentDraft.type" :items="agentTypeOptions" label="Тип" density="compact" variant="outlined" hide-details="auto" />
+                <VTextField v-model="agentDraft.name" label="Название" density="compact" variant="outlined" hide-details="auto" required />
+              </section>
+
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Описание и модель</div>
+                <VTextField v-model="agentDraft.description" label="Описание (необязательно)" density="compact" variant="outlined" hide-details="auto" />
+                <VTextField v-model="agentDraft.model" label="Модель (необязательно)" density="compact" variant="outlined" placeholder="claude-sonnet-4-6" hide-details="auto" />
+              </section>
+
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Навыки</div>
+                <VSelect v-model="agentDraft.skillBundleKind" :items="skillBundleOptions" label="Набор навыков" density="compact" variant="outlined" hide-details="auto" />
+                <p class="aidev-dialog__when">
+                  <strong>Подсказка:</strong> bundle определяет, какие навыки и плагины доступны агенту по умолчанию.
+                </p>
+              </section>
             </VCardText>
             <VCardActions>
               <VSpacer />
@@ -428,21 +445,44 @@ async function submitExtForm() {
 
         <VDialog v-model="connDialogOpen" max-width="520">
           <VCard class="aidev-dialog">
-            <VCardTitle>{{ connEditTarget ? 'Редактировать коннектор' : 'Добавить коннектор' }}</VCardTitle>
+            <VCardTitle>
+              <VIcon start size="20">mdi-connection</VIcon>
+              {{ connEditTarget ? 'Редактировать коннектор' : 'Добавить коннектор' }}
+            </VCardTitle>
             <VCardText>
-              <VSelect v-model="connDraft.type" :items="connectorTypeOptions" label="Тип" density="compact" variant="outlined" />
-              <VTextField v-model="connDraft.label" label="Название" density="compact" variant="outlined" required />
-              <VTextarea
-                v-model="connDraft.configRaw"
-                label="Config (JSON)"
-                density="compact"
-                variant="outlined"
-                rows="4"
-                :error-messages="connConfigError ? [connConfigError] : []"
-                @input="connConfigError = null"
-              />
-              <VSwitch v-model="connDraft.enabled" label="Включён" density="compact" color="primary" hide-details />
-              <VSwitch v-model="connDraft.isDefault" label="По умолчанию" density="compact" color="secondary" hide-details />
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Идентификация</div>
+                <VSelect v-model="connDraft.type" :items="connectorTypeOptions" label="Тип" density="compact" variant="outlined" hide-details="auto" />
+                <VTextField v-model="connDraft.label" label="Название" density="compact" variant="outlined" hide-details="auto" required />
+                <div class="aidev-dialog__chips">
+                  <VChip size="x-small" :color="connDraft.enabled ? 'primary' : 'surface-variant'" :variant="connDraft.enabled ? 'tonal' : 'outlined'" label>
+                    {{ connDraft.enabled ? 'включён' : 'выключен' }}
+                  </VChip>
+                  <VChip v-if="connDraft.isDefault" size="x-small" color="secondary" variant="tonal" label>
+                    по умолчанию
+                  </VChip>
+                </div>
+              </section>
+
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Конфигурация</div>
+                <VTextarea
+                  v-model="connDraft.configRaw"
+                  label="Config (JSON)"
+                  density="compact"
+                  variant="outlined"
+                  rows="4"
+                  hide-details="auto"
+                  :error-messages="connConfigError ? [connConfigError] : []"
+                  @input="connConfigError = null"
+                />
+              </section>
+
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Поведение</div>
+                <VSwitch v-model="connDraft.enabled" label="Включён" density="compact" color="primary" hide-details />
+                <VSwitch v-model="connDraft.isDefault" label="По умолчанию" density="compact" color="secondary" hide-details />
+              </section>
             </VCardText>
             <VCardActions>
               <VSpacer />
@@ -566,21 +606,38 @@ async function submitExtForm() {
 
         <VDialog v-model="mcpDialogOpen" max-width="520">
           <VCard class="aidev-dialog">
-            <VCardTitle>{{ mcpEditTarget ? 'Редактировать MCP' : 'Добавить MCP-сервер' }}</VCardTitle>
+            <VCardTitle>
+              <VIcon start size="20">mdi-api</VIcon>
+              {{ mcpEditTarget ? 'Редактировать MCP' : 'Добавить MCP-сервер' }}
+            </VCardTitle>
             <VCardText>
-              <VTextField v-model="mcpDraft.name" label="Название" density="compact" variant="outlined" required />
-              <VSelect v-model="mcpDraft.transport" :items="transportOptions" label="Транспорт" density="compact" variant="outlined" />
-              <VTextField v-model="mcpDraft.endpoint" label="Endpoint" density="compact" variant="outlined" placeholder="http://localhost:3100/mcp" required />
-              <VTextarea
-                v-model="mcpDraft.configRaw"
-                label="Config (JSON)"
-                density="compact"
-                variant="outlined"
-                rows="4"
-                :error-messages="mcpConfigError ? [mcpConfigError] : []"
-                @input="mcpConfigError = null"
-              />
-              <VSwitch v-model="mcpDraft.enabled" label="Включён" density="compact" color="primary" hide-details />
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Подключение</div>
+                <VTextField v-model="mcpDraft.name" label="Название" density="compact" variant="outlined" hide-details="auto" required />
+                <VSelect v-model="mcpDraft.transport" :items="transportOptions" label="Транспорт" density="compact" variant="outlined" hide-details="auto" />
+                <VTextField v-model="mcpDraft.endpoint" label="Endpoint" density="compact" variant="outlined" placeholder="http://localhost:3100/mcp" hide-details="auto" required />
+                <div class="aidev-dialog__chips">
+                  <VChip size="x-small" color="info" variant="outlined" label>{{ mcpDraft.transport }}</VChip>
+                  <VChip size="x-small" :color="mcpDraft.enabled ? 'primary' : 'surface-variant'" :variant="mcpDraft.enabled ? 'tonal' : 'outlined'" label>
+                    {{ mcpDraft.enabled ? 'включён' : 'выключен' }}
+                  </VChip>
+                </div>
+              </section>
+
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Конфигурация</div>
+                <VTextarea
+                  v-model="mcpDraft.configRaw"
+                  label="Config (JSON)"
+                  density="compact"
+                  variant="outlined"
+                  rows="4"
+                  hide-details="auto"
+                  :error-messages="mcpConfigError ? [mcpConfigError] : []"
+                  @input="mcpConfigError = null"
+                />
+                <VSwitch v-model="mcpDraft.enabled" label="Включён" density="compact" color="primary" hide-details />
+              </section>
             </VCardText>
             <VCardActions>
               <VSpacer />
@@ -624,22 +681,40 @@ async function submitExtForm() {
 
         <VDialog v-model="extDialogOpen" max-width="520">
           <VCard class="aidev-dialog">
-            <VCardTitle>{{ extEditTarget ? 'Редактировать API' : 'Добавить внешний API' }}</VCardTitle>
+            <VCardTitle>
+              <VIcon start size="20">mdi-cloud-outline</VIcon>
+              {{ extEditTarget ? 'Редактировать API' : 'Добавить внешний API' }}
+            </VCardTitle>
             <VCardText>
-              <VTextField v-model="extDraft.name" label="Название" density="compact" variant="outlined" required />
-              <VTextField
-                v-model="extDraft.baseUrl"
-                label="Base URL"
-                density="compact"
-                variant="outlined"
-                placeholder="https://api.github.com"
-                :error-messages="extBaseUrlError ? [extBaseUrlError] : []"
-                required
-                @input="extBaseUrlError = null"
-              />
-              <VTextField v-model="extDraft.openapiRef" label="OpenAPI Spec URL (необязательно)" density="compact" variant="outlined" />
-              <VSelect v-model="extDraft.authType" :items="authTypeOptions" label="Тип аутентификации" density="compact" variant="outlined" />
-              <VSwitch v-model="extDraft.enabled" label="Включён" density="compact" color="primary" hide-details />
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Endpoint</div>
+                <VTextField v-model="extDraft.name" label="Название" density="compact" variant="outlined" hide-details="auto" required />
+                <VTextField
+                  v-model="extDraft.baseUrl"
+                  label="Base URL"
+                  density="compact"
+                  variant="outlined"
+                  placeholder="https://api.github.com"
+                  hide-details="auto"
+                  :error-messages="extBaseUrlError ? [extBaseUrlError] : []"
+                  required
+                  @input="extBaseUrlError = null"
+                />
+                <VTextField v-model="extDraft.openapiRef" label="OpenAPI Spec URL (необязательно)" density="compact" variant="outlined" hide-details="auto" />
+              </section>
+
+              <section class="aidev-dialog__section">
+                <div class="aidev-dialog__eyebrow">Аутентификация</div>
+                <VSelect v-model="extDraft.authType" :items="authTypeOptions" label="Тип аутентификации" density="compact" variant="outlined" hide-details="auto" />
+                <div class="aidev-dialog__chips">
+                  <VChip size="x-small" color="info" variant="outlined" label>{{ extDraft.authType }}</VChip>
+                  <VChip v-if="extDraft.openapiRef" size="x-small" color="secondary" variant="outlined" label>OpenAPI</VChip>
+                  <VChip size="x-small" :color="extDraft.enabled ? 'primary' : 'surface-variant'" :variant="extDraft.enabled ? 'tonal' : 'outlined'" label>
+                    {{ extDraft.enabled ? 'включён' : 'выключен' }}
+                  </VChip>
+                </div>
+                <VSwitch v-model="extDraft.enabled" label="Включён" density="compact" color="primary" hide-details />
+              </section>
             </VCardText>
             <VCardActions>
               <VSpacer />

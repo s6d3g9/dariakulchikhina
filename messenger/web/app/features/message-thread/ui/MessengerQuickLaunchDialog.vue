@@ -338,32 +338,35 @@ async function submit() {
       Файл попал в очередь. Жду подтверждения от демона (до 15с)…
     </VAlert>
 
-    <div class="quick-launch-panel__grid">
-      <VSelect
-        v-model="projectId"
-        :items="projectItems"
-        label="Проект"
-        density="compact"
-        variant="outlined"
-        :error="!projectId && Boolean(error)"
-        :error-messages="!projectId && error ? ['Проект обязателен'] : undefined"
-        :no-data-text="projectsModel.pending ? 'Загрузка проектов…' : 'Нет доступных проектов'"
-        hide-details="auto"
-      />
-      <VTextField
-        v-model="slug"
-        label="Slug"
-        density="compact"
-        variant="outlined"
-        hide-details
-        :rules="[v => /^[a-z0-9-]{1,40}$/.test(v) || 'Только a-z 0-9 -']"
-      />
-    </div>
+    <section class="quick-launch-panel__section">
+      <div class="quick-launch-panel__eyebrow">Куда запустить</div>
+      <div class="quick-launch-panel__grid">
+        <VSelect
+          v-model="projectId"
+          :items="projectItems"
+          label="Проект"
+          density="compact"
+          variant="outlined"
+          :error="!projectId && Boolean(error)"
+          :error-messages="!projectId && error ? ['Проект обязателен'] : undefined"
+          :no-data-text="projectsModel.pending ? 'Загрузка проектов…' : 'Нет доступных проектов'"
+          hide-details="auto"
+        />
+        <VTextField
+          v-model="slug"
+          label="Slug"
+          density="compact"
+          variant="outlined"
+          hide-details
+          :rules="[v => /^[a-z0-9-]{1,40}$/.test(v) || 'Только a-z 0-9 -']"
+        />
+      </div>
+    </section>
 
-    <div v-if="fragments.length" class="quick-launch-panel__fragments">
-      <div class="quick-launch-panel__fragments-head">
-        <VIcon :size="14">mdi-format-list-bulleted-square</VIcon>
-        <span>Фрагменты сообщения</span>
+    <section v-if="fragments.length" class="quick-launch-panel__section">
+      <div class="quick-launch-panel__eyebrow">
+        <VIcon :size="14" class="mr-1">mdi-format-list-bulleted-square</VIcon>
+        Фрагменты сообщения
       </div>
       <div class="quick-launch-panel__chips">
         <VChip
@@ -380,47 +383,63 @@ async function submit() {
           {{ f.label }}
         </VChip>
       </div>
-    </div>
+    </section>
 
-    <VTextarea
-      :model-value="prompt"
-      label="Prompt"
-      rows="6"
-      density="compact"
-      variant="outlined"
-      hide-details
-      @update:model-value="handlePromptInput"
-    />
-    <p class="quick-launch-panel__prompt-hint">{{ promptHint }}</p>
-
-    <div class="quick-launch-panel__grid">
-      <VSelect
-        v-model="model"
-        :items="['haiku', 'sonnet', 'opus']"
-        label="Модель"
+    <section class="quick-launch-panel__section">
+      <div class="quick-launch-panel__eyebrow">Prompt</div>
+      <VTextarea
+        :model-value="prompt"
+        label="Prompt"
+        rows="6"
         density="compact"
         variant="outlined"
-        hide-details
+        hide-details="auto"
+        @update:model-value="handlePromptInput"
       />
-      <VTextField
-        v-model="workroom"
-        label="Workroom (опционально)"
-        placeholder="пусто = main"
-        persistent-placeholder
-        density="compact"
-        variant="outlined"
-        hint="Оставьте пустым для запуска от main."
-        persistent-hint
-      />
-    </div>
+      <p class="quick-launch-panel__prompt-hint">{{ promptHint }}</p>
+    </section>
+
+    <section class="quick-launch-panel__section">
+      <div class="quick-launch-panel__eyebrow">Параметры запуска</div>
+      <div class="quick-launch-panel__grid">
+        <VSelect
+          v-model="model"
+          :items="['haiku', 'sonnet', 'opus']"
+          label="Модель"
+          density="compact"
+          variant="outlined"
+          hide-details
+        />
+        <VTextField
+          v-model="workroom"
+          label="Workroom (опционально)"
+          placeholder="пусто = main"
+          persistent-placeholder
+          density="compact"
+          variant="outlined"
+          hint="Оставьте пустым для запуска от main."
+          persistent-hint
+          hide-details="auto"
+        />
+      </div>
+      <div class="quick-launch-panel__chips">
+        <VChip size="x-small" :color="model === 'opus' ? 'primary' : model === 'sonnet' ? 'secondary' : 'info'" variant="tonal" label>
+          {{ model }}
+        </VChip>
+        <VChip size="x-small" :color="workroom ? 'secondary' : 'surface-variant'" :variant="workroom ? 'tonal' : 'outlined'" label>
+          {{ workroom ? `workroom: ${workroom}` : 'workroom: main' }}
+        </VChip>
+      </div>
+    </section>
 
     <div class="quick-launch-panel__actions">
-      <VBtn variant="text" size="small" :disabled="submitting" @click.stop="emit('close')">Отмена</VBtn>
+      <VBtn variant="text" size="small" density="compact" :disabled="submitting" @click.stop="emit('close')">Отмена</VBtn>
       <VSpacer />
       <VBtn
         color="primary"
-        variant="flat"
+        variant="tonal"
         size="small"
+        density="compact"
         prepend-icon="mdi-rocket-launch"
         :loading="submitting"
         :disabled="!canSubmit"
@@ -479,22 +498,26 @@ async function submit() {
   gap: 12px;
 }
 
-.quick-launch-panel__fragments {
+/* Inner section card — mirrors .balancing-preset / .aidev-dialog__section
+   visual tokens (padding, radius, border, bg). Each input group lives
+   inside its own section card. */
+.quick-launch-panel__section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-  background: rgba(var(--v-theme-on-surface), 0.03);
+  background: rgba(var(--v-theme-surface-variant), 0.18);
 }
 
-.quick-launch-panel__fragments-head {
+.quick-launch-panel__eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
   color: rgb(var(--v-theme-on-surface-variant));
 }
 

@@ -329,152 +329,160 @@ async function saveSettings() {
 
     <VDialog v-model="settingsDialogOpen" max-width="620">
       <VCard v-if="editingAgent" class="aidev-dialog">
-        <VCardTitle>Меню агента: {{ editingAgent.displayName }}</VCardTitle>
+        <VCardTitle>
+          <VIcon start size="20">mdi-cog-outline</VIcon>
+          Меню агента: {{ editingAgent.displayName }}
+        </VCardTitle>
         <VCardText>
-          <div class="d-flex flex-column ga-4">
-            <div>
-              <div class="aidev-dialog__eyebrow">Связь с другими агентами</div>
-              <p class="aidev-dialog__hint mb-3">Выберите агентов, чью экспертизу этот агент должен учитывать при ответе.</p>
-              <div class="d-flex flex-wrap ga-2">
-                <VChip
-                  v-for="linkedAgent in availableLinkedAgents"
-                  :key="linkedAgent.id"
-                  size="small"
-                  :color="settingsDraft.connections.some(item => item.targetAgentId === linkedAgent.id) ? 'secondary-container' : undefined"
-                  :variant="settingsDraft.connections.some(item => item.targetAgentId === linkedAgent.id) ? 'flat' : 'outlined'"
-                  label
-                  @click="toggleLinkedAgent(linkedAgent.id)"
-                >
-                  {{ linkedAgent.displayName }}
-                </VChip>
-              </div>
-              <div v-if="settingsDraft.connections.length" class="d-flex flex-column ga-3 mt-3">
-                <div v-for="connection in settingsDraft.connections" :key="connection.targetAgentId" class="d-flex flex-wrap ga-3 align-center">
-                  <span class="aidev-dialog__hint">{{ agentsModel.agents.value.find(item => item.id === connection.targetAgentId)?.displayName || connection.targetAgentId }}</span>
-                  <VSelect
-                    :model-value="connection.mode"
-                    :items="[
-                      { title: 'Review', value: 'review' },
-                      { title: 'Enrich', value: 'enrich' },
-                      { title: 'Validate', value: 'validate' },
-                      { title: 'Summarize', value: 'summarize' },
-                      { title: 'Route', value: 'route' },
-                    ]"
-                    label="Режим связи"
-                    variant="outlined"
-                    density="compact"
-                    hide-details="auto"
-                    class="flex-grow-1"
-                    @update:model-value="updateLinkedAgentMode(connection.targetAgentId, $event)"
-                  />
-                </div>
+          <section class="aidev-dialog__section">
+            <div class="aidev-dialog__eyebrow">Связь с другими агентами</div>
+            <p class="aidev-dialog__hint">Выберите агентов, чью экспертизу этот агент должен учитывать при ответе.</p>
+            <div class="aidev-dialog__chips">
+              <VChip
+                v-for="linkedAgent in availableLinkedAgents"
+                :key="linkedAgent.id"
+                size="x-small"
+                :color="settingsDraft.connections.some(item => item.targetAgentId === linkedAgent.id) ? 'secondary' : 'surface-variant'"
+                :variant="settingsDraft.connections.some(item => item.targetAgentId === linkedAgent.id) ? 'tonal' : 'outlined'"
+                label
+                style="cursor: pointer;"
+                @click="toggleLinkedAgent(linkedAgent.id)"
+              >
+                {{ linkedAgent.displayName }}
+              </VChip>
+            </div>
+            <div v-if="settingsDraft.connections.length" class="d-flex flex-column ga-2 mt-1">
+              <div v-for="connection in settingsDraft.connections" :key="connection.targetAgentId" class="d-flex flex-wrap ga-3 align-center">
+                <span class="aidev-dialog__hint">{{ agentsModel.agents.value.find(item => item.id === connection.targetAgentId)?.displayName || connection.targetAgentId }}</span>
+                <VSelect
+                  :model-value="connection.mode"
+                  :items="[
+                    { title: 'Review', value: 'review' },
+                    { title: 'Enrich', value: 'enrich' },
+                    { title: 'Validate', value: 'validate' },
+                    { title: 'Summarize', value: 'summarize' },
+                    { title: 'Route', value: 'route' },
+                  ]"
+                  label="Режим связи"
+                  variant="outlined"
+                  density="compact"
+                  hide-details="auto"
+                  class="flex-grow-1"
+                  @update:model-value="updateLinkedAgentMode(connection.targetAgentId, $event)"
+                />
               </div>
             </div>
+          </section>
 
-            <div>
-              <div class="aidev-dialog__eyebrow">Подписка и модель</div>
-              <VSelect
-                v-model="settingsDraft.subscriptionId"
-                :items="subscriptionOptions"
-                item-title="title"
-                item-value="value"
-                label="Подписка"
-                variant="outlined"
-                density="compact"
-                hide-details="auto"
-                prepend-inner-icon="mdi-star-circle-outline"
-                @update:model-value="val => { const p = SUBSCRIPTION_PROVIDERS.find(pr => pr.key === subscriptionsModel.subscriptions.value.find(s => s.id === val)?.provider); const models = p?.models ?? []; if (models.length && !models.find(m => m.id === settingsDraft.model)) { settingsDraft.model = models.find(m => m.tier === 'balanced')?.id || models[0]?.id || settingsDraft.model } }"
-              />
-              <VSelect
-                v-model="settingsDraft.model"
-                :items="activeModelOptions.length ? activeModelOptions : (editingAgent?.modelOptions?.map(m => ({ title: m, value: m })) ?? [])"
-                item-title="title"
-                item-value="value"
-                label="Модель ответа"
-                variant="outlined"
-                density="compact"
-                hide-details="auto"
-                class="mt-3"
-              />
-              <div v-if="activeModelMeta" class="d-flex gap-2 mt-2">
-                <VChip size="x-small" :color="activeModelMeta.tier === 'fast' ? 'success' : activeModelMeta.tier === 'powerful' ? 'warning' : 'primary'" variant="tonal" label>
-                  {{ activeModelMeta.tier === 'fast' ? 'Быстрый' : activeModelMeta.tier === 'powerful' ? 'Мощный' : 'Баланс' }}
-                </VChip>
-                <VChip size="x-small" variant="tonal" color="secondary" label>{{ activeModelMeta.contextK }}K контекст</VChip>
-              </div>
-              <VSelect
-                v-if="showEffortSelector"
-                v-model="settingsDraft.effort"
-                :items="EFFORT_OPTIONS"
-                item-title="title"
-                item-value="value"
-                label="Уровень усилия (effort)"
-                variant="outlined"
-                density="compact"
-                hide-details="auto"
-                class="mt-3"
-              />
+          <section class="aidev-dialog__section">
+            <div class="aidev-dialog__eyebrow">Подписка и модель</div>
+            <VSelect
+              v-model="settingsDraft.subscriptionId"
+              :items="subscriptionOptions"
+              item-title="title"
+              item-value="value"
+              label="Подписка"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+              prepend-inner-icon="mdi-star-circle-outline"
+              @update:model-value="val => { const p = SUBSCRIPTION_PROVIDERS.find(pr => pr.key === subscriptionsModel.subscriptions.value.find(s => s.id === val)?.provider); const models = p?.models ?? []; if (models.length && !models.find(m => m.id === settingsDraft.model)) { settingsDraft.model = models.find(m => m.tier === 'balanced')?.id || models[0]?.id || settingsDraft.model } }"
+            />
+            <VSelect
+              v-model="settingsDraft.model"
+              :items="activeModelOptions.length ? activeModelOptions : (editingAgent?.modelOptions?.map(m => ({ title: m, value: m })) ?? [])"
+              item-title="title"
+              item-value="value"
+              label="Модель ответа"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+            />
+            <div v-if="activeModelMeta" class="aidev-dialog__chips">
+              <VChip size="x-small" :color="activeModelMeta.tier === 'fast' ? 'success' : activeModelMeta.tier === 'powerful' ? 'warning' : 'primary'" variant="tonal" label>
+                {{ activeModelMeta.tier === 'fast' ? 'Быстрый' : activeModelMeta.tier === 'powerful' ? 'Мощный' : 'Баланс' }}
+              </VChip>
+              <VChip size="x-small" variant="tonal" color="secondary" label>{{ activeModelMeta.contextK }}K контекст</VChip>
             </div>
+            <VSelect
+              v-if="showEffortSelector"
+              v-model="settingsDraft.effort"
+              :items="EFFORT_OPTIONS"
+              item-title="title"
+              item-value="value"
+              label="Уровень усилия (effort)"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+            />
+          </section>
 
-            <div>
-              <div class="aidev-dialog__eyebrow">API key</div>
-              <p class="aidev-dialog__hint mb-3">Локальный режим отключён. Агент работает только через внешний API key.</p>
-              <VTextField
-                v-model="settingsDraft.apiKey"
-                label="API key"
-                type="password"
-                variant="outlined"
-                density="compact"
-                hide-details="auto"
-              />
+          <section class="aidev-dialog__section">
+            <div class="aidev-dialog__eyebrow">API key</div>
+            <p class="aidev-dialog__hint">Локальный режим отключён. Агент работает только через внешний API key.</p>
+            <VTextField
+              v-model="settingsDraft.apiKey"
+              label="API key"
+              type="password"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+            />
+            <div class="aidev-dialog__chips">
+              <VChip size="x-small" :color="settingsDraft.apiKey ? 'success' : 'surface-variant'" :variant="settingsDraft.apiKey ? 'tonal' : 'outlined'" label>
+                {{ settingsDraft.apiKey ? 'API key задан' : 'API key не задан' }}
+              </VChip>
             </div>
+          </section>
 
-            <div>
-              <div class="aidev-dialog__eyebrow">SSH и сервер</div>
-              <p class="aidev-dialog__hint mb-3">У каждого агента может быть свой SSH-доступ и своя рабочая папка для проводника и серверного контекста.</p>
-              <div class="d-flex flex-column ga-3">
-                <VTextField
-                  v-model="settingsDraft.ssh.host"
-                  label="IP или host сервера"
-                  variant="outlined"
-                  density="compact"
-                  hide-details="auto"
-                />
-                <VTextField
-                  v-model="settingsDraft.ssh.login"
-                  label="Логин SSH"
-                  variant="outlined"
-                  density="compact"
-                  hide-details="auto"
-                />
-                <VTextField
-                  :model-value="String(settingsDraft.ssh.port)"
-                  label="Порт SSH"
-                  type="number"
-                  variant="outlined"
-                  density="compact"
-                  hide-details="auto"
-                  @update:model-value="settingsDraft.ssh.port = Number($event) || 22"
-                />
-                <VTextField
-                  v-model="settingsDraft.ssh.workspacePath"
-                  label="Рабочая папка"
-                  variant="outlined"
-                  density="compact"
-                  hide-details="auto"
-                />
-                <VTextarea
-                  v-model="settingsDraft.ssh.privateKey"
-                  label="SSH private key"
-                  variant="outlined"
-                  density="compact"
-                  rows="5"
-                  auto-grow
-                  hide-details="auto"
-                />
-              </div>
+          <section class="aidev-dialog__section">
+            <div class="aidev-dialog__eyebrow">SSH и сервер</div>
+            <p class="aidev-dialog__hint">У каждого агента может быть свой SSH-доступ и своя рабочая папка для проводника и серверного контекста.</p>
+            <VTextField
+              v-model="settingsDraft.ssh.host"
+              label="IP или host сервера"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+            />
+            <VTextField
+              v-model="settingsDraft.ssh.login"
+              label="Логин SSH"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+            />
+            <VTextField
+              :model-value="String(settingsDraft.ssh.port)"
+              label="Порт SSH"
+              type="number"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+              @update:model-value="settingsDraft.ssh.port = Number($event) || 22"
+            />
+            <VTextField
+              v-model="settingsDraft.ssh.workspacePath"
+              label="Рабочая папка"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+            />
+            <VTextarea
+              v-model="settingsDraft.ssh.privateKey"
+              label="SSH private key"
+              variant="outlined"
+              density="compact"
+              rows="5"
+              auto-grow
+              hide-details="auto"
+            />
+            <div class="aidev-dialog__chips">
+              <VChip size="x-small" :color="settingsDraft.ssh.host ? 'success' : 'surface-variant'" :variant="settingsDraft.ssh.host ? 'tonal' : 'outlined'" label>
+                {{ settingsDraft.ssh.host ? 'SSH задан' : 'SSH не задан' }}
+              </VChip>
             </div>
-          </div>
+          </section>
         </VCardText>
         <VCardActions>
           <VSpacer />

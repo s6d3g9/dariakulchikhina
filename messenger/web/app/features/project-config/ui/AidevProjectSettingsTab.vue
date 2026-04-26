@@ -166,19 +166,31 @@ function formatDate(iso: string) {
     <!-- Confirm delete dialog -->
     <VDialog v-model="deleteConfirmOpen" max-width="460" persistent>
       <VCard class="aidev-dialog">
-        <VCardTitle>Удалить проект?</VCardTitle>
+        <VCardTitle>
+          <VIcon start size="20" color="error">mdi-alert-circle-outline</VIcon>
+          Удалить проект?
+        </VCardTitle>
         <VCardText>
-          <p class="aidev-dialog__hint">
-            Проект <b>{{ project.name }}</b>
-            (@{{ project.slug }}) будет soft-deleted.
-          </p>
-          <p class="aidev-dialog__hint">
-            Composer-агент + его ресурсы (connectors / skills / plugins / MCP / external APIs)
-            тоже будут помечены удалёнными и исчезнут из списков.
-          </p>
-          <VAlert v-if="deleteError" type="error" density="compact">
-            {{ deleteError }}
-          </VAlert>
+          <section class="aidev-dialog__section aidev-dialog__section--danger">
+            <div class="aidev-dialog__eyebrow" style="color: rgb(var(--v-theme-error));">Опасная операция</div>
+            <div class="aidev-dialog__head">
+              <div class="aidev-dialog__title-wrap">
+                <div class="aidev-dialog__section-title">{{ project.name }}</div>
+                <div class="aidev-dialog__section-id">@{{ project.slug }}</div>
+              </div>
+            </div>
+            <div class="aidev-dialog__chips">
+              <VChip size="x-small" color="error" variant="tonal" label>soft-delete</VChip>
+              <VChip size="x-small" color="error" variant="outlined" label>каскад</VChip>
+            </div>
+            <p class="aidev-dialog__when">
+              <strong>Внимание:</strong> Composer-агент и связанные ресурсы (connectors, skills, plugins, MCP, external APIs)
+              тоже будут помечены удалёнными и исчезнут из списков.
+            </p>
+            <VAlert v-if="deleteError" type="error" density="compact" variant="tonal">
+              {{ deleteError }}
+            </VAlert>
+          </section>
         </VCardText>
         <VCardActions>
           <VSpacer />

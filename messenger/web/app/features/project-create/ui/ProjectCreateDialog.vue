@@ -28,34 +28,45 @@ async function handleSubmit() {
   >
     <VCard class="aidev-dialog">
       <VCardTitle>
+        <VIcon start size="20">mdi-folder-plus-outline</VIcon>
         Новый проект
       </VCardTitle>
 
       <VCardText>
-        <VTextField
-          v-model="dialog.form.value.name"
-          label="Название"
-          autofocus
-          :disabled="dialog.pending.value"
-          counter="80"
-          maxlength="80"
-          variant="outlined"
-          density="compact"
-        />
-
-        <VTextarea
-          v-model="dialog.form.value.description"
-          label="Описание (необязательно)"
-          :disabled="dialog.pending.value"
-          rows="3"
-          variant="outlined"
-          density="compact"
-          no-resize
-        />
-
-        <VAlert v-if="dialog.error.value" type="error" :icon="false" density="compact">
-          {{ dialog.error.value }}
-        </VAlert>
+        <section class="aidev-dialog__section">
+          <div class="aidev-dialog__eyebrow">Идентификация</div>
+          <VTextField
+            v-model="dialog.form.value.name"
+            label="Название"
+            autofocus
+            :disabled="dialog.pending.value"
+            counter="80"
+            maxlength="80"
+            variant="outlined"
+            density="compact"
+            hide-details="auto"
+          />
+          <VTextarea
+            v-model="dialog.form.value.description"
+            label="Описание (необязательно)"
+            :disabled="dialog.pending.value"
+            rows="3"
+            variant="outlined"
+            density="compact"
+            no-resize
+            hide-details="auto"
+          />
+          <div class="aidev-dialog__chips">
+            <VChip size="x-small" color="secondary" variant="tonal" label>приватный</VChip>
+            <VChip size="x-small" color="info" variant="outlined" label>composer + auto-config</VChip>
+          </div>
+          <p class="aidev-dialog__when">
+            <strong>Подсказка:</strong> slug сгенерируется из названия автоматически. Composer-агент будет добавлен сразу после создания.
+          </p>
+          <VAlert v-if="dialog.error.value" type="error" :icon="false" density="compact" variant="tonal">
+            {{ dialog.error.value }}
+          </VAlert>
+        </section>
       </VCardText>
 
       <VCardActions>

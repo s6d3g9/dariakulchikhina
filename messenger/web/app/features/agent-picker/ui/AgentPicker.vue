@@ -88,6 +88,8 @@ function onProposalApplied() {
 </template>
 
 <style scoped>
+/* Mirror .balancing-preset exactly — same padding, radius, border, bg.
+   Active state mirrors .balancing-preset--active. */
 .agent-picker__item {
   padding: 12px;
   border-radius: 14px;
@@ -95,11 +97,24 @@ function onProposalApplied() {
   background: rgba(var(--v-theme-surface-variant), 0.18);
   cursor: pointer;
   transition: background 160ms ease, border-color 160ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-picker__item + .agent-picker__item {
+  margin-top: 8px;
 }
 
 .agent-picker__item:hover:not(.agent-picker__item--disabled) {
   background: rgba(var(--v-theme-secondary-container), 0.4);
   border-color: rgb(var(--v-theme-secondary));
+}
+
+/* Active variant — matches .balancing-preset--active */
+.agent-picker__item--active {
+  border-color: rgb(var(--v-theme-secondary));
+  background: rgba(var(--v-theme-secondary-container), 0.55);
 }
 
 .agent-picker__item--disabled {
@@ -125,6 +140,7 @@ function onProposalApplied() {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  gap: 6px;
   color: rgb(var(--v-theme-on-surface));
 }
 
