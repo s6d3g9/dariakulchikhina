@@ -9,6 +9,12 @@ const props = defineProps<{
   // seed the slug field with a recognisable prefix so multiple launches
   // from the same chat don't collide.
   conversationSlug?: string | null
+  // Project id of the agent the operator is currently chatting with. Used to
+  // pre-select the project picker so the operator can usually one-click
+  // "Запустить агентом" in the same project as the chat. Required by the
+  // backend (W5 project-centric refactor); the picker still lets the
+  // operator override before submit.
+  defaultProjectId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -20,6 +26,7 @@ const emit = defineEmits<{
 
 const cliSessions = useMessengerCliSessions()
 const balancing = useMessengerBalancing()
+const projectsModel = useMessengerProjects()
 
 const dialogOpen = computed({
   get: () => props.modelValue,
@@ -30,8 +37,15 @@ const slug = ref('')
 const prompt = ref('')
 const model = ref<'haiku' | 'sonnet' | 'opus'>('sonnet')
 const workroom = ref('')
+const projectId = ref<string | null>(null)
 const submitting = ref(false)
 const error = ref<string | null>(null)
+
+// Items for the project <VSelect>. Empty until refresh resolves; we kick a
+// refresh on dialog open so a freshly-mounted component sees the list.
+const projectItems = computed(() =>
+  projectsModel.projects.value.map(p => ({ title: p.name, value: p.id })),
+)
 
 // 8-char message-id hash — keeps the slug short while still making it unique
 // per (conversation, message) pair so the same prompt can be re-launched
@@ -68,6 +82,20 @@ watch(
     slug.value = buildSlug(props.messageId, props.conversationSlug ?? null)
     prompt.value = stripReplySuggestions(props.body)
     workroom.value = `wr-${slug.value}`.slice(0, 40)
+    // Seed the project picker with the chat's agent project, if any. The
+    // operator can still change it before submit. The list is refreshed so
+    // freshly-created projects appear without a page reload.
+    projectId.value = props.defaultProjectId ?? null
+    void (async () => {
+      if (projectsModel.projects.value.length === 0) {
+        try { await projectsModel.refresh() } catch { /* keep picker empty */ }
+      }
+      // If the parent didn't pass a default but exactly one project exists,
+      // pre-select it — single-project setups shouldn't force a click.
+      if (!projectId.value && projectsModel.projects.value.length === 1) {
+        projectId.value = projectsModel.projects.value[0]?.id ?? null
+      }
+    })()
     // Pull active preset model on open. Refresh is idempotent, but if the
     // store is already populated we avoid the round-trip.
     void (async () => {
@@ -91,6 +119,10 @@ async function submit() {
     error.value = 'Slug: только латиница, цифры и дефисы, до 40 символов'
     return
   }
+  if (!projectId.value) {
+    error.value = 'Выберите проект, в котором будет работать сессия'
+    return
+  }
   submitting.value = true
   error.value = null
   try {
@@ -98,6 +130,7 @@ async function submit() {
       slug: slug.value,
       prompt: prompt.value,
       model: model.value,
+      projectId: projectId.value,
       workroom: workroom.value || undefined,
       sourceMessageId: props.messageId,
     })
@@ -123,6 +156,19 @@ async function submit() {
         <VAlert v-if="error" type="error" variant="tonal" density="compact" class="mb-3">
           {{ error }}
         </VAlert>
+
+        <VSelect
+          v-model="projectId"
+          :items="projectItems"
+          label="Проект"
+          density="compact"
+          variant="outlined"
+          class="mb-3"
+          :error="!projectId && Boolean(error)"
+          :error-messages="!projectId && error ? ['Проект обязателен'] : undefined"
+          :no-data-text="projectsModel.pending ? 'Загрузка проектов…' : 'Нет доступных проектов'"
+          hide-details="auto"
+        />
 
         <VTextField
           v-model="slug"
@@ -172,6 +218,7 @@ async function submit() {
           variant="flat"
           prepend-icon="mdi-rocket-launch"
           :loading="submitting"
+          :disabled="!projectId"
           @click="submit"
         >
           Запустить

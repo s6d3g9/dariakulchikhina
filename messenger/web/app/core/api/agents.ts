@@ -97,6 +97,9 @@ export function useAgentsApi() {
     slug: string
     prompt: string
     model: string
+    // Required (W5 of project-centric refactor): the queue daemon scopes the
+    // spawned session by this id. Owner is derived server-side from the JWT.
+    projectId: string
     workroom?: string
     sourceMessageId?: string
   }) {

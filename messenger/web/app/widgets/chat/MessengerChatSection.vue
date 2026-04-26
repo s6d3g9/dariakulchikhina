@@ -3889,6 +3889,7 @@ onBeforeUnmount(() => {
       :message-id="quickLaunchPayload.messageId"
       :body="quickLaunchPayload.body"
       :conversation-slug="quickLaunchConversationSlug"
+      :default-project-id="activeAgentProjectId"
       @launched="handleQuickLaunchLaunched"
     />
 

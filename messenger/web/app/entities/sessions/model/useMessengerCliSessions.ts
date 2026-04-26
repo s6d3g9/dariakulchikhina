@@ -175,9 +175,18 @@ export function useMessengerCliSessions() {
     slug: string
     prompt: string
     model: string
+    // Required (W5 project-centric refactor). Owner is JWT-derived server-side.
+    projectId: string
     workroom?: string
     sourceMessageId?: string
   }) {
+    // Defensive client-side check so callers can't accidentally drop the
+    // project id and end up with a 400 from the server. The server is still
+    // the source of truth (validates ownership + soft-delete), but a clear
+    // throw here makes UI bugs surface immediately rather than at submit.
+    if (!payload.projectId) {
+      throw new Error('quickLaunch: projectId is required')
+    }
     return api.quickLaunchCliSession(payload)
   }
 

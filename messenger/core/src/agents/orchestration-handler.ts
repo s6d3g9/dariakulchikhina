@@ -122,10 +122,15 @@ const cliSessionBody = z.object({
 // Body for POST /cli-sessions/quick-launch — operator-triggered drop into the
 // claude-queue-daemon's pending dir from the messenger UI. Slug shape mirrors
 // the daemon's task_id constraint and the existing cli-sessions slug regex.
+// `projectId` is REQUIRED (W5 of project-centric refactor): the queue daemon
+// (W3) reads `project_id` and `owner_user_id` from the .md frontmatter to
+// scope every spawned CLI session. Owner is NEVER taken from the payload —
+// it's derived from the authenticated session JWT `sub`.
 const quickLaunchBody = z.object({
   slug: z.string().regex(/^[a-z0-9-]{1,40}$/),
   prompt: z.string().min(1).max(20_000),
   model: z.enum(['haiku', 'sonnet', 'opus']),
+  projectId: z.string().uuid(),
   workroom: z.string().regex(/^[a-z0-9-]{1,40}$/).optional(),
   sourceMessageId: z.string().optional(),
 })
@@ -1034,17 +1039,42 @@ export function registerOrchestrationRoutes(
   // daemon's pending dir from the messenger UI. Used by the "Запустить агентом"
   // affordance on agent messages. Refuses on slug collision so an operator
   // double-click doesn't stack two tasks for the same prompt.
+  //
+  // W5 (project-centric refactor): every queued task MUST carry an
+  // `owner_user_id` + `project_id` pair so the queue daemon (W3) and the
+  // spawned CLI session inherit the same project scope as the originating
+  // chat. The owner is taken from the JWT — never from the payload.
   app.post<{ Body: unknown }>(
     '/cli-sessions/quick-launch',
     async (request, reply) => {
-      if (!resolveSessionAuth(request)) {
+      const auth = resolveSessionAuth(request)
+      if (!auth) {
         return reply.code(401).send({ error: 'UNAUTHORIZED' })
       }
       const parsed = quickLaunchBody.safeParse(request.body)
       if (!parsed.success) {
         return reply.code(400).send({ error: 'INVALID_PAYLOAD', issues: parsed.error.issues })
       }
-      const { slug, prompt, model, workroom, sourceMessageId } = parsed.data
+      const { slug, prompt, model, projectId, workroom, sourceMessageId } = parsed.data
+      const ownerUserId = auth.sub
+
+      // Validate project: must exist, belong to the authenticated user,
+      // and not be soft-deleted. 404 covers both "doesn't exist" and "wrong
+      // owner" so we don't leak existence of other users' projects.
+      const [project] = await db
+        .select({ id: messengerProjects.id })
+        .from(messengerProjects)
+        .where(
+          and(
+            eq(messengerProjects.id, projectId),
+            eq(messengerProjects.ownerUserId, ownerUserId),
+            isNull(messengerProjects.deletedAt),
+          ),
+        )
+        .limit(1)
+      if (!project) {
+        return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+      }
 
       const queuePath = join(homedir(), 'state', 'queue', 'pending', `${slug}.md`)
       try {
@@ -1062,6 +1092,10 @@ export function registerOrchestrationRoutes(
         `base_branch: ${baseBranch}`,
         'priority: 50',
         'auto_push: true',
+        // W3 contract: queue daemon reads exactly these two keys to scope the
+        // spawned session. Both are UUIDs, no quoting required.
+        `owner_user_id: ${ownerUserId}`,
+        `project_id: ${projectId}`,
         ...(sourceMessageId ? [`source_message_id: ${sourceMessageId}`] : []),
         '---',
         '',
