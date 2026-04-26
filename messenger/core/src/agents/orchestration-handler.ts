@@ -1,7 +1,7 @@
 import { spawnSync as _spawnSync, execFile as _execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { readFileSync } from 'node:fs'
-import { writeFile, access } from 'node:fs/promises'
+import { writeFile, access, stat } from 'node:fs/promises'
 import { constants as fsConstants } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
@@ -32,6 +32,7 @@ import {
   sql,
   inArray,
 } from './ingest-db.ts'
+import { registerCliSession, SessionRegistryError } from './session-registry.ts'
 
 const execFile = promisify(_execFile)
 
@@ -163,15 +164,24 @@ export function registerOrchestrationRoutes(
       const { parentRunId, prompt, model } = parsed.data
       const runId = await createMessengerAgentRun({ agentId, parentRunId, prompt, model })
 
-      // Generate a placeholder slug — real one is patched by claude-session via
-      // POST /cli-sessions when the tmux window is created.
+      // Placeholder slug — claude-session re-registers via POST /cli-sessions
+      // once the tmux window exists, which patches slug/window/workroom.
       const placeholderSlug = 'run-' + runId.slice(0, 8)
-      const [session] = await db
-        .insert(messengerCliSessions)
-        .values({ agentId, runId, slug: placeholderSlug, status: 'pending', model: model ?? null })
-        .returning({ id: messengerCliSessions.id })
-
-      return { runId, cliSessionId: session.id }
+      try {
+        const session = await registerCliSession(db, {
+          agentId,
+          runId,
+          slug: placeholderSlug,
+          status: 'pending',
+          model: model ?? null,
+        })
+        return { runId, cliSessionId: session.id }
+      } catch (err) {
+        if (err instanceof SessionRegistryError) {
+          return reply.code(404).send({ error: err.code })
+        }
+        throw err
+      }
     },
   )
 
@@ -613,6 +623,22 @@ export function registerOrchestrationRoutes(
         }
       }
 
+      // Filesystem activity fallback: the dashboard's stream-bridge appends to
+      // <stateDir>/<slug>.log on every chunk Claude emits, so mtime is the most
+      // up-to-date proxy for sessions whose agent linkage isn't recorded in
+      // messenger_cli_sessions or via the dev-vps: name pattern (composers,
+      // ad-hoc spawned workers, archived re-runs). Without this, those sessions
+      // report idleForMs=null and never count as active even while pumping
+      // output every second.
+      const slugToLogMtimeMs = new Map<string, number>()
+      await Promise.all(sessions.map(async (s) => {
+        try {
+          const st = await stat(join(stateDir, `${s.slug}.log`))
+          slugToLogMtimeMs.set(s.slug, st.mtimeMs)
+        }
+        catch {}
+      }))
+
       // Tmux is the authoritative liveness signal. An event-stream silence doesn't
       // mean the session died — Claude can think for 20+ minutes on one turn. We
       // only mark `done` when (a) tmux confirms the window is gone, or (b) the DB
@@ -723,9 +749,19 @@ export function registerOrchestrationRoutes(
             else if (dbStopped) computedStatus = 'done'
             // else: tmux not readable → keep registry's 'running'
           }
-          const idleForMs = activity?.lastActivityAt
-            ? now - new Date(activity.lastActivityAt).getTime()
+          // Fold the log mtime into the activity timeline: take whichever of
+          // (DB event timestamp, log mtime) is most recent. The DB stream is
+          // structured but only flows for agents linked through claudeSessionSlug
+          // / messenger_cli_sessions / the dev-vps: name pattern; the log mtime
+          // catches everything else (composers, ad-hoc workers).
+          const dbActivityMs = activity?.lastActivityAt
+            ? new Date(activity.lastActivityAt).getTime()
             : null
+          const logActivityMs = slugToLogMtimeMs.get(s.slug) ?? null
+          const effectiveActivityMs =
+            dbActivityMs != null && logActivityMs != null ? Math.max(dbActivityMs, logActivityMs)
+            : dbActivityMs ?? logActivityMs
+          const idleForMs = effectiveActivityMs != null ? now - effectiveActivityMs : null
           const isIdle = computedStatus === 'running' && idleForMs !== null && idleForMs > ACTIVITY_IDLE_MS
           // Treat sessions that have never emitted an event yet as active for
           // their first ACTIVE_ACTIVITY_MS window — the CLI bootstrap takes a
@@ -743,7 +779,7 @@ export function registerOrchestrationRoutes(
             agentProjectId: agentBySlug.get(s.slug)?.projectId ?? slugToMessengerProjectId.get(s.slug) ?? s.registryProjectId ?? null,
             agentType: agentBySlug.get(s.slug)?.agentType ?? null,
             agentArchived: agentBySlug.get(s.slug)?.agentArchived ?? false,
-            lastActivityAt: activity?.lastActivityAt ?? null,
+            lastActivityAt: effectiveActivityMs != null ? new Date(effectiveActivityMs).toISOString() : null,
             idleForMs,
             isIdle,
             isActive,
@@ -1105,32 +1141,9 @@ export function registerOrchestrationRoutes(
       const agent = await resolveIngestAuth(db, request.headers.authorization, agentId)
       if (!agent) return reply.code(401).send({ error: 'UNAUTHORIZED' })
 
-      // Upsert: if a cli session already exists for this runId, update it; else insert
-      if (runId) {
-        const [existing] = await db
-          .select({ id: messengerCliSessions.id })
-          .from(messengerCliSessions)
-          .where(
-            and(
-              eq(messengerCliSessions.runId, runId),
-              isNull(messengerCliSessions.deletedAt),
-            ),
-          )
-          .limit(1)
-
-        if (existing) {
-          await db
-            .update(messengerCliSessions)
-            .set({ model, tmuxWindow, status: 'running' })
-            .where(eq(messengerCliSessions.id, existing.id))
-          return { id: existing.id }
-        }
-      }
-
       const finalSlug = workroomSlug ?? randomUUID()
-      const [inserted] = await db
-        .insert(messengerCliSessions)
-        .values({
+      try {
+        const session = await registerCliSession(db, {
           agentId,
           runId: runId ?? null,
           slug: finalSlug,
@@ -1139,10 +1152,16 @@ export function registerOrchestrationRoutes(
           tmuxWindow,
           status: 'running',
         })
-        .returning({ id: messengerCliSessions.id })
-
-      publishSessionDelta({ slug: finalSlug, reason: 'created', ts: new Date().toISOString(), agentId, runId: runId ?? null })
-      return { id: inserted.id }
+        if (session.created) {
+          publishSessionDelta({ slug: finalSlug, reason: 'created', ts: new Date().toISOString(), agentId, runId: runId ?? null })
+        }
+        return { id: session.id }
+      } catch (err) {
+        if (err instanceof SessionRegistryError) {
+          return reply.code(404).send({ error: err.code })
+        }
+        throw err
+      }
     },
   )
 
@@ -1186,5 +1205,50 @@ export function registerOrchestrationRoutes(
   const reconcileTimer = setInterval(reconcileTick, RECONCILE_INTERVAL_MS)
   // Kick once on startup so stale DB state gets cleaned up immediately.
   setTimeout(reconcileTick, 5_000)
-  app.addHook('onClose', async () => { clearInterval(reconcileTimer) })
+
+  // Log-mtime watcher. Sessions that bypass the ingest pipeline (composers
+  // writing directly via claude-stream-bridge, host-session bridges) never
+  // produce SSE 'event' deltas — without this loop the monitor would freeze
+  // at the snapshot from page-load until the user clicks refresh. We fan out
+  // a synthetic 'event' delta whenever a session's `<slug>.log` mtime ticks.
+  const LOG_WATCHER_INTERVAL_MS = 5_000
+  const lastLogMtime = new Map<string, number>()
+  const stateDirForWatcher = join(homedir(), 'state/claude-sessions')
+  const logWatcherTick = async () => {
+    try {
+      const content = readFileSync(join(stateDirForWatcher, '.registry.tsv'), 'utf8')
+      const lines = content.trim().split('\n')
+      if (lines.length < 2) return
+      const headers = (lines[0] ?? '').split('\t')
+      const slugIdx = headers.indexOf('slug')
+      if (slugIdx === -1) return
+      for (const line of lines.slice(1)) {
+        const slug = line.split('\t')[slugIdx]
+        if (!slug) continue
+        try {
+          const st = await stat(join(stateDirForWatcher, `${slug}.log`))
+          const prev = lastLogMtime.get(slug)
+          if (prev != null && prev === st.mtimeMs) continue
+          lastLogMtime.set(slug, st.mtimeMs)
+          // Skip the very first observation — we don't know if it's "new" or
+          // just first-time-seen, so don't pretend it's fresh activity.
+          if (prev == null) continue
+          publishSessionDelta({
+            slug,
+            reason: 'event',
+            ts: new Date(st.mtimeMs).toISOString(),
+          })
+        } catch { /* log file may not exist for every registry row */ }
+      }
+    } catch (err) {
+      app.log.warn({ err }, 'log-mtime watcher tick failed')
+    }
+  }
+  const logWatcherTimer = setInterval(logWatcherTick, LOG_WATCHER_INTERVAL_MS)
+  setTimeout(logWatcherTick, 2_000)
+
+  app.addHook('onClose', async () => {
+    clearInterval(reconcileTimer)
+    clearInterval(logWatcherTimer)
+  })
 }

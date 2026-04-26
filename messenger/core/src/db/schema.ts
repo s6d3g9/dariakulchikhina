@@ -226,9 +226,11 @@ export const messengerAgents = pgTable(
     ownerUserId: uuid('owner_user_id')
       .notNull()
       .references(() => messengerUsers.id),
-    projectId: uuid('project_id').references(() => messengerProjects.id, {
-      onDelete: 'set null',
-    }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => messengerProjects.id, {
+        onDelete: 'restrict',
+      }),
     name: text('name').notNull(),
     description: text('description'),
     model: text('model'),
@@ -302,6 +304,16 @@ export const messengerCliSessions = pgTable(
   'messenger_cli_sessions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    // Denormalized owner+project. Source of truth is the agent, but every
+    // entry-point that creates a cli-session must persist these so that
+    // monitor queries don't have to JOIN on agents (which makes the "all
+    // sessions of user X in project Y" lookup an indexed point query).
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => messengerUsers.id),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => messengerProjects.id, { onDelete: 'restrict' }),
     agentId: uuid('agent_id')
       .notNull()
       .references(() => messengerAgents.id),
@@ -318,5 +330,10 @@ export const messengerCliSessions = pgTable(
     version: integer('version').default(1).notNull(),
     deletedAt: tstz('deleted_at'),
   },
-  (t) => [index('messenger_cli_sessions_agent_status_idx').on(t.agentId, t.status)],
+  (t) => [
+    index('messenger_cli_sessions_agent_status_idx').on(t.agentId, t.status),
+    index('messenger_cli_sessions_owner_project_idx')
+      .on(t.ownerUserId, t.projectId, t.status)
+      .where(sql`deleted_at is null`),
+  ],
 )
