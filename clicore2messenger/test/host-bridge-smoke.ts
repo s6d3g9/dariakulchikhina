@@ -4,15 +4,17 @@
  * Validates: session provision, event delivery, isolation, idle reaping,
  * re-activation, crash-recovery (offset/uuid dedup), and cross-talk.
  *
+ * After W4 every provision call carries an explicit ownerUserId + projectId
+ * in the body — there is no env-var fallback on the server side. The smoke
+ * harness creates its own test user and project, then passes both UUIDs in
+ * every provision payload.
+ *
  * Requirements:
  *   - Live PostgreSQL reachable at MESSENGER_DB_URL or DATABASE_URL
- *   - HOST_BRIDGE_TOKEN env (≥32 chars)
- *   - HOST_BRIDGE_OWNER_USER_ID env (UUID of an existing messenger_users row)
- *     OR the test inserts its own user when SMOKE_CREATE_TEST_USER=1 (default)
+ *   - HOST_BRIDGE_TOKEN env (≥32 chars; defaults to a test value otherwise)
  *
  * Usage:
  *   pnpm test:host-bridge-smoke
- *   SMOKE_CREATE_TEST_USER=1 pnpm test:host-bridge-smoke
  */
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, appendFileSync } from 'node:fs'
@@ -49,6 +51,8 @@ import {
 } from '../../messenger/core/src/agents/ingest-db.ts'
 // eslint-disable-next-line no-restricted-imports
 import { messengerUsers, messengerConversations } from '../../../server/db/schema/messenger.ts'
+// eslint-disable-next-line no-restricted-imports
+import { messengerProjects } from '../../../server/db/schema/messenger-projects.ts'
 import { runTailMode } from '../src/core.ts'
 import { claudeTranscriptAdapter } from '../src/adapters/claude-transcript.ts'
 
@@ -66,6 +70,7 @@ const BRIDGE_TOKEN = (process.env.HOST_BRIDGE_TOKEN?.length ?? 0) >= 32
 // ---------------------------------------------------------------------------
 
 let ownerUserId: string
+let projectId: string
 let baseUrl: string
 let app: ReturnType<typeof Fastify>
 let db: ReturnType<typeof useIngestDb>
@@ -73,22 +78,30 @@ let db: ReturnType<typeof useIngestDb>
 async function setup() {
   db = useIngestDb()
 
-  // Provision or reuse test user
-  const existingOwner = process.env.HOST_BRIDGE_OWNER_USER_ID
-  if (existingOwner) {
-    ownerUserId = existingOwner
-  } else {
-    ownerUserId = randomUUID()
-    await db.insert(messengerUsers).values({
-      id: ownerUserId,
-      login: `smoke-${ownerUserId.slice(0, 8)}`,
-      displayName: 'Smoke Test User',
-    })
-  }
+  // Provision a fresh test user. (W4 removed the HOST_BRIDGE_OWNER_USER_ID
+  // env fallback so we always create the user fresh — the smoke harness
+  // owns its data end-to-end.)
+  ownerUserId = randomUUID()
+  await db.insert(messengerUsers).values({
+    id: ownerUserId,
+    login: `smoke-${ownerUserId.slice(0, 8)}`,
+    displayName: 'Smoke Test User',
+  })
 
-  // Set env vars before registering routes (host-session-handler reads config once at registration)
+  // Provision a fresh test project owned by the test user. The provision
+  // endpoint validates the project exists and is owned by the caller, so
+  // we need a real row.
+  projectId = randomUUID()
+  await db.insert(messengerProjects).values({
+    id: projectId,
+    ownerUserId,
+    name: `Smoke Project ${projectId.slice(0, 8)}`,
+    slug: `smoke-${projectId.slice(0, 8)}`,
+  })
+
+  // Set env vars before registering routes (host-session-handler reads
+  // config once at registration). Only the bridge token is required now.
   process.env.HOST_BRIDGE_TOKEN = BRIDGE_TOKEN
-  process.env.HOST_BRIDGE_OWNER_USER_ID = ownerUserId
 
   app = Fastify({ logger: false })
   registerHostSessionRoutes(app)
@@ -104,7 +117,7 @@ async function setup() {
 
 const _createdAgentIds: Set<string> = new Set()
 
-async function teardown(createdTestUser: boolean) {
+async function teardown() {
   if (_createdAgentIds.size > 0) {
     // Cascade: runs + events deleted via FK cascade when agents deleted
     for (const agentId of _createdAgentIds) {
@@ -130,9 +143,8 @@ async function teardown(createdTestUser: boolean) {
     await db.delete(messengerAgents).where(eq(messengerAgents.id, a.id))
   }
 
-  if (createdTestUser) {
-    await db.delete(messengerUsers).where(eq(messengerUsers.id, ownerUserId))
-  }
+  await db.delete(messengerProjects).where(eq(messengerProjects.id, projectId))
+  await db.delete(messengerUsers).where(eq(messengerUsers.id, ownerUserId))
 
   await app.close()
 }
@@ -151,7 +163,13 @@ async function provision(cwd: string, sessionId: string): Promise<{
   const res = await fetch(`${baseUrl}/agents/host-session/provision`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${BRIDGE_TOKEN}` },
-    body: JSON.stringify({ sessionId, cwd, hostname: SMOKE_HOSTNAME }),
+    body: JSON.stringify({
+      sessionId,
+      ownerUserId,
+      projectId,
+      cwd,
+      hostname: SMOKE_HOSTNAME,
+    }),
   })
   assert.equal(res.status, 200, `provision failed: ${res.status} ${await res.text()}`)
   const body = await res.json() as { agentId: string; conversationId: string; runId: string; ingestToken: string }
@@ -609,8 +627,6 @@ const scenarios: Array<[string, Scenario]> = [
 ]
 
 async function main() {
-  const createdTestUser = !process.env.HOST_BRIDGE_OWNER_USER_ID
-
   try {
     await setup()
   } catch (err) {
@@ -634,7 +650,7 @@ async function main() {
   }
 
   try {
-    await teardown(createdTestUser)
+    await teardown()
   } catch (err) {
     console.error('WARN: teardown error (may leave test data)', err)
   }

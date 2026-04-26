@@ -1,5 +1,4 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto'
-import { readFileSync, existsSync } from 'node:fs'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { readMessengerConfig } from '../config.ts'
@@ -39,40 +38,17 @@ function resolveSessionAuth(request: FastifyRequest) {
   return verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET)
 }
 
-// Reads `~/.host-bridge-projects.json` (or whatever HOST_BRIDGE_PROJECTS_FILE points
-// at). Expected shape: `{ version: 1, mappings: { "<cwd>": "<projectId>" } }`.
-// Returns an empty map on any read/parse error so provisioning never fails just
-// because the operator hasn't set up bridging yet.
-function loadProjectsMap(filePath: string | undefined): Record<string, string> {
-  if (!filePath || !existsSync(filePath)) return {}
-  try {
-    const raw = readFileSync(filePath, 'utf8')
-    const parsed = JSON.parse(raw) as unknown
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      !Array.isArray(parsed) &&
-      (parsed as Record<string, unknown>).version === 1 &&
-      typeof (parsed as Record<string, unknown>).mappings === 'object' &&
-      (parsed as Record<string, unknown>).mappings !== null
-    ) {
-      const mappings = (parsed as { mappings: Record<string, unknown> }).mappings
-      const result: Record<string, string> = {}
-      for (const [cwd, projectId] of Object.entries(mappings)) {
-        if (typeof projectId === 'string' && projectId.length > 0) {
-          result[cwd] = projectId
-        }
-      }
-      return result
-    }
-  } catch {
-    // ignore malformed file — treat as empty map
-  }
-  return {}
-}
-
+// W4 contract: every provision call MUST carry an explicit `ownerUserId` AND
+// `projectId`. The bridge client (clicore2messenger host-supervisor) is now
+// the single source of truth for both — no env fallback, no JSON-mapping file.
+// The previous `~/.host-bridge-projects.json` lookup and the
+// `HOST_BRIDGE_OWNER_USER_ID` server-side default were removed in W4 because
+// they let the system silently provision agents with a NULL project, which
+// W1 / W2 explicitly forbid.
 const provisionBodySchema = z.object({
   sessionId: z.string().uuid(),
+  ownerUserId: z.string().uuid(),
+  projectId: z.string().uuid(),
   cwd: z.string().min(1),
   hostname: z.string().min(1),
   gitBranch: z.string().optional(),
@@ -87,10 +63,9 @@ const completeBodySchema = z.object({
 export function registerHostSessionRoutes(app: FastifyInstance) {
   const config = readMessengerConfig()
   const bridgeToken = config.HOST_BRIDGE_TOKEN
-  const ownerUserId = config.HOST_BRIDGE_OWNER_USER_ID
 
-  if (!bridgeToken || !ownerUserId) {
-    app.log.warn('HOST_BRIDGE_TOKEN or HOST_BRIDGE_OWNER_USER_ID not set — host-session routes disabled')
+  if (!bridgeToken) {
+    app.log.warn('HOST_BRIDGE_TOKEN not set — host-session routes disabled')
     return
   }
 
@@ -99,41 +74,56 @@ export function registerHostSessionRoutes(app: FastifyInstance) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
-    const parsed = provisionBodySchema.safeParse(request.body)
+    // Pre-parse so we can return precise error codes for the two new
+    // required fields. The bridge client treats these as fail-fast — there
+    // is no graceful degradation to a NULL project.
+    const rawBody = (request.body ?? {}) as Record<string, unknown>
+    if (typeof rawBody.ownerUserId !== 'string' || rawBody.ownerUserId.length === 0) {
+      return reply.code(400).send({ error: 'OWNER_USER_ID_REQUIRED' })
+    }
+    if (typeof rawBody.projectId !== 'string' || rawBody.projectId.length === 0) {
+      return reply.code(400).send({ error: 'PROJECT_ID_REQUIRED' })
+    }
+
+    const parsed = provisionBodySchema.safeParse(rawBody)
     if (!parsed.success) {
       return reply.code(400).send({ error: 'INVALID_PAYLOAD', issues: parsed.error.issues })
     }
 
-    const { sessionId, cwd, hostname, gitBranch, sessionVersion, sessionStartedAt } = parsed.data
+    const {
+      sessionId,
+      ownerUserId,
+      projectId,
+      cwd,
+      hostname,
+      gitBranch,
+      sessionVersion,
+      sessionStartedAt,
+    } = parsed.data
 
     if (!cwd.startsWith('/') || cwd.includes('..')) {
       return reply.code(400).send({ error: 'INVALID_CWD' })
     }
 
     const projectKey = cwd.split('/').filter(Boolean).pop() ?? 'home'
-    const projectsMap = loadProjectsMap(config.HOST_BRIDGE_PROJECTS_FILE)
-    const mappedProjectId = projectsMap[cwd] ?? null
-
     const db = useIngestDb()
 
-    // Verify the mapped project exists, is owned by the host-bridge owner, and
-    // is not soft-deleted. If any of these fails we silently fall back to a
-    // null projectId — the spec says provision must never throw because of a
-    // stale or operator-edited mapping file.
-    let messengerProjectId: string | null = null
-    if (mappedProjectId) {
-      const [projectRow] = await db
-        .select({ id: messengerProjects.id })
-        .from(messengerProjects)
-        .where(
-          and(
-            eq(messengerProjects.id, mappedProjectId),
-            eq(messengerProjects.ownerUserId, ownerUserId),
-            isNull(messengerProjects.deletedAt),
-          ),
-        )
-        .limit(1)
-      if (projectRow) messengerProjectId = projectRow.id
+    // Validate the project exists, is owned by the caller, and is not
+    // soft-deleted. A 404 here is a hard fail — the operator must
+    // re-check the --project-id they passed to the supervisor.
+    const [projectRow] = await db
+      .select({ id: messengerProjects.id })
+      .from(messengerProjects)
+      .where(
+        and(
+          eq(messengerProjects.id, projectId),
+          eq(messengerProjects.ownerUserId, ownerUserId),
+          isNull(messengerProjects.deletedAt),
+        ),
+      )
+      .limit(1)
+    if (!projectRow) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
     }
 
     const result = await db.transaction(async (tx) => {
@@ -164,13 +154,13 @@ export function registerHostSessionRoutes(app: FastifyInstance) {
         agentId = existingAgent.id
         ingestToken = existingAgent.ingestToken
 
-        // Bridge bootstrap: bind a verified projectId from the mapping file
-        // ONLY when the agent currently has no projectId. Never override a
-        // value that an operator may have set manually via the admin UI.
-        if (messengerProjectId && existingAgent.projectId === null) {
+        // Bind the validated projectId when the row currently has none.
+        // We never override an existing projectId silently — if the
+        // operator wants to re-home the agent they do it via the admin UI.
+        if (existingAgent.projectId === null) {
           await tx
             .update(messengerAgents)
-            .set({ projectId: messengerProjectId, updatedAt: new Date() })
+            .set({ projectId, updatedAt: new Date() })
             .where(eq(messengerAgents.id, agentId))
         }
 
@@ -196,7 +186,7 @@ export function registerHostSessionRoutes(app: FastifyInstance) {
         await tx.insert(messengerAgents).values({
           id: agentId,
           ownerUserId,
-          projectId: messengerProjectId,
+          projectId,
           name: `${hostname}:${projectKey}`,
           ingestToken,
           config: {

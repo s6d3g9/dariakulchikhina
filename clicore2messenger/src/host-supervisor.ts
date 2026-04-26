@@ -8,6 +8,18 @@
  * Each unique cwd gets its own project-agent (agentId). Multiple Claude Code
  * sessions from the same cwd share one agentId but get distinct runIds.
  *
+ * W4 contract: every supervisor instance is bound to ONE (ownerUserId,
+ * projectId) pair, supplied via CLI flags --owner-user-id and --project-id.
+ * Operators that want to bridge sessions for several projects run several
+ * supervisor instances under PM2, each scoped to its own TRANSCRIPT_ROOT
+ * (or each tagged with HOST_NAME). The legacy ~/.host-bridge-projects.json
+ * cwd→projectId mapping file and HOST_BRIDGE_OWNER_USER_ID env fallback are
+ * gone — they let the system silently provision agents with a NULL project.
+ *
+ * Args (required, fail-fast):
+ *   --owner-user-id <uuid>   messenger user that owns the resulting agent
+ *   --project-id <uuid>      messenger project to attach the agent to
+ *
  * Env (required, fail-fast):
  *   HOST_BRIDGE_URL   e.g. http://localhost:4300
  *   HOST_BRIDGE_TOKEN bearer token for provisioning API
@@ -38,6 +50,37 @@ function requireEnv(name: string): string {
   }
   return v;
 }
+
+// CLI flag parser — accepts `--name <value>` style. Falls back to `undefined`
+// when the flag is absent. Used for the per-supervisor owner/project binding
+// that replaced the deprecated ~/.host-bridge-projects.json mapping file.
+function getFlag(name: string): string | undefined {
+  const argv = process.argv;
+  const i = argv.indexOf(name);
+  if (i !== -1 && i + 1 < argv.length) return argv[i + 1];
+  return undefined;
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function requireUuidFlag(name: string): string {
+  const v = getFlag(name);
+  if (!v) {
+    console.error(
+      `[host-supervisor] fatal: ${name} <uuid> is required (W4: every provision must carry an explicit owner+project)`,
+    );
+    process.exit(1);
+  }
+  if (!UUID_RE.test(v)) {
+    console.error(`[host-supervisor] fatal: ${name} must be a UUID, got: ${v}`);
+    process.exit(1);
+  }
+  return v;
+}
+
+const OWNER_USER_ID = requireUuidFlag("--owner-user-id");
+const PROJECT_ID = requireUuidFlag("--project-id");
 
 const HOST_BRIDGE_URL = requireEnv("HOST_BRIDGE_URL");
 const HOST_BRIDGE_TOKEN = requireEnv("HOST_BRIDGE_TOKEN");
@@ -228,6 +271,10 @@ async function provision(
     },
     body: JSON.stringify({
       sessionId,
+      // W4: explicit owner + project, validated server-side. The supervisor
+      // is bound to one pair via CLI flags at startup.
+      ownerUserId: OWNER_USER_ID,
+      projectId: PROJECT_ID,
       cwd,
       hostname: HOST_NAME,
       gitBranch,
@@ -674,6 +721,8 @@ async function main(): Promise<void> {
   fs.mkdirSync(STATE_DIR, { recursive: true });
 
   console.log("[host-supervisor] starting v2");
+  console.log(`[host-supervisor] OWNER_USER_ID=${OWNER_USER_ID}`);
+  console.log(`[host-supervisor] PROJECT_ID=${PROJECT_ID}`);
   console.log(`[host-supervisor] TRANSCRIPT_ROOT=${TRANSCRIPT_ROOT}`);
   console.log(`[host-supervisor] STATE_DIR=${STATE_DIR}`);
   console.log(`[host-supervisor] CLI_BIN=${CLI_BIN}`);

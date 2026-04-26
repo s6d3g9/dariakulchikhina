@@ -6,7 +6,6 @@ import { claudeTranscriptAdapter } from "./adapters/claude-transcript.ts";
 import { copilotAdapter } from "./adapters/copilot.ts";
 import { runSpawnMode, runPipeMode, runTailMode } from "./core.ts";
 import { runBridgeCleanup } from "./bridge-cleanup.ts";
-import { runBridgeProjects } from "./bridge-projects.ts";
 import { runBridgeDlq } from "./bridge-dlq.ts";
 
 export async function main(argv: string[]): Promise<void> {
@@ -19,8 +18,15 @@ export async function main(argv: string[]): Promise<void> {
   }
 
   if (args[0] === "bridge-projects") {
-    runBridgeProjects(args.slice(1));
-    return;
+    // The `bridge-projects` cwd→projectId mapping CLI was removed in W4.
+    // Provision payloads now carry an explicit projectId from the
+    // host-supervisor's --project-id flag — there is no JSON-mapping file
+    // to manage. Keep this branch with a friendly error for operators
+    // that have stale shell history or scripts.
+    console.error(
+      "[bridge-projects] removed in W4 — supervisor now takes --owner-user-id / --project-id flags directly. See scripts/workrooms/HOST_SESSION_BRIDGE.md.",
+    );
+    process.exit(2);
   }
 
   if (args[0] === "dlq") {

@@ -37,97 +37,57 @@ export HOST_CONV_ID=<convId>
 See `host-session-bridge.sh` for optional env vars (`TRANSCRIPT_DIR`,
 `MESSENGER_URL`, `POLL_SECS`).
 
-## Project mapping
+## Owner + project (W4 contract)
 
-### What is it?
+After W4 every supervisor instance is bound to **one** `(ownerUserId, projectId)`
+pair, supplied via two CLI flags on the supervisor process:
 
-Each Claude Code session has a working directory (`cwd`). The bridge can
-optionally associate that cwd with a **messenger project** (`messengerProjectId`),
-so that sessions from that directory appear under the correct project filter in
-the messenger UI.
-
-Without a mapping the agent is created with `projectId = null`. It still works
-correctly — events are streamed, the agent is visible — but it won't appear
-when filtering conversations by project. For a single-project setup this is
-fine; for multi-project DevOps workflows it creates noise.
-
-### The mapping file
-
-Mappings live in `~/.host-bridge-projects.json` (override with
-`HOST_BRIDGE_PROJECTS_FILE` env var). The file is created automatically by the
-CLI on first write and is set to mode `600`.
-
-```json
-{
-  "version": 1,
-  "mappings": {
-    "/home/claudecode/daria": "uuid-of-daria-project",
-    "/home/claudecode": "uuid-of-scratch-project"
-  }
-}
+```
+--owner-user-id <uuid>   messenger user that owns the resulting agent
+--project-id <uuid>      messenger project to attach the agent to
 ```
 
-### Managing mappings with `bridge-projects`
+Both UUIDs are **required**, validated by zod on the server side, and
+checked against `messenger_projects` (must exist, be owned by the caller,
+and not be soft-deleted). If either is missing the provision endpoint
+returns `400 OWNER_USER_ID_REQUIRED` / `400 PROJECT_ID_REQUIRED`. If the
+project lookup fails it returns `404 PROJECT_NOT_FOUND`.
+
+The deprecated `~/.host-bridge-projects.json` mapping file and the
+`HOST_BRIDGE_OWNER_USER_ID` server-side env fallback were removed —
+they let the system silently provision agents with `project_id = NULL`,
+which violates the W1 / W2 invariants.
+
+### PM2 setup
+
+`clicore2messenger/host-supervisor.ecosystem.config.cjs` reads the bound
+pair from the env file (`~/.host-supervisor-v2.env` by default) and passes
+them as CLI args:
+
+```
+HOST_BRIDGE_URL=http://localhost:4300
+HOST_BRIDGE_TOKEN=<32+ char shared secret>
+HOST_BRIDGE_OWNER_UUID=<uuid of the messenger user>
+HOST_BRIDGE_PROJECT_UUID=<uuid of the messenger project>
+```
+
+For multiple projects, run multiple PM2 instances — copy the manifest,
+rename `daria-host-session-v2` to e.g. `daria-host-session-v2-projA`,
+and point each at its own env file via `HOST_SUPERVISOR_ENV_FILE`.
+
+### Manual smoke
+
+Direct invocation for testing without PM2:
 
 ```bash
-# List current mappings
-clicore2messenger bridge-projects list
-
-# Discover active cwds and see which are unmapped (marked with *)
-clicore2messenger bridge-projects scan
-clicore2messenger bridge-projects scan --days 60   # extend look-back window
-
-# Add or update a mapping
-clicore2messenger bridge-projects set /home/claudecode/daria <messengerProjectId>
-
-# Remove a mapping
-clicore2messenger bridge-projects unset /home/claudecode/daria
-
-# Verify all mapped project IDs still exist in the database
-DATABASE_URL="postgres://..." clicore2messenger bridge-projects validate
+node --experimental-strip-types \
+  clicore2messenger/src/host-supervisor.ts \
+  --owner-user-id 11111111-1111-1111-1111-111111111111 \
+  --project-id   22222222-2222-2222-2222-222222222222
 ```
 
-### `scan` output explained
-
-```
-  cwd                                                 sessions  last_active        mapped_to
-------------------------------------------------------------------------------------------------------
-* /home/claudecode/daria                              12        2026-04-24 18:32   (unmapped)
-  /home/claudecode/messenger                          3         2026-04-23 11:05   550e8400-...
-```
-
-- `*` prefix — cwd has no mapping; sessions from this directory won't be
-  associated with any messenger project.
-- `sessions` — number of `.jsonl` session files across all project dirs that
-  resolve to this cwd.
-- `last_active` — newest `.jsonl` mtime within the look-back window.
-- `mapped_to` — the `messengerProjectId`, or `(unmapped)`.
-
-Only cwds with activity within the last 30 days (configurable with `--days`)
-are shown. Results are sorted by `last_active` descending.
-
-### `validate` requirements
-
-`validate` connects to Postgres directly via `psql` and the `DATABASE_URL` env
-var. It checks that every mapped `messengerProjectId` exists in the
-`messenger_projects` table. Exit code 1 means broken references were found.
-
-```bash
-DATABASE_URL="$(cat .env | grep DATABASE_URL | cut -d= -f2-)" \
-  clicore2messenger bridge-projects validate
-```
-
-If `DATABASE_URL` is not set, the command exits with an error message and
-does not attempt any database connection.
-
-### What happens without a mapping
-
-- Bridge starts normally; `projectId` is `null` in the provision call.
-- Agent is created and sessions stream correctly.
-- In the messenger UI the agent appears under "All" but not under any specific
-  project filter.
-- Calling `bridge-projects set` at any time takes effect for the _next_ bridge
-  restart; in-flight sessions are not retroactively re-associated.
+The supervisor logs both UUIDs at startup so you can confirm the binding
+in `pm2 logs daria-host-session-v2`.
 
 ## Validation
 
@@ -141,7 +101,11 @@ a temporary test user, runs 7 scenarios, then cleans up.
 
 - PostgreSQL reachable at `MESSENGER_DB_URL` or `DATABASE_URL` (reads `.env` automatically)
 - `HOST_BRIDGE_TOKEN` ≥ 32 chars (defaults to a test value if not set)
-- `HOST_BRIDGE_OWNER_USER_ID` (optional — test inserts its own user by default)
+
+The harness creates its own messenger user and project for every run and
+deletes them in teardown. After W4 there is no way to inject a pre-existing
+owner via env — the bridge contract requires both UUIDs to come in via the
+provision body, and the harness exercises that path end-to-end.
 
 **Run:**
 
@@ -151,11 +115,6 @@ pnpm test:host-bridge-smoke
 
 # With explicit token (recommended for CI)
 HOST_BRIDGE_TOKEN=your-32-char-token pnpm test:host-bridge-smoke
-
-# Against a pre-existing owner user (skips user insert/delete)
-HOST_BRIDGE_TOKEN=your-32-char-token \
-HOST_BRIDGE_OWNER_USER_ID=<uuid> \
-pnpm test:host-bridge-smoke
 ```
 
 ### Repeated regression check
@@ -218,7 +177,7 @@ WHERE status = 'running' AND updated_at < now() - interval '1 minute';
 Before retiring the v1 bridge (`host-session-bridge.sh` + pre-provisioned IDs):
 
 - [ ] All 7 smoke scenarios pass on production DB (`MESSENGER_DB_URL=...`)
-- [ ] `clicore2messenger bridge-projects scan` shows no unmapped active cwds
 - [ ] PM2 `daria-host-session` process replaced by v2 supervisor using `HOST_BRIDGE_TOKEN` provision flow
+- [ ] `HOST_BRIDGE_OWNER_UUID` and `HOST_BRIDGE_PROJECT_UUID` set in `~/.host-supervisor-v2.env` (or each per-project env file)
 - [ ] `HOST_AGENT_ID`, `HOST_INGEST_TOKEN`, `HOST_RUN_ID`, `HOST_CONV_ID` vars removed from `.host-session-bridge.env`
 - [ ] Smoke test runs clean in nightly CI job (not PR gate — too heavy) for ≥ 5 consecutive days

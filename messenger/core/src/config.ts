@@ -97,10 +97,10 @@ const envSchema = z.object({
   MESSENGER_CORE_SECRETS_KEY: z.string().length(64).optional(),
   // Service-to-service token for internal worker routes (e.g. /projects/:id/api-key)
   MESSENGER_CORE_SERVICE_TOKEN: z.string().min(16).optional(),
-  // Host-bridge supervisor auth token, owner user id, and optional cwd→projectId map file
+  // Host-bridge supervisor auth token. After W4 ownerUserId/projectId are
+  // supplied per-provision by the bridge client; the server no longer reads
+  // a default owner/project from env.
   HOST_BRIDGE_TOKEN: z.string().min(32).optional(),
-  HOST_BRIDGE_OWNER_USER_ID: z.string().uuid().optional(),
-  HOST_BRIDGE_PROJECTS_FILE: z.string().optional(),
 })
 
 export function readMessengerConfig() {

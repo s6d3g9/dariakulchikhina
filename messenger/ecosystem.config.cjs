@@ -134,9 +134,9 @@ module.exports = {
         OLLAMA_BASE_URL: mergedRuntimeEnv.OLLAMA_BASE_URL || '',
         KLIPY_APP_KEY: mergedRuntimeEnv.KLIPY_APP_KEY || '',
         KLIPY_API_BASE_URL: mergedRuntimeEnv.KLIPY_API_BASE_URL || 'https://api.klipy.com',
+        // After W4 the host-bridge supervisor passes ownerUserId/projectId
+        // per provision call (CLI flags). Core only needs the shared token.
         HOST_BRIDGE_TOKEN: mergedRuntimeEnv.HOST_BRIDGE_TOKEN || '',
-        HOST_BRIDGE_OWNER_USER_ID: mergedRuntimeEnv.HOST_BRIDGE_OWNER_USER_ID || '',
-        HOST_BRIDGE_PROJECTS_FILE: mergedRuntimeEnv.HOST_BRIDGE_PROJECTS_FILE || '',
       },
     },
     {
