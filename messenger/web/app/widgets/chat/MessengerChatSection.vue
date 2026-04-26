@@ -7,6 +7,7 @@ import type { AgentToolUseEntry } from '../../entities/agents/model/useMessenger
 import { useKlipyFeedPaging } from './model/use-klipy-feed-paging'
 import { getSessionKindMeta, type MessengerCliSession } from '../../entities/sessions/model/useMessengerCliSessions'
 import { deriveLiveness } from '../../features/monitor-topology/model/liveness'
+import { shouldFoldIntoBurst } from '../../features/message-thread/lib/burstGrouping'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -1270,48 +1271,9 @@ const threadedMessages = computed<MessengerThreadMessage[]>(() => {
 })
 
 // Adjacent agent messages from the same agentId — with no own/user message
-// in between and no comment-thread root in between — are folded into a
-// single "burst" so a long task that spans multiple runs (or parallel
-// sub-agents that all surface as separate messages) shows up as one bubble
-// instead of N bubbles + N reasoning plates.
-//
-// Primary grouping signal is server-stamped `rootRunId`: messages from runs
-// that share a root belong to the same logical task. Time gap acts as a
-// fallback for legacy messages that pre-date rootRunId stamping.
-const BURST_MAX_GAP_MS = 30 * 60 * 1000
-
-function shouldFoldIntoBurst(prev: MessengerThreadMessage, next: MessengerThreadMessage): boolean {
-  if (prev.own || next.own) return false
-  if (!prev.agentId || !next.agentId) return false
-  if (prev.agentId !== next.agentId) return false
-  if (prev.deletedAt || next.deletedAt) return false
-  if (next.commentOn?.id) return false
-  if (next.replyTo?.id) return false
-  if (next.forwardedFrom?.id) return false
-  if (next.attachment) return false
-  if (next.kind && next.kind !== 'text') return false
-  // Folding `next` would visually drop these — refuse so the user keeps
-  // seeing them. The head retains its own reactions/comments because we
-  // only spread `...head` into the group; tail entries were at risk.
-  if (next.reactions && next.reactions.length > 0) return false
-  if (next.comments && next.comments.length > 0) return false
-  if (next.editedAt) return false
-  // rootRunId is the authoritative signal: when both messages carry it, fold
-  // iff they belong to the same run subtree. Different roots = different
-  // logical tasks even if they fire back-to-back.
-  if (prev.rootRunId && next.rootRunId) {
-    return prev.rootRunId === next.rootRunId
-  }
-  // Legacy fallback: pre-rootRunId messages get the time-gap heuristic so
-  // an agent finishing one task and autonomously starting another without
-  // a user prompt in between doesn't get visually merged.
-  const prevTime = Date.parse(prev.createdAt)
-  const nextTime = Date.parse(next.createdAt)
-  if (!Number.isNaN(prevTime) && !Number.isNaN(nextTime)) {
-    if (nextTime - prevTime > BURST_MAX_GAP_MS) return false
-  }
-  return true
-}
+// in between and no comment-thread root in between — fold into a single
+// "burst" bubble. Logic lives in `lib/burstGrouping.ts` so it's unit-testable
+// without spinning up the whole component tree.
 
 const filteredThreadedMessages = computed<MessengerThreadMessage[]>(() => {
   const groups: MessengerThreadMessage[] = []
