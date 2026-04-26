@@ -10443,6 +10443,22 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
     opacity var(--messenger-motion-duration-medium) var(--messenger-motion-easing-standard) !important;
 }
 
+.chat-search-bar-enter-active,
+.chat-search-bar-leave-active,
+.messenger-header-sheet-enter-active,
+.messenger-header-sheet-leave-active,
+.messenger-header-sheet-backdrop-enter-active,
+.messenger-header-sheet-backdrop-leave-active,
+.sub-expand-enter-active,
+.sub-expand-leave-active,
+.transcript-list-enter-active,
+.transcript-list-leave-active {
+  transition:
+    transform var(--messenger-motion-duration-medium) var(--messenger-motion-easing-emphasized-decelerate),
+    opacity var(--messenger-motion-duration-short) var(--messenger-motion-easing-standard),
+    max-height var(--messenger-motion-duration-medium) var(--messenger-motion-easing-emphasized-decelerate) !important;
+}
+
 /* Vuetify built-in menu / select / autocomplete / dialog overlay motion */
 .v-menu > .v-overlay__content,
 .v-overlay--scope-strategy-block > .v-overlay__content {

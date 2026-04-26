@@ -178,7 +178,7 @@ html[data-messenger-viewport-platform='ios'][data-messenger-keyboard='open'] .me
   }
 
   .message-list {
-    padding: 6px 10px;
+    padding: 6px 0;
     padding-bottom: calc(var(--messenger-composer-height, 76px) + 10px);
   }
 
@@ -188,8 +188,8 @@ html[data-messenger-viewport-platform='ios'][data-messenger-keyboard='open'] .me
 
   .composer-bar,
   .composer-bar--audio {
-    padding-left: 6px;
-    padding-right: 6px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .composer-bar__body {
