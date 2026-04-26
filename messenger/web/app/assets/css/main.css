@@ -10024,77 +10024,79 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
 
 /* Dropdown menus / select overlays — M3 menu container.
    Visually "drops" from the trigger button: tighter top corners,
-   larger bottom corners, surface-container background, M3 elevation-2
-   shadow. Use transform-origin: top so Vuetify's transition animates
-   the menu as if it expands downward from the button. */
-.messenger-v-app .v-overlay__content > .v-list,
-.messenger-v-app .v-menu > .v-overlay__content,
-.messenger-v-app .v-menu > .v-overlay__content > .v-list,
-.messenger-v-app .v-autocomplete__content > .v-list,
-.messenger-v-app .v-select__content > .v-list {
-  border-radius: 8px 8px 16px 16px;
+   larger bottom corners, surface background, M3 elevation-2 shadow.
+   Selectors are NOT scoped to .messenger-v-app because Vuetify
+   teleports overlays out of v-app on some routes; specificity is
+   raised with !important on shape properties to defeat Vuetify's
+   own defaults regardless of stylesheet order. */
+.v-overlay__content > .v-list,
+.v-menu > .v-overlay__content,
+.v-menu > .v-overlay__content > .v-list,
+.v-autocomplete__content > .v-list,
+.v-select__content > .v-list {
+  border-radius: 8px 8px 16px 16px !important;
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   box-shadow:
     0 1px 2px 0 rgba(0, 0, 0, 0.18),
     0 4px 12px 2px rgba(0, 0, 0, 0.12);
   overflow: hidden;
-  padding: 6px;
+  padding: 6px !important;
   transform-origin: top center;
 }
 
-/* List items inside menus — render as M3 pill-buttons (icon-button family).
-   Same shape language as Vuetify <v-btn icon> / <v-btn variant="tonal">:
-   pill-rounded, 40px tall, full-width inside the menu container. */
-.messenger-v-app .v-overlay__content > .v-list > .v-list-item,
-.messenger-v-app .v-menu > .v-overlay__content > .v-list > .v-list-item,
-.messenger-v-app .v-autocomplete__content > .v-list > .v-list-item,
-.messenger-v-app .v-select__content > .v-list > .v-list-item {
-  border-radius: 9999px;
-  margin: 2px 0;
-  min-height: 40px;
-  padding-inline: 14px;
+/* List items inside any menu/select/autocomplete overlay — render as
+   M3 pill-buttons (icon-button family). Match without ">" because
+   Vuetify can wrap items in v-virtual-scroll containers. */
+.v-overlay__content .v-list-item,
+.v-menu .v-list-item,
+.v-autocomplete__content .v-list-item,
+.v-select__content .v-list-item {
+  border-radius: 9999px !important;
+  margin: 2px 0 !important;
+  min-height: 40px !important;
+  padding-inline: 14px !important;
   font-weight: 500;
   letter-spacing: 0;
   transition: background-color 140ms ease, color 140ms ease;
 }
 
-/* First/last item visually align with the menu's top/bottom corners
-   so the pill row reads as a continuation of the container shape. */
-.messenger-v-app .v-overlay__content > .v-list > .v-list-item:first-child,
-.messenger-v-app .v-menu > .v-overlay__content > .v-list > .v-list-item:first-child,
-.messenger-v-app .v-autocomplete__content > .v-list > .v-list-item:first-child,
-.messenger-v-app .v-select__content > .v-list > .v-list-item:first-child {
-  margin-top: 0;
-}
-.messenger-v-app .v-overlay__content > .v-list > .v-list-item:last-child,
-.messenger-v-app .v-menu > .v-overlay__content > .v-list > .v-list-item:last-child,
-.messenger-v-app .v-autocomplete__content > .v-list > .v-list-item:last-child,
-.messenger-v-app .v-select__content > .v-list > .v-list-item:last-child {
-  margin-bottom: 0;
+/* Hover — M3 state-layer at 8% over surface. */
+.v-overlay__content .v-list-item:hover,
+.v-menu .v-list-item:hover,
+.v-autocomplete__content .v-list-item:hover,
+.v-select__content .v-list-item:hover {
+  background: rgba(var(--v-theme-on-surface), 0.08) !important;
 }
 
-/* Hover — M3 state-layer at 8% over surface (subtle lift). */
-.messenger-v-app .v-overlay__content .v-list-item:hover,
-.messenger-v-app .v-menu .v-list-item:hover {
-  background: rgba(var(--v-theme-on-surface), 0.08);
+/* Active/selected — secondary-container fill, mirrors
+   .balancing-preset--active and the tonal icon-button variant. */
+.v-overlay__content .v-list-item--active,
+.v-menu .v-list-item--active,
+.v-autocomplete__content .v-list-item--active,
+.v-select__content .v-list-item--active {
+  background: rgb(var(--v-theme-secondary-container)) !important;
+  color: rgb(var(--v-theme-on-secondary-container)) !important;
+}
+.v-overlay__content .v-list-item--active:hover,
+.v-menu .v-list-item--active:hover,
+.v-autocomplete__content .v-list-item--active:hover,
+.v-select__content .v-list-item--active:hover {
+  background: rgba(var(--v-theme-secondary-container), 0.85) !important;
 }
 
-/* Active/selected — secondary-container fill, mirrors .balancing-preset--active
-   and matches the tonal icon-button variant. */
-.messenger-v-app .v-overlay__content .v-list-item--active,
-.messenger-v-app .v-menu .v-list-item--active {
-  background: rgb(var(--v-theme-secondary-container));
-  color: rgb(var(--v-theme-on-secondary-container));
-}
-.messenger-v-app .v-overlay__content .v-list-item--active:hover,
-.messenger-v-app .v-menu .v-list-item--active:hover {
-  background: rgba(var(--v-theme-secondary-container), 0.85);
+/* Vuetify paints item bg via .v-list-item__overlay — flatten it so
+   our pill-shaped background actually shows through. */
+.v-overlay__content .v-list-item__overlay,
+.v-menu .v-list-item__overlay,
+.v-autocomplete__content .v-list-item__overlay,
+.v-select__content .v-list-item__overlay {
+  border-radius: 9999px;
 }
 
 /* Icon slot inside menu items — sized like icon-button glyphs. */
-.messenger-v-app .v-overlay__content .v-list-item .v-list-item__prepend > .v-icon,
-.messenger-v-app .v-menu .v-list-item .v-list-item__prepend > .v-icon {
+.v-overlay__content .v-list-item .v-list-item__prepend > .v-icon,
+.v-menu .v-list-item .v-list-item__prepend > .v-icon {
   font-size: 20px;
   margin-inline-end: 8px;
 }
