@@ -54,12 +54,32 @@ test("assistant text block emits delta + streaming substate and updates finalTex
   assert.equal(state.finalText, "ok, working on it");
 });
 
-test("assistant thinking block emits thinking substate", () => {
+test("assistant thinking block emits thinking substate plus thinking_delta when text present", () => {
   const { events } = feed([
     {
       type: "assistant",
       uuid: "a1",
-      message: { role: "assistant", content: [{ type: "thinking", thinking: "..." }] },
+      message: {
+        role: "assistant",
+        content: [{ type: "thinking", thinking: "Let me explore the project structure.", signature: "sig" }],
+      },
+    },
+  ]);
+  assert.deepEqual(events, [
+    { type: "substate", runId: "r1", substate: "thinking" },
+    { type: "thinking_delta", runId: "r1", text: "Let me explore the project structure." },
+  ]);
+});
+
+test("assistant thinking block with empty thinking text emits substate only", () => {
+  const { events } = feed([
+    {
+      type: "assistant",
+      uuid: "a1",
+      message: {
+        role: "assistant",
+        content: [{ type: "thinking", thinking: "", signature: "sig-only" }],
+      },
     },
   ]);
   assert.deepEqual(events, [{ type: "substate", runId: "r1", substate: "thinking" }]);

@@ -26,12 +26,12 @@ async function handleSubmit() {
     persistent
     @keydown="handleKeydown"
   >
-    <VCard color="surface" variant="flat">
-      <VCardTitle class="project-create-dialog__title">
+    <VCard class="aidev-dialog">
+      <VCardTitle>
         Новый проект
       </VCardTitle>
 
-      <VCardText class="project-create-dialog__body">
+      <VCardText>
         <VTextField
           v-model="dialog.form.value.name"
           label="Название"
@@ -40,8 +40,7 @@ async function handleSubmit() {
           counter="80"
           maxlength="80"
           variant="outlined"
-          density="comfortable"
-          class="mb-3"
+          density="compact"
         />
 
         <VTextarea
@@ -50,19 +49,20 @@ async function handleSubmit() {
           :disabled="dialog.pending.value"
           rows="3"
           variant="outlined"
-          density="comfortable"
+          density="compact"
           no-resize
         />
 
-        <VAlert v-if="dialog.error.value" type="error" :icon="false" class="mt-3" density="compact">
+        <VAlert v-if="dialog.error.value" type="error" :icon="false" density="compact">
           {{ dialog.error.value }}
         </VAlert>
       </VCardText>
 
-      <VCardActions class="project-create-dialog__actions">
+      <VCardActions>
         <VSpacer />
         <VBtn
           variant="text"
+          density="compact"
           :disabled="dialog.pending.value"
           @click="dialog.hide()"
         >
@@ -70,7 +70,8 @@ async function handleSubmit() {
         </VBtn>
         <VBtn
           color="primary"
-          variant="flat"
+          variant="tonal"
+          density="compact"
           :loading="dialog.pending.value"
           :disabled="!dialog.form.value.name.trim() || dialog.pending.value"
           @click="handleSubmit"
@@ -81,18 +82,3 @@ async function handleSubmit() {
     </VCard>
   </VDialog>
 </template>
-
-<style scoped>
-.project-create-dialog__title {
-  padding-top: 20px;
-}
-
-.project-create-dialog__body {
-  padding-top: 8px;
-}
-
-.project-create-dialog__actions {
-  padding-bottom: 16px;
-  padding-right: 16px;
-}
-</style>

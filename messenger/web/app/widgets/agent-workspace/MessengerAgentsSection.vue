@@ -328,19 +328,21 @@ async function saveSettings() {
     </div>
 
     <VDialog v-model="settingsDialogOpen" max-width="620">
-      <VCard v-if="editingAgent">
+      <VCard v-if="editingAgent" class="aidev-dialog">
         <VCardTitle>Меню агента: {{ editingAgent.displayName }}</VCardTitle>
         <VCardText>
           <div class="d-flex flex-column ga-4">
             <div>
-              <div class="title-small mb-2">Связь с другими агентами</div>
-              <p class="on-surface-variant mb-3">Выберите агентов, чью экспертизу этот агент должен учитывать при ответе.</p>
+              <div class="aidev-dialog__eyebrow">Связь с другими агентами</div>
+              <p class="aidev-dialog__hint mb-3">Выберите агентов, чью экспертизу этот агент должен учитывать при ответе.</p>
               <div class="d-flex flex-wrap ga-2">
                 <VChip
                   v-for="linkedAgent in availableLinkedAgents"
                   :key="linkedAgent.id"
-                  :color="settingsDraft.connections.some(item => item.targetAgentId === linkedAgent.id) ? 'secondary' : undefined"
+                  size="small"
+                  :color="settingsDraft.connections.some(item => item.targetAgentId === linkedAgent.id) ? 'secondary-container' : undefined"
                   :variant="settingsDraft.connections.some(item => item.targetAgentId === linkedAgent.id) ? 'flat' : 'outlined'"
+                  label
                   @click="toggleLinkedAgent(linkedAgent.id)"
                 >
                   {{ linkedAgent.displayName }}
@@ -348,7 +350,7 @@ async function saveSettings() {
               </div>
               <div v-if="settingsDraft.connections.length" class="d-flex flex-column ga-3 mt-3">
                 <div v-for="connection in settingsDraft.connections" :key="connection.targetAgentId" class="d-flex flex-wrap ga-3 align-center">
-                  <span class="on-surface-variant">{{ agentsModel.agents.value.find(item => item.id === connection.targetAgentId)?.displayName || connection.targetAgentId }}</span>
+                  <span class="aidev-dialog__hint">{{ agentsModel.agents.value.find(item => item.id === connection.targetAgentId)?.displayName || connection.targetAgentId }}</span>
                   <VSelect
                     :model-value="connection.mode"
                     :items="[
@@ -360,8 +362,8 @@ async function saveSettings() {
                     ]"
                     label="Режим связи"
                     variant="outlined"
+                    density="compact"
                     hide-details="auto"
-                    density="comfortable"
                     class="flex-grow-1"
                     @update:model-value="updateLinkedAgentMode(connection.targetAgentId, $event)"
                   />
@@ -370,7 +372,7 @@ async function saveSettings() {
             </div>
 
             <div>
-              <div class="title-small mb-2">Подписка и модель</div>
+              <div class="aidev-dialog__eyebrow">Подписка и модель</div>
               <VSelect
                 v-model="settingsDraft.subscriptionId"
                 :items="subscriptionOptions"
@@ -378,6 +380,7 @@ async function saveSettings() {
                 item-value="value"
                 label="Подписка"
                 variant="outlined"
+                density="compact"
                 hide-details="auto"
                 prepend-inner-icon="mdi-star-circle-outline"
                 @update:model-value="val => { const p = SUBSCRIPTION_PROVIDERS.find(pr => pr.key === subscriptionsModel.subscriptions.value.find(s => s.id === val)?.provider); const models = p?.models ?? []; if (models.length && !models.find(m => m.id === settingsDraft.model)) { settingsDraft.model = models.find(m => m.tier === 'balanced')?.id || models[0]?.id || settingsDraft.model } }"
@@ -389,14 +392,15 @@ async function saveSettings() {
                 item-value="value"
                 label="Модель ответа"
                 variant="outlined"
+                density="compact"
                 hide-details="auto"
                 class="mt-3"
               />
               <div v-if="activeModelMeta" class="d-flex gap-2 mt-2">
-                <VChip size="x-small" :color="activeModelMeta.tier === 'fast' ? 'success' : activeModelMeta.tier === 'powerful' ? 'warning' : 'primary'" variant="tonal">
+                <VChip size="x-small" :color="activeModelMeta.tier === 'fast' ? 'success' : activeModelMeta.tier === 'powerful' ? 'warning' : 'primary'" variant="tonal" label>
                   {{ activeModelMeta.tier === 'fast' ? 'Быстрый' : activeModelMeta.tier === 'powerful' ? 'Мощный' : 'Баланс' }}
                 </VChip>
-                <VChip size="x-small" variant="tonal" color="secondary">{{ activeModelMeta.contextK }}K контекст</VChip>
+                <VChip size="x-small" variant="tonal" color="secondary" label>{{ activeModelMeta.contextK }}K контекст</VChip>
               </div>
               <VSelect
                 v-if="showEffortSelector"
@@ -406,37 +410,41 @@ async function saveSettings() {
                 item-value="value"
                 label="Уровень усилия (effort)"
                 variant="outlined"
+                density="compact"
                 hide-details="auto"
                 class="mt-3"
               />
             </div>
 
             <div>
-              <div class="title-small mb-2">API key меню</div>
-              <p class="on-surface-variant mb-3">Локальный режим отключён. Агент работает только через внешний API key.</p>
+              <div class="aidev-dialog__eyebrow">API key</div>
+              <p class="aidev-dialog__hint mb-3">Локальный режим отключён. Агент работает только через внешний API key.</p>
               <VTextField
                 v-model="settingsDraft.apiKey"
                 label="API key"
                 type="password"
                 variant="outlined"
+                density="compact"
                 hide-details="auto"
               />
             </div>
 
             <div>
-              <div class="title-small mb-2">SSH и сервер</div>
-              <p class="on-surface-variant mb-3">У каждого агента может быть свой SSH-доступ и своя рабочая папка для проводника и серверного контекста.</p>
+              <div class="aidev-dialog__eyebrow">SSH и сервер</div>
+              <p class="aidev-dialog__hint mb-3">У каждого агента может быть свой SSH-доступ и своя рабочая папка для проводника и серверного контекста.</p>
               <div class="d-flex flex-column ga-3">
                 <VTextField
                   v-model="settingsDraft.ssh.host"
                   label="IP или host сервера"
                   variant="outlined"
+                  density="compact"
                   hide-details="auto"
                 />
                 <VTextField
                   v-model="settingsDraft.ssh.login"
                   label="Логин SSH"
                   variant="outlined"
+                  density="compact"
                   hide-details="auto"
                 />
                 <VTextField
@@ -444,6 +452,7 @@ async function saveSettings() {
                   label="Порт SSH"
                   type="number"
                   variant="outlined"
+                  density="compact"
                   hide-details="auto"
                   @update:model-value="settingsDraft.ssh.port = Number($event) || 22"
                 />
@@ -451,12 +460,14 @@ async function saveSettings() {
                   v-model="settingsDraft.ssh.workspacePath"
                   label="Рабочая папка"
                   variant="outlined"
+                  density="compact"
                   hide-details="auto"
                 />
                 <VTextarea
                   v-model="settingsDraft.ssh.privateKey"
                   label="SSH private key"
                   variant="outlined"
+                  density="compact"
                   rows="5"
                   auto-grow
                   hide-details="auto"
@@ -467,8 +478,8 @@ async function saveSettings() {
         </VCardText>
         <VCardActions>
           <VSpacer />
-          <VBtn variant="text" @click="closeSettings">Закрыть</VBtn>
-          <VBtn color="primary" variant="tonal" :loading="agentsModel.settingsPending.value" @click="saveSettings">Сохранить</VBtn>
+          <VBtn variant="text" density="compact" @click="closeSettings">Закрыть</VBtn>
+          <VBtn color="primary" variant="tonal" density="compact" :loading="agentsModel.settingsPending.value" @click="saveSettings">Сохранить</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>

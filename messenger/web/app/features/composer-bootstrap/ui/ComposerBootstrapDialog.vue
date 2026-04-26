@@ -64,8 +64,8 @@ function proposalCount(p: BootstrapProposal): number {
 
 <template>
   <VDialog v-model="dialogOpen" max-width="560" persistent>
-    <VCard>
-      <VCardTitle class="composer-bootstrap__title">
+    <VCard class="aidev-dialog">
+      <VCardTitle>
         <VIcon start size="20">mdi-robot-outline</VIcon>
         Добавить Composer
       </VCardTitle>
@@ -73,11 +73,11 @@ function proposalCount(p: BootstrapProposal): number {
       <!-- Step: form — choose path -->
       <template v-if="bootstrap.step.value === 'form'">
         <VCardText>
-          <p class="composer-bootstrap__subtitle">
+          <p class="aidev-dialog__hint">
             Composer — главный агент проекта, который координирует остальных. Как вы хотите его настроить?
           </p>
 
-          <VAlert v-if="bootstrap.error.value" type="error" variant="tonal" class="mb-4" density="compact">
+          <VAlert v-if="bootstrap.error.value" type="error" variant="tonal" density="compact">
             {{ bootstrap.error.value }}
           </VAlert>
 
@@ -88,17 +88,17 @@ function proposalCount(p: BootstrapProposal): number {
             rows="3"
             density="compact"
             variant="outlined"
-            class="mb-4"
             hide-details
           />
         </VCardText>
 
-        <VCardActions class="composer-bootstrap__actions">
-          <VBtn variant="text" @click="dialogOpen = false">Отмена</VBtn>
+        <VCardActions>
+          <VBtn variant="text" density="compact" @click="dialogOpen = false">Отмена</VBtn>
           <VSpacer />
           <VBtn
             color="secondary"
             variant="tonal"
+            density="compact"
             prepend-icon="mdi-account-cog-outline"
             @click="handleManual"
           >
@@ -106,7 +106,8 @@ function proposalCount(p: BootstrapProposal): number {
           </VBtn>
           <VBtn
             color="primary"
-            variant="flat"
+            variant="tonal"
+            density="compact"
             prepend-icon="mdi-auto-fix"
             :disabled="!bootstrap.taskDescription.value.trim()"
             @click="handleAuto"
@@ -127,7 +128,7 @@ function proposalCount(p: BootstrapProposal): number {
       <!-- Step: proposal -->
       <template v-else-if="bootstrap.step.value === 'proposal' && bootstrap.proposal.value">
         <VCardText>
-          <p class="composer-bootstrap__subtitle mb-3">
+          <p class="aidev-dialog__hint">
             Composer предлагает следующую конфигурацию проекта ({{ proposalCount(bootstrap.proposal.value) }} элементов):
           </p>
 
@@ -222,12 +223,13 @@ function proposalCount(p: BootstrapProposal): number {
           </VList>
         </VCardText>
 
-        <VCardActions class="composer-bootstrap__actions">
-          <VBtn variant="text" @click="dialogOpen = false">Отмена</VBtn>
+        <VCardActions>
+          <VBtn variant="text" density="compact" @click="dialogOpen = false">Отмена</VBtn>
           <VSpacer />
           <VBtn
             color="primary"
-            variant="flat"
+            variant="tonal"
+            density="compact"
             prepend-icon="mdi-check"
             :loading="bootstrap.step.value === 'applying'"
             @click="applyProposal"
@@ -241,14 +243,14 @@ function proposalCount(p: BootstrapProposal): number {
       <template v-else-if="bootstrap.step.value === 'applying'">
         <VCardText class="composer-bootstrap__loading">
           <VProgressCircular indeterminate color="primary" size="48" class="mb-4" />
-          <p>Применяем конфигурацию…</p>
+          <p class="aidev-dialog__hint">Применяем конфигурацию…</p>
         </VCardText>
       </template>
 
       <!-- Step: parse-failure -->
       <template v-else-if="bootstrap.step.value === 'parse-failure'">
         <VCardText>
-          <VAlert type="warning" variant="tonal" class="mb-4" density="compact">
+          <VAlert type="warning" variant="tonal" density="compact">
             Composer ответил, но формат предложения не удалось разобрать автоматически.
             Ниже — его исходный текст. Вы можете настроить всё вручную.
           </VAlert>
@@ -262,12 +264,13 @@ function proposalCount(p: BootstrapProposal): number {
             class="composer-bootstrap__raw-text"
           />
         </VCardText>
-        <VCardActions class="composer-bootstrap__actions">
-          <VBtn variant="text" @click="dialogOpen = false">Закрыть</VBtn>
+        <VCardActions>
+          <VBtn variant="text" density="compact" @click="dialogOpen = false">Закрыть</VBtn>
           <VSpacer />
           <VBtn
             color="primary"
             variant="tonal"
+            density="compact"
             prepend-icon="mdi-account-cog-outline"
             @click="fallbackToManual"
           >
@@ -280,21 +283,6 @@ function proposalCount(p: BootstrapProposal): number {
 </template>
 
 <style scoped>
-.composer-bootstrap__title {
-  padding-top: 20px;
-}
-
-.composer-bootstrap__subtitle {
-  font-size: 0.875rem;
-  color: rgb(var(--v-theme-on-surface-variant));
-  margin: 0 0 12px;
-}
-
-.composer-bootstrap__actions {
-  padding: 12px 20px 20px;
-  gap: 8px;
-}
-
 .composer-bootstrap__loading {
   display: flex;
   flex-direction: column;
@@ -308,12 +296,12 @@ function proposalCount(p: BootstrapProposal): number {
 .composer-bootstrap__proposal-list {
   max-height: 320px;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  border-radius: 12px;
 }
 
 .composer-bootstrap__raw-text {
-  font-family: monospace;
+  font-family: var(--messenger-font-mono, ui-monospace, SFMono-Regular, monospace);
   font-size: 0.8rem;
 }
 </style>

@@ -110,6 +110,10 @@ const knowledgePreset = ref<MessengerAgentKnowledgePreset | null>(null)
 const knowledgePresetPending = ref(false)
 const knowledgeError = ref('')
 const selectedRunCancelPending = ref(false)
+// Reasoning section: default-open while the run is streaming, operator can
+// collapse manually. We don't auto-collapse on completion — keeping
+// long thinking visible is the whole point of this fix.
+const reasoningCollapsed = ref(false)
 
 const sections: Array<{ key: AgentWorkspaceSectionKey; title: string }> = [
   {
@@ -996,6 +1000,21 @@ async function openWorkspaceFile(path: string) {
           <Transition name="screen-fade" mode="out-in">
             <div :key="activeSection" class="agent-chat-workspace__pane">
           <div v-if="activeSection === 'overview'" class="agent-chat-workspace__content agent-chat-workspace__content--grid">
+            <article v-if="agentStream.thinkingText.value" class="agent-chat-workspace__card agent-chat-workspace__reasoning-bubble agent-chat-workspace__card--full-span">
+              <header class="agent-chat-workspace__reasoning-head">
+                <p class="agent-chat-workspace__card-eyebrow">Рассуждение</p>
+                <span v-if="agentStream.runFinalized.value" class="agent-chat-workspace__reasoning-tag">Финальное</span>
+                <span v-else class="agent-chat-workspace__reasoning-tag agent-chat-workspace__reasoning-tag--live">Идёт мышление</span>
+                <button
+                  type="button"
+                  class="agent-chat-workspace__ghost agent-chat-workspace__reasoning-toggle"
+                  @click="reasoningCollapsed = !reasoningCollapsed"
+                >
+                  {{ reasoningCollapsed ? 'Развернуть' : 'Свернуть' }}
+                </button>
+              </header>
+              <pre v-if="!reasoningCollapsed" class="agent-chat-workspace__stream-text agent-chat-workspace__reasoning-text">{{ agentStream.thinkingText.value }}</pre>
+            </article>
             <article v-if="agentStream.streamingDraft.value" class="agent-chat-workspace__card agent-chat-workspace__stream-bubble agent-chat-workspace__card--full-span">
               <p class="agent-chat-workspace__card-eyebrow">Ответ агента</p>
               <pre class="agent-chat-workspace__stream-text">{{ agentStream.streamingDraft.value }}</pre>

@@ -165,18 +165,18 @@ function formatDate(iso: string) {
 
     <!-- Confirm delete dialog -->
     <VDialog v-model="deleteConfirmOpen" max-width="460" persistent>
-      <VCard>
+      <VCard class="aidev-dialog">
         <VCardTitle>Удалить проект?</VCardTitle>
         <VCardText>
-          <p>
+          <p class="aidev-dialog__hint">
             Проект <b>{{ project.name }}</b>
             (@{{ project.slug }}) будет soft-deleted.
           </p>
-          <p class="mt-2 aidev-project-settings__danger-hint">
+          <p class="aidev-dialog__hint">
             Composer-агент + его ресурсы (connectors / skills / plugins / MCP / external APIs)
             тоже будут помечены удалёнными и исчезнут из списков.
           </p>
-          <VAlert v-if="deleteError" type="error" density="compact" class="mt-3">
+          <VAlert v-if="deleteError" type="error" density="compact">
             {{ deleteError }}
           </VAlert>
         </VCardText>
@@ -184,6 +184,7 @@ function formatDate(iso: string) {
           <VSpacer />
           <VBtn
             variant="text"
+            density="compact"
             :disabled="deleting"
             @click="deleteConfirmOpen = false"
           >
@@ -191,7 +192,8 @@ function formatDate(iso: string) {
           </VBtn>
           <VBtn
             color="error"
-            variant="flat"
+            variant="tonal"
+            density="compact"
             :loading="deleting"
             prepend-icon="mdi-delete-outline"
             @click="confirmDelete"

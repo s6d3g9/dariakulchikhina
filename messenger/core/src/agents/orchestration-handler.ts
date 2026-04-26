@@ -486,6 +486,83 @@ export function registerOrchestrationRoutes(
         }
       } catch {}
 
+      // Per-session run topology lookup. The latest-run-by-agent map below
+      // collapses every session sharing an agent (e.g. three workers
+      // co-driven by `Data и БД`) onto the SAME run, which erases the
+      // spawn tree the monitor needs. Each cli_session row carries its own
+      // `run_id`, so we can pin parent/root info to the actual run instead.
+      type SessionRunInfo = {
+        runId: string
+        parentRunId: string | null
+        rootRunId: string | null
+        spawnedByAgentId: string | null
+        finishedAt: Date | null
+        result: string | null
+        error: string | null
+        status: string | null
+      }
+      const slugToSessionRun = new Map<string, SessionRunInfo>()
+      const childCountByParentRunId = new Map<string, number>()
+      try {
+        const slugList = sessions.map(s => s.slug)
+        if (slugList.length > 0) {
+          const rows = await db
+            .select({
+              slug: messengerCliSessions.slug,
+              runId: messengerAgentRuns.id,
+              parentRunId: messengerAgentRuns.parentRunId,
+              rootRunId: messengerAgentRuns.rootRunId,
+              spawnedByAgentId: messengerAgentRuns.spawnedByAgentId,
+              finishedAt: messengerAgentRuns.finishedAt,
+              result: sql<string | null>`LEFT(${messengerAgentRuns.result}, 240)`,
+              error: sql<string | null>`LEFT(${messengerAgentRuns.error}, 240)`,
+              status: messengerAgentRuns.status,
+            })
+            .from(messengerCliSessions)
+            .innerJoin(messengerAgentRuns, eq(messengerAgentRuns.id, messengerCliSessions.runId))
+            .where(and(
+              inArray(messengerCliSessions.slug, slugList),
+              isNull(messengerCliSessions.deletedAt),
+              isNull(messengerAgentRuns.deletedAt),
+            ))
+          for (const row of rows) {
+            if (!row.runId) continue
+            slugToSessionRun.set(row.slug, {
+              runId: row.runId,
+              parentRunId: row.parentRunId ?? null,
+              rootRunId: row.rootRunId ?? null,
+              spawnedByAgentId: row.spawnedByAgentId ?? null,
+              finishedAt: row.finishedAt ?? null,
+              result: row.result ?? null,
+              error: row.error ?? null,
+              status: row.status ?? null,
+            })
+          }
+
+          const sessionRunIds = Array.from(new Set(
+            Array.from(slugToSessionRun.values()).map(r => r.runId),
+          ))
+          if (sessionRunIds.length > 0) {
+            const childRows = await db
+              .select({
+                parentRunId: messengerAgentRuns.parentRunId,
+                childCount: sql<number>`cast(count(*) as int)`,
+              })
+              .from(messengerAgentRuns)
+              .where(and(
+                inArray(messengerAgentRuns.parentRunId, sessionRunIds),
+                isNull(messengerAgentRuns.deletedAt),
+              ))
+              .groupBy(messengerAgentRuns.parentRunId)
+            for (const row of childRows) {
+              if (row.parentRunId) childCountByParentRunId.set(row.parentRunId, row.childCount)
+            }
+          }
+        }
+      } catch (err) {
+        request.log?.warn?.({ err }, 'cli-sessions per-session run lookup failed')
+      }
+
       // Build slug → messenger_projects.id mapping via dashboard assignments
       // so sessions without a linked agent (workers) still resolve to a project.
       const slugToMessengerProjectId = new Map<string, string>()
@@ -745,7 +822,20 @@ export function registerOrchestrationRoutes(
         sessions: sessions.map(s => {
           const agentId = agentBySlug.get(s.slug)?.id ?? null
           const activity = agentId ? activityByAgent.get(agentId) ?? null : null
-          const run = agentId ? latestRunByAgent.get(agentId) : undefined
+          // Prefer the run pinned to THIS cli_session's row over the
+          // agent-keyed latest-run map. Multiple sessions can share an
+          // agent (workers reused across runs), so the per-session run
+          // is the only correct source of parent/root linkage. Fall back
+          // to the agent-keyed map for legacy sessions whose cli_session
+          // row is missing a run_id.
+          const sessionRun = slugToSessionRun.get(s.slug) ?? null
+          const agentRun = agentId ? latestRunByAgent.get(agentId) : undefined
+          const run = sessionRun ?? agentRun ?? null
+          const childCount = run
+            ? (sessionRun
+                ? (childCountByParentRunId.get(sessionRun.runId) ?? 0)
+                : (childCountByRunId.get(run.runId) ?? 0))
+            : null
           const taskCounts = agentId ? taskCountByAgent.get(agentId) : undefined
           const tmuxChecked = liveTmuxWindows.size > 0
           const tmuxAlive = tmuxChecked && liveTmuxWindows.has(s.window)
@@ -808,7 +898,7 @@ export function registerOrchestrationRoutes(
             parentRunId: run?.parentRunId ?? null,
             parentAgentId: run?.spawnedByAgentId ?? null,
             rootRunId: run?.rootRunId ?? null,
-            childRunCount: run != null ? (childCountByRunId.get(run.runId) ?? 0) : null,
+            childRunCount: childCount,
             // Signal 2 — final outcome (null while run is active)
             finishedAt: run?.finishedAt ?? null,
             runResult: (run?.finishedAt != null ? run.result : null) ?? null,

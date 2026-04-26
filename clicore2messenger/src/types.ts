@@ -3,6 +3,7 @@ export type IngestEvent =
   | { type: "run_start"; runId: string; conversationId?: string; prompt?: string }
   | { type: "substate"; runId: string; substate: string; message?: string }
   | { type: "delta"; runId: string; delta: string }
+  | { type: "thinking_delta"; runId: string; text: string }
   | { type: "tool_use"; runId: string; tool: string; toolUseId?: string; input?: unknown }
   | { type: "tokens"; runId: string; tokenIn: number; tokenOut: number; costUsd?: number; cacheRead?: number; cacheWrite?: number }
   | { type: "complete"; runId: string; finalText?: string }

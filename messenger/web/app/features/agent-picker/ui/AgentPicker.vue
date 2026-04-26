@@ -40,27 +40,24 @@ function onProposalApplied() {
 
 <template>
   <VDialog v-model="dialogOpen" max-width="480">
-    <VCard>
-      <VCardTitle class="agent-picker__title">
+    <VCard class="aidev-dialog">
+      <VCardTitle>
         <VIcon start size="20">mdi-plus-circle-outline</VIcon>
         Добавить агента
       </VCardTitle>
-      <VCardSubtitle class="agent-picker__subtitle">
+      <VCardSubtitle>
         Выберите тип агента для этого проекта
       </VCardSubtitle>
 
-      <VCardText class="agent-picker__list">
-        <VCard
+      <VCardText>
+        <div
           v-for="type in agentTypes"
           :key="type.key"
-          :ripple="type.key === 'composer'"
-          class="agent-picker__item mb-2"
-          :class="{ 'agent-picker__item--disabled': type.key !== 'composer' }"
-          variant="outlined"
-          :color="type.key === 'composer' ? type.color : undefined"
+          class="agent-picker__item"
+          :class="{ 'agent-picker__item--disabled': type.key !== 'composer', 'agent-picker__item--active': type.key === 'composer' }"
           @click="selectType(type.key)"
         >
-          <VCardText class="agent-picker__item-content">
+          <div class="agent-picker__item-content">
             <div class="agent-picker__item-icon">
               <VIcon :color="type.key === 'composer' ? type.color : 'on-surface-variant'" size="28">{{ type.icon }}</VIcon>
             </div>
@@ -72,12 +69,12 @@ function onProposalApplied() {
               </div>
               <div class="agent-picker__item-desc">{{ type.description }}</div>
             </div>
-          </VCardText>
-        </VCard>
+          </div>
+        </div>
       </VCardText>
 
       <VCardActions>
-        <VBtn variant="text" @click="dialogOpen = false">Отмена</VBtn>
+        <VBtn variant="text" density="compact" @click="dialogOpen = false">Отмена</VBtn>
       </VCardActions>
     </VCard>
   </VDialog>
@@ -91,21 +88,18 @@ function onProposalApplied() {
 </template>
 
 <style scoped>
-.agent-picker__title {
-  padding-top: 20px;
-}
-
-.agent-picker__subtitle {
-  padding-bottom: 4px;
-}
-
-.agent-picker__list {
-  padding-top: 8px;
-}
-
 .agent-picker__item {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-surface-variant), 0.18);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.agent-picker__item:hover:not(.agent-picker__item--disabled) {
+  background: rgba(var(--v-theme-secondary-container), 0.4);
+  border-color: rgb(var(--v-theme-secondary));
 }
 
 .agent-picker__item--disabled {
@@ -118,7 +112,6 @@ function onProposalApplied() {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px;
 }
 
 .agent-picker__item-icon {
@@ -127,17 +120,18 @@ function onProposalApplied() {
 }
 
 .agent-picker__item-title {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  color: rgb(var(--v-theme-on-surface));
 }
 
 .agent-picker__item-desc {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: rgb(var(--v-theme-on-surface-variant));
   margin-top: 3px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 </style>

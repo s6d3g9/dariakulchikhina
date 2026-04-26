@@ -2789,6 +2789,75 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   overflow-y: auto;
 }
 
+/* Reasoning ("Рассуждение") bubble — extended-thinking text persists across
+ * complete/error so operators can audit the agent's reasoning post-run.
+ * Visually distinct from the answer bubble: violet accent, 14px radius
+ * matching the balancing tokens, surface-variant background. */
+.agent-chat-workspace__reasoning-bubble {
+  border-radius: 14px;
+  border-color: rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.agent-chat-workspace__reasoning-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.agent-chat-workspace__reasoning-head .agent-chat-workspace__card-eyebrow {
+  margin: 0;
+}
+
+.agent-chat-workspace__reasoning-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(139, 92, 246);
+  background: rgba(139, 92, 246, 0.12);
+  border-radius: 999px;
+}
+
+.agent-chat-workspace__reasoning-tag--live {
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.12);
+  position: relative;
+}
+
+.agent-chat-workspace__reasoning-tag--live::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: agent-chat-workspace-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes agent-chat-workspace-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.agent-chat-workspace__reasoning-toggle {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 10px;
+}
+
+.agent-chat-workspace__reasoning-text {
+  font-style: italic;
+  color: rgba(var(--v-theme-on-surface), 0.84);
+  max-height: 240px;
+}
+
 .agent-chat-workspace__error-banner {
   border-color: rgba(var(--v-theme-error), 0.35);
   background: rgba(var(--v-theme-error), 0.05);
@@ -9748,3 +9817,100 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
 .system-launch-card__chip {
   flex-shrink: 0;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Unified dialog/popup style for the AIDev + Workspace sections.
+   Mirrors the AidevBalancingTab visual language: 14px corners, soft surface-
+   variant background, secondary-container accents, compact density form
+   controls, eyebrow section headers, on-surface-variant body text.
+
+   Apply by adding `class="aidev-dialog"` on the inner VCard of any popup
+   that lives in features/project-config/**, features/project-create/**,
+   features/composer-bootstrap/**, features/agent-picker/**, or
+   widgets/agent-workspace/**.
+   ────────────────────────────────────────────────────────────────────────── */
+.aidev-dialog.v-card,
+.aidev-dialog .v-card {
+  border-radius: 14px !important;
+  background: rgb(var(--v-theme-surface)) !important;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  overflow: hidden;
+}
+
+.aidev-dialog .v-card-title,
+.aidev-dialog__title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  color: rgb(var(--v-theme-on-surface));
+  padding: 18px 20px 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aidev-dialog .v-card-subtitle,
+.aidev-dialog__subtitle {
+  padding: 0 20px 12px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.82rem;
+  line-height: 1.5;
+  opacity: 1;
+}
+
+.aidev-dialog .v-card-text,
+.aidev-dialog__body {
+  padding: 12px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aidev-dialog .v-card-actions,
+.aidev-dialog__actions {
+  padding: 8px 16px 16px;
+  gap: 8px;
+}
+
+/* Section eyebrow — small uppercase header used inside dialog body */
+.aidev-dialog__eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: rgb(var(--v-theme-on-surface-variant));
+  margin: 0 0 8px;
+}
+
+/* Description / hint text */
+.aidev-dialog__hint,
+.aidev-dialog__desc {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: rgb(var(--v-theme-on-surface-variant));
+  margin: 0;
+}
+
+/* Inline section card inside dialog body (soft surface-variant panel) */
+.aidev-dialog__section {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(var(--v-theme-surface-variant), 0.18);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Soften corners on Vuetify form fields inside dialogs to match the 14px
+   aesthetic of the container without overriding density. */
+.aidev-dialog .v-field {
+  border-radius: 10px;
+}
+
+/* Active/selected list items inside dialogs use secondary-container */
+.aidev-dialog .aidev-dialog__pick--active {
+  background: rgb(var(--v-theme-secondary-container));
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+

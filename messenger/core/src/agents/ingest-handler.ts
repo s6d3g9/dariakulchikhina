@@ -17,6 +17,7 @@ const baseEvent = {
 const runStartSchema = z.object({ ...baseEvent, type: z.literal('run_start'), prompt: z.string().optional() })
 const substateSchema = z.object({ ...baseEvent, type: z.literal('substate'), substate: z.string(), message: z.string().optional() })
 const deltaSchema = z.object({ ...baseEvent, type: z.literal('delta'), delta: z.string() })
+const thinkingDeltaSchema = z.object({ ...baseEvent, type: z.literal('thinking_delta'), text: z.string() })
 const toolUseSchema = z.object({ ...baseEvent, type: z.literal('tool_use'), tool: z.string(), toolUseId: z.string().optional(), input: z.unknown().optional() })
 const tokensSchema = z.object({
   ...baseEvent,
@@ -48,6 +49,7 @@ const eventSchema = z.discriminatedUnion('type', [
   runStartSchema,
   substateSchema,
   deltaSchema,
+  thinkingDeltaSchema,
   toolUseSchema,
   tokensSchema,
   completeSchema,
@@ -242,6 +244,10 @@ async function persistEvent(
     message = event.message
   } else if (event.type === 'delta') {
     message = event.delta
+  } else if (event.type === 'thinking_delta') {
+    // Persist a short excerpt of the reasoning text for trace replay; the
+    // full text is in the JSON payload and travels via WS broadcast.
+    message = event.text.slice(0, 400)
   } else if (event.type === 'tool_use') {
     message = event.tool
   } else if (event.type === 'subagent_start') {

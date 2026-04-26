@@ -17,11 +17,13 @@ export function selectRunsByParent(runs: MessengerAgentRun[]): Map<string, Messe
 export type AgentSubstate = 'idle' | 'thinking' | 'tool_call' | 'awaiting_input' | 'streaming' | 'error'
 
 interface AgentStreamEvent {
-  type: 'run_start' | 'substate' | 'delta' | 'tool_use' | 'tokens' | 'complete' | 'error'
+  type: 'run_start' | 'substate' | 'delta' | 'thinking_delta' | 'tool_use' | 'tokens' | 'complete' | 'error'
   runId?: string
   substate?: AgentSubstate
   // delta event field (new IngestEvent schema, was `text` before fix-ws-stream)
   delta?: string
+  // thinking_delta event field — extended-thinking reasoning text from the model
+  text?: string
   // tool_use event fields
   tool?: string
   input?: unknown
@@ -50,6 +52,9 @@ export interface AgentToolUseEntry {
 export interface RunState {
   substate: AgentSubstate
   streamingDraft: string
+  /** Extended-thinking reasoning text accumulated from `thinking_delta` events.
+   *  Preserved across complete/error so operators can audit reasoning post-run. */
+  thinkingText: string
   toolUses: AgentToolUseEntry[]
   tokenCount: { input: number; output: number; total: number; contextPct: number; cacheRead: number; cacheWrite: number }
   costUsd: number
@@ -89,6 +94,7 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
     return {
       substate: 'idle',
       streamingDraft: '',
+      thinkingText: '',
       toolUses: [],
       tokenCount: { input: 0, output: 0, total: 0, contextPct: 0, cacheRead: 0, cacheWrite: 0 },
       costUsd: 0,
@@ -144,6 +150,11 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
   const tokenCount = computed(() => primaryRunState.value?.tokenCount ?? { input: 0, output: 0, total: 0, contextPct: 0, cacheRead: 0, cacheWrite: 0 })
   const costUsd = computed(() => primaryRunState.value?.costUsd ?? 0)
   const streamingDraft = computed(() => primaryRunState.value?.streamingDraft ?? '')
+  const thinkingText = computed(() => primaryRunState.value?.thinkingText ?? '')
+  const runFinalized = computed(() => {
+    const s = primaryRunState.value?.status
+    return s === 'completed' || s === 'error'
+  })
   const toolUses = computed(() => primaryRunState.value?.toolUses ?? [])
   const runStartedAt = computed(() => primaryRunState.value?.startedAt ?? 0)
   const errors = computed(() => primaryRunState.value?.errors ?? [])
@@ -203,6 +214,14 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
       return
     }
 
+    if (event.type === 'thinking_delta' && typeof event.text === 'string' && event.text) {
+      // Append (not overwrite) so multiple thinking blocks within one run
+      // build a continuous reasoning trace. Separated by a blank line so the
+      // UI can render distinct sections within the bubble.
+      rs.thinkingText = rs.thinkingText ? `${rs.thinkingText}\n\n${event.text}` : event.text
+      return
+    }
+
     if (event.type === 'tool_use' && event.tool) {
       const input = event.input as Record<string, unknown> | undefined
       const descriptor =
@@ -240,7 +259,10 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
 
     if (event.type === 'complete') {
       rs.substate = 'idle'
-      rs.streamingDraft = ''
+      // Preserve streamingDraft AND thinkingText so the operator can re-read
+      // both the final answer and the reasoning after the run finishes. If
+      // the backend supplied a finalText, prefer it (it is canonical).
+      if (event.finalText) rs.streamingDraft = event.finalText
       rs.status = 'completed'
       const last = rs.toolUses[rs.toolUses.length - 1]
       if (last && !last.endAt) last.endAt = Date.now()
@@ -254,7 +276,7 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
       rs.substate = 'error'
       rs.status = 'error'
       rs.errors.push(event.message || 'Unknown stream error')
-      rs.streamingDraft = ''
+      // Keep streamingDraft and thinkingText for postmortem inspection.
       scheduleCleanup(runId)
     }
   }
@@ -345,6 +367,8 @@ export function useMessengerAgentStream(agentId: Ref<string>) {
     tokenCount,
     costUsd,
     streamingDraft,
+    thinkingText,
+    runFinalized,
     toolUses,
     runStartedAt,
     errors,

@@ -143,6 +143,15 @@ function mapTranscriptEvent(raw: unknown, runId: string, state: ExtState): Inges
         switch (block.type) {
           case "thinking": {
             events.push({ type: "substate", runId, substate: "thinking" });
+            // Forward the actual reasoning text so the operator can read it
+            // in the UI. Transcript blocks carry the full thinking payload
+            // (no partial deltas inside one envelope), so we emit one event
+            // per block. The `signature` field is dropped — it's an opaque
+            // verifier the API only needs for cache replay.
+            const thinkingText = typeof block.thinking === "string" ? block.thinking : "";
+            if (thinkingText) {
+              events.push({ type: "thinking_delta", runId, text: thinkingText });
+            }
             break;
           }
           case "text": {
