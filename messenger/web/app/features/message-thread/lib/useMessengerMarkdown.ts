@@ -33,9 +33,13 @@ let cachedRenderer: MarkdownIt | null = null
 function getRenderer(): MarkdownIt {
   if (cachedRenderer) return cachedRenderer
 
+  // breaks: true → soft line breaks (single \n) become <br>. Chat messages
+  // are typed conversationally, so users expect Shift+Enter to render as a
+  // new line — same as Slack / GitHub issue comments. Without this, the old
+  // `white-space: pre-wrap` behaviour was lost when we moved to markdown.
   const md = new MarkdownIt({
     html: false,
-    breaks: false,
+    breaks: true,
     linkify: true,
     typographer: false,
   })
