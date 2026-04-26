@@ -61,8 +61,41 @@ const depthStyle = computed(() => ({
   '--message-comment-depth': String(Math.min(props.depth, 4)),
 }))
 
-const controlsOpen = computed(() => !props.entry.deletedAt
-  && (props.activeMessageActionsId === props.entry.id || props.activeReactionOverlayId === props.entry.id))
+// IDs of every message in the burst (head + folded continuations). Used to
+// detect when the parent's active-actions/reactions id targets ANY of our
+// folded entries — not just the head — so per-entry context menus work.
+const burstEntryIds = computed(() => {
+  const burst = props.entry.burst
+  if (!burst || burst.length === 0) return [props.entry.id]
+  const ids = [props.entry.id]
+  for (const m of burst) ids.push(m.id)
+  return ids
+})
+
+// The burst entry the user is currently acting on. When the user clicks a
+// folded continuation, the parent stores that continuation's id in
+// activeMessageActionsId — this resolves it back to the underlying message
+// so action handlers (react/edit/delete/copy) target the right row, not the
+// burst's head.
+const activeBurstEntry = computed<MessengerThreadMessage>(() => {
+  const activeId = props.activeMessageActionsId ?? props.activeReactionOverlayId
+  if (!activeId || activeId === props.entry.id) return props.entry
+  const burst = props.entry.burst
+  if (!burst) return props.entry
+  for (const m of burst) {
+    if (m.id === activeId) return m
+  }
+  return props.entry
+})
+
+const controlsOpen = computed(() => {
+  if (props.entry.deletedAt) return false
+  const ids = burstEntryIds.value
+  const actionsId = props.activeMessageActionsId
+  const reactionId = props.activeReactionOverlayId
+  return (actionsId !== null && ids.includes(actionsId))
+    || (reactionId !== null && ids.includes(reactionId))
+})
 
 function syncControlsPlacement() {
   if (!import.meta.client || !controlsOpen.value) {
@@ -219,10 +252,13 @@ const reasoningPlates = computed(() => {
 })
 
 async function copyMessageBody() {
-  const text = burstEntries.value
-    .map(e => e.parsedBody)
-    .filter(Boolean)
-    .join('\n\n')
+  // Copy the active entry's body when a folded continuation is selected;
+  // copy the whole burst when the head is the target (matches the visual
+  // unit a user sees when clicking on the head bubble).
+  const activeId = activeBurstEntry.value.id
+  const text = activeId === props.entry.id
+    ? burstEntries.value.map(e => e.parsedBody).filter(Boolean).join('\n\n')
+    : (burstEntries.value.find(e => e.id === activeId)?.parsedBody ?? '')
   if (!text) return
   try {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -349,7 +385,14 @@ function handleBubbleClick(event: MouseEvent) {
     return
   }
 
-  emit('toggle-actions', props.entry.id, event)
+  // Resolve which folded burst entry the click landed on so per-entry
+  // actions target the right id. Falls back to the head when the click
+  // hits chrome (meta row, divider, etc) outside any entry div.
+  const target = event.target instanceof HTMLElement ? event.target : null
+  const entryEl = target?.closest<HTMLElement>('[data-burst-entry-id]') ?? null
+  const targetId = entryEl?.getAttribute('data-burst-entry-id') ?? props.entry.id
+
+  emit('toggle-actions', targetId, event)
 }
 
 onBeforeUnmount(() => {
@@ -394,11 +437,11 @@ onBeforeUnmount(() => {
           <div class="message-bubble__reaction-overlay">
             <VBtn
               v-for="emoji in reactionOptions"
-              :key="`${entry.id}-quick-${emoji}`"
+              :key="`${activeBurstEntry.id}-quick-${emoji}`"
               class="message-reaction-btn message-reaction-btn--quick"
-              :class="{ 'message-reaction-btn--active': entry.reactions?.some(reaction => reaction.emoji === emoji && reaction.own) }"
+              :class="{ 'message-reaction-btn--active': activeBurstEntry.reactions?.some(reaction => reaction.emoji === emoji && reaction.own) }"
               variant="tonal"
-              @click.stop="emit('react', entry.id, emoji)"
+              @click.stop="emit('react', activeBurstEntry.id, emoji)"
             >
               {{ emoji }}
             </VBtn>
@@ -413,7 +456,7 @@ onBeforeUnmount(() => {
               variant="text"
               aria-label="Комментировать"
               title="Комментировать"
-              @click.stop="emit('comment', entry.id)"
+              @click.stop="emit('comment', activeBurstEntry.id)"
             >
               <MessengerIcon name="comment" :size="18" />
             </VBtn>
@@ -423,7 +466,7 @@ onBeforeUnmount(() => {
               variant="text"
               aria-label="Ответить"
               title="Ответить"
-              @click.stop="emit('reply', entry.id)"
+              @click.stop="emit('reply', activeBurstEntry.id)"
             >
               <MessengerIcon name="reply" :size="18" />
             </VBtn>
@@ -434,12 +477,12 @@ onBeforeUnmount(() => {
               variant="text"
               aria-label="Переслать"
               title="Переслать"
-              @click.stop="emit('forward', entry.id)"
+              @click.stop="emit('forward', activeBurstEntry.id)"
             >
               <MessengerIcon name="forward" :size="18" />
             </VBtn>
             <VBtn
-              v-if="entry.kind === 'text' && entry.body"
+              v-if="activeBurstEntry.kind === 'text' && activeBurstEntry.body"
               class="message-action-btn"
               :class="{ 'message-action-btn--flashed': copiedFlash }"
               icon
@@ -451,26 +494,26 @@ onBeforeUnmount(() => {
               <MessengerIcon name="copy" :size="18" />
             </VBtn>
             <VBtn
-              v-if="entry.own && entry.kind === 'text'"
+              v-if="activeBurstEntry.own && activeBurstEntry.kind === 'text'"
               class="message-action-btn"
               icon
               variant="text"
               aria-label="Изменить"
               title="Изменить"
-              :disabled="editingMessageId === entry.id"
-              @click.stop="emit('edit', entry.id, entry.body)"
+              :disabled="editingMessageId === activeBurstEntry.id"
+              @click.stop="emit('edit', activeBurstEntry.id, activeBurstEntry.body)"
             >
               <MessengerIcon name="edit" :size="18" />
             </VBtn>
             <VBtn
-              v-if="entry.own || allowMutualDelete"
+              v-if="activeBurstEntry.own || allowMutualDelete"
               class="message-action-btn"
               icon
               variant="text"
               aria-label="Удалить"
               title="Удалить"
-              :disabled="editingMessageId === entry.id || messagePending"
-              @click.stop="emit('remove', entry.id)"
+              :disabled="editingMessageId === activeBurstEntry.id || messagePending"
+              @click.stop="emit('remove', activeBurstEntry.id)"
             >
               <MessengerIcon name="delete" :size="18" />
             </VBtn>
@@ -533,7 +576,11 @@ onBeforeUnmount(() => {
         </div>
         <div
           class="message-bubble__text message-body"
-          :class="{ 'message-bubble__text--continuation': burstIdx > 0 }"
+          :class="{
+            'message-bubble__text--continuation': burstIdx > 0,
+            'message-bubble__text--active': activeBurstEntry.id === burstEntry.id && burstIdx > 0,
+          }"
+          :data-burst-entry-id="burstEntry.id"
           @click="handleBodyClick"
           v-html="burstEntry.renderedBody"
         />
