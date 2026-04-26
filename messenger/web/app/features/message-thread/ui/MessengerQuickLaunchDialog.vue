@@ -113,6 +113,11 @@ watch(
   { immediate: true },
 )
 
+// Status shown under the submit button while the queue daemon picks the
+// task up. Synchronous "submit succeeded" only means the .md file landed
+// in pending/; the actual workroom spawn is async and can fail later.
+const launchStatus = ref<'idle' | 'queued' | 'running' | 'failed'>('idle')
+
 async function submit() {
   if (submitting.value) return
   if (!slug.value || !prompt.value.trim()) {
@@ -123,12 +128,17 @@ async function submit() {
     error.value = 'Slug: только латиница, цифры и дефисы, до 40 символов'
     return
   }
+  if (workroom.value && !/^[a-z0-9-]{1,40}$/.test(workroom.value)) {
+    error.value = 'Workroom: только латиница, цифры и дефисы, до 40 символов'
+    return
+  }
   if (!projectId.value) {
     error.value = 'Выберите проект, в котором будет работать сессия'
     return
   }
   submitting.value = true
   error.value = null
+  launchStatus.value = 'idle'
   try {
     await cliSessions.quickLaunch({
       slug: slug.value,
@@ -138,10 +148,52 @@ async function submit() {
       workroom: workroom.value || undefined,
       sourceMessageId: props.messageId,
     })
-    emit('launched', { slug: slug.value })
-    dialogOpen.value = false
+    launchStatus.value = 'queued'
+
+    // Poll daemon outcome for ~15s. Daemon sleeps 10s between iterations,
+    // so the first useful answer typically arrives in 0–10s. We close on
+    // running/done, surface failure inline, and fall back to a
+    // close-with-warning if status stays unknown past the budget.
+    const deadline = Date.now() + 15_000
+    let outcome: 'spawn' | 'failed' | 'timeout' = 'timeout'
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 1500))
+      let res
+      try {
+        res = await cliSessions.quickLaunchStatus(slug.value)
+      } catch {
+        continue // transient — keep polling
+      }
+      if (res.status === 'running' || res.status === 'done') {
+        outcome = 'spawn'
+        break
+      }
+      if (res.status === 'failed') {
+        outcome = 'failed'
+        const reason = 'reason' in res && res.reason ? res.reason : 'демон отбросил задачу без объяснений'
+        error.value = `Спавн упал: ${reason}`
+        launchStatus.value = 'failed'
+        break
+      }
+    }
+
+    if (outcome === 'spawn') {
+      emit('launched', { slug: slug.value })
+      dialogOpen.value = false
+    } else if (outcome === 'timeout') {
+      // Task is still pending after 15s — likely just the daemon polling
+      // cadence. Close optimistically and let the existing snackbar/monitor
+      // surface the eventual outcome.
+      emit('launched', { slug: slug.value })
+      dialogOpen.value = false
+    }
+    // 'failed': stay open with error displayed
   } catch (err: unknown) {
-    error.value = err instanceof Error ? err.message : 'Не удалось поставить задачу в очередь'
+    // Backend reachable, returned 4xx/5xx — surface its message verbatim
+    // (BASE_BRANCH_NOT_FOUND carries a hint string the user needs to see).
+    const msg = err instanceof Error ? err.message : 'Не удалось поставить задачу в очередь'
+    error.value = msg
+    launchStatus.value = 'failed'
   } finally {
     submitting.value = false
   }
@@ -159,6 +211,16 @@ async function submit() {
       <VCardText>
         <VAlert v-if="error" type="error" variant="tonal" density="compact" class="mb-3">
           {{ error }}
+        </VAlert>
+
+        <VAlert
+          v-else-if="launchStatus === 'queued'"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+        >
+          Файл попал в очередь. Жду подтверждения от демона (до 15с)…
         </VAlert>
 
         <VSelect

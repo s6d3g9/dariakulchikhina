@@ -109,6 +109,19 @@ export function useAgentsApi() {
     )
   }
 
+  // Async outcome probe paired with quickLaunchCliSession. The submit flow
+  // returns 200 the moment the .md file lands in pending/, but the actual
+  // workroom spawn happens later in claude-queue-daemon — failures (invalid
+  // base branch, no commits, push errors) only show up after that. The
+  // dialog polls this every ~1.5s for ~15s so the user sees real outcome.
+  function getQuickLaunchStatus(slug: string) {
+    return auth.request<
+      | { slug: string; status: 'pending' | 'running' | 'done'; file: string }
+      | { slug: string; status: 'failed'; file: string; reason: string | null }
+      | { slug: string; status: 'unknown' }
+    >(`/cli-sessions/quick-launch/${slug}/status`, { method: 'GET' })
+  }
+
   function getCliSessionTrace(slug: string, limit = 100) {
     return auth.request<{
       slug: string
@@ -162,6 +175,7 @@ export function useAgentsApi() {
     patchCliSession,
     stopCliSession,
     quickLaunchCliSession,
+    getQuickLaunchStatus,
     getCliSessionTrace,
     getAgentActiveRun,
     getAgentRunEvents,

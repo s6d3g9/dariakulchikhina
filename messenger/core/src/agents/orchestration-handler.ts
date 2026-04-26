@@ -1,7 +1,7 @@
 import { spawnSync as _spawnSync, execFile as _execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { readFileSync } from 'node:fs'
-import { writeFile, access, stat } from 'node:fs/promises'
+import { writeFile, access, stat, readdir } from 'node:fs/promises'
 import { constants as fsConstants } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
@@ -1083,6 +1083,26 @@ export function registerOrchestrationRoutes(
       }
 
       const baseBranch = workroom ? `claude/workroom-${workroom}` : 'main'
+
+      // If the operator named a workroom, the queue daemon will hand
+      // `base_branch` to `git checkout -b <new> <base>`. A non-existent ref
+      // dies silently (file moves to ~/state/queue/failed/) with no UI signal.
+      // Catch it here so we can return a 400 the dialog can surface.
+      if (workroom) {
+        const repoRoot = readMessengerConfig().MESSENGER_PROJECT_ROOT
+        try {
+          await execFile('git', ['-C', repoRoot, 'rev-parse', '--verify', `${baseBranch}^{commit}`], {
+            timeout: 5000,
+          })
+        } catch {
+          return reply.code(400).send({
+            error: 'BASE_BRANCH_NOT_FOUND',
+            baseBranch,
+            hint: `Ветка ${baseBranch} не существует. Оставьте поле «Workroom» пустым (стартует от main) или укажите имя существующего workroom.`,
+          })
+        }
+      }
+
       const frontmatter = [
         '---',
         `id: ${slug}`,
@@ -1118,6 +1138,68 @@ export function registerOrchestrationRoutes(
         return reply.code(500).send({ error: 'WRITE_FAILED' })
       }
       return { slug, queued: true as const, queuePath }
+    },
+  )
+
+  // GET /cli-sessions/quick-launch/:slug/status — async outcome probe for the
+  // dialog. The queue daemon polls every 10s, so the dialog calls this every
+  // ~1.5s for ~15s after submit and surfaces failure inline instead of
+  // closing on an unverified 200.
+  // Returns the queue bucket the file lives in: pending | running | done |
+  // failed | unknown. `failed` carries an optional `reason` extracted from
+  // the daemon log when available.
+  app.get<{ Params: { slug: string } }>(
+    '/cli-sessions/quick-launch/:slug/status',
+    async (request, reply) => {
+      if (!resolveSessionAuth(request)) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED' })
+      }
+      const { slug } = request.params
+      if (!/^[a-z0-9-]{1,40}$/.test(slug)) {
+        return reply.code(400).send({ error: 'INVALID_INPUT' })
+      }
+
+      const queueRoot = join(homedir(), 'state', 'queue')
+      const buckets = ['pending', 'running', 'done', 'failed'] as const
+      type Bucket = (typeof buckets)[number]
+
+      async function findIn(bucket: Bucket): Promise<string | null> {
+        try {
+          const files = await readdir(join(queueRoot, bucket))
+          // Match `<slug>.md` and the daemon's `<slug>.no-commits.md` variant.
+          const hit = files.find(f => f === `${slug}.md` || f === `${slug}.no-commits.md`)
+          return hit ?? null
+        } catch {
+          return null
+        }
+      }
+
+      for (const bucket of buckets) {
+        const file = await findIn(bucket)
+        if (!file) continue
+        if (bucket === 'failed') {
+          // Surface the most recent daemon log line referencing this slug so
+          // the dialog can show *why* it failed (invalid base branch, no
+          // commits, push failure, etc.). Best-effort; missing log is fine.
+          let reason: string | null = null
+          try {
+            const logPath = join(homedir(), 'log', 'queue-daemon.log')
+            const text = await stat(logPath)
+              .then(() => execFile('grep', [slug, logPath], { timeout: 2000, maxBuffer: 64 * 1024 }))
+              .then(r => r.stdout)
+              .catch(() => '')
+            const lines = text.split('\n').filter(Boolean)
+            const last = lines[lines.length - 1]
+            if (last) reason = last.replace(/^\[[^\]]+\]\s*/, '').slice(0, 240)
+          } catch {
+            // ignore log read errors
+          }
+          return { slug, status: 'failed' as const, file, reason }
+        }
+        return { slug, status: bucket, file }
+      }
+
+      return { slug, status: 'unknown' as const }
     },
   )
 

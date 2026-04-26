@@ -190,6 +190,10 @@ export function useMessengerCliSessions() {
     return api.quickLaunchCliSession(payload)
   }
 
+  function quickLaunchStatus(slug: string) {
+    return api.getQuickLaunchStatus(slug)
+  }
+
   async function refresh(includeArchived = true) {
     pending.value = true
     try {
@@ -318,6 +322,7 @@ export function useMessengerCliSessions() {
     archive,
     stopSession,
     quickLaunch,
+    quickLaunchStatus,
     refresh,
     connectStream,
     disconnectStream,
