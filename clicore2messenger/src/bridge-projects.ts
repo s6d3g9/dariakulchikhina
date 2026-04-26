@@ -67,10 +67,13 @@ function writeFile(filePath: string, data: BridgeProjectsFile): void {
   const tmp = `${filePath}.tmp.${process.pid}`;
   const json = JSON.stringify(data, null, 2) + "\n";
   try {
-    fs.writeFileSync(tmp, json, { mode: 0o600 });
+    // Mode 644: this file holds non-secret cwd→projectId mappings that the
+    // messenger-core daemon (running under a different uid in some setups)
+    // must be able to read. Do NOT widen further; the file lives in the
+    // operator's home dir.
+    fs.writeFileSync(tmp, json, { mode: 0o644 });
     fs.renameSync(tmp, filePath);
-    // Ensure mode 600 even if umask was permissive.
-    fs.chmodSync(filePath, 0o600);
+    fs.chmodSync(filePath, 0o644);
   } catch (err) {
     try {
       fs.unlinkSync(tmp);
@@ -281,27 +284,55 @@ function cmdScan(args: string[]): void {
   );
 }
 
-function cmdSet(args: string[]): void {
+function cmdAdd(args: string[], verbName: "add" | "set"): void {
   const [cwd, projectId] = args;
   if (!cwd || !projectId) {
     console.error(
-      "[bridge-projects] Usage: bridge-projects set <cwd> <messengerProjectId>",
+      `[bridge-projects] Usage: bridge-projects ${verbName} <cwd> <messengerProjectId>`,
     );
     process.exit(1);
   }
 
+  if (!cwd.startsWith("/") || cwd.includes("..")) {
+    console.error(
+      `[bridge-projects] cwd must be an absolute path (got: ${cwd})`,
+    );
+    process.exit(1);
+  }
+
+  if (!UUID_RE.test(projectId)) {
+    console.error(
+      `[bridge-projects] projectId must be a UUID (got: ${projectId})`,
+    );
+    process.exit(1);
+  }
+
+  if (!fs.existsSync(cwd)) {
+    console.error(
+      `[bridge-projects] cwd does not exist on disk: ${cwd}\n` +
+        "  (host-session provisioning will key on the exact cwd reported by the supervisor;\n" +
+        "   if you really want to map a path that hasn't been created yet, pass --force.)",
+    );
+    if (!args.includes("--force")) process.exit(1);
+  }
+
   const filePath = resolveFilePath();
   const data = readFile(filePath);
+  const previous = data.mappings[cwd];
   data.mappings[cwd] = projectId;
   writeFile(filePath, data);
-  console.log(`[bridge-projects] set ${cwd} → ${projectId}`);
+  if (previous && previous !== projectId) {
+    console.log(`[bridge-projects] updated ${cwd}: ${previous} → ${projectId}`);
+  } else {
+    console.log(`[bridge-projects] ${verbName === "add" ? "added" : "set"} ${cwd} → ${projectId}`);
+  }
   console.log(`File: ${filePath}`);
 }
 
-function cmdUnset(args: string[]): void {
+function cmdRemove(args: string[], verbName: "remove" | "unset"): void {
   const [cwd] = args;
   if (!cwd) {
-    console.error("[bridge-projects] Usage: bridge-projects unset <cwd>");
+    console.error(`[bridge-projects] Usage: bridge-projects ${verbName} <cwd>`);
     process.exit(1);
   }
 
@@ -315,23 +346,43 @@ function cmdUnset(args: string[]): void {
 
   delete data.mappings[cwd];
   writeFile(filePath, data);
-  console.log(`[bridge-projects] unset ${cwd}`);
+  console.log(`[bridge-projects] ${verbName === "remove" ? "removed" : "unset"} ${cwd}`);
 }
 
-function cmdValidate(_args: string[]): void {
+// `verify` (alias `validate`) does two checks per mapping entry:
+//   1. cwd still exists on disk (operator may have deleted/renamed the worktree),
+//   2. projectId still resolves to a non-deleted row in `messenger_projects`.
+//
+// The database check is done via psql against `DATABASE_URL`. The spec mentions
+// hitting `GET /messenger-projects/:id` over `MESSENGER_URL`, but that endpoint
+// requires session-cookie auth and the bridge CLI runs on a headless host —
+// going via DATABASE_URL is the same correctness signal without dragging an
+// auth cookie into operator workflows. If you want the REST path, set both
+// MESSENGER_URL and a session token in the env and we can wire it later.
+function cmdVerify(_args: string[]): void {
   const filePath = resolveFilePath();
   const data = readFile(filePath);
   const entries = Object.entries(data.mappings);
 
   if (entries.length === 0) {
-    console.log("[bridge-projects] No mappings to validate.");
+    console.log("[bridge-projects] No mappings to verify.");
     return;
+  }
+
+  // 1. cwd-exists-on-disk check (does not require DB).
+  const missingCwds = entries.filter(([cwd]) => !fs.existsSync(cwd));
+  if (missingCwds.length > 0) {
+    console.error("[bridge-projects] cwd no longer exists on disk:");
+    for (const [cwd, id] of missingCwds) {
+      console.error(`  ${cwd}  →  ${id}`);
+    }
+    // Continue to the DB check anyway so operators see the full picture.
   }
 
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     console.error(
-      "[bridge-projects] DATABASE_URL is not set — cannot validate against database.\n" +
+      "[bridge-projects] DATABASE_URL is not set — cannot verify project IDs against database.\n" +
         "  Set DATABASE_URL to the Daria Postgres connection string and retry.",
     );
     process.exit(1);
@@ -350,7 +401,8 @@ function cmdValidate(_args: string[]): void {
   const ids = entries.map(([, id]) => id);
   // Build a VALUES list safe for SQL — all values are validated UUIDs above.
   const valuesList = ids.map((id) => `'${id}'::uuid`).join(", ");
-  const query = `SELECT id::text FROM messenger_projects WHERE id IN (${valuesList});`;
+  const query =
+    `SELECT id::text FROM messenger_projects WHERE id IN (${valuesList}) AND deleted_at IS NULL;`;
 
   const result = child_process.spawnSync("psql", [dbUrl, "--tuples-only", "--no-align", "--command", query], {
     encoding: "utf8",
@@ -370,16 +422,18 @@ function cmdValidate(_args: string[]): void {
       .filter((l) => l.length > 0),
   );
 
-  const broken = entries.filter(([, id]) => !foundIds.has(id));
+  const brokenIds = entries.filter(([, id]) => !foundIds.has(id));
 
-  if (broken.length === 0) {
+  if (brokenIds.length === 0 && missingCwds.length === 0) {
     console.log(`[bridge-projects] All ${entries.length} mapping(s) are valid.`);
     return;
   }
 
-  console.error(`[bridge-projects] ${broken.length} broken reference(s):`);
-  for (const [cwd, id] of broken) {
-    console.error(`  ${cwd}  →  ${id}  (not found in messenger_projects)`);
+  if (brokenIds.length > 0) {
+    console.error(`[bridge-projects] ${brokenIds.length} broken project reference(s):`);
+    for (const [cwd, id] of brokenIds) {
+      console.error(`  ${cwd}  →  ${id}  (not found / soft-deleted in messenger_projects)`);
+    }
   }
   process.exit(1);
 }
@@ -394,9 +448,11 @@ function printUsage(): void {
       "Usage:",
       "  clicore2messenger bridge-projects list",
       "  clicore2messenger bridge-projects scan [--days N]",
-      "  clicore2messenger bridge-projects set <cwd> <messengerProjectId>",
-      "  clicore2messenger bridge-projects unset <cwd>",
-      "  clicore2messenger bridge-projects validate",
+      "  clicore2messenger bridge-projects add <cwd> <messengerProjectId> [--force]",
+      "  clicore2messenger bridge-projects remove <cwd>",
+      "  clicore2messenger bridge-projects verify",
+      "",
+      "Aliases: set=add, unset=remove, validate=verify",
     ].join("\n"),
   );
 }
@@ -408,12 +464,16 @@ export function runBridgeProjects(args: string[]): void {
     cmdList(args.slice(1));
   } else if (subcommand === "scan") {
     cmdScan(args.slice(1));
+  } else if (subcommand === "add") {
+    cmdAdd(args.slice(1), "add");
   } else if (subcommand === "set") {
-    cmdSet(args.slice(1));
+    cmdAdd(args.slice(1), "set");
+  } else if (subcommand === "remove") {
+    cmdRemove(args.slice(1), "remove");
   } else if (subcommand === "unset") {
-    cmdUnset(args.slice(1));
-  } else if (subcommand === "validate") {
-    cmdValidate(args.slice(1));
+    cmdRemove(args.slice(1), "unset");
+  } else if (subcommand === "verify" || subcommand === "validate") {
+    cmdVerify(args.slice(1));
   } else {
     printUsage();
     process.exit(1);
