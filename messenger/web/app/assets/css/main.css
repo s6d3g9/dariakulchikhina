@@ -10258,3 +10258,132 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   border: 0 !important;
 }
 
+/* ============================================================
+   Sheet-style design tokens — single source of truth, mirrors
+   .chat-header-sheet__row exactly. Custom row/item classes below
+   pull from these so every list across the messenger reads the
+   same way as the chat info sheet.
+   ============================================================ */
+.messenger-v-app {
+  --messenger-row-radius: 12px;
+  --messenger-row-padding-y: 12px;
+  --messenger-row-padding-x: 16px;
+  --messenger-row-gap: 12px;
+  --messenger-row-min-height: 48px;
+  --messenger-row-bg: transparent;
+  --messenger-row-bg-hover: rgba(var(--v-theme-on-surface), 0.08);
+  --messenger-row-bg-active: rgba(var(--v-theme-primary), 0.12);
+  --messenger-row-color: rgb(var(--v-theme-on-surface));
+  --messenger-row-color-active: rgb(var(--v-theme-on-secondary-container));
+  --messenger-row-color-hint: rgb(var(--v-theme-on-surface-variant));
+}
+
+/* Agent picker dialog item — was a 14px card with visible 1px border.
+   Now reads like a sheet row. */
+.messenger-v-app .agent-picker__item {
+  border-radius: var(--messenger-row-radius) !important;
+  border: 0 !important;
+  background: var(--messenger-row-bg) !important;
+  padding: var(--messenger-row-padding-y) var(--messenger-row-padding-x) !important;
+  margin: 0 !important;
+  transition: background-color 120ms ease;
+}
+.messenger-v-app .agent-picker__item:hover {
+  background: var(--messenger-row-bg-hover) !important;
+}
+.messenger-v-app .agent-picker__item--active {
+  background: var(--messenger-row-bg-active) !important;
+  color: var(--messenger-row-color-active) !important;
+}
+
+/* Agent chat workspace connection list — dashed primary borders
+   are replaced with the same flat sheet-row look. */
+.messenger-v-app .agent-chat-workspace__list-item {
+  border-radius: var(--messenger-row-radius) !important;
+  border: 0 !important;
+  background: var(--messenger-row-bg) !important;
+  padding: var(--messenger-row-padding-y) var(--messenger-row-padding-x) !important;
+}
+.messenger-v-app .agent-chat-workspace__list-item:hover {
+  background: var(--messenger-row-bg-hover) !important;
+}
+.messenger-v-app .agent-chat-workspace__list-item--active,
+.messenger-v-app .agent-chat-workspace__list-item.is-active {
+  background: var(--messenger-row-bg-active) !important;
+  color: var(--messenger-row-color-active) !important;
+}
+
+/* Runtime feed / artifacts — dashed primary outline → flat row. */
+.messenger-v-app .agent-runtime-feed__item,
+.messenger-v-app .agent-runtime-artifacts__item {
+  border-radius: var(--messenger-row-radius) !important;
+  border: 0 !important;
+  background: var(--messenger-row-bg) !important;
+  padding: 10px var(--messenger-row-padding-x) !important;
+}
+.messenger-v-app .agent-runtime-feed__item:hover,
+.messenger-v-app .agent-runtime-artifacts__item:hover {
+  background: var(--messenger-row-bg-hover) !important;
+}
+
+/* Composer media menu — file rows + upload row align to sheet. */
+.messenger-v-app .composer-media-menu__file-item,
+.messenger-v-app .composer-media-menu__upload-row {
+  border-radius: var(--messenger-row-radius) !important;
+  padding: var(--messenger-row-padding-y) var(--messenger-row-padding-x) !important;
+  gap: var(--messenger-row-gap) !important;
+  transition: background-color 120ms ease;
+}
+.messenger-v-app .composer-media-menu__file-item:hover,
+.messenger-v-app .composer-media-menu__upload-row:hover {
+  background: var(--messenger-row-bg-hover) !important;
+}
+
+/* Sess-nav rows — keep their dark-themed surface (it's a
+   dedicated dev tool nav) but align radius + padding so the
+   geometry feels like the rest of the app. */
+.messenger-v-app .sess-nav__row {
+  border-top: 0 !important;
+  border-radius: var(--messenger-row-radius) !important;
+  padding: 8px var(--messenger-row-padding-x) !important;
+  margin: 1px 4px;
+}
+.messenger-v-app .sess-nav__row:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Chat-row + contact-row — Vuetify v-list-item underneath, but
+   with a 72px min-height. Carve them in: same 12px radius and
+   12px/16px padding (overrides the global v-list rule that gave
+   them 44px and 12px margin). */
+.messenger-v-app .chat-row,
+.messenger-v-app .contact-row {
+  border-radius: var(--messenger-row-radius) !important;
+  padding-block: var(--messenger-row-padding-y) !important;
+  padding-inline: var(--messenger-row-padding-x) !important;
+  margin: 1px 4px !important;
+}
+.messenger-v-app .chat-row:hover,
+.messenger-v-app .contact-row:hover {
+  background: var(--messenger-row-bg-hover) !important;
+}
+.messenger-v-app .chat-row.v-list-item--active,
+.messenger-v-app .contact-row.v-list-item--active {
+  background: var(--messenger-row-bg-active) !important;
+  color: var(--messenger-row-color-active) !important;
+}
+
+/* Right-side hint slot — standardised across all custom rows.
+   Mirrors .chat-header-sheet__row-hint exactly. */
+.messenger-v-app .agent-picker__item .item-hint,
+.messenger-v-app .agent-chat-workspace__list-item .item-hint,
+.messenger-v-app .agent-runtime-feed__item .item-hint,
+.messenger-v-app .messenger-row-hint {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--messenger-row-color-hint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
