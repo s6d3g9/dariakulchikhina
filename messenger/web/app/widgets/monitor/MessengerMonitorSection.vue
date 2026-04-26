@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<{
 
 const sessionsModel = useMessengerCliSessions()
 const conversations = useMessengerConversations()
+const projectsModel = useMessengerProjects()
 const route = useRoute()
 const router = useRouter()
 
@@ -44,7 +45,45 @@ watch(activeSlug, (slug) => {
 
 const sessionsRef = computed(() => sessionsModel.sessions.value)
 const activeSlugRef = computed(() => activeSlug.value)
-const projectScopeIdRef = computed(() => props.projectScopeId ?? null)
+
+// When the parent forces a scope (project workspace), the picker is hidden and
+// the prop wins. Otherwise (global monitor view) the user picks a project here
+// and the choice is persisted in the URL — the section's effective scope is
+// `forced ?? picked`. Picker hydrates from `?projectId=` on mount.
+const initialProjectFromUrl = (() => {
+  const v = route.query.projectId
+  return typeof v === 'string' && v ? v : null
+})()
+const selectedProjectId = ref<string | null>(initialProjectFromUrl)
+
+const effectiveScopeId = computed<string | null>(() =>
+  props.projectScopeId ?? selectedProjectId.value,
+)
+const projectScopeIdRef = computed(() => effectiveScopeId.value)
+
+const projectPickerVisible = computed(() => props.projectScopeId === null)
+
+watch(selectedProjectId, (id) => {
+  if (!projectPickerVisible.value) return
+  const current = route.query.projectId
+  const same = id ? current === id : !current
+  if (same) return
+  const next = { ...route.query }
+  if (id) next.projectId = id
+  else delete next.projectId
+  void router.replace({ query: next })
+})
+
+const projectPickerItems = computed(() => [
+  { value: null, title: 'Все проекты' },
+  ...projectsModel.projects.value.map(p => ({ value: p.id, title: p.name })),
+])
+
+const activeProjectName = computed(() => {
+  const id = effectiveScopeId.value
+  if (!id) return null
+  return projectsModel.projects.value.find(p => p.id === id)?.name ?? null
+})
 
 // `hideOrphans` is parent-owned (this section) so the topology composable can
 // react to it; the tree component reads the same singleton via
@@ -96,6 +135,9 @@ onMounted(() => {
   sessionsModel.connectStream()
   if (sessionsModel.sessions.value.length === 0) {
     void sessionsModel.refresh()
+  }
+  if (projectPickerVisible.value && projectsModel.projects.value.length === 0) {
+    void projectsModel.refresh()
   }
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', onGlobalKeydown)
@@ -185,6 +227,29 @@ const lastFetchedLabel = computed(() => {
         </v-chip>
       </div>
       <div class="monitor-section__meta">
+        <v-select
+          v-if="projectPickerVisible"
+          v-model="selectedProjectId"
+          :items="projectPickerItems"
+          item-title="title"
+          item-value="value"
+          density="compact"
+          variant="outlined"
+          hide-details
+          class="monitor-section__project-picker"
+          aria-label="Фильтр по проекту"
+          prepend-inner-icon="mdi-folder-outline"
+        />
+        <v-chip
+          v-else-if="activeProjectName"
+          size="x-small"
+          color="primary"
+          variant="tonal"
+          class="monitor-section__chip"
+          prepend-icon="mdi-folder-outline"
+        >
+          {{ activeProjectName }}
+        </v-chip>
         <span
           v-if="lastFetchedLabel"
           class="monitor-section__hint"
@@ -265,6 +330,19 @@ const lastFetchedLabel = computed(() => {
 .monitor-section__hint {
   font-size: 11px;
   color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.monitor-section__project-picker {
+  width: 200px;
+  min-width: 160px;
+  max-width: 260px;
+}
+
+@media (max-width: 600px) {
+  .monitor-section__project-picker {
+    width: 140px;
+    min-width: 120px;
+  }
 }
 
 .monitor-section__split {
