@@ -32,20 +32,60 @@ function lastActivityMs(s: MessengerCliSession): number {
   return Number.isFinite(t) ? t : 0
 }
 
+export interface UseMonitorTopologyOptions {
+  // When set, only sessions whose `agentProjectId` matches this id are kept.
+  // Wins over `hideOrphans` — explicit project scope is the strictest filter.
+  projectScopeId?: Ref<string | null>
+  // When true (and `projectScopeId` is unset), sessions with
+  // `agentProjectId === null` (host-session orphans) are hidden. Project-only
+  // is the default invariant for the global monitor view.
+  hideOrphans?: Ref<boolean>
+}
+
 export function useMonitorTopology(
   sessions: Ref<MessengerCliSession[]>,
   mode: Ref<MonitorMode>,
   activeSlug?: Ref<string | null>,
+  options: UseMonitorTopologyOptions = {},
 ) {
+  const projectScopeId = options.projectScopeId
+  const hideOrphans = options.hideOrphans
+
+  // Apply the project/orphan filter BEFORE the mode-based status filter so
+  // counters (`total`, `active`, `awaiting`, …) reflect the active scope —
+  // e.g. when scoped to a project, `counters.total` shows that project's
+  // session count, not the host-wide total.
+  const scopeFiltered = computed<MessengerCliSession[]>(() => {
+    const scope = projectScopeId?.value ?? null
+    const hideOrph = hideOrphans?.value ?? false
+    if (!scope && !hideOrph) return sessions.value
+    return sessions.value.filter((s) => {
+      if (scope) return s.agentProjectId === scope
+      if (hideOrph) return s.agentProjectId !== null
+      return true
+    })
+  })
+
   const filtered = computed<MessengerCliSession[]>(() => {
     const todayStart = startOfTodayMs()
-    return sessions.value.filter((s) => {
+    return scopeFiltered.value.filter((s) => {
       if (s.archivedAt) return false
       if (mode.value === 'live') return s.status === 'running'
       if (s.status === 'running') return true
       const ts = lastActivityMs(s) || (s.finishedAt ? Date.parse(s.finishedAt) : 0)
       return ts >= todayStart
     })
+  })
+
+  // Orphan count is computed from the unfiltered session list (not from
+  // `filtered.value`) so the toolbar hint can advertise "N orphans hidden"
+  // even when the orphan filter is active and they're absent from the tree.
+  const orphansCount = computed<number>(() => {
+    let n = 0
+    for (const s of sessions.value) {
+      if (s.agentProjectId === null && !s.archivedAt) n++
+    }
+    return n
   })
 
   const byParentAgentId = computed<Map<string, MessengerCliSession[]>>(() => {
@@ -265,6 +305,7 @@ export function useMonitorTopology(
       crashed: crashedSlugs.value.size,
       archived: archivedSlugs.value.size,
       host: hostSlugs.value.size,
+      orphans: orphansCount.value,
     }
   })
 
@@ -301,8 +342,9 @@ export function provideMonitorTopology(
   sessions: Ref<MessengerCliSession[]>,
   mode: Ref<MonitorMode>,
   activeSlug?: Ref<string | null>,
+  options?: UseMonitorTopologyOptions,
 ): MonitorTopology {
-  const topology = useMonitorTopology(sessions, mode, activeSlug)
+  const topology = useMonitorTopology(sessions, mode, activeSlug, options)
   provide(MONITOR_TOPOLOGY_KEY, topology)
   return topology
 }

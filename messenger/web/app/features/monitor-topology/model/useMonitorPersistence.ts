@@ -9,9 +9,11 @@ const FILTER_STORAGE_KEY = 'daria.monitor.filter'
 const MODE_STORAGE_KEY = 'daria.monitor.mode'
 const SEARCH_STORAGE_KEY = 'daria.monitor.search'
 const PINNED_STORAGE_KEY = 'daria.monitor.pinned'
+const HIDE_ORPHANS_STORAGE_KEY = 'daria.monitor.hideOrphans'
 
 const FILTERS = ['all', 'awaiting', 'crashed', 'active', 'archived', 'host'] as const
 const MODES = ['live', 'today'] as const
+const BOOL_VALUES = ['1', '0'] as const
 
 function readPinned(): Set<string> {
   if (typeof window === 'undefined') return new Set()
@@ -48,12 +50,28 @@ export interface UseMonitorPersistenceOptions {
   mode: Ref<MonitorMode>
 }
 
+// Refs are exposed via `useState` so the section and the tree can each call
+// `useMonitorPersistence` and share the same singletons — needed because the
+// section threads `hideOrphans` into `provideMonitorTopology` while the tree
+// renders the toggle bound to that ref.
 export function useMonitorPersistence(opts: UseMonitorPersistenceOptions) {
-  const filter = ref<MonitorFilter>(readStored(FILTER_STORAGE_KEY, FILTERS, 'all'))
-  const search = ref<string>(
-    typeof window !== 'undefined' ? window.localStorage.getItem(SEARCH_STORAGE_KEY) ?? '' : '',
+  const filter = useState<MonitorFilter>(
+    'daria.monitor.filter',
+    () => readStored(FILTER_STORAGE_KEY, FILTERS, 'all'),
   )
-  const pinnedSlugs = ref<Set<string>>(readPinned())
+  const search = useState<string>(
+    'daria.monitor.search',
+    () => (typeof window !== 'undefined' ? window.localStorage.getItem(SEARCH_STORAGE_KEY) ?? '' : ''),
+  )
+  const pinnedSlugs = useState<Set<string>>('daria.monitor.pinned', () => readPinned())
+  // Default `true` enforces the "project-only by default" invariant — first-time
+  // visitors see a tree without host-session orphans even before they touch
+  // any toggle. Stored as '1'/'0' for symmetry with the other string-keyed
+  // localStorage entries.
+  const hideOrphans = useState<boolean>(
+    'daria.monitor.hideOrphans',
+    () => readStored(HIDE_ORPHANS_STORAGE_KEY, BOOL_VALUES, '1') === '1',
+  )
 
   function togglePin(slug: string) {
     const next = new Set(pinnedSlugs.value)
@@ -74,6 +92,7 @@ export function useMonitorPersistence(opts: UseMonitorPersistenceOptions) {
   watch(opts.mode, v => writeStored(MODE_STORAGE_KEY, v))
   watch(search, v => writeStored(SEARCH_STORAGE_KEY, v))
   watch(pinnedSlugs, v => writePinned(v))
+  watch(hideOrphans, v => writeStored(HIDE_ORPHANS_STORAGE_KEY, v ? '1' : '0'))
 
-  return { filter, search, pinnedSlugs, togglePin }
+  return { filter, search, pinnedSlugs, togglePin, hideOrphans }
 }
