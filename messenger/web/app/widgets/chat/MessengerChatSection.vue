@@ -2278,10 +2278,17 @@ async function handleCopyText(value: string, toast: string) {
 
 function handleQuoteCode(code: string) {
   if (!code) return
-  const fence = '```\n' + code.replace(/\s+$/, '') + '\n```\n'
+  const trimmed = code.replace(/\s+$/, '')
+  if (!trimmed) return
+  // Pick a fence longer than the longest run of backticks inside the
+  // quoted code so the delimiter is unambiguous when the composer text
+  // is parsed back as markdown.
+  const longestBacktickRun = (trimmed.match(/`+/g) ?? [])
+    .reduce((max, run) => Math.max(max, run.length), 0)
+  const fence = '`'.repeat(Math.max(3, longestBacktickRun + 1))
   const current = draft.value
   const sep = current && !current.endsWith('\n') ? '\n' : ''
-  draft.value = current + sep + fence
+  draft.value = `${current}${sep}${fence}\n${trimmed}\n${fence}\n`
   nextTick(() => {
     composerInputEl.value?.focus()
     syncComposerInputHeight()
