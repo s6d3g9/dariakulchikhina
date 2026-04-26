@@ -10029,33 +10029,51 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
    teleports overlays out of v-app on some routes; specificity is
    raised with !important on shape properties to defeat Vuetify's
    own defaults regardless of stylesheet order. */
-.v-overlay__content > .v-list,
+/* Outer overlay layer — make it a transparent passthrough so only ONE
+   surface (the inner v-list) actually paints a background. Otherwise
+   .v-overlay__content + .v-list stack two surface-variant rectangles
+   and you see a darker plate inside the menu. */
 .v-menu > .v-overlay__content,
+.v-autocomplete__content,
+.v-select__content {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+/* Inner v-list — the single, unified menu surface. */
+.v-overlay__content > .v-list,
 .v-menu > .v-overlay__content > .v-list,
 .v-autocomplete__content > .v-list,
 .v-select__content > .v-list {
-  border-radius: 8px 8px 16px 16px !important;
+  border-radius: 12px !important;
   background: rgb(var(--v-theme-surface-variant)) !important;
   border: 0 !important;
   box-shadow:
     0 1px 2px 0 rgba(0, 0, 0, 0.18),
     0 4px 12px 2px rgba(0, 0, 0, 0.12);
   overflow: hidden;
-  padding: 6px !important;
+  padding: 4px !important;
   transform-origin: top center;
 }
 
 /* List items inside any menu/select/autocomplete overlay — render as
    M3 pill-buttons (icon-button family). Match without ">" because
    Vuetify can wrap items in v-virtual-scroll containers. */
+/* Items — flat full-width rows, NOT separate pills. The container is the
+   single rounded shape; items just fill it. Slight inner radius (8px)
+   so hover/active state-layer follows the container's rounded corners
+   without protruding. */
 .v-overlay__content .v-list-item,
 .v-menu .v-list-item,
 .v-autocomplete__content .v-list-item,
 .v-select__content .v-list-item {
-  border-radius: 9999px !important;
-  margin: 2px 0 !important;
+  border-radius: 8px !important;
+  margin: 0 !important;
   min-height: 40px !important;
-  padding-inline: 14px !important;
+  padding-inline: 12px !important;
   background: transparent !important;
   border: 0 !important;
   font-weight: 500;
@@ -10087,13 +10105,13 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   background: rgba(var(--v-theme-secondary-container), 0.85) !important;
 }
 
-/* Vuetify paints item bg via .v-list-item__overlay — flatten it so
-   our pill-shaped background actually shows through. */
+/* Vuetify paints item bg via .v-list-item__overlay — match the row's
+   inner radius so the state-layer follows the row shape. */
 .v-overlay__content .v-list-item__overlay,
 .v-menu .v-list-item__overlay,
 .v-autocomplete__content .v-list-item__overlay,
 .v-select__content .v-list-item__overlay {
-  border-radius: 9999px;
+  border-radius: 8px;
 }
 
 /* Icon slot inside menu items — sized like icon-button glyphs. */
