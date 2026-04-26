@@ -1289,6 +1289,18 @@ const filteredThreadedMessages = computed<MessengerThreadMessage[]>(() => {
   return groups
 })
 
+// Stable v-for key. When older messages prepend via cursor pagination and
+// fold into an existing burst, the head's `id` changes (the new oldest message
+// becomes the head). Using rootRunId for agent bursts keeps Vue's :key stable
+// across that re-coalescing, so the bubble's DOM is preserved and the user
+// sees a smooth content patch instead of a tear-down + re-render flicker.
+function entryGroupKey(entry: MessengerThreadMessage): string {
+  if (entry.rootRunId && !entry.own) {
+    return `root-${entry.rootRunId}`
+  }
+  return entry.id
+}
+
 // IDs of messages where runId changes between consecutive agent messages → divider before them
 const runDividerSet = computed(() => {
   const dividers = new Set<string>()
@@ -3463,7 +3475,7 @@ onBeforeUnmount(() => {
         </Transition>
 
         <div ref="messageListEl" class="message-list message-list--chat-scroll">
-          <template v-for="entry in filteredThreadedMessages" :key="entry.id">
+          <template v-for="entry in filteredThreadedMessages" :key="entryGroupKey(entry)">
             <div v-if="runDividerSet.has(entry.id)" class="run-divider" :title="`Run ${entry.runId}`">
               <span class="run-divider__label">── Прогон {{ entry.runId?.slice(0, 8) }} ──</span>
             </div>
