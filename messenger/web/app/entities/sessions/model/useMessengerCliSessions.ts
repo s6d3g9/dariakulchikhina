@@ -171,6 +171,16 @@ export function useMessengerCliSessions() {
     await refresh()
   }
 
+  async function quickLaunch(payload: {
+    slug: string
+    prompt: string
+    model: string
+    workroom?: string
+    sourceMessageId?: string
+  }) {
+    return api.quickLaunchCliSession(payload)
+  }
+
   async function refresh(includeArchived = true) {
     pending.value = true
     try {
@@ -293,6 +303,7 @@ export function useMessengerCliSessions() {
     effortPrefs,
     archive,
     stopSession,
+    quickLaunch,
     refresh,
     connectStream,
     disconnectStream,

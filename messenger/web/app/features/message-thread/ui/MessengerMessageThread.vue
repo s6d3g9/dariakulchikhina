@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { MessengerConversationMessage } from '../../../entities/conversations/model/useMessengerConversations'
 import { useMessengerMarkdown } from '../lib/useMessengerMarkdown'
+import { extractNumberedOptions, shouldShowQuickLaunch } from '../lib/numberedOptions'
 import MessengerMessageReasoningPlate from './MessengerMessageReasoningPlate.vue'
 
 export interface MessengerThreadMessage extends MessengerConversationMessage {
@@ -48,6 +49,7 @@ const emit = defineEmits<{
   'open-run': [runId: string]
   'copy-text': [value: string, toast: string]
   'quote-code': [code: string]
+  'quick-launch': [payload: { messageId: string; body: string }]
 }>()
 
 const { render: renderMarkdown } = useMessengerMarkdown()
@@ -177,9 +179,11 @@ interface BurstEntryView {
   agentId?: string
   runId?: string
   createdAt: string
+  rawBody: string
   parsedBody: string
   renderedBody: string
   replySuggestions: string[]
+  numberedOptions: string[]
 }
 
 function extractReplySuggestions(body: string): string[] {
@@ -223,14 +227,20 @@ const burstEntries = computed<BurstEntryView[]>(() => {
   return all.map((m) => {
     const raw = m.body ?? ''
     const parsed = raw.replace(REPLY_SUGGESTIONS_RE, '').trimEnd()
+    // Numbered-list auto-detection mirrors <reply-suggestions>: only for
+    // agent-authored messages, and the explicit token wins (when present
+    // extractNumberedOptions returns null) so we don't double-render.
+    const numbered = m.own ? [] : (extractNumberedOptions(raw)?.options ?? [])
     return {
       id: m.id,
       agentId: m.agentId,
       runId: m.runId,
       createdAt: m.createdAt,
+      rawBody: raw,
       parsedBody: parsed,
       renderedBody: renderCached(m.id, parsed),
       replySuggestions: m.own ? [] : extractReplySuggestions(raw),
+      numberedOptions: numbered,
     }
   })
 })
@@ -317,6 +327,66 @@ const replySuggestions = computed<string[]>(() => {
   const last = burstEntries.value[burstEntries.value.length - 1]
   return last ? last.replySuggestions : []
 })
+
+// Auto-detected numbered options on the LAST entry — same trailing-entry
+// rule as replySuggestions for the same reason. Suppressed when explicit
+// <reply-suggestions> chips are present, so the bubble never shows two
+// chip rows competing for the same intent.
+const numberedOptions = computed<string[]>(() => {
+  if (replySuggestions.value.length) return []
+  const last = burstEntries.value[burstEntries.value.length - 1]
+  return last ? last.numberedOptions : []
+})
+
+const quickLaunchAvailable = computed<boolean>(() => {
+  if (props.entry.own) return false
+  const last = burstEntries.value[burstEntries.value.length - 1]
+  if (!last) return false
+  return shouldShowQuickLaunch(last.rawBody)
+})
+
+async function copyOptionToClipboard(text: string) {
+  if (!text) return
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      emit('copy-text', text, 'Скопировано')
+      return
+    }
+  } catch {
+    // Async clipboard refused — fall through to the legacy textarea path.
+  }
+  // Fallback for non-secure contexts (http dev) where the async clipboard
+  // API is unavailable. document.execCommand('copy') is deprecated but the
+  // only universally available substitute, so it stays for now.
+  if (typeof document === 'undefined') return
+  const ta = document.createElement('textarea')
+  ta.value = text
+  ta.style.position = 'fixed'
+  ta.style.opacity = '0'
+  ta.style.pointerEvents = 'none'
+  document.body.appendChild(ta)
+  ta.select()
+  try {
+    document.execCommand('copy')
+    emit('copy-text', text, 'Скопировано')
+  } catch {
+    // Clipboard write blocked — silently noop.
+  } finally {
+    document.body.removeChild(ta)
+  }
+}
+
+function handleNumberedOptionContext(event: MouseEvent, text: string) {
+  event.preventDefault()
+  void copyOptionToClipboard(text)
+}
+
+function emitQuickLaunch() {
+  const last = burstEntries.value[burstEntries.value.length - 1]
+  if (!last) return
+  emit('quick-launch', { messageId: last.id, body: last.rawBody })
+}
 
 const sentTime = computed(() => formatMessageTime(props.entry.createdAt))
 const lastBurstTime = computed(() => {
@@ -595,6 +665,75 @@ onBeforeUnmount(() => {
         >
           {{ text }}
         </button>
+        <button
+          v-if="quickLaunchAvailable"
+          type="button"
+          class="quick-launch-btn"
+          title="Запустить агентом"
+          aria-label="Запустить агентом"
+          @click.stop="emitQuickLaunch"
+        >
+          <VIcon size="14">mdi-rocket-launch</VIcon>
+          <span>Запустить агентом</span>
+        </button>
+      </div>
+      <div
+        v-else-if="numberedOptions.length"
+        class="reply-suggestions reply-suggestions--numbered"
+        data-message-controls="true"
+      >
+        <span
+          v-for="(text, idx) in numberedOptions"
+          :key="`${entry.id}-numbered-${idx}`"
+          class="reply-suggestion-chip reply-suggestion-chip--numbered"
+        >
+          <button
+            type="button"
+            class="reply-suggestion-chip__main"
+            :title="text"
+            @click.stop="emit('reply-suggestion-click', text)"
+            @contextmenu="handleNumberedOptionContext($event, text)"
+          >
+            <span class="reply-suggestion-chip__index">{{ idx + 1 }}.</span>
+            <span class="reply-suggestion-chip__text">{{ text }}</span>
+          </button>
+          <button
+            type="button"
+            class="reply-suggestion-chip__copy"
+            title="Скопировать"
+            aria-label="Скопировать"
+            @click.stop="copyOptionToClipboard(text)"
+          >
+            <VIcon size="14">mdi-content-copy</VIcon>
+          </button>
+        </span>
+        <button
+          v-if="quickLaunchAvailable"
+          type="button"
+          class="quick-launch-btn"
+          title="Запустить агентом"
+          aria-label="Запустить агентом"
+          @click.stop="emitQuickLaunch"
+        >
+          <VIcon size="14">mdi-rocket-launch</VIcon>
+          <span>Запустить агентом</span>
+        </button>
+      </div>
+      <div
+        v-else-if="quickLaunchAvailable"
+        class="reply-suggestions reply-suggestions--launch-only"
+        data-message-controls="true"
+      >
+        <button
+          type="button"
+          class="quick-launch-btn"
+          title="Запустить агентом"
+          aria-label="Запустить агентом"
+          @click.stop="emitQuickLaunch"
+        >
+          <VIcon size="14">mdi-rocket-launch</VIcon>
+          <span>Запустить агентом</span>
+        </button>
       </div>
       <MessengerMessageReasoningPlate
         v-for="plate in reasoningPlates"
@@ -666,6 +805,7 @@ onBeforeUnmount(() => {
         @open-run="emit('open-run', $event)"
         @copy-text="(value, toast) => emit('copy-text', value, toast)"
         @quote-code="emit('quote-code', $event)"
+        @quick-launch="emit('quick-launch', $event)"
       />
     </div>
   </article>

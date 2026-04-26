@@ -2292,6 +2292,35 @@ function handleReplySuggestionClick(text: string) {
   })
 }
 
+// --- Quick-launch (start a fresh CLI session from a numbered-options prompt) ---
+
+const quickLaunchDialogOpen = ref(false)
+const quickLaunchPayload = ref<{ messageId: string; body: string }>({ messageId: '', body: '' })
+const quickLaunchSnackbar = ref<{ slug: string } | null>(null)
+
+const quickLaunchConversationSlug = computed<string | null>(() => {
+  const conv = conversations.activeConversation.value
+  return conv?.peerLogin ?? null
+})
+
+function handleQuickLaunch(payload: { messageId: string; body: string }) {
+  quickLaunchPayload.value = payload
+  quickLaunchDialogOpen.value = true
+}
+
+function handleQuickLaunchLaunched({ slug }: { slug: string }) {
+  quickLaunchSnackbar.value = { slug }
+  // Refresh sessions list so the operator sees the row appear once the
+  // queue daemon picks the file up. The daemon polls every few seconds, so
+  // a single immediate refresh is enough — subsequent updates arrive via SSE.
+  cliSessionsModel.refresh().catch(() => {})
+}
+
+function openMonitorFromSnackbar() {
+  navigation.openSection('monitor')
+  quickLaunchSnackbar.value = null
+}
+
 async function handleCopyText(value: string, toast: string) {
   if (!value) return
   try {
@@ -3506,6 +3535,7 @@ onBeforeUnmount(() => {
               @open-run="handleOpenRun"
               @copy-text="handleCopyText"
               @quote-code="handleQuoteCode"
+              @quick-launch="handleQuickLaunch"
             />
           </template>
 
@@ -3837,6 +3867,28 @@ onBeforeUnmount(() => {
         </template>
       </MessengerChatComposerDock>
     </section>
+
+    <MessengerQuickLaunchDialog
+      v-model="quickLaunchDialogOpen"
+      :message-id="quickLaunchPayload.messageId"
+      :body="quickLaunchPayload.body"
+      :conversation-slug="quickLaunchConversationSlug"
+      @launched="handleQuickLaunchLaunched"
+    />
+
+    <VSnackbar
+      :model-value="Boolean(quickLaunchSnackbar)"
+      location="bottom"
+      timeout="6000"
+      @update:model-value="quickLaunchSnackbar = null"
+    >
+      <template v-if="quickLaunchSnackbar">
+        Задача поставлена в очередь: {{ quickLaunchSnackbar.slug }}
+      </template>
+      <template #actions>
+        <VBtn variant="text" color="primary" @click="openMonitorFromSnackbar">Открыть монитор</VBtn>
+      </template>
+    </VSnackbar>
   </section>
 </template>
 

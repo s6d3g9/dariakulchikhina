@@ -4793,6 +4793,101 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   transform: scale(0.97);
 }
 
+/* Numbered-options chip: combo of click-to-insert + dedicated copy icon. */
+.reply-suggestion-chip--numbered {
+  padding: 0;
+  background: rgb(var(--v-theme-surface-container-low));
+  cursor: default;
+  overflow: visible;
+}
+
+.reply-suggestion-chip--numbered:hover {
+  background: rgb(var(--v-theme-surface-container-low));
+  border-color: rgb(var(--v-theme-outline-variant));
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.reply-suggestion-chip__main {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 320px;
+  height: 26px;
+  padding: 0 8px 0 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 14px 0 0 14px;
+}
+
+.reply-suggestion-chip__main:hover {
+  background: rgb(var(--v-theme-secondary-container));
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+
+.reply-suggestion-chip__index {
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.reply-suggestion-chip__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reply-suggestion-chip__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-left: 1px solid rgb(var(--v-theme-outline-variant));
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface-variant));
+  cursor: pointer;
+  border-radius: 0 14px 14px 0;
+}
+
+.reply-suggestion-chip__copy:hover {
+  background: rgb(var(--v-theme-secondary-container));
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+
+/* "Запустить агентом" launcher button shares the chip-row baseline so the
+   hit area lines up with the chips on the same row visually. */
+.quick-launch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid rgb(var(--v-theme-primary));
+  background: rgb(var(--v-theme-primary-container));
+  color: rgb(var(--v-theme-on-primary-container));
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.quick-launch-btn:hover {
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+}
+
+.quick-launch-btn:active {
+  transform: scale(0.97);
+}
+
 /* ── Markdown body (rendered via markdown-it) ────────────── */
 /* Markdown produces its own block layout (<p>/<pre>/<table>…) — drop the
    parent's pre-wrap so the literal "\n" between rendered tags doesn't show

@@ -93,6 +93,19 @@ export function useAgentsApi() {
     })
   }
 
+  function quickLaunchCliSession(payload: {
+    slug: string
+    prompt: string
+    model: string
+    workroom?: string
+    sourceMessageId?: string
+  }) {
+    return auth.request<{ slug: string; queued: true; queuePath: string }>(
+      '/cli-sessions/quick-launch',
+      { method: 'POST', body: payload },
+    )
+  }
+
   function getCliSessionTrace(slug: string, limit = 100) {
     return auth.request<{
       slug: string
@@ -145,6 +158,7 @@ export function useAgentsApi() {
     listCliSessions,
     patchCliSession,
     stopCliSession,
+    quickLaunchCliSession,
     getCliSessionTrace,
     getAgentActiveRun,
     getAgentRunEvents,
