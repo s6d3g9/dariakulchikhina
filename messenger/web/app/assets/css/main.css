@@ -3402,8 +3402,12 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
 .chat-header__agent-btn--active {
   box-shadow: 0 0 0 1px color-mix(in srgb, rgb(var(--v-theme-primary)) 42%, transparent);
 }
+/* When the header sheet is expanded, the peer button must NOT paint
+   its own background — the toolbar + sheet read as one continuous
+   surface and a separate active capsule makes it look like nested
+   plates. Sheet expansion below is the only state indicator needed. */
 .chat-header__peer--active {
-  background: color-mix(in srgb, rgb(var(--v-theme-on-secondary-container)) 8%, transparent) !important;
+  background: transparent !important;
 }
 .chat-header__agent-btn-badge {
   position: absolute;
