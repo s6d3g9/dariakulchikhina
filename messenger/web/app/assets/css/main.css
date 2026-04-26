@@ -10150,3 +10150,111 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   border: 0 !important;
 }
 
+/* ============================================================
+   Global messenger surface unification — match the chat-header /
+   header-sheet aesthetic everywhere:
+     • borderless soft tonal surfaces (surface-container family)
+     • generous corner radii (12–16px)
+     • flat full-width list rows with state-layer hover
+     • borderless dividers, borderless buttons
+   Specific surfaces that already have their own design tokens
+   (.balancing-preset, .aidev-dialog, .messenger-header-sheet) are
+   carved out so this pass does not override their look.
+   ============================================================ */
+
+/* Toolbars / app-bars across the messenger share one tonal surface,
+   matching the chat-header look. Borderless, no shadow — the surface
+   tone alone establishes hierarchy. */
+.messenger-v-app .v-toolbar,
+.messenger-v-app .v-app-bar {
+  background: rgb(var(--v-theme-surface-container-highest)) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Cards default — soft tonal surface, no border, 16px radius, no
+   shadow. Carve-outs: dialog cards (.aidev-dialog already styled),
+   balancing-preset (its own active-state shadow), overlay-mounted
+   cards (already handled by the dropdown rules above). */
+.messenger-v-app .v-card:not(.aidev-dialog):not(.balancing-preset):not(.v-overlay__content .v-card) {
+  border-radius: 16px;
+  background: rgb(var(--v-theme-surface-container));
+  border: 0;
+  box-shadow: none;
+}
+
+/* Elevated card variant — for floating / lifted panels. */
+.messenger-v-app .v-card--variant-elevated:not(.aidev-dialog):not(.balancing-preset) {
+  background: rgb(var(--v-theme-surface-container-high));
+  box-shadow:
+    0 1px 2px 0 rgba(0, 0, 0, 0.18),
+    0 4px 12px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* Side-rail / drawer surface — same neutral surface as the body. */
+.messenger-v-app .v-navigation-drawer {
+  background: rgb(var(--v-theme-surface)) !important;
+  border: 0 !important;
+}
+
+/* Dividers — subtle 4% on-surface line, no hard rule. */
+.messenger-v-app .v-divider {
+  border-color: rgba(var(--v-theme-on-surface), 0.06) !important;
+  opacity: 1;
+}
+
+/* Outlined buttons — flatten to subtle tonal fill. The chat-header
+   uses borderless icon buttons; outlined buttons elsewhere break that
+   rhythm. Replace the visible border with a faint state-layer fill. */
+.messenger-v-app .v-btn--variant-outlined {
+  border-color: transparent !important;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+}
+.messenger-v-app .v-btn--variant-outlined:hover {
+  background: rgba(var(--v-theme-on-surface), 0.10);
+}
+
+/* Tabs — borderless track. The active-tab indicator (slider) stays. */
+.messenger-v-app .v-tabs--density-default,
+.messenger-v-app .v-tabs {
+  border-bottom: 0 !important;
+}
+.messenger-v-app .v-tab {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* List items in regular (non-overlay) lists — same flat-row state
+   layer pattern as the header-sheet and dropdown menus. Excludes
+   overlay/menu/select lists which have their own pill/row treatment
+   handled higher up in this file. */
+.messenger-v-app .v-list:not(.v-overlay__content .v-list):not(.v-menu .v-list):not(.v-select__content .v-list):not(.v-autocomplete__content .v-list) {
+  background: transparent;
+}
+.messenger-v-app .v-list:not(.v-overlay__content .v-list):not(.v-menu .v-list):not(.v-select__content .v-list):not(.v-autocomplete__content .v-list) > .v-list-item {
+  border-radius: 12px;
+  margin: 1px 4px;
+  min-height: 44px;
+}
+.messenger-v-app .v-list:not(.v-overlay__content .v-list):not(.v-menu .v-list):not(.v-select__content .v-list):not(.v-autocomplete__content .v-list) > .v-list-item:hover {
+  background: rgba(var(--v-theme-on-surface), 0.06);
+}
+.messenger-v-app .v-list:not(.v-overlay__content .v-list):not(.v-menu .v-list):not(.v-select__content .v-list):not(.v-autocomplete__content .v-list) > .v-list-item--active {
+  background: rgba(var(--v-theme-secondary-container), 0.55);
+  color: rgb(var(--v-theme-on-secondary-container));
+}
+
+/* Sheets / modals (v-bottom-sheet, v-dialog) — same surface tone +
+   generous radius as the header-sheet. */
+.messenger-v-app .v-overlay__content > .v-sheet,
+.messenger-v-app .v-overlay__content > .v-dialog__content > .v-sheet {
+  background: rgb(var(--v-theme-surface-container-high));
+  border-radius: 20px;
+  border: 0;
+}
+
+/* Chips — soft tonal pills, no border. */
+.messenger-v-app .v-chip:not(.balancing-preset__chip) {
+  border: 0 !important;
+}
+
