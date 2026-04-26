@@ -80,14 +80,22 @@ type RunRow = {
 // Inline port of provision logic (v2)
 // ---------------------------------------------------------------------------
 
+type ProjectRowLite = {
+  id: string
+  ownerUserId: string
+  deletedAt: null | Date
+}
+
 type Store = {
   agents: AgentRow[]
   convs: ConvRow[]
   runs: RunRow[]
+  projects: ProjectRowLite[]
+  projectsMap: Record<string, string>
 }
 
 function makeStore(): Store {
-  return { agents: [], convs: [], runs: [] }
+  return { agents: [], convs: [], runs: [], projects: [], projectsMap: {} }
 }
 
 type ProvisionInput = {
@@ -107,9 +115,25 @@ type ProvisionResult = {
   ingestToken: string
 }
 
+// Mirror of host-session-handler resolution: look up the mapping, then verify
+// the project exists, is owned by the host-bridge owner, and isn't soft-deleted.
+function resolveMappedProjectId(
+  store: Store,
+  cwd: string,
+  ownerUserId: string,
+): string | null {
+  const mapped = store.projectsMap[cwd] ?? null
+  if (!mapped) return null
+  const project = store.projects.find(
+    (p) => p.id === mapped && p.ownerUserId === ownerUserId && p.deletedAt === null,
+  )
+  return project ? project.id : null
+}
+
 async function provisionLogic(store: Store, input: ProvisionInput): Promise<ProvisionResult> {
   const { sessionId, cwd, hostname, gitBranch, sessionVersion, sessionStartedAt, ownerUserId } = input
   const projectKey = deriveProjectKey(cwd)
+  const messengerProjectId = resolveMappedProjectId(store, cwd, ownerUserId)
 
   // Lookup or create project-agent (one per hostname × cwd × ownerUserId)
   let agent = store.agents.find(
@@ -124,6 +148,10 @@ async function provisionLogic(store: Store, input: ProvisionInput): Promise<Prov
   let conversationId: string
 
   if (agent) {
+    // Bridge bootstrap: bind only when current projectId is null.
+    if (messengerProjectId && agent.projectId === null) {
+      agent.projectId = messengerProjectId
+    }
     const conv = store.convs.find(
       (c) =>
         c.kind === 'agent' &&
@@ -140,7 +168,7 @@ async function provisionLogic(store: Store, input: ProvisionInput): Promise<Prov
       ownerUserId,
       name: `${hostname}:${projectKey}`,
       ingestToken,
-      projectId: null,
+      projectId: messengerProjectId,
       config: { type: 'host-session', hostname, cwd, projectKey, createdBy: 'host-bridge' },
       deletedAt: null,
     }
@@ -518,6 +546,157 @@ async function testActiveRunsExcludesOtherOwner() {
   assert.notEqual(result1[0]!.id, result2[0]!.id, 'different runs for different owners')
 }
 
+// ---------------------------------------------------------------------------
+// Bridge-projects mapping (W4): cwd → projectId binding on provision
+// ---------------------------------------------------------------------------
+
+async function testProvisionBindsProjectIdWhenMappingPresent() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+  const projectId = randomUUID()
+  const cwd = '/home/claudecode/daria'
+
+  store.projects.push({ id: projectId, ownerUserId, deletedAt: null })
+  store.projectsMap = { [cwd]: projectId }
+
+  const result = await provisionLogic(store, {
+    sessionId: randomUUID(),
+    cwd,
+    hostname: 'daria-dev',
+    ownerUserId,
+  })
+
+  const agent = store.agents.find((a) => a.id === result.agentId)!
+  assert.equal(agent.projectId, projectId, 'projectId bound from mapping')
+}
+
+async function testProvisionFallsBackToNullWithoutMapping() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+
+  const result = await provisionLogic(store, {
+    sessionId: randomUUID(),
+    cwd: '/home/user/unmapped',
+    hostname: 'h1',
+    ownerUserId,
+  })
+
+  const agent = store.agents.find((a) => a.id === result.agentId)!
+  assert.equal(agent.projectId, null, 'no mapping → projectId stays null (legacy behavior)')
+}
+
+async function testProvisionFallsBackToNullWhenMappedProjectMissing() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+  const cwd = '/home/user/proj'
+
+  // Mapping points to a project that doesn't exist in DB (e.g. it was deleted).
+  store.projectsMap = { [cwd]: randomUUID() }
+
+  const result = await provisionLogic(store, {
+    sessionId: randomUUID(),
+    cwd,
+    hostname: 'h1',
+    ownerUserId,
+  })
+
+  const agent = store.agents.find((a) => a.id === result.agentId)!
+  assert.equal(agent.projectId, null, 'unknown project → projectId null, no error thrown')
+}
+
+async function testProvisionFallsBackToNullWhenMappedProjectSoftDeleted() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+  const projectId = randomUUID()
+  const cwd = '/home/user/proj'
+
+  store.projects.push({ id: projectId, ownerUserId, deletedAt: new Date() })
+  store.projectsMap = { [cwd]: projectId }
+
+  const result = await provisionLogic(store, {
+    sessionId: randomUUID(),
+    cwd,
+    hostname: 'h1',
+    ownerUserId,
+  })
+
+  const agent = store.agents.find((a) => a.id === result.agentId)!
+  assert.equal(agent.projectId, null, 'soft-deleted project rejected by ownership/deleted_at filter')
+}
+
+async function testProvisionFallsBackToNullWhenMappedProjectOwnedByDifferentUser() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+  const otherOwner = randomUUID()
+  const projectId = randomUUID()
+  const cwd = '/home/user/proj'
+
+  store.projects.push({ id: projectId, ownerUserId: otherOwner, deletedAt: null })
+  store.projectsMap = { [cwd]: projectId }
+
+  const result = await provisionLogic(store, {
+    sessionId: randomUUID(),
+    cwd,
+    hostname: 'h1',
+    ownerUserId,
+  })
+
+  const agent = store.agents.find((a) => a.id === result.agentId)!
+  assert.equal(agent.projectId, null, 'cross-owner project mapping is ignored')
+}
+
+async function testExistingAgentWithNullProjectIdGetsBoundOnNextProvision() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+  const projectId = randomUUID()
+  const cwd = '/home/user/proj'
+  const hostname = 'h1'
+
+  // First provision happens BEFORE the operator adds the mapping.
+  const r1 = await provisionLogic(store, { sessionId: randomUUID(), cwd, hostname, ownerUserId })
+  assert.equal(store.agents[0].projectId, null, 'agent created without projectId')
+
+  // Operator adds the mapping and the project is verifiable.
+  store.projects.push({ id: projectId, ownerUserId, deletedAt: null })
+  store.projectsMap = { [cwd]: projectId }
+
+  // Second provision picks up the mapping idempotently.
+  const r2 = await provisionLogic(store, { sessionId: randomUUID(), cwd, hostname, ownerUserId })
+
+  assert.equal(r1.agentId, r2.agentId, 'same agent reused across provisions')
+  assert.equal(store.agents[0].projectId, projectId, 'projectId backfilled on next provision')
+}
+
+async function testExistingAgentWithProjectIdSetIsNotOverridden() {
+  const store = makeStore()
+  const ownerUserId = randomUUID()
+  const manualProjectId = randomUUID()
+  const mappedProjectId = randomUUID()
+  const cwd = '/home/user/proj'
+  const hostname = 'h1'
+
+  // Both projects exist in DB; one is set manually on the agent, the other is
+  // in the bridge mapping. The bridge MUST NOT override the manual value.
+  store.projects.push(
+    { id: manualProjectId, ownerUserId, deletedAt: null },
+    { id: mappedProjectId, ownerUserId, deletedAt: null },
+  )
+
+  // Seed an agent whose projectId was set manually (e.g. via admin UI).
+  await provisionLogic(store, { sessionId: randomUUID(), cwd, hostname, ownerUserId })
+  store.agents[0].projectId = manualProjectId
+
+  // Operator adds a conflicting mapping and re-provisions.
+  store.projectsMap = { [cwd]: mappedProjectId }
+  await provisionLogic(store, { sessionId: randomUUID(), cwd, hostname, ownerUserId })
+
+  assert.equal(
+    store.agents[0].projectId,
+    manualProjectId,
+    'manually-set projectId must not be overridden by bridge mapping',
+  )
+}
+
 async function testActiveRunsOrderedByCreatedAtDesc() {
   const store = makeStore()
   const ownerUserId = randomUUID()
@@ -556,6 +735,13 @@ async function main() {
     testActiveRunsExcludesCompletedRuns,
     testActiveRunsExcludesOtherOwner,
     testActiveRunsOrderedByCreatedAtDesc,
+    testProvisionBindsProjectIdWhenMappingPresent,
+    testProvisionFallsBackToNullWithoutMapping,
+    testProvisionFallsBackToNullWhenMappedProjectMissing,
+    testProvisionFallsBackToNullWhenMappedProjectSoftDeleted,
+    testProvisionFallsBackToNullWhenMappedProjectOwnedByDifferentUser,
+    testExistingAgentWithNullProjectIdGetsBoundOnNextProvision,
+    testExistingAgentWithProjectIdSetIsNotOverridden,
   ]
 
   let passed = 0

@@ -16,6 +16,8 @@ import {
 } from './ingest-db.ts'
 // eslint-disable-next-line no-restricted-imports
 import { messengerConversations } from '../../../../server/db/schema/messenger.ts'
+// eslint-disable-next-line no-restricted-imports
+import { messengerProjects } from '../../../../server/db/schema/messenger-projects.ts'
 
 function verifyBridgeToken(authHeader: string | undefined, expected: string): boolean {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : ''
@@ -37,13 +39,31 @@ function resolveSessionAuth(request: FastifyRequest) {
   return verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET)
 }
 
+// Reads `~/.host-bridge-projects.json` (or whatever HOST_BRIDGE_PROJECTS_FILE points
+// at). Expected shape: `{ version: 1, mappings: { "<cwd>": "<projectId>" } }`.
+// Returns an empty map on any read/parse error so provisioning never fails just
+// because the operator hasn't set up bridging yet.
 function loadProjectsMap(filePath: string | undefined): Record<string, string> {
   if (!filePath || !existsSync(filePath)) return {}
   try {
     const raw = readFileSync(filePath, 'utf8')
     const parsed = JSON.parse(raw) as unknown
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-      return parsed as Record<string, string>
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      !Array.isArray(parsed) &&
+      (parsed as Record<string, unknown>).version === 1 &&
+      typeof (parsed as Record<string, unknown>).mappings === 'object' &&
+      (parsed as Record<string, unknown>).mappings !== null
+    ) {
+      const mappings = (parsed as { mappings: Record<string, unknown> }).mappings
+      const result: Record<string, string> = {}
+      for (const [cwd, projectId] of Object.entries(mappings)) {
+        if (typeof projectId === 'string' && projectId.length > 0) {
+          result[cwd] = projectId
+        }
+      }
+      return result
     }
   } catch {
     // ignore malformed file — treat as empty map
@@ -92,9 +112,29 @@ export function registerHostSessionRoutes(app: FastifyInstance) {
 
     const projectKey = cwd.split('/').filter(Boolean).pop() ?? 'home'
     const projectsMap = loadProjectsMap(config.HOST_BRIDGE_PROJECTS_FILE)
-    const messengerProjectId = projectsMap[cwd] ?? null
+    const mappedProjectId = projectsMap[cwd] ?? null
 
     const db = useIngestDb()
+
+    // Verify the mapped project exists, is owned by the host-bridge owner, and
+    // is not soft-deleted. If any of these fails we silently fall back to a
+    // null projectId — the spec says provision must never throw because of a
+    // stale or operator-edited mapping file.
+    let messengerProjectId: string | null = null
+    if (mappedProjectId) {
+      const [projectRow] = await db
+        .select({ id: messengerProjects.id })
+        .from(messengerProjects)
+        .where(
+          and(
+            eq(messengerProjects.id, mappedProjectId),
+            eq(messengerProjects.ownerUserId, ownerUserId),
+            isNull(messengerProjects.deletedAt),
+          ),
+        )
+        .limit(1)
+      if (projectRow) messengerProjectId = projectRow.id
+    }
 
     const result = await db.transaction(async (tx) => {
       // One project-agent per (hostname × cwd × ownerUserId)
@@ -124,8 +164,10 @@ export function registerHostSessionRoutes(app: FastifyInstance) {
         agentId = existingAgent.id
         ingestToken = existingAgent.ingestToken
 
-        // Idempotent project binding: update if a mapping now exists and isn't set yet
-        if (messengerProjectId && existingAgent.projectId !== messengerProjectId) {
+        // Bridge bootstrap: bind a verified projectId from the mapping file
+        // ONLY when the agent currently has no projectId. Never override a
+        // value that an operator may have set manually via the admin UI.
+        if (messengerProjectId && existingAgent.projectId === null) {
           await tx
             .update(messengerAgents)
             .set({ projectId: messengerProjectId, updatedAt: new Date() })
