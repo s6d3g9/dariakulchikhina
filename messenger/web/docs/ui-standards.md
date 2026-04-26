@@ -269,10 +269,70 @@
 |---|---|---|---|---|
 | `surface.card` | карточка в списке (template, agent, mode) | `VCard variant="tonal"` | `lg` (16) | none |
 | `surface.card-outlined` | карточка-«призрак» (placeholder, drag target) | `VCard variant="outlined"` | `lg` (16) | dashed `--v-theme-outline-variant` |
+| `surface.soft-panel` | мягкая плашка-группа в плотной форме (preset row, field group, settings tile) | кастомный `<div>` | `md` (12) | hairline `1px solid rgba(on-surface, 0.08)` |
+| `surface.soft-panel--active` | то же, выбранное состояние | кастомный `<div>` | `md` (12) | `1px solid rgb(secondary)`, фон `rgba(secondary-container, 0.55)` |
 | `surface.bubble` | сообщение в чате | кастомный `<div>` | `lg` (16) с асимметрией | none |
 | `surface.plate` | заметная плашка-секция (header, dock) | кастомный `<header>`/`<div>` | `2xl` (28) для capsule, `lg` (16) для остальных | none |
 | `surface.banner` | информационный banner | `VAlert variant="tonal"` | `md` (12) | none |
 | `surface.callout` | quote / reply / forwarded relation | кастомный `<div>` | `sm` (8) с акцент-бордером слева | left-only solid |
+
+#### 4.4.1 `surface.soft-panel` — каноничные токены
+
+Эталон — `.balancing-preset` в `AidevBalancingTab.vue` (его и копируем).
+Применять везде, где раньше встречались самодельные «карточки в форме» с
+рандомным радиусом 14 / 17 / 20 / `--v-theme-surface-container` без
+прозрачности и т.п.
+
+```css
+/* base */
+padding: 12px;                                              /* var(--ds-space-3)   */
+border-radius: 12px;                                        /* var(--ds-radius-md) */
+border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+background: rgba(var(--v-theme-surface-variant), 0.18);
+display: flex;
+flex-direction: column;
+gap: 8px;                                                   /* var(--ds-space-2)   */
+transition: background 160ms ease, border-color 160ms ease;
+
+/* --active (опционально, для радио/выбираемых тайлов) */
+border-color: rgb(var(--v-theme-secondary));
+background: rgba(var(--v-theme-secondary-container), 0.55);
+```
+
+Внутри допустимо:
+- заголовок-строка (`row`, `align-items: center`, `gap: 8px`),
+- набор `VChip size="x-small" label` для метаданных,
+- описание (`font-size: 0.82rem; color: on-surface-variant`).
+
+Запрещено внутри `surface.soft-panel`:
+- `box-shadow` (мягкая плашка плоская);
+- собственная подложка с `--v-theme-surface-container-*` (нарушает прозрачность,
+  которая держит её «мягкой» поверх чужого фона);
+- радиусы вне шкалы.
+
+### 4.4.2 Mode tile group — pattern для «сегмент-тайл с подзаголовком»
+
+Эталон — `.balancing-mode-btn` (Auto / Manual в `AidevBalancingTab.vue`).
+Это **не** `button.segmented` (тот для нижнего bar). Tile-группа — для
+inline-выбора режима в форме / диалоге, где у каждого варианта есть
+короткий описательный hint под названием.
+
+| Параметр | Значение |
+|---|---|
+| Контейнер | `display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: var(--ds-space-2)` |
+| Tile | `<button>` с `flex-direction: column; align-items: flex-start; gap: 4px` |
+| Padding | `10px 12px` |
+| Радиус | `var(--ds-radius-md)` (12) |
+| Бордер | `1px solid rgba(on-surface, 0.12)` |
+| Базовый фон | `transparent` |
+| Hover | `background: rgba(on-surface, 0.04)` |
+| Active | `background: rgb(secondary-container)`, `color: rgb(on-secondary-container)`, `border-color: transparent` |
+| Заголовок | `font-size: 0.85rem; font-weight: 500` |
+| Hint | `font-size: 0.72rem; font-weight: 400; opacity: 0.8` |
+
+Применять для: бинарных режимов (auto / manual), коротких пиков «3-5 опций»
+с подсказкой (модель haiku / sonnet / opus + «когда выбрать»). Если опций
+> 5 или нет hint'а — берём `VSelect`.
 
 **Текущие классы:**
 
