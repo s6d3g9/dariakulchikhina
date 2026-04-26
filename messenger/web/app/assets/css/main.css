@@ -10387,3 +10387,82 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   font-size: 11px;
 }
 
+/* ========================================================================
+ * M3 motion tokens — unified durations + easings for every popover/sheet
+ * ====================================================================== */
+.messenger-v-app {
+  --messenger-motion-duration-short: 150ms;
+  --messenger-motion-duration-medium: 250ms;
+  --messenger-motion-duration-standard: 300ms;
+  --messenger-motion-duration-emphasized: 400ms;
+
+  --messenger-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --messenger-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --messenger-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --messenger-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+}
+
+/* Sheet / panel / dropdown transitions — same motion everywhere */
+.composer-aidev-panel-enter-active,
+.composer-aidev-panel-leave-active,
+.composer-search-panel-enter-active,
+.composer-search-panel-leave-active,
+.composer-project-actions-enter-active,
+.composer-project-actions-leave-active,
+.agent-chat-workspace-sheet-enter-active,
+.agent-chat-workspace-sheet-leave-active,
+.gallery-panel-enter-active,
+.gallery-panel-leave-active,
+.aidev-bar-reveal-enter-active,
+.aidev-bar-reveal-leave-active,
+.caps-bar-reveal-enter-active,
+.caps-bar-reveal-leave-active,
+.pa-expand-enter-active,
+.pa-expand-leave-active {
+  transition:
+    transform var(--messenger-motion-duration-medium) var(--messenger-motion-easing-emphasized-decelerate),
+    opacity var(--messenger-motion-duration-short) var(--messenger-motion-easing-standard),
+    max-height var(--messenger-motion-duration-medium) var(--messenger-motion-easing-emphasized-decelerate) !important;
+}
+
+.chrome-reveal-enter-active,
+.chrome-reveal-leave-active,
+.screen-fade-enter-active,
+.screen-fade-leave-active,
+.message-actions-pop-enter-active,
+.message-actions-pop-leave-active {
+  transition:
+    transform var(--messenger-motion-duration-short) var(--messenger-motion-easing-emphasized-decelerate),
+    opacity var(--messenger-motion-duration-short) var(--messenger-motion-easing-standard) !important;
+}
+
+.overlay-rise-enter-active,
+.overlay-rise-leave-active {
+  transition:
+    transform var(--messenger-motion-duration-emphasized) var(--messenger-motion-easing-emphasized-decelerate),
+    opacity var(--messenger-motion-duration-medium) var(--messenger-motion-easing-standard) !important;
+}
+
+/* Vuetify built-in menu / select / autocomplete / dialog overlay motion */
+.v-menu > .v-overlay__content,
+.v-overlay--scope-strategy-block > .v-overlay__content {
+  transition:
+    transform var(--messenger-motion-duration-medium) var(--messenger-motion-easing-emphasized-decelerate),
+    opacity var(--messenger-motion-duration-short) var(--messenger-motion-easing-standard) !important;
+}
+
+/* ========================================================================
+ * Composer & message list — flush to display edges (desktop + mobile)
+ * Removes the 8px horizontal inset on .composer-bar and 16px on message-list
+ * so the input and bubbles span the full chat-section width.
+ * ====================================================================== */
+.composer-bar {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.message-list {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
