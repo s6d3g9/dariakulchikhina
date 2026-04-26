@@ -2261,6 +2261,33 @@ function handleReplySuggestionClick(text: string) {
   })
 }
 
+async function handleCopyText(value: string, toast: string) {
+  if (!value) return
+  try {
+    await copyText(value)
+    copiedLabel.value = toast
+    setTimeout(() => {
+      if (copiedLabel.value === toast) {
+        copiedLabel.value = ''
+      }
+    }, 1800)
+  } catch {
+    actionError.value = 'Не удалось скопировать в буфер.'
+  }
+}
+
+function handleQuoteCode(code: string) {
+  if (!code) return
+  const fence = '```\n' + code.replace(/\s+$/, '') + '\n```\n'
+  const current = draft.value
+  const sep = current && !current.endsWith('\n') ? '\n' : ''
+  draft.value = current + sep + fence
+  nextTick(() => {
+    composerInputEl.value?.focus()
+    syncComposerInputHeight()
+  })
+}
+
 const workspaceOpenRunId = ref<string | null>(null)
 function handleOpenRun(runId: string) {
   // Toggle off→on so re-clicking the same run still triggers the workspace watcher.
@@ -3439,6 +3466,8 @@ onBeforeUnmount(() => {
               @open-photo="openPhotoGallery"
               @reply-suggestion-click="handleReplySuggestionClick"
               @open-run="handleOpenRun"
+              @copy-text="handleCopyText"
+              @quote-code="handleQuoteCode"
             />
           </template>
 

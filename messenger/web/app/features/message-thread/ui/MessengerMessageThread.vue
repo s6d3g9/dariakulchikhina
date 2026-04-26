@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MessengerConversationMessage } from '../../../entities/conversations/model/useMessengerConversations'
+import { useMessengerMarkdown } from '../lib/useMessengerMarkdown'
 import MessengerMessageReasoningPlate from './MessengerMessageReasoningPlate.vue'
 
 export interface MessengerThreadMessage extends MessengerConversationMessage {
@@ -40,7 +41,11 @@ const emit = defineEmits<{
   react: [messageId: string, emoji: string]
   'reply-suggestion-click': [text: string]
   'open-run': [runId: string]
+  'copy-text': [value: string, toast: string]
+  'quote-code': [code: string]
 }>()
+
+const { render: renderMarkdown } = useMessengerMarkdown()
 
 const bubbleEl = ref<HTMLElement | null>(null)
 const controlsEl = ref<HTMLElement | null>(null)
@@ -147,6 +152,36 @@ async function copyMessageBody() {
 }
 
 const parsedBody = computed(() => (props.entry.body ?? '').replace(REPLY_SUGGESTIONS_RE, '').trimEnd())
+const renderedBody = computed(() => renderMarkdown(parsedBody.value))
+
+function handleBodyClick(event: MouseEvent) {
+  const target = event.target instanceof HTMLElement ? event.target : null
+  if (!target) return
+
+  const fileChip = target.closest<HTMLElement>('.md-file-chip')
+  if (fileChip) {
+    event.stopPropagation()
+    const path = fileChip.getAttribute('data-file-path') ?? ''
+    if (path) emit('copy-text', path, `Путь скопирован: ${path}`)
+    return
+  }
+
+  const codeBtn = target.closest<HTMLElement>('.md-code-block__btn')
+  if (codeBtn) {
+    event.stopPropagation()
+    const action = codeBtn.getAttribute('data-action')
+    const encoded = codeBtn.getAttribute('data-code') ?? ''
+    let code = ''
+    try {
+      code = decodeURIComponent(encoded)
+    } catch {
+      code = encoded
+    }
+    if (action === 'copy-code') emit('copy-text', code, 'Код скопирован')
+    else if (action === 'quote-code') emit('quote-code', code)
+  }
+}
+
 const replySuggestions = computed<string[]>(() => {
   if (props.entry.own) return []
   const match = (props.entry.body ?? '').match(REPLY_SUGGESTIONS_RE)
@@ -394,7 +429,11 @@ onBeforeUnmount(() => {
       />
     </div>
     <div v-else class="message-bubble__content">
-      <p class="message-bubble__text">{{ parsedBody }}</p>
+      <div
+        class="message-bubble__text message-body"
+        @click="handleBodyClick"
+        v-html="renderedBody"
+      />
       <div v-if="replySuggestions.length" class="reply-suggestions" data-message-controls="true">
         <button
           v-for="(text, idx) in replySuggestions"
@@ -471,6 +510,8 @@ onBeforeUnmount(() => {
         @react="(messageId, emoji) => emit('react', messageId, emoji)"
         @reply-suggestion-click="emit('reply-suggestion-click', $event)"
         @open-run="emit('open-run', $event)"
+        @copy-text="(value, toast) => emit('copy-text', value, toast)"
+        @quote-code="emit('quote-code', $event)"
       />
     </div>
   </article>
