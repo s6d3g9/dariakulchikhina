@@ -263,6 +263,11 @@ export function useMessengerCliSessions() {
         lastActivityAt: delta.ts,
         idleForMs: 0,
         isIdle: false,
+        // Server's isActive uses idleForMs<90s — a fresh event delta means
+        // we just observed activity, so flip the flag client-side too. Without
+        // this, sessions that became active between snapshot fetches stay
+        // "Idle" in the tree even while events stream in.
+        isActive: prev.status === 'running' && !prev.archivedAt,
         lastSubstate: delta.substate ?? prev.lastSubstate,
         lastTool: delta.tool ?? prev.lastTool,
         lastMessagePreview: delta.message ?? prev.lastMessagePreview,

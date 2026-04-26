@@ -34,10 +34,13 @@ const { flatSorted, counters, activeTrace, awaitingSlugs, crashedSlugs, activeSl
 // composable) so toggling it here propagates to `provideMonitorTopology`.
 const { filter, search, pinnedSlugs, togglePin, hideOrphans } = useMonitorPersistence({ mode })
 
+// `active` is the default filter, so we never auto-fallback away from it —
+// dropping it to `all` would unmask every stopped/zombie session, which is
+// exactly the noise the operator chose `active` to avoid. The empty state
+// at filter==='active' (see template) tells them no one's currently working.
 watchEffect(() => {
   if (filter.value === 'awaiting' && counters.value.awaiting === 0) filter.value = 'all'
   if (filter.value === 'crashed' && counters.value.crashed === 0) filter.value = 'all'
-  if (filter.value === 'active' && counters.value.active === 0) filter.value = 'all'
   if (filter.value === 'archived' && counters.value.archived === 0) filter.value = 'all'
   if (filter.value === 'host' && counters.value.host === 0) filter.value = 'all'
 })

@@ -758,6 +758,29 @@ onBeforeUnmount(() => {
           #{{ plate.runId.slice(0, 8) }}
         </button>
       </div>
+      <!-- Stable identifiers footer. Lets the operator quote a specific
+           bubble/run by short id ("msg:abc12345") in conversation; click
+           copies the full uuid so it can be pasted into a DB query. -->
+      <div class="message-bubble__id-footer" data-message-controls="true">
+        <button
+          type="button"
+          class="message-bubble__id-chip"
+          :title="`Сообщение ${entry.id} · клик — скопировать`"
+          @click.stop="copyOptionToClipboard(entry.id)"
+        >msg:{{ entry.id.slice(0, 8) }}</button>
+        <button
+          v-if="entry.runId"
+          type="button"
+          class="message-bubble__id-chip"
+          :title="`Прогон ${entry.runId} · клик — скопировать`"
+          @click.stop="copyOptionToClipboard(entry.runId!)"
+        >run:{{ entry.runId.slice(0, 8) }}</button>
+        <span
+          v-if="entry.senderDisplayName"
+          class="message-bubble__id-chip message-bubble__id-chip--name"
+          :title="entry.senderDisplayName"
+        >{{ entry.senderDisplayName }}</span>
+      </div>
     </div>
 
     <div v-if="entry.reactions?.length" class="message-reactions">

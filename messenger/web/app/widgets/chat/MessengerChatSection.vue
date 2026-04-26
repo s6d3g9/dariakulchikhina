@@ -2321,6 +2321,11 @@ function openMonitorFromSnackbar() {
   quickLaunchSnackbar.value = null
 }
 
+async function copyRunIdToClipboard(runId: string) {
+  if (!runId) return
+  await handleCopyText(runId, `Скопировано: run:${runId.slice(0, 8)}`)
+}
+
 async function handleCopyText(value: string, toast: string) {
   if (!value) return
   try {
@@ -3577,6 +3582,17 @@ onBeforeUnmount(() => {
                   <span class="chat-thinking-bubble__name">{{ activePeerName }}</span>
                   <span class="chat-thinking-bubble__model">· {{ activeAgentModelLabel }}</span>
                   <span class="chat-thinking-bubble__state">· {{ rd.substateLabel }}</span>
+                  <!-- Run id chip surfaced during reasoning so the operator can
+                       quote the in-flight run by short id ("run:abc12345") in
+                       the same way they would after the bubble lands. -->
+                  <span
+                    class="chat-thinking-bubble__run-id"
+                    :title="`Прогон ${rd.runId} · клик — скопировать`"
+                    role="button"
+                    tabindex="0"
+                    @click.stop="copyRunIdToClipboard(rd.runId)"
+                    @keydown.enter.stop.prevent="copyRunIdToClipboard(rd.runId)"
+                  >run:{{ rd.runId.slice(0, 8) }}</span>
                   <VIcon size="14" class="chat-thinking-bubble__chevron">
                     {{ isChatRunExpanded(rd.runId) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
                   </VIcon>

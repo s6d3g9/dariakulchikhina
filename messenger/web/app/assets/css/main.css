@@ -4545,6 +4545,46 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   color: rgb(var(--v-theme-on-secondary-container));
 }
 
+.message-bubble__id-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(var(--v-theme-on-surface-variant), 0.18);
+  justify-content: flex-end;
+}
+
+.message-bubble__id-chip {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: rgb(var(--v-theme-on-surface-variant));
+  background: transparent;
+  border: none;
+  padding: 0 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 120ms ease, background 120ms ease;
+}
+
+.message-bubble__id-chip:hover {
+  opacity: 1;
+  background: rgb(var(--v-theme-surface-container-high));
+}
+
+.message-bubble__id-chip--name {
+  cursor: default;
+  font-family: inherit;
+  font-style: italic;
+}
+
+.message-bubble__id-chip--name:hover {
+  background: transparent;
+  opacity: 0.7;
+}
+
 /* ── Attachment / Voice ──────────────────────────────────── */
 .attachment-card {
   display: flex;
@@ -9370,6 +9410,29 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   font-style: italic;
 }
 .chat-thinking-bubble__chevron { margin-left: auto; opacity: 0.6; }
+
+.chat-thinking-bubble__run-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  padding: 0 6px;
+  height: 18px;
+  line-height: 18px;
+  border-radius: 9px;
+  background: rgb(var(--v-theme-surface-container-high));
+  color: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 120ms ease, background 120ms ease;
+}
+
+.chat-thinking-bubble__run-id:hover,
+.chat-thinking-bubble__run-id:focus-visible {
+  opacity: 1;
+  background: rgb(var(--v-theme-secondary-container));
+  color: rgb(var(--v-theme-on-secondary-container));
+  outline: none;
+}
 .chat-thinking-bubble__expand {
   display: flex;
   flex-direction: column;
