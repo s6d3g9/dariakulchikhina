@@ -117,6 +117,11 @@ export interface MessengerConversationMessage {
   commentOn?: MessengerMessageRelationPreview
   forwardedFrom?: MessengerForwardedMessagePreview
   runId?: string
+  // Top of the agent run subtree this message belongs to. Sub-agent runs
+  // spawned from one user prompt all share a rootRunId, so the chat section
+  // can fold sequential agent messages from the same logical task into a
+  // single bubble. Falls back to time-gap heuristic when missing.
+  rootRunId?: string
   agentId?: string
 }
 

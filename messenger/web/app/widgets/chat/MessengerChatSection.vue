@@ -1275,12 +1275,9 @@ const threadedMessages = computed<MessengerThreadMessage[]>(() => {
 // sub-agents that all surface as separate messages) shows up as one bubble
 // instead of N bubbles + N reasoning plates.
 //
-// The proper grouping signal is server-side `rootRunId` on each message,
-// but `MessengerConversationMessage` doesn't expose it yet (TODO: extend
-// the messenger/core API contract). As a pragmatic stand-in we cap the
-// fold-window at 30 min — within one task, runs typically fire within
-// seconds of each other; a half-hour gap is almost certainly a separate
-// task started without a user prompt in between (autonomous orchestration).
+// Primary grouping signal is server-stamped `rootRunId`: messages from runs
+// that share a root belong to the same logical task. Time gap acts as a
+// fallback for legacy messages that pre-date rootRunId stamping.
 const BURST_MAX_GAP_MS = 30 * 60 * 1000
 
 function shouldFoldIntoBurst(prev: MessengerThreadMessage, next: MessengerThreadMessage): boolean {
@@ -1299,9 +1296,15 @@ function shouldFoldIntoBurst(prev: MessengerThreadMessage, next: MessengerThread
   if (next.reactions && next.reactions.length > 0) return false
   if (next.comments && next.comments.length > 0) return false
   if (next.editedAt) return false
-  // Time-gap heuristic: only fold runs that happen close together. Defends
-  // against an agent finishing one task and starting an unrelated one
-  // without any user message between them (autonomous orchestration).
+  // rootRunId is the authoritative signal: when both messages carry it, fold
+  // iff they belong to the same run subtree. Different roots = different
+  // logical tasks even if they fire back-to-back.
+  if (prev.rootRunId && next.rootRunId) {
+    return prev.rootRunId === next.rootRunId
+  }
+  // Legacy fallback: pre-rootRunId messages get the time-gap heuristic so
+  // an agent finishing one task and autonomously starting another without
+  // a user prompt in between doesn't get visually merged.
   const prevTime = Date.parse(prev.createdAt)
   const nextTime = Date.parse(next.createdAt)
   if (!Number.isNaN(prevTime) && !Number.isNaN(nextTime)) {

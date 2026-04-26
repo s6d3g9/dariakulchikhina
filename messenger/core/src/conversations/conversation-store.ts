@@ -1,6 +1,7 @@
 import { eq, and, isNull, sql } from 'drizzle-orm'
 
 import { findMessengerAgentById, type MessengerAgentRecord } from '../agents/agent-store.ts'
+import { lookupRootRunId } from '../agents/agent-run-store.ts'
 import type { MessengerUserRecord } from '../auth/auth-store.ts'
 import { readMessengerConfig } from '../config.ts'
 import type { MessengerDevicePublicKeyRecord } from '../crypto/crypto-store.ts'
@@ -645,7 +646,15 @@ export async function addAgentMessageToConversation(
   if (conversation.kind !== 'agent' || conversation.userBId !== agent.id) throw new Error('CONVERSATION_FORBIDDEN')
 
   const payload: Record<string, unknown> = { body: body.trim(), kind: 'text', agentId: agent.id }
-  if (options?.runId) payload.runId = options.runId
+  if (options?.runId) {
+    payload.runId = options.runId
+    // rootRunId lets the client fold sub-agent bursts that share one task.
+    // We resolve it here once on insert so the client doesn't have to issue
+    // a per-message lookup; null means the run row was already deleted, in
+    // which case the client falls back to the time-gap heuristic.
+    const rootRunId = await lookupRootRunId(options.runId)
+    if (rootRunId) payload.rootRunId = rootRunId
+  }
 
   const row = await insertMessage({
     conversationId,

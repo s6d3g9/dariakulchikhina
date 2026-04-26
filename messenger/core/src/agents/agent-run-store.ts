@@ -140,6 +140,20 @@ export async function getMessengerAgentRunById(runId: string) {
   return _runs.find(run => run.runId === runId) ?? null
 }
 
+// Returns the rootRunId stored in messenger_agent_runs for the given runId.
+// Used by the message store to stamp agent-authored messages with their root
+// run, so the client can fold sub-agent bursts from one logical task into
+// a single bubble. Returns null when the run row doesn't exist.
+export async function lookupRootRunId(runId: string): Promise<string | null> {
+  const db = useIngestDb()
+  const [row] = await db
+    .select({ rootRunId: messengerAgentRuns.rootRunId })
+    .from(messengerAgentRuns)
+    .where(and(eq(messengerAgentRuns.id, runId), isNull(messengerAgentRuns.deletedAt)))
+    .limit(1)
+  return (row?.rootRunId as string | undefined) ?? null
+}
+
 export async function createMessengerAgentRun(input: {
   agentId: string
   parentRunId?: string

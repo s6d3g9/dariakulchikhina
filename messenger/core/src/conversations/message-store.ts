@@ -46,6 +46,11 @@ export interface MessagePayload {
   }
   agentId?: string
   runId?: string
+  // rootRunId points at the top of the run subtree this message belongs to.
+  // Sub-agent runs spawned from one user prompt all share a rootRunId, so the
+  // client can fold sequential agent messages from the same logical task into
+  // a single bubble (see messenger/web `shouldFoldIntoBurst`).
+  rootRunId?: string
 }
 
 export interface StoredMessageRow {
@@ -108,6 +113,7 @@ export function rowToMessengerMessageRecord(row: StoredMessageRow) {
     commentOnMessageId: row.deletedAt ? undefined : (payload as MessagePayload).commentOnMessageId,
     forwardedFrom: row.deletedAt ? undefined : (payload as MessagePayload).forwardedFrom,
     runId: row.deletedAt ? undefined : (payload as MessagePayload).runId,
+    rootRunId: row.deletedAt ? undefined : (payload as MessagePayload).rootRunId,
     agentId: row.deletedAt ? undefined : (agentId as string | undefined),
   }
 }
