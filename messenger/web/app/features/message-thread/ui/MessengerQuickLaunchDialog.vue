@@ -81,7 +81,11 @@ watch(
     submitting.value = false
     slug.value = buildSlug(props.messageId, props.conversationSlug ?? null)
     prompt.value = stripReplySuggestions(props.body)
-    workroom.value = `wr-${slug.value}`.slice(0, 40)
+    // Leave workroom empty by default — backend then uses `main` as base branch.
+    // Filling this field requires an existing `claude/workroom-<value>` branch
+    // to exist on origin; otherwise queue daemon fails the spawn with
+    // `fatal: invalid reference`.
+    workroom.value = ''
     // Seed the project picker with the chat's agent project, if any. The
     // operator can still change it before submit. The list is refreshed so
     // freshly-created projects appear without a page reload.
@@ -202,10 +206,13 @@ async function submit() {
 
           <VTextField
             v-model="workroom"
-            label="Workroom"
+            label="Workroom (опционально)"
+            placeholder="пусто = main"
+            persistent-placeholder
             density="compact"
             variant="outlined"
-            hide-details
+            hint="Оставьте пустым для запуска от main. Иначе укажите имя существующей ветки claude/workroom-<имя>."
+            persistent-hint
           />
         </div>
       </VCardText>
