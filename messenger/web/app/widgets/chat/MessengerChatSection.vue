@@ -556,24 +556,59 @@ const MODEL_OPTIONS = [
 const modelSetPending = ref(false)
 const modelSetError = ref('')
 
+// Resolve the agent id of the currently open agent conversation. Used both
+// for the live session lookup and for persisting a model preference when no
+// CLI session has been launched yet.
+const currentAgentId = computed(() => {
+  const conv = conversations.activeConversation.value
+  if (!conv || conv.peerType !== 'agent') return ''
+  return conv.peerUserId || ''
+})
+
+// Pick the model meta for the header button. Prefer the live session model
+// when one is running; otherwise fall back to the persisted per-agent
+// preference so the chosen model sticks across reopens of an agent chat
+// that doesn't yet have a session. Default to Sonnet when nothing is set.
 const currentModelMeta = computed(() => {
-  const model = activeAgentSession.value?.model
+  const sessionModel = activeAgentSession.value?.model
+  const prefModel = currentAgentId.value ? cliSessionsModel.getModelPref(currentAgentId.value) : ''
+  const model = sessionModel || prefModel
   return MODEL_OPTIONS.find(o => o.value === model) ?? MODEL_OPTIONS[1]
+})
+
+const currentModelValue = computed(() => {
+  const sessionModel = activeAgentSession.value?.model
+  if (sessionModel) return sessionModel
+  const agentId = currentAgentId.value
+  return agentId ? cliSessionsModel.getModelPref(agentId) : ''
 })
 
 async function onModelSelect(model: string) {
   const sess = activeAgentSession.value
+  const agentId = currentAgentId.value
+  modelSetError.value = ''
+
+  // No live CLI session yet — persist the choice so the next quickLaunch
+  // (or the live setModel after it spawns) starts with the chosen model.
   if (!sess) {
-    modelSetError.value = 'Нет активной сессии для смены модели'
-    setTimeout(() => { modelSetError.value = '' }, 3000)
+    if (agentId) {
+      cliSessionsModel.persistModelPref(agentId, model)
+    }
     return
   }
+
+  // Persist the per-agent preference too so a later session reuses the
+  // operator's choice instead of resetting to Sonnet.
+  if (agentId) {
+    cliSessionsModel.persistModelPref(agentId, model)
+  }
+
   modelSetPending.value = true
-  modelSetError.value = ''
   try {
     await cliSessionsModel.setModel(sess.slug, model)
   }
-  catch {
+  catch (err) {
+    console.error('[chat] setModel failed', err)
     modelSetError.value = 'Не удалось сменить модель'
     setTimeout(() => { modelSetError.value = '' }, 3000)
   }
@@ -592,17 +627,19 @@ const currentSessionEffort = computed<'low' | 'medium' | 'high' | 'xhigh' | 'max
 
 async function onEffortSelect(effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max') {
   const sess = activeAgentSession.value
+  modelSetError.value = ''
   if (!sess) {
-    modelSetError.value = 'Нет активной сессии для смены effort'
-    setTimeout(() => { modelSetError.value = '' }, 3000)
+    // setEffort gracefully handles the no-session case by persisting the
+    // pref against the slug; without a slug yet we just skip — the next
+    // session will inherit medium until the operator reopens this menu.
     return
   }
   effortSetPending.value = true
-  modelSetError.value = ''
   try {
     await cliSessionsModel.setEffort(sess.slug, effort)
   }
-  catch {
+  catch (err) {
+    console.error('[chat] setEffort failed', err)
     modelSetError.value = 'Не удалось сменить effort'
     setTimeout(() => { modelSetError.value = '' }, 3000)
   }
@@ -3215,9 +3252,9 @@ onBeforeUnmount(() => {
         :show-call-view-modes="showCallViewModes"
         :show-call-actions="Boolean(conversations.activeConversation.value) && !activeConversationAgent"
         :can-switch-camera="calls.canSwitchCamera.value"
-        :show-agent-extras="Boolean(activeAgentSession)"
+        :show-agent-extras="activeConversationAgent"
         :agent-model-options="MODEL_OPTIONS"
-        :agent-model-current-value="activeAgentSession?.model"
+        :agent-model-current-value="currentModelValue"
         :agent-model-icon="currentModelMeta?.icon"
         :agent-model-color="currentModelMeta?.color"
         :agent-model-label="currentModelMeta?.label"

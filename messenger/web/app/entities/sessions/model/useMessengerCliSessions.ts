@@ -78,6 +78,7 @@ export function getSessionKindMeta(kind: string, slug?: string) {
 export type MessengerSessionEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 
 const EFFORT_PREFS_KEY = 'daria-messenger-session-effort'
+const MODEL_PREFS_KEY = 'daria-messenger-agent-model'
 
 function readEffortPrefs(): Record<string, MessengerSessionEffort> {
   if (typeof window === 'undefined') return {}
@@ -96,6 +97,23 @@ function writeEffortPrefs(prefs: Record<string, MessengerSessionEffort>) {
   localStorage.setItem(EFFORT_PREFS_KEY, JSON.stringify(prefs))
 }
 
+function readModelPrefs(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(MODEL_PREFS_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeModelPrefs(prefs: Record<string, string>) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(MODEL_PREFS_KEY, JSON.stringify(prefs))
+}
+
 export function useMessengerCliSessions() {
   const api = useAgentsApi()
   const sessions = useState<MessengerCliSession[]>('messenger-cli-sessions', () => [])
@@ -106,6 +124,14 @@ export function useMessengerCliSessions() {
   const effortPrefs = useState<Record<string, MessengerSessionEffort>>(
     'messenger-cli-effort-prefs',
     () => readEffortPrefs(),
+  )
+  // Per-agent model preference (keyed by agent.id, not session.slug). Persisted
+  // so the model selector still works in agent chats that don't yet have a CLI
+  // session — when one is launched, useMessengerCliSessions.quickLaunch picks
+  // up the stored value via getModelPref(agentId).
+  const modelPrefs = useState<Record<string, string>>(
+    'messenger-cli-model-prefs',
+    () => readModelPrefs(),
   )
 
   const runningSessions = computed(() => sessions.value.filter(s => s.status === 'running' && !s.archivedAt))
@@ -137,6 +163,15 @@ export function useMessengerCliSessions() {
   function persistEffort(slug: string, effort: MessengerSessionEffort) {
     effortPrefs.value = { ...effortPrefs.value, [slug]: effort }
     writeEffortPrefs(effortPrefs.value)
+  }
+
+  function getModelPref(agentId: string): string {
+    return modelPrefs.value[agentId] ?? ''
+  }
+
+  function persistModelPref(agentId: string, model: string) {
+    modelPrefs.value = { ...modelPrefs.value, [agentId]: model }
+    writeModelPrefs(modelPrefs.value)
   }
 
   async function setModel(slug: string, model: string, effort?: MessengerSessionEffort) {
@@ -322,6 +357,9 @@ export function useMessengerCliSessions() {
     setEffort,
     getEffort,
     effortPrefs,
+    getModelPref,
+    persistModelPref,
+    modelPrefs,
     archive,
     stopSession,
     quickLaunch,
