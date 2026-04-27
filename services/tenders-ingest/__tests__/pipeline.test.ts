@@ -122,3 +122,95 @@ export async function runPipelineTests(): Promise<void> {
 
   console.log('pipeline.test ok')
 }
+
+/**
+ * Classification test — `parseItem` throw vs `null` return must map to
+ * `recordError` vs `recordDropped` respectively. Guards the contract
+ * after the W1.A.fix2 zakupki refactor: parse failures throw (so the
+ * pipeline classifies them as errors), filter rejects return null.
+ */
+class ControllableSource implements Source<string> {
+  readonly id = 'torgi' as const
+  readonly schedule = '* * * * *'
+  private readonly raws: string[]
+  private readonly behavior: (raw: string) => UnifiedTender | null
+  constructor(
+    raws: string[],
+    behavior: (raw: string) => UnifiedTender | null,
+  ) {
+    this.raws = raws
+    this.behavior = behavior
+  }
+  async *fetchBatch(): AsyncIterable<string> {
+    for (const r of this.raws) yield r
+  }
+  parseItem(raw: string): UnifiedTender | null {
+    return this.behavior(raw)
+  }
+  serializeCursor(): SourceCursor | null {
+    return null
+  }
+}
+
+async function noopFetch(): Promise<Response> {
+  return new Response(JSON.stringify({ inserted: 0, updated: 0, skipped: 0 }), {
+    status: 200,
+  })
+}
+
+export async function runPipelineClassificationTests(): Promise<void> {
+  const logger = createLogger({ level: 'warn' })
+  const publisher = new Publisher({
+    mainAppUrl: 'http://localhost:9999',
+    serviceToken: 'test-token',
+    fetchImpl: noopFetch as unknown as typeof fetch,
+  })
+
+  // Case 1: parseItem throws → recordError++, recordDropped not incremented.
+  {
+    const metrics = new MetricsRegistry()
+    const source = new ControllableSource(['x'], () => {
+      throw new Error('parse boom')
+    })
+    const result = await runPipeline({
+      source,
+      cursorStore: new InMemoryCursorStore(),
+      publisher,
+      logger,
+      metrics,
+      signal: new AbortController().signal,
+      batchSize: 10,
+    })
+    assert.equal(result.processed, 1, 'throw: processed')
+    assert.equal(result.errors, 1, 'throw: errors=1')
+    assert.equal(result.dropped, 0, 'throw: dropped=0')
+    assert.equal(result.matched, 0, 'throw: matched=0')
+    const snap = metrics.snapshot()
+    assert.equal(snap.sources.torgi!.errors, 1, 'throw: metric errors=1')
+    assert.equal(snap.sources.torgi!.dropped, 0, 'throw: metric dropped=0')
+  }
+
+  // Case 2: parseItem returns null → recordDropped++, recordError not incremented.
+  {
+    const metrics = new MetricsRegistry()
+    const source = new ControllableSource(['y'], () => null)
+    const result = await runPipeline({
+      source,
+      cursorStore: new InMemoryCursorStore(),
+      publisher,
+      logger,
+      metrics,
+      signal: new AbortController().signal,
+      batchSize: 10,
+    })
+    assert.equal(result.processed, 1, 'null: processed')
+    assert.equal(result.errors, 0, 'null: errors=0')
+    assert.equal(result.dropped, 1, 'null: dropped=1')
+    assert.equal(result.matched, 0, 'null: matched=0')
+    const snap = metrics.snapshot()
+    assert.equal(snap.sources.torgi!.errors, 0, 'null: metric errors=0')
+    assert.equal(snap.sources.torgi!.dropped, 1, 'null: metric dropped=1')
+  }
+
+  console.log('pipeline.classification.test ok')
+}
