@@ -588,19 +588,20 @@ async function onModelSelect(model: string) {
   const agentId = currentAgentId.value
   modelSetError.value = ''
 
-  // No live CLI session yet — persist the choice so the next quickLaunch
-  // (or the live setModel after it spawns) starts with the chosen model.
-  if (!sess) {
-    if (agentId) {
-      cliSessionsModel.persistModelPref(agentId, model)
-    }
-    return
-  }
-
-  // Persist the per-agent preference too so a later session reuses the
-  // operator's choice instead of resetting to Sonnet.
+  // Persist the per-agent preference unconditionally so the next quickLaunch
+  // (or the next live setModel after a session spawns) starts with whatever
+  // the operator picked, even if the session is gone right now.
   if (agentId) {
     cliSessionsModel.persistModelPref(agentId, model)
+  }
+
+  // No live CLI session — the click can't change a process that doesn't
+  // exist. Tell the operator the choice was saved so the click doesn't
+  // look silently no-op'd; the next session launch will pick it up.
+  if (!sess) {
+    modelSetError.value = 'Сессия не запущена — выбор сохранён, применится при следующем запуске'
+    setTimeout(() => { modelSetError.value = '' }, 4000)
+    return
   }
 
   modelSetPending.value = true
