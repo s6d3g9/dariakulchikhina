@@ -79,10 +79,12 @@ export class TorgiSource implements Source<TorgiLotCard> {
     return mapTorgiLotCard(raw)
   }
 
-  serializeCursor(_state: SourceState): SourceCursor {
+  serializeCursor(_state: SourceState): SourceCursor | null {
+    const value = this.maxSeenIso ?? this.cursorIso
+    if (!value) return null
     return {
       sourceId: this.id,
-      value: this.maxSeenIso ?? this.cursorIso ?? '',
+      value,
       updatedAt: new Date().toISOString(),
     }
   }

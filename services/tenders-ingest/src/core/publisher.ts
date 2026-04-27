@@ -44,7 +44,9 @@ export class Publisher {
     }
 
     const url = new URL('/api/tenders/ingest', this.opts.mainAppUrl).toString()
-    const body = JSON.stringify({ sourceId, items })
+    // idempotencyKey goes into the body (primary, validated by schema) and
+    // is duplicated into the Idempotency-Key header for proxy / observability.
+    const body = JSON.stringify({ sourceId, items, idempotencyKey })
     const fetchImpl = this.opts.fetchImpl ?? fetch
 
     const result = await retryWithBackoff(async () => {

@@ -175,10 +175,6 @@ function emptySource(id: SourceId, schedule: string): Source {
       return
     },
     parseItem: () => null,
-    serializeCursor: () => ({
-      sourceId: id,
-      value: '',
-      updatedAt: new Date().toISOString(),
-    }),
+    serializeCursor: () => null,
   }
 }

@@ -55,7 +55,7 @@ class MockSource implements Source<UnifiedTender> {
     for (const i of this.items) yield i
   }
   parseItem(raw: UnifiedTender): UnifiedTender { return raw }
-  serializeCursor(): SourceCursor {
+  serializeCursor(): SourceCursor | null {
     return { sourceId: 'torgi', value: 'c1', updatedAt: new Date().toISOString() }
   }
 }

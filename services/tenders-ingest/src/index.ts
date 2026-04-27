@@ -233,11 +233,7 @@ function dummySource(cfg: SourceConfig): Source {
       return
     },
     parseItem: () => null,
-    serializeCursor: () => ({
-      sourceId: cfg.id,
-      value: '',
-      updatedAt: new Date().toISOString(),
-    }),
+    serializeCursor: () => null,
   }
 }
 

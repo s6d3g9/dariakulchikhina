@@ -102,10 +102,14 @@ export class ZakupkiSource implements Source<unknown> {
     }
   }
 
-  serializeCursor(_state: SourceState): SourceCursor {
+  serializeCursor(_state: SourceState): SourceCursor | null {
+    if (this.cursorValue === null) {
+      // No items were processed — no cursor to advance.
+      return null
+    }
     return {
       sourceId: this.id,
-      value: this.cursorValue ?? '',
+      value: this.cursorValue,
       updatedAt: new Date().toISOString(),
     }
   }

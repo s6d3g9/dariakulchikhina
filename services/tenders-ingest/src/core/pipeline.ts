@@ -81,10 +81,15 @@ export async function runPipeline(
   }
 
   let buffer: UnifiedTender[] = []
+  let batchIndex = 0
 
   const flush = async (): Promise<void> => {
     if (buffer.length === 0) return
-    const idempotencyKey = `${opts.source.id}:${tickKey}:${result.processed}`
+    // Deterministic key: does not depend on result.processed (which
+    // changes as items are counted), only on source, tick, and batch
+    // number. Identical re-runs produce identical keys → true idempotency.
+    const idempotencyKey = `${opts.source.id}:${tickKey}:${batchIndex}`
+    batchIndex += 1
     const r = await opts.publisher.publish(
       opts.source.id,
       buffer,
@@ -155,9 +160,17 @@ export async function runPipeline(
     }
     await flush()
 
-    // Persist new cursor only on success.
-    const next: SourceCursor = opts.source.serializeCursor({})
-    await opts.cursorStore.save(next)
+    // Persist cursor only when there is something to advance.
+    // Skip when nothing matched AND there was no incoming cursor — an
+    // empty run on a fresh source should not write a blank cursor that
+    // would overwrite a real one stored from a prior non-empty run.
+    const next: SourceCursor | null =
+      result.matched === 0 && cursor === null
+        ? null
+        : opts.source.serializeCursor({})
+    if (next !== null) {
+      await opts.cursorStore.save(next)
+    }
 
     const durationMs = Date.now() - startedAt
     opts.metrics.recordRunCompleted(opts.source.id, durationMs)

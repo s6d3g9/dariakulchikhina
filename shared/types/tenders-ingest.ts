@@ -157,9 +157,10 @@ export interface Source<TRaw = unknown> {
 
   /**
    * Serialize the source's internal state into a Redis-storable cursor.
-   * Called after a batch is committed.
+   * Returns null when the source has no meaningful state to persist
+   * (e.g. empty run on a fresh source) — pipeline skips the save.
    */
-  serializeCursor(state: SourceState): SourceCursor
+  serializeCursor(state: SourceState): SourceCursor | null
 }
 
 /** Opaque per-source state object kept inside the adapter. */
