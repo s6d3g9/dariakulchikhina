@@ -4,8 +4,15 @@
  * Bulk-upsert endpoint for the `services/tenders-ingest/` runtime.
  * Service-token auth — the ingest service holds a shared bearer secret
  * in env `TENDERS_INGEST_SERVICE_TOKEN`; the main app validates it
- * here. Idempotent on (sourceId, externalGuid) — repeated batches with
- * unchanged content are no-ops at the DB level.
+ * here via `requireServiceToken` (constant-time comparison). Idempotent
+ * on (sourceId, externalGuid) — repeated batches with unchanged content
+ * are no-ops at the DB level.
+ *
+ * Idempotency contract: callers MUST set `idempotencyKey` in the body
+ * (validated by `TenderIngestRequestSchema`). For observability /
+ * proxy logging the same value MAY be duplicated in the
+ * `Idempotency-Key` HTTP header; if present, it must match the body
+ * value or the request is rejected with 400.
  *
  * Per docs/architecture-v5/25-tenders-platform.md §4.2 + §3.5.
  */
@@ -16,33 +23,14 @@ import {
   ingestBatch,
   TenderIngestRequestSchema,
 } from '~/server/modules/tenders'
+import { requireServiceToken } from '~/server/utils/service-token-auth'
 
 export default defineEventHandler(async (event) => {
-  // Service-token auth. Read directly from env — this endpoint is
-  // service-to-service and the token must be available at boot time.
-  // eslint-disable-next-line no-restricted-syntax -- service-token bootstrap
-  const expected = process.env.TENDERS_INGEST_SERVICE_TOKEN
-  if (!expected) {
-    // Treat missing token as a misconfigured deployment, not an auth
-    // success. Refuses to accept ingest until ops sets the env.
-    throw createError({
-      statusCode: 503,
-      statusMessage: 'TENDERS_INGEST_DISABLED',
-      data: { code: 'TENDERS_INGEST_DISABLED' },
-    })
-  }
-
-  const provided =
-    getHeader(event, 'authorization')?.replace(/^Bearer\s+/i, '') ??
-    getHeader(event, 'x-service-token')
-
-  if (provided !== expected) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'UNAUTHORIZED',
-      data: { code: 'INVALID_SERVICE_TOKEN' },
-    })
-  }
+  requireServiceToken(event, {
+    envVarName: 'TENDERS_INGEST_SERVICE_TOKEN',
+    disabledStatusMessage: 'TENDERS_INGEST_DISABLED',
+    disabledCode: 'TENDERS_INGEST_DISABLED',
+  })
 
   let request
   try {
@@ -57,6 +45,22 @@ export default defineEventHandler(async (event) => {
       })
     }
     throw e
+  }
+
+  // If a header copy is present (observability / proxy logging convention),
+  // it MUST match the body value — otherwise we can't tell which one to
+  // trust for dedup, so reject the ambiguous request.
+  const headerKey = getHeader(event, 'idempotency-key')
+  if (headerKey && headerKey !== request.idempotencyKey) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'IDEMPOTENCY_KEY_MISMATCH',
+      data: {
+        code: 'IDEMPOTENCY_KEY_MISMATCH',
+        message:
+          'Header `Idempotency-Key` must match `idempotencyKey` in body when both are sent.',
+      },
+    })
   }
 
   return await ingestBatch(request)
