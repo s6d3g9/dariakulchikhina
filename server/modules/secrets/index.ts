@@ -12,6 +12,7 @@ export {
   deleteSecret,
   getSecret,
   getGlobalSecret,
+  resolveSecretValue,
 } from './secrets.service'
 
 export {

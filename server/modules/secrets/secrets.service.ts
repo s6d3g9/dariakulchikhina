@@ -91,6 +91,30 @@ export async function getGlobalSecret(key: string): Promise<string | null> {
   return getSecret('global', null, key)
 }
 
+/**
+ * Service-internal resolver that returns plaintext + metadata for the
+ * `GET /api/secrets/value` endpoint. Compared to `getSecret`, also
+ * surfaces `lastRotatedAt` from stored metadata.
+ */
+export async function resolveSecretValue(
+  scope: SecretWrite['scope'],
+  scopeRefId: string | null,
+  key: string,
+): Promise<{ value: string; lastRotatedAt?: string } | null> {
+  const row = await repo.findActiveByScopeAndKey(scope, scopeRefId, key)
+  if (!row) return null
+  const value = decryptSecret({
+    ciphertext: row.valueEncrypted,
+    iv: row.iv,
+    authTag: row.authTag,
+  })
+  const lastRotatedAt =
+    typeof row.metadata?.lastRotatedAt === 'string'
+      ? (row.metadata.lastRotatedAt as string)
+      : undefined
+  return { value, lastRotatedAt }
+}
+
 // === Helpers =================================================================
 
 function toView(row: SecretRow): SecretView {
