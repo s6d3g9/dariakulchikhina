@@ -538,7 +538,7 @@ export default tseslint.config(
   // Tests — relax rules for test harnesses and helpers; they are one-off
   // testing utilities not subject to production architecture constraints.
   {
-    files: ['tests/**/*.{ts,js,mjs,cjs}', 'server/modules/**/__tests__/**/*.{ts,js,mjs,cjs}'],
+    files: ['tests/**/*.{ts,js,mjs,cjs}', 'server/**/__tests__/**/*.{ts,js,mjs,cjs}'],
     rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',

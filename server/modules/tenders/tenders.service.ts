@@ -3,17 +3,14 @@
  * status transitions go through here. Ingest is its own service file.
  */
 
-import type { InferSelectModel } from 'drizzle-orm'
 import * as repo from './tenders.repository'
 import { TenderNotFoundError } from './tenders.errors'
-import { tenders } from '~/server/db/schema'
+import type { TenderDbRow } from './tenders.repository'
 import type {
   TenderSearchQuery,
   TenderSearchResult,
   TenderRow,
 } from '~/shared/types/tenders'
-
-type TenderDbRow = InferSelectModel<typeof tenders>
 
 export async function searchTenders(
   query: TenderSearchQuery,

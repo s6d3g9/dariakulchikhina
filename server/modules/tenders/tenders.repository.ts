@@ -114,6 +114,10 @@ export async function upsertTendersBatch(
   return { inserted, updated, skipped }
 }
 
+/** Typed DB row — exported so the service layer can use it without
+ *  importing drizzle-orm or schema directly. */
+export type TenderDbRow = typeof tenders.$inferSelect
+
 export async function findTenderById(id: string) {
   const db = useDb()
   const [row] = await db.select().from(tenders).where(eq(tenders.id, id)).limit(1)
