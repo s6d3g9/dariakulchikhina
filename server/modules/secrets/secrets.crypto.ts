@@ -37,6 +37,12 @@ export function getMasterKey(): Buffer {
         'Generate with: openssl rand -hex 32',
     )
   }
+  if (!/^[0-9a-fA-F]{64}$/.test(raw)) {
+    throw new Error(
+      'SECRETS_MASTER_KEY must be a 64-char hex string (32 bytes). ' +
+        'Generate with: openssl rand -hex 32',
+    )
+  }
   let buf: Buffer
   try {
     buf = Buffer.from(raw, 'hex')

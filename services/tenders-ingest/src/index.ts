@@ -20,7 +20,7 @@ import { SecretsResolver } from './secrets-resolver.ts'
 import { Publisher } from './core/publisher.ts'
 import { InMemoryCursorStore } from './core/cursor.ts'
 import { runPipeline } from './core/pipeline.ts'
-import { SOURCE_REGISTRY, buildSource } from './sources/registry.ts'
+import { SOURCE_REGISTRY, buildSource, emptySource } from './sources/registry.ts'
 import { startCron } from './cron.ts'
 import { startHealthServer } from './health-server.ts'
 import type {
@@ -70,7 +70,7 @@ async function main(): Promise<void> {
     if (!envEnabled || !sourceCfg.enabled) {
       built.push({
         config: sourceCfg,
-        source: dummySource(sourceCfg),
+        source: emptySource(sourceCfg.id, sourceCfg.schedule),
         status: 'disabled',
       })
       continue
@@ -222,19 +222,6 @@ function withBaseUrl<T extends { kind: string }>(
     return { ...transport, url: baseUrl }
   }
   return transport
-}
-
-function dummySource(cfg: SourceConfig): Source {
-  return {
-    id: cfg.id,
-    schedule: cfg.schedule,
-    // eslint-disable-next-line require-yield
-    async *fetchBatch() {
-      return
-    },
-    parseItem: () => null,
-    serializeCursor: () => null,
-  }
 }
 
 // === Boot ====================================================================

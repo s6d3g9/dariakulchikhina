@@ -166,7 +166,7 @@ export async function buildSource(
   }
 }
 
-function emptySource(id: SourceId, schedule: string): Source {
+export function emptySource(id: SourceId, schedule: string): Source {
   return {
     id,
     schedule,

@@ -49,9 +49,23 @@ Source-level toggles:
 | `TENDERS_INGEST_SOURCE_TORGI_CRON`           | `0 */2 * * *` |
 
 Secrets (zakupki ЕСИА token) live in the main app's `messenger_secrets`
-table and are looked up by `secretsRef`. If the token is not set, the
-zakupki source is `degraded:no-secret` and skipped — the service stays
-healthy and torgi continues to run.
+table and are looked up at runtime via the secrets-resolver endpoint.
+
+### Secrets-resolver contract
+
+The service calls `GET /api/secrets/value?key=<secretsRef>` on the main app
+using Bearer `TENDERS_INGEST_SERVICE_TOKEN`. This endpoint is separate from
+the admin CRUD surface (`GET/POST /api/secrets`) and requires the same token
+that authenticates ingest batches.
+
+Response shape:
+```json
+{ "value": "plaintext-secret", "lastRotatedAt": "2026-04-27T08:00:00.000Z" }
+```
+
+404 means the key is not configured; the source falls back to
+`degraded:no-secret` and yields zero items until the secret is added via the
+admin UI. The service stays healthy and other sources continue to run.
 
 ## Health
 
