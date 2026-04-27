@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MessengerAttachmentKlipyPayload, MessengerConversationMessage } from '../../entities/conversations/model/useMessengerConversations'
+import type { MessengerAttachmentKlipyPayload, MessengerConversationMessage, MessengerStagedAttachment } from '../../entities/conversations/model/useMessengerConversations'
 import type { MessengerKlipyItem } from '../../entities/messages/model/useMessengerKlipy'
 import type { MessengerConversationSecuritySummary } from '../../entities/messages/model/useMessengerCrypto'
 import type { ProjectActionExecutePayload, ProjectActionId } from '../../features/project-engine/model/useMessengerProjectActions'
@@ -27,6 +27,18 @@ const navigation = useMessengerConversationState()
 const { resetKlipyFeedPaging, buildLoopedFeed, handleLoopedRailScroll, handleLoopedFeedScroll, primeLoopedRailPosition, primeLoopedFeedPosition } = useKlipyFeedPaging()
 const draft = ref('')
 const searchMode = ref(false)
+
+interface StagedAttachmentEntry extends MessengerStagedAttachment {
+  // Local id keyed off File reference plus index — used as :key in v-for and
+  // by removeStagedAttachment to splice the array. The server-side message
+  // payload doesn't carry this field; it's stripped before send.
+  localId: string
+  // Object URL for image preview, revoked on remove or after send. Null for
+  // non-image MIME types — the chip falls back to a generic file icon.
+  previewObjectUrl: string | null
+}
+const stagedAttachments = ref<StagedAttachmentEntry[]>([])
+const stagingPending = ref(false)
 
 const AIDEV_MENU_ITEMS = [
   { key: 'composer', title: 'Composer', icon: 'mdi-chat-processing-outline' },
@@ -1513,7 +1525,8 @@ const desktopDropEnabled = computed(() => Boolean(
 const desktopDropActive = computed(() => dragDropDepth.value > 0 && desktopDropEnabled.value)
 const hasComposerText = computed(() => Boolean(draft.value.trim()))
 const hasSelectedKlipyItem = computed(() => Boolean(selectedKlipyItem.value))
-const hasComposerPayload = computed(() => hasComposerText.value || hasSelectedKlipyItem.value)
+const hasStagedAttachments = computed(() => stagedAttachments.value.length > 0)
+const hasComposerPayload = computed(() => hasComposerText.value || hasSelectedKlipyItem.value || hasStagedAttachments.value)
 const composerPrimaryMode = computed<'record' | 'send' | 'stop-recording'>(() => {
   if (isRecording.value) {
     return 'stop-recording'
@@ -1522,7 +1535,7 @@ const composerPrimaryMode = computed<'record' | 'send' | 'stop-recording'>(() =>
   return hasComposerPayload.value ? 'send' : 'record'
 })
 const composerPrimaryDisabled = computed(() => {
-  if (!conversations.activeConversation.value || conversations.messagePending.value) {
+  if (!conversations.activeConversation.value || conversations.messagePending.value || stagingPending.value) {
     return true
   }
 
@@ -1961,7 +1974,7 @@ watch(() => viewport.keyboardOpen.value, async (opened) => {
 
 async function submit() {
   actionError.value = ''
-  if (!draft.value.trim()) {
+  if (!draft.value.trim() && !stagedAttachments.value.length) {
     return
   }
 
@@ -1972,9 +1985,11 @@ async function submit() {
   const replyToMessageId = composerRelationMode.value === 'reply' ? composerRelationMessageId.value || undefined : undefined
   const commentOnMessageId = composerRelationMode.value === 'comment' ? composerRelationMessageId.value || undefined : undefined
   const commentTargetId = composerRelationMode.value === 'comment' ? composerRelationMessageId.value : null
+  const stagedSnapshot = stagedAttachments.value.map(({ localId: _localId, previewObjectUrl: _preview, ...rest }) => rest)
 
   // Очищаем UI синхронно ДО async-вызова — клавиатура не успевает закрыться
   draft.value = ''
+  clearStagedAttachments()
   activeMessageActionsId.value = null
   activeReactionOverlayId.value = null
   composerRelationMode.value = null
@@ -1986,6 +2001,7 @@ async function submit() {
     await conversations.sendMessage(text, {
       replyToMessageId,
       commentOnMessageId,
+      attachments: stagedSnapshot.length ? stagedSnapshot : undefined,
     })
     pendingScrollMessageId.value = commentTargetId
     viewport.scheduleViewportSync()
@@ -2414,21 +2430,66 @@ async function handleProjectAction(actionId: ProjectActionId, payload?: ProjectA
   }
 }
 
+async function stageFiles(files: File[]) {
+  if (!files.length) {
+    return
+  }
+
+  stagingPending.value = true
+  try {
+    for (const file of files) {
+      const staged = await conversations.stageAttachment(file)
+      const previewObjectUrl = file.type.startsWith('image/') && import.meta.client
+        ? URL.createObjectURL(file)
+        : null
+      stagedAttachments.value = [
+        ...stagedAttachments.value,
+        {
+          ...staged,
+          localId: `${Date.now()}-${stagedAttachments.value.length}-${file.name}`,
+          previewObjectUrl,
+        },
+      ]
+    }
+  } finally {
+    stagingPending.value = false
+  }
+}
+
+function removeStagedAttachment(index: number) {
+  const entry = stagedAttachments.value[index]
+  if (entry?.previewObjectUrl && import.meta.client) {
+    URL.revokeObjectURL(entry.previewObjectUrl)
+  }
+  stagedAttachments.value = stagedAttachments.value.filter((_, idx) => idx !== index)
+}
+
+function clearStagedAttachments() {
+  if (import.meta.client) {
+    for (const entry of stagedAttachments.value) {
+      if (entry.previewObjectUrl) {
+        URL.revokeObjectURL(entry.previewObjectUrl)
+      }
+    }
+  }
+  stagedAttachments.value = []
+}
+
 async function handleFileSelect(event: Event) {
   actionError.value = ''
   const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) {
+  const files = input.files ? Array.from(input.files) : []
+  if (!files.length) {
     return
   }
 
   try {
-    await conversations.uploadAttachment(file)
-    input.accept = ''
-    input.value = ''
+    await stageFiles(files)
   } catch {
     actionError.value = 'Не удалось загрузить файл.'
+  } finally {
     input.accept = ''
+    input.value = ''
   }
 }
 
@@ -2446,9 +2507,7 @@ async function uploadDroppedFiles(fileList: FileList | null) {
   dragDropPending.value = true
 
   try {
-    for (const file of Array.from(fileList)) {
-      await conversations.uploadAttachment(file)
-    }
+    await stageFiles(Array.from(fileList))
   } catch {
     actionError.value = 'Не удалось загрузить перетащенные файлы.'
   } finally {
@@ -3757,7 +3816,7 @@ onBeforeUnmount(() => {
         @pick-from-device="openFilePicker($event === 'photo' ? 'image/*,video/*' : '')"
       />
 
-      <input ref="mediaPickerInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="handleFileSelect">
+      <input ref="mediaPickerInputEl" type="file" multiple hidden aria-hidden="true" tabindex="-1" @change="handleFileSelect">
 
       <MessengerAgentChatWorkspace
         v-if="activeConversationAgent && conversations.activeConversation.value && !detailsOpen"
@@ -3792,6 +3851,7 @@ onBeforeUnmount(() => {
         :show-aidev-actions-bar="Boolean(activeConversationAgent && agentProject)"
         :aidev-active-tab="aidevPanelTab"
         :attachment-ids="[]"
+        :staged-attachments="stagedAttachments"
         :show-search-toggle="Boolean(conversations.activeConversation.value)"
         :search-mode="searchMode"
         @update:draft="draft = $event"
@@ -3799,6 +3859,7 @@ onBeforeUnmount(() => {
         @blur="collapseComposer"
         @input="syncComposerInputHeight"
         @file-select="handleFileSelect"
+        @remove-staged-attachment="removeStagedAttachment"
         @toggle-media-menu="toggleComposerMediaMenu"
         @open-file-picker="openFilePicker()"
         @toggle-project-actions="projectActions.togglePanel()"

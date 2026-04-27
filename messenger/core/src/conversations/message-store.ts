@@ -10,18 +10,24 @@ import type {
   MessengerKlipyAttachmentRecord,
 } from './conversation-store.ts'
 
+export interface MessagePayloadAttachment {
+  name: string
+  mimeType: string
+  size: number
+  url: string
+  encryptedFile?: MessengerEncryptedBinaryPayload
+  klipy?: MessengerKlipyAttachmentRecord
+}
+
 export interface MessagePayload {
   body: string
   encryptedBody?: MessengerEncryptedPayload
   kind: 'text' | 'file' | 'system.agent_launched'
-  attachment?: {
-    name: string
-    mimeType: string
-    size: number
-    url: string
-    encryptedFile?: MessengerEncryptedBinaryPayload
-    klipy?: MessengerKlipyAttachmentRecord
-  }
+  attachment?: MessagePayloadAttachment
+  // attachments[] enables a single message to carry multiple files alongside
+  // body text. Legacy `attachment` (singular) is preserved on inbound rows
+  // produced before this field existed; new sends populate `attachments`.
+  attachments?: MessagePayloadAttachment[]
   reactions?: MessengerMessageReactionRecord[]
   readAt?: string
   editedAt?: string
@@ -112,6 +118,7 @@ export function rowToMessengerMessageRecord(row: StoredMessageRow) {
     encryptedBody: row.deletedAt ? undefined : (payload as MessagePayload).encryptedBody,
     kind: (payload as MessagePayload).kind ?? 'text',
     attachment: row.deletedAt ? undefined : (payload as MessagePayload).attachment,
+    attachments: row.deletedAt ? undefined : (payload as MessagePayload).attachments,
     reactions: row.deletedAt ? undefined : (payload as MessagePayload).reactions,
     createdAt: row.createdAt.toISOString(),
     readAt: row.deletedAt ? undefined : (payload as MessagePayload).readAt,

@@ -635,6 +635,14 @@ export async function createMessengerServer() {
     originalMimeType: z.string().trim().min(1).max(120).optional(),
     klipy: klipyAttachmentSchema.optional(),
   })
+  const messageAttachmentSchema = z.object({
+    name: z.string().trim().min(1).max(255),
+    mimeType: z.string().trim().min(1).max(120),
+    size: z.number().int().nonnegative(),
+    url: z.string().trim().min(1).max(2048),
+    encryptedFile: encryptedBinaryPayloadSchema.optional(),
+    klipy: klipyAttachmentSchema.optional(),
+  })
   const forwardedSnapshotSchema = z.object({
     messageId: messageIdSchema,
     conversationId: z.string().uuid(),
@@ -658,13 +666,15 @@ export async function createMessengerServer() {
     commentOnMessageId: messageIdSchema.optional(),
     forwardedMessageId: messageIdSchema.optional(),
     forwardedFrom: forwardedSnapshotSchema.optional(),
+    attachments: z.array(messageAttachmentSchema).max(20).optional(),
   }).superRefine((value, ctx) => {
     const hasBody = Boolean(value.body?.trim())
     const hasForward = Boolean(value.forwardedMessageId)
     const hasEncryptedBody = Boolean(value.encryptedBody)
     const hasForwardSnapshot = Boolean(value.forwardedFrom)
+    const hasAttachments = Boolean(value.attachments?.length)
 
-    if (!hasBody && !hasForward && !hasEncryptedBody && !hasForwardSnapshot) {
+    if (!hasBody && !hasForward && !hasEncryptedBody && !hasForwardSnapshot && !hasAttachments) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'MESSAGE_BODY_OR_FORWARD_REQUIRED',
@@ -2405,6 +2415,7 @@ export async function createMessengerServer() {
           replyToMessageId: parsedBody.data.replyToMessageId,
           commentOnMessageId: parsedBody.data.commentOnMessageId,
           forwardedFrom: parsedBody.data.forwardedFrom,
+          attachments: parsedBody.data.attachments,
         })
       const conversation = await findConversationById(parsedParams.data.conversationId)
       if (conversation) {
@@ -2467,19 +2478,27 @@ export async function createMessengerServer() {
             const messageBody = parsedBody.data.body || parsedBody.data.forwardedFrom?.body || ''
             const runningCliSession = await findRunningCliSessionForAgent(agent.id)
 
-            // Collect recent image attachments uploaded by the user (last 2 min)
+            // Collect recent image attachments uploaded by the user (last 2 min).
+            // Iterates both the legacy single `attachment` and the new `attachments[]`
+            // array so multi-file messages still surface their images to the agent.
             let recentImageNote = ''
             try {
               const cutoff = Date.now() - 120_000
               const { items: recentMsgs } = await listMessages(conversation.id, { limit: 20 })
-              const imagePaths = recentMsgs
-                .filter(m =>
-                  m.kind === 'file' &&
-                  m.attachment?.mimeType?.startsWith('image/') &&
-                  new Date(m.createdAt).getTime() > cutoff &&
-                  m.senderUserId !== agent.id,
-                )
-                .map(m => join(MESSENGER_UPLOADS_ROOT, m.attachment!.url.replace(/^\/uploads\//, '')))
+              const imagePaths: string[] = []
+              for (const m of recentMsgs) {
+                if (new Date(m.createdAt).getTime() <= cutoff) continue
+                if (m.senderUserId === agent.id) continue
+                const candidates = [
+                  ...(m.attachment ? [m.attachment] : []),
+                  ...(m.attachments ?? []),
+                ]
+                for (const att of candidates) {
+                  if (att.mimeType?.startsWith('image/')) {
+                    imagePaths.push(join(MESSENGER_UPLOADS_ROOT, att.url.replace(/^\/uploads\//, '')))
+                  }
+                }
+              }
               if (imagePaths.length) {
                 recentImageNote = imagePaths
                   .map(p => `[Image attached by user — use Read tool to view it: ${p}]`)
@@ -2736,6 +2755,79 @@ export async function createMessengerServer() {
       }
 
       throw error
+    }
+  })
+
+  // Stage a single file upload without creating a message. Returns metadata
+  // the client can later attach to a `POST /messages` body via the
+  // `attachments[]` field. Used by the multi-attach composer flow where the
+  // user gathers several files plus text before sending one combined message.
+  app.post('/conversations/:conversationId/uploads', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = conversationParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const conversation = await findConversationById(parsedParams.data.conversationId)
+    if (!conversation) {
+      return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+    }
+    if (conversation.userAId !== session.user.id && conversation.userBId !== session.user.id) {
+      return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+    }
+
+    const file = await request.file()
+    if (!file) {
+      return reply.code(400).send({ error: 'FILE_REQUIRED' })
+    }
+
+    const chunks: Buffer[] = []
+    for await (const chunk of file.file) {
+      chunks.push(chunk)
+    }
+
+    const metadataField = Array.isArray(file.fields.metadata) ? file.fields.metadata[0] : file.fields.metadata
+    const metadataValue = metadataField && 'value' in metadataField && typeof metadataField.value === 'string'
+      ? metadataField.value
+      : undefined
+
+    let encryptedFile: z.infer<typeof encryptedBinaryPayloadSchema> | undefined
+    let originalName: string | undefined
+    let originalMimeType: string | undefined
+    let klipy: z.infer<typeof klipyAttachmentSchema> | undefined
+    if (metadataValue) {
+      try {
+        const parsedMetadata = attachmentMetadataSchema.safeParse(JSON.parse(metadataValue))
+        if (!parsedMetadata.success) {
+          return reply.code(400).send({ error: 'INVALID_ATTACHMENT_METADATA' })
+        }
+        encryptedFile = parsedMetadata.data.encryptedFile
+        originalName = parsedMetadata.data.originalName
+        originalMimeType = parsedMetadata.data.originalMimeType
+        klipy = parsedMetadata.data.klipy
+      } catch {
+        return reply.code(400).send({ error: 'INVALID_ATTACHMENT_METADATA' })
+      }
+    }
+
+    const stored = await storeUploadedMedia({
+      filename: originalName || file.filename,
+      mimeType: originalMimeType || file.mimetype,
+      buffer: Buffer.concat(chunks),
+      directory: klipy?.kind === 'sticker' ? 'stickers' : undefined,
+    })
+
+    return {
+      attachment: {
+        ...stored,
+        encryptedFile,
+        klipy,
+      },
     }
   })
 

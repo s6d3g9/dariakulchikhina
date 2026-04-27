@@ -126,6 +126,16 @@ export interface MessengerConversationMessage {
     encryptedFile?: MessengerEncryptedBinaryPayload
     klipy?: MessengerAttachmentKlipyPayload
   }
+  attachments?: Array<{
+    name: string
+    mimeType: string
+    size: number
+    url: string
+    absoluteUrl: string
+    resolvedUrl: string
+    encryptedFile?: MessengerEncryptedBinaryPayload
+    klipy?: MessengerAttachmentKlipyPayload
+  }>
   replyTo?: MessengerMessageRelationPreview
   commentOn?: MessengerMessageRelationPreview
   forwardedFrom?: MessengerForwardedMessagePreview
@@ -140,6 +150,15 @@ export interface MessengerConversationMessage {
   // payload the launch panel submitted so the renderer can show slug/model
   // and offer a deep-link to the monitor row.
   system?: MessengerSystemAgentLaunchedPayload
+}
+
+export interface MessengerStagedAttachment {
+  name: string
+  mimeType: string
+  size: number
+  url: string
+  encryptedFile?: MessengerEncryptedBinaryPayload
+  klipy?: MessengerAttachmentKlipyPayload
 }
 
 function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: string; size: number; url: string } }>(
@@ -158,6 +177,20 @@ function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: st
       resolvedUrl: resolveAttachmentUrl(config.public.messengerCoreBaseUrl, item.attachment.url),
     },
   }
+}
+
+function attachAttachmentsAbsoluteUrls(
+  config: ReturnType<typeof useRuntimeConfig>,
+  attachments?: MessengerConversationMessage['attachments'] | Array<{ name: string; mimeType: string; size: number; url: string; encryptedFile?: MessengerEncryptedBinaryPayload; klipy?: MessengerAttachmentKlipyPayload }>,
+) {
+  if (!attachments?.length) {
+    return undefined
+  }
+  return attachments.map(att => ({
+    ...att,
+    absoluteUrl: resolveAttachmentUrl(config.public.messengerCoreBaseUrl, att.url),
+    resolvedUrl: resolveAttachmentUrl(config.public.messengerCoreBaseUrl, att.url),
+  })) as NonNullable<MessengerConversationMessage['attachments']>
 }
 
 function attachRelationPreview(
@@ -188,6 +221,7 @@ function attachMessageRelations(
 ) {
   return {
     ...attachAbsoluteUrl(config, message),
+    attachments: attachAttachmentsAbsoluteUrls(config, message.attachments),
     replyTo: attachRelationPreview(config, message.replyTo),
     commentOn: attachRelationPreview(config, message.commentOn),
     forwardedFrom: attachForwardedPreview(config, message.forwardedFrom),
@@ -197,6 +231,7 @@ function attachMessageRelations(
 interface MessengerMessageSendOptions {
   replyToMessageId?: string
   commentOnMessageId?: string
+  attachments?: MessengerStagedAttachment[]
 }
 
 function buildNextReactionState(
@@ -371,10 +406,15 @@ export function useMessengerConversations() {
 
   async function decryptMessage(conversation: MessengerConversationItem, message: MessengerConversationMessage) {
     const attachedMessage = attachAbsoluteUrl(config, message)
+    const resolvedAttachments = attachAttachmentsAbsoluteUrls(config, message.attachments)
+    const decryptedAttachments = resolvedAttachments
+      ? await Promise.all(resolvedAttachments.map(att => decryptAttachment(conversation, att))).then(items => items.filter((item): item is NonNullable<typeof item> => Boolean(item)))
+      : undefined
     return {
       ...attachedMessage,
       body: await decryptMessageBody(conversation, message.body, message.encryptedBody),
       attachment: await decryptAttachment(conversation, attachedMessage.attachment),
+      attachments: decryptedAttachments,
       replyTo: await decryptRelationPreview(conversation, message.replyTo),
       commentOn: await decryptRelationPreview(conversation, message.commentOn),
       forwardedFrom: await decryptForwardedPreview(conversation, message.forwardedFrom),
@@ -509,20 +549,23 @@ export function useMessengerConversations() {
       throw new Error('NO_ACTIVE_CONVERSATION')
     }
 
+    const trimmedBody = body.trim()
+    const encryptedBody = conversation.secret && trimmedBody
+      ? await messengerCrypto.encryptText(
+          auth.user.value.id,
+          conversationId,
+          conversation.peerUserId,
+          body,
+        )
+      : undefined
+
     messagePending.value = true
     try {
       await auth.request(`/conversations/${conversationId}/messages`, {
         method: 'POST',
         body: {
           body,
-          encryptedBody: conversation.secret
-            ? await messengerCrypto.encryptText(
-                auth.user.value.id,
-                conversationId,
-                conversation.peerUserId,
-                body,
-              )
-            : undefined,
+          encryptedBody,
           ...options,
         },
       })
@@ -532,6 +575,62 @@ export function useMessengerConversations() {
       ])
     } finally {
       messagePending.value = false
+    }
+  }
+
+  // Stage a single file: upload to /uploads, return metadata the composer can
+  // collect alongside text. The actual message is created later via sendMessage
+  // with `attachments[]` populated. Mirrors uploadAttachment's secret-chat
+  // encryption flow but skips message creation and conversation refresh.
+  async function stageAttachment(file: File): Promise<MessengerStagedAttachment> {
+    const conversationId = state.activeConversationId.value
+    const conversation = activeConversation.value
+    if (!conversationId) {
+      throw new Error('NO_ACTIVE_CONVERSATION')
+    }
+
+    const formData = new FormData()
+
+    if (conversation?.secret && auth.user.value) {
+      const encryptedFile = await messengerCrypto.encryptBinary(
+        auth.user.value.id,
+        conversationId,
+        conversation.peerUserId,
+        await file.arrayBuffer(),
+      )
+      const ciphertextFile = new File([encryptedFile.payload], `${file.name}.bin`, { type: 'application/octet-stream' })
+      formData.set('file', ciphertextFile)
+      formData.set('metadata', JSON.stringify({
+        encryptedFile: encryptedFile.encryption,
+        originalName: file.name,
+        originalMimeType: file.type,
+      }))
+    } else {
+      formData.set('file', file)
+    }
+
+    const response = await auth.request<{
+      attachment: {
+        id?: string
+        name: string
+        mimeType: string
+        size: number
+        url: string
+        encryptedFile?: MessengerEncryptedBinaryPayload
+        klipy?: MessengerAttachmentKlipyPayload
+      }
+    }>(`/conversations/${conversationId}/uploads`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    return {
+      name: response.attachment.name,
+      mimeType: response.attachment.mimeType,
+      size: response.attachment.size,
+      url: response.attachment.url,
+      encryptedFile: response.attachment.encryptedFile,
+      klipy: response.attachment.klipy,
     }
   }
 
@@ -775,6 +874,7 @@ export function useMessengerConversations() {
     forwardMessage,
     deleteConversation,
     uploadAttachment,
+    stageAttachment,
     editMessage,
     deleteMessage,
     toggleReaction,

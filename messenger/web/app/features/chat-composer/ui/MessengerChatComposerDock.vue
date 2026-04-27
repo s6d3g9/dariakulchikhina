@@ -7,6 +7,14 @@ interface MessengerAudioDraftViewModel {
   waveformLevels: number[]
 }
 
+interface StagedAttachmentChip {
+  localId: string
+  name: string
+  mimeType: string
+  size: number
+  previewObjectUrl: string | null
+}
+
 const props = defineProps<{
   visible: boolean
   draft: string
@@ -27,6 +35,7 @@ const props = defineProps<{
   showAidevActionsBar?: boolean
   aidevActiveTab?: string | null
   attachmentIds?: string[]
+  stagedAttachments?: StagedAttachmentChip[]
   showSearchToggle?: boolean
   searchMode?: boolean
 }>()
@@ -37,6 +46,7 @@ const emit = defineEmits<{
   'blur': []
   'input': []
   'file-select': [event: Event]
+  'remove-staged-attachment': [index: number]
   'toggle-media-menu': []
   'open-file-picker': []
   'toggle-project-actions': []
@@ -49,6 +59,20 @@ const emit = defineEmits<{
   'update:audio-trim-end': [value: number]
   'run-started': [value?: Record<string, unknown>]
 }>()
+
+function formatStagedSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function stagedIconFor(mime: string) {
+  if (mime.startsWith('audio/')) return 'mdi-music-note'
+  if (mime.startsWith('video/')) return 'mdi-video-outline'
+  if (mime.startsWith('image/')) return 'mdi-image-outline'
+  if (mime.includes('pdf')) return 'mdi-file-pdf-box'
+  return 'mdi-file-document-outline'
+}
 
 const fileInputEl = ref<HTMLInputElement | null>(null)
 const projectActionsRootEl = ref<HTMLDivElement | null>(null)
@@ -136,6 +160,44 @@ defineExpose({
         <Transition name="composer-project-actions">
           <div v-if="props.projectActionsOpen && $slots['project-actions-panel']" class="composer-project-actions-popover" @click.stop>
             <slot name="project-actions-panel" />
+          </div>
+        </Transition>
+
+        <Transition name="composer-staged-strip">
+          <div
+            v-if="(props.stagedAttachments?.length ?? 0) > 0 && !props.isRecording && !props.audioDraft"
+            class="composer-staged-strip"
+            role="list"
+            aria-label="Прикреплённые файлы"
+          >
+            <div
+              v-for="(chip, idx) in props.stagedAttachments"
+              :key="chip.localId"
+              class="composer-staged-chip"
+              role="listitem"
+            >
+              <img
+                v-if="chip.previewObjectUrl"
+                class="composer-staged-chip__thumb"
+                :src="chip.previewObjectUrl"
+                :alt="chip.name"
+              >
+              <span v-else class="composer-staged-chip__icon" aria-hidden="true">
+                <VIcon :icon="stagedIconFor(chip.mimeType)" size="20" />
+              </span>
+              <span class="composer-staged-chip__meta">
+                <span class="composer-staged-chip__name">{{ chip.name }}</span>
+                <span class="composer-staged-chip__size">{{ formatStagedSize(chip.size) }}</span>
+              </span>
+              <button
+                type="button"
+                class="composer-staged-chip__remove"
+                aria-label="Удалить вложение"
+                @click="emit('remove-staged-attachment', idx)"
+              >
+                <VIcon icon="mdi-close" size="14" />
+              </button>
+            </div>
           </div>
         </Transition>
 
@@ -384,5 +446,103 @@ defineExpose({
 .composer-search-panel-leave-to {
   opacity: 0;
   transform: translateY(10px) scale(0.985);
+}
+
+.composer-staged-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px 4px;
+  margin-bottom: 4px;
+  max-height: 124px;
+  overflow-y: auto;
+}
+
+.composer-staged-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 12px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  max-width: 240px;
+}
+
+.composer-staged-chip__thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.composer-staged-chip__icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary));
+  flex-shrink: 0;
+}
+
+.composer-staged-chip__meta {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.composer-staged-chip__name {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(var(--v-theme-on-surface));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.composer-staged-chip__size {
+  font-size: 10.5px;
+  color: rgba(var(--v-theme-on-surface), 0.62);
+}
+
+.composer-staged-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(var(--v-theme-on-surface), 0.10);
+  color: rgb(var(--v-theme-on-surface));
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background var(--messenger-motion-duration-short, 120ms) var(--messenger-motion-easing-standard, ease);
+}
+
+.composer-staged-chip__remove:hover,
+.composer-staged-chip__remove:focus-visible {
+  background: rgba(var(--v-theme-error), 0.20);
+  color: rgb(var(--v-theme-error));
+  outline: none;
+}
+
+.composer-staged-strip-enter-active,
+.composer-staged-strip-leave-active {
+  transition: opacity var(--messenger-motion-duration-short, 150ms) var(--messenger-motion-easing-standard, ease),
+    transform var(--messenger-motion-duration-short, 150ms) var(--messenger-motion-easing-standard, ease);
+  transform-origin: center bottom;
+}
+
+.composer-staged-strip-enter-from,
+.composer-staged-strip-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
 }
 </style>

@@ -4704,6 +4704,16 @@ html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-key
   cursor: pointer;
 }
 
+.attachment-slot {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+}
+
+.attachment-slot:first-child {
+  margin-top: 0;
+}
+
 .voice-player-shell { width: 100%; }
 .voice-player-shell {
   width: 100%;

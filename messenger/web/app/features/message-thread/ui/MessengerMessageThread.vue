@@ -499,6 +499,21 @@ function isStickerAttachment() {
   return attachment.klipy?.kind === 'sticker' || attachment.mimeType === 'image/webp'
 }
 
+// Unified list of attachments rendered in the bubble. New multi-attach
+// messages populate `entry.attachments[]`; legacy single-attachment messages
+// stay on `entry.attachment`. We never want to render the same attachment
+// twice, so prefer the array when present.
+const displayedAttachments = computed(() => {
+  if (props.entry.attachments?.length) {
+    return props.entry.attachments
+  }
+  return props.entry.attachment ? [props.entry.attachment] : []
+})
+
+function isStickerOf(attachment: NonNullable<typeof props.entry.attachment>) {
+  return attachment.klipy?.kind === 'sticker' || attachment.mimeType === 'image/webp'
+}
+
 function handleAttachmentPreviewClick() {
   if (isStickerAttachment()) {
     return
@@ -711,35 +726,41 @@ onBeforeUnmount(() => {
       <p class="message-relation-card__label">Ответ на сообщение {{ entry.replyTo.own ? 'от вас' : `от ${entry.replyTo.senderDisplayName}` }}</p>
       <p class="message-relation-card__text">{{ relationPreviewText(entry.replyTo) }}</p>
     </div>
-    <template v-if="entry.kind === 'file' && entry.attachment">
-      <div v-if="entry.attachment.mimeType.startsWith('audio/')" class="voice-player-shell">
-        <MessengerAudioBubblePlayer
-          :src="entry.attachment.resolvedUrl"
-          :label="entry.attachment.name"
-        />
+    <template v-if="displayedAttachments.length">
+      <div
+        v-for="(att, attIdx) in displayedAttachments"
+        :key="`${entry.id}-att-${attIdx}`"
+        class="attachment-slot"
+      >
+        <div v-if="att.mimeType.startsWith('audio/')" class="voice-player-shell">
+          <MessengerAudioBubblePlayer
+            :src="att.resolvedUrl"
+            :label="att.name"
+          />
+        </div>
+        <button
+          v-else-if="!att.mimeType.startsWith('image/')"
+          type="button"
+          class="attachment-card attachment-card--button"
+          @click.stop="emit('copy-link', att.resolvedUrl, att.name)"
+        >
+          <span class="attachment-card__title">{{ att.name }}</span>
+          <span class="attachment-card__meta">{{ att.mimeType }} · {{ Math.ceil(att.size / 1024) }} KB</span>
+        </button>
+        <img
+          v-else
+          class="attachment-preview"
+          :class="{
+            'attachment-preview--sticker': isStickerOf(att),
+            'attachment-preview--interactive': !isStickerOf(att),
+          }"
+          :src="att.resolvedUrl"
+          :alt="att.name"
+          @click.stop="handleAttachmentPreviewClick"
+        >
       </div>
-      <button
-        v-if="!entry.attachment.mimeType.startsWith('audio/') && !entry.attachment.mimeType.startsWith('image/')"
-        type="button"
-        class="attachment-card attachment-card--button"
-        @click.stop="emit('copy-link', entry.attachment.resolvedUrl, entry.attachment.name)"
-      >
-        <span class="attachment-card__title">{{ entry.attachment.name }}</span>
-        <span class="attachment-card__meta">{{ entry.attachment.mimeType }} · {{ Math.ceil(entry.attachment.size / 1024) }} KB</span>
-      </button>
-      <img
-        v-if="entry.attachment.mimeType.startsWith('image/')"
-        class="attachment-preview"
-        :class="{
-          'attachment-preview--sticker': isStickerAttachment(),
-          'attachment-preview--interactive': !isStickerAttachment(),
-        }"
-        :src="entry.attachment.resolvedUrl"
-        :alt="entry.attachment.name"
-        @click.stop="handleAttachmentPreviewClick"
-      >
     </template>
-    <div v-else-if="editingMessageId === entry.id" class="message-bubble__editor">
+    <div v-if="editingMessageId === entry.id" class="message-bubble__editor">
       <textarea
         :value="editingDraft"
         rows="3"
@@ -749,7 +770,7 @@ onBeforeUnmount(() => {
         @blur="emit('save-edit')"
       />
     </div>
-    <div v-else class="message-bubble__content">
+    <div v-else-if="entry.kind !== 'file'" class="message-bubble__content">
       <template v-for="(burstEntry, burstIdx) in burstEntries" :key="burstEntry.id">
         <div v-if="burstIdx > 0" class="message-bubble__burst-divider">
           <span class="message-bubble__burst-divider-time">{{ formatMessageTime(burstEntry.createdAt) }}</span>

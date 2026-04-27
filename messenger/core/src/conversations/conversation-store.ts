@@ -101,6 +101,14 @@ export interface MessengerMessageRecord {
     encryptedFile?: MessengerEncryptedBinaryPayload
     klipy?: MessengerKlipyAttachmentRecord
   }
+  attachments?: Array<{
+    name: string
+    mimeType: string
+    size: number
+    url: string
+    encryptedFile?: MessengerEncryptedBinaryPayload
+    klipy?: MessengerKlipyAttachmentRecord
+  }>
   reactions?: MessengerMessageReactionRecord[]
   createdAt: string
   readAt?: string
@@ -172,6 +180,14 @@ export interface ConversationMessageOverviewItem {
     url: string
     encryptedFile?: MessengerEncryptedBinaryPayload
   }
+  attachments?: Array<{
+    name: string
+    mimeType: string
+    size: number
+    url: string
+    encryptedFile?: MessengerEncryptedBinaryPayload
+    klipy?: MessengerKlipyAttachmentRecord
+  }>
   reactions?: Array<{
     emoji: string
     count: number
@@ -300,23 +316,27 @@ function getStoredTextBody(body: string, conversation: Pick<MessengerConversatio
 }
 
 function getMessageBodyPreview(
-  message: Pick<MessengerMessageRecord, 'body' | 'kind' | 'attachment' | 'deletedAt' | 'encryptedBody'>,
+  message: Pick<MessengerMessageRecord, 'body' | 'kind' | 'attachment' | 'attachments' | 'deletedAt' | 'encryptedBody'>,
   conversation?: Pick<MessengerConversationRecord, 'kind' | 'policy'>,
 ): string {
   if (message.deletedAt) return 'Сообщение удалено'
 
+  const primaryAttachment = message.attachment || message.attachments?.[0]
+  const attachmentCount = message.attachments?.length ?? (message.attachment ? 1 : 0)
+
   if (conversation?.policy?.hideListPreview || conversation?.kind === 'direct-secret') {
-    if (message.kind === 'file' && message.attachment) {
-      if (message.attachment.mimeType.startsWith('audio/')) return 'Голосовое сообщение защищено'
+    if (message.kind === 'file' && primaryAttachment) {
+      if (primaryAttachment.mimeType.startsWith('audio/')) return 'Голосовое сообщение защищено'
       return 'Вложение защищено'
     }
     return 'Секретное сообщение'
   }
 
-  if (message.kind === 'file' && message.attachment) {
-    if (message.attachment.mimeType.startsWith('audio/')) return 'Аудиосообщение'
-    if (message.attachment.mimeType.startsWith('image/')) return 'Фото'
-    return message.attachment.name
+  if (message.kind === 'file' && primaryAttachment) {
+    if (attachmentCount > 1) return `Вложения (${attachmentCount})`
+    if (primaryAttachment.mimeType.startsWith('audio/')) return 'Аудиосообщение'
+    if (primaryAttachment.mimeType.startsWith('image/')) return 'Фото'
+    return primaryAttachment.name
   }
 
   if (message.encryptedBody) return 'Защищённое сообщение'
@@ -565,6 +585,7 @@ export async function listMessagesForConversation(conversationId: string, actor:
         own: message.senderUserId === actor.id,
         senderDisplayName: await resolveSenderDisplayName(message.senderUserId, users),
         attachment: message.deletedAt ? undefined : message.attachment,
+        attachments: message.deletedAt ? undefined : message.attachments,
         reactions: message.deletedAt ? undefined : buildMessageReactions(message.reactions, actor.id),
         replyTo: replyTo ? {
           id: replyTo.id,
@@ -609,6 +630,7 @@ export async function addMessageToConversation(
     replyToMessageId?: string
     commentOnMessageId?: string
     forwardedFrom?: MessengerMessageRecord['forwardedFrom']
+    attachments?: NonNullable<MessengerMessageRecord['attachments']>
     plaintext?: boolean
   },
 ): Promise<MessengerMessageRecord> {
@@ -617,7 +639,15 @@ export async function addMessageToConversation(
   if (!isParticipant(conversation, actor.id)) throw new Error('CONVERSATION_FORBIDDEN')
 
   const policy = getConversationPolicy(conversation)
-  if (policy.secret && !options?.encryptedBody && !options?.plaintext) throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
+  const attachments = options?.attachments && options.attachments.length > 0 ? options.attachments : undefined
+  const hasBody = Boolean(body && body.trim().length > 0)
+
+  if (policy.secret && hasBody && !options?.encryptedBody && !options?.plaintext) throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
+  if (policy.secret && attachments) {
+    for (const att of attachments) {
+      if (!att.encryptedFile) throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
+    }
+  }
 
   if (options?.replyToMessageId) {
     const rel = await getMessageRow(options.replyToMessageId, conversationId)
@@ -629,16 +659,18 @@ export async function addMessageToConversation(
   }
 
   const storedBody = getStoredTextBody(body, conversation)
+  const kind: 'text' | 'file' = !hasBody && attachments ? 'file' : 'text'
   const row = await insertMessage({
     conversationId,
     senderUserId: actor.id,
     payload: {
       body: storedBody,
       encryptedBody: options?.encryptedBody,
-      kind: 'text',
+      kind,
       replyToMessageId: options?.replyToMessageId,
       commentOnMessageId: options?.commentOnMessageId,
       forwardedFrom: options?.forwardedFrom,
+      attachments,
     },
     plaintext: options?.plaintext,
   })
