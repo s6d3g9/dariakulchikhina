@@ -9,8 +9,10 @@
 
 import { createError, defineEventHandler, getQuery } from 'h3'
 import { listSecrets, SecretScopeSchema } from '~/server/modules/secrets'
+import { requireAdmin } from '~/server/modules/auth/session.service'
 
 export default defineEventHandler(async (event) => {
+  requireAdmin(event)
   const q = getQuery(event)
   const scopeParse = SecretScopeSchema.safeParse(q.scope)
   if (!scopeParse.success) {

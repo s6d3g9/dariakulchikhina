@@ -12,8 +12,10 @@
 import { createError, defineEventHandler, readBody } from 'h3'
 import { ZodError } from 'zod'
 import { writeSecret, SecretWriteSchema } from '~/server/modules/secrets'
+import { requireAdmin } from '~/server/modules/auth/session.service'
 
 export default defineEventHandler(async (event) => {
+  requireAdmin(event)
   let input
   try {
     const body = await readBody(event)
