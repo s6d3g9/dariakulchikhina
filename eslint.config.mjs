@@ -364,6 +364,40 @@ export default tseslint.config(
     },
   },
 
+  // services/tenders-ingest/** — isolated runtime, only shared/ allowed.
+  // Service publishes to the main app via REST; never touches Postgres
+  // directly. See docs/architecture-v5/25-tenders-platform.md §3.6.
+  {
+    files: ['services/tenders-ingest/**/*.{ts,js,mjs}'],
+    ignores: [
+      'services/tenders-ingest/**/*.config.{ts,js,mjs,cjs}',
+      'services/tenders-ingest/__tests__/**',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/app/**',
+                '**/server/**',
+                '**/messenger/**',
+                '~/app/**',
+                '~/server/**',
+                '~/messenger/**',
+                'postgres',
+                'drizzle-orm',
+                'drizzle-orm/*',
+              ],
+              message: CROSS_RUNTIME_MSG,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // FSD direction: entities cannot import from widgets/features/pages
   {
     files: ['app/entities/**/*.{ts,js,mjs,vue}'],
@@ -515,12 +549,14 @@ export default tseslint.config(
   // Central config files — allowed to read process.env directly. Each
   // runtime has exactly one: main Nuxt app -> server/config.ts,
   // messenger -> messenger/core/src/config.ts, communications relay ->
-  // services/communications-service/src/config.ts.
+  // services/communications-service/src/config.ts, tenders ingest ->
+  // services/tenders-ingest/src/config.ts.
   {
     files: [
       'server/config.ts',
       'messenger/core/src/config.ts',
       'services/communications-service/src/config.ts',
+      'services/tenders-ingest/src/config.ts',
     ],
     rules: {
       'no-restricted-syntax': 'off',
