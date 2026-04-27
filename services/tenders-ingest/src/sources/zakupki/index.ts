@@ -21,6 +21,7 @@ import type {
   UnifiedTender,
 } from '../../core/source.ts'
 import type { Logger } from '../../observability/logger.ts'
+import type { MetricsRegistry } from '../../observability/metrics.ts'
 import { ZakupkiSoapClient } from './soap-client.ts'
 import { mapZakupkiNotification } from './mapper.ts'
 import { parseZakupkiNotificationXml } from './xml-parser.ts'
@@ -35,6 +36,7 @@ export interface ZakupkiSourceOptions {
   /** documentType44 markers to fetch. Default: all *Notification* types. */
   documentTypes?: readonly string[]
   fetchImpl?: typeof fetch
+  metrics?: MetricsRegistry
 }
 
 const DEFAULT_DOCUMENT_TYPES: readonly string[] = [
@@ -90,14 +92,18 @@ export class ZakupkiSource implements Source<unknown> {
   }
 
   parseItem(raw: unknown): UnifiedTender | null {
-    // W1.A: skeleton — passes through `null` if `raw` isn't a string
-    // payload or if the parser can't handle it. W1.B replaces this
-    // with the real XML→intermediate→UnifiedTender pipeline.
     if (typeof raw !== 'string') return null
     try {
       const intermediate = parseZakupkiNotificationXml(raw)
       return mapZakupkiNotification(intermediate)
-    } catch {
+    } catch (err) {
+      // Visible parse failures — not silent drops.
+      const guid = (raw as any)?.notification_guid as string | undefined
+      this.opts.logger.warn('zakupki.parse.failed', {
+        guid,
+        error: String(err),
+      })
+      this.opts.metrics?.recordError(this.id)
       return null
     }
   }

@@ -74,6 +74,10 @@ function shouldFire(parsed: ParsedCron, now: Date): boolean {
  * for each tick checks every task's cron expression. Tasks that fire
  * concurrently are awaited in parallel and isolated — a thrown task
  * does not abort the scheduler.
+ *
+ * Per-task concurrency guard: if a task is still running when the next
+ * tick fires, the new invocation is skipped with a warn (not queued).
+ * This prevents task pile-up when a run takes longer than one tick interval.
  */
 export function startCron(
   tasks: readonly ScheduledTask[],
@@ -81,16 +85,28 @@ export function startCron(
 ): CronHandle {
   const parsed = tasks.map((t) => ({ ...t, parsed: parseCron(t.expression) }))
   let stopped = false
+  const running = new Set<string>()
 
   const tick = (): void => {
     if (stopped) return
     const now = new Date()
     for (const t of parsed) {
-      if (shouldFire(t.parsed, now)) {
-        Promise.resolve()
-          .then(() => t.task())
-          .catch((err) => onError(err, t))
+      if (!shouldFire(t.parsed, now)) continue
+      const taskKey = t.name ?? t.expression
+      if (running.has(taskKey)) {
+        onError(
+          Object.assign(new Error(`[cron] task still running, skipping tick`), {
+            code: 'cron.skipped.busy',
+          }),
+          t,
+        )
+        continue
       }
+      running.add(taskKey)
+      Promise.resolve()
+        .then(() => t.task())
+        .catch((err) => onError(err, t))
+        .finally(() => running.delete(taskKey))
     }
   }
 
