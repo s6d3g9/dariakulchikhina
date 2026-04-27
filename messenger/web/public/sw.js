@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'messenger-shell-v13'
+const CACHE_VERSION = 'messenger-shell-v14'
 
 function isMessengerScopeClient(client) {
   try {
