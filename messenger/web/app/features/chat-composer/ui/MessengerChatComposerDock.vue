@@ -46,6 +46,7 @@ const emit = defineEmits<{
   'blur': []
   'input': []
   'file-select': [event: Event]
+  'paste-files': [files: File[]]
   'remove-staged-attachment': [index: number]
   'toggle-media-menu': []
   'open-file-picker': []
@@ -102,10 +103,36 @@ function onCEInput() {
   emit('input')
 }
 
+function extractClipboardFiles(event: ClipboardEvent): File[] {
+  const items = event.clipboardData?.items
+  if (!items) return []
+  const files: File[] = []
+  for (const item of Array.from(items)) {
+    if (item.kind !== 'file') continue
+    const file = item.getAsFile()
+    if (file) files.push(file)
+  }
+  return files
+}
+
 function onCEPaste(event: ClipboardEvent) {
+  const files = extractClipboardFiles(event)
+  if (files.length) {
+    event.preventDefault()
+    emit('paste-files', files)
+    return
+  }
   event.preventDefault()
   const text = event.clipboardData?.getData('text/plain') ?? ''
   if (text) document.execCommand('insertText', false, text)
+}
+
+function onTextareaPaste(event: ClipboardEvent) {
+  const files = extractClipboardFiles(event)
+  if (files.length) {
+    event.preventDefault()
+    emit('paste-files', files)
+  }
 }
 
 function onCEKeydown(event: KeyboardEvent) {
@@ -266,6 +293,7 @@ defineExpose({
           autocapitalize="sentences"
           spellcheck="false"
           @input="emit('update:draft', ($event.target as HTMLTextAreaElement).value); emit('input')"
+          @paste="onTextareaPaste"
           @keydown="onCEKeydown"
           @focus="emit('focus')"
           @blur="emit('blur')"

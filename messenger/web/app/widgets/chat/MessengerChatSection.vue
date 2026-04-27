@@ -2493,6 +2493,16 @@ async function handleFileSelect(event: Event) {
   }
 }
 
+async function handlePasteFiles(files: File[]) {
+  if (!files.length) return
+  actionError.value = ''
+  try {
+    await stageFiles(files)
+  } catch {
+    actionError.value = 'Не удалось загрузить файл.'
+  }
+}
+
 function eventHasFiles(event: DragEvent) {
   const types = event.dataTransfer?.types
   return Boolean(types && Array.from(types).includes('Files'))
@@ -3859,6 +3869,7 @@ onBeforeUnmount(() => {
         @blur="collapseComposer"
         @input="syncComposerInputHeight"
         @file-select="handleFileSelect"
+        @paste-files="handlePasteFiles"
         @remove-staged-attachment="removeStagedAttachment"
         @toggle-media-menu="toggleComposerMediaMenu"
         @open-file-picker="openFilePicker()"
