@@ -16,6 +16,22 @@ module.exports = {
         "PORT": "3000",
         "HOST": "0.0.0.0"
       }
+    },
+    {
+      "name": "tenders-ingest",
+      "script": "services/tenders-ingest/src/index.ts",
+      "interpreter": "node",
+      "interpreter_args": "--experimental-strip-types",
+      "instances": 1,
+      "exec_mode": "fork",
+      "max_memory_restart": "512M",
+      "kill_timeout": 10000,
+      "env": {
+        "NODE_ENV": "production",
+        "MAIN_APP_URL": "http://localhost:3000",
+        "TENDERS_INGEST_HEALTH_PORT": "3035",
+        "TENDERS_INGEST_LOG_LEVEL": "info"
+      }
     }
   ]
 }
