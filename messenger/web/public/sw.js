@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'messenger-shell-v17'
+const CACHE_VERSION = 'messenger-shell-v18'
 
 function isMessengerScopeClient(client) {
   try {
@@ -88,6 +88,9 @@ self.addEventListener('fetch', (event) => {
   }
 
   const requestUrl = new URL(request.url)
+  if (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:') {
+    return
+  }
   const scopeUrl = new URL(self.registration.scope)
   const scopePath = getScopePath()
 
