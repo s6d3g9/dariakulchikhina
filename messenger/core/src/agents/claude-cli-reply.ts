@@ -62,6 +62,24 @@ export function findClaudeSessionBySlug(slug: string): ClaudeSessionRegistryRow 
   return readRegistry().find((r) => r.slug === slug) ?? null
 }
 
+// Short model aliases used throughout messenger (`'sonnet'`, `'haiku'`, `'opus'`)
+// vs the full ids the `claude` CLI accepts (`'claude-sonnet-4-6'`, …). Several
+// seed paths and routing rows store the short alias; without normalisation the
+// CLI is invoked with `--model sonnet`, exits non-zero, and the agent reply
+// falls all the way through to the canned `buildReplyByTopic` stub. The map
+// is intentionally narrow — exact match on a known short name only.
+const CLAUDE_MODEL_ALIASES: Record<string, string> = {
+  sonnet: 'claude-sonnet-4-6',
+  haiku: 'claude-haiku-4-5',
+  opus: 'claude-opus-4-7',
+}
+
+export function normalizeClaudeModelId(input: string | null | undefined): string {
+  const v = (input ?? '').trim()
+  if (!v) return ''
+  return CLAUDE_MODEL_ALIASES[v.toLowerCase()] ?? v
+}
+
 export interface CliReplyHistoryItem {
   role: 'user' | 'assistant'
   content: string
@@ -89,7 +107,9 @@ export function callClaudeSessionReply(opts: CallOptions): Promise<string> {
     const row = findClaudeSessionBySlug(opts.slug)
     if (!existsSync(CLAUDE_BIN)) return reject(new Error(`claude CLI not found at ${CLAUDE_BIN}`))
 
-    const model = opts.model || row?.model || 'claude-sonnet-4-6'
+    const model = normalizeClaudeModelId(opts.model)
+      || normalizeClaudeModelId(row?.model)
+      || 'claude-sonnet-4-6'
     const cwd = row?.workroom ? join(HOME, 'workrooms', row.workroom) : HOME
 
     const args = [
