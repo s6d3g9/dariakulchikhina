@@ -13,8 +13,10 @@ import {
   searchTenders,
   TenderSearchQuerySchema,
 } from '~/server/modules/tenders'
+import { requireAdmin } from '~/server/modules/auth/session.service'
 
 export default defineEventHandler(async (event) => {
+  requireAdmin(event)
   const raw = getQuery(event)
   // Normalize array-style query params: ?okpd2=42.11&okpd2=42.13 vs
   // ?okpd2=42.11,42.13 — accept both.

@@ -3,13 +3,17 @@
  * status transitions go through here. Ingest is its own service file.
  */
 
+import type { InferSelectModel } from 'drizzle-orm'
 import * as repo from './tenders.repository'
 import { TenderNotFoundError } from './tenders.errors'
+import { tenders } from '~/server/db/schema'
 import type {
   TenderSearchQuery,
   TenderSearchResult,
   TenderRow,
 } from '~/shared/types/tenders'
+
+type TenderDbRow = InferSelectModel<typeof tenders>
 
 export async function searchTenders(
   query: TenderSearchQuery,
@@ -37,8 +41,7 @@ export async function getTenderById(id: string): Promise<TenderRow> {
 
 // === Helpers =================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- drizzle row type is inferred
-function mapDbRow(row: any): TenderRow {
+function mapDbRow(row: TenderDbRow): TenderRow {
   return {
     id: row.id,
     sourceId: row.sourceId,

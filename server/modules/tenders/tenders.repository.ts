@@ -31,7 +31,18 @@ export async function upsertTendersBatch(
   // Drizzle's `onConflictDoUpdate` returning gives us the row state
   // *after* upsert. To distinguish inserted/updated/skipped we add a
   // sentinel column (`xmax = 0` ⇒ insert, else update — pure pg trick).
-  const rows = items.map((it) => ({
+  // Dedup within the batch by (sourceId, externalGuid) — keep the LAST
+  // occurrence, matching ON CONFLICT semantics so the final state always
+  // wins over earlier duplicates in the same batch. Without this, Postgres
+  // raises a unique-constraint error when two rows targeting the same key
+  // land in a single INSERT ... ON CONFLICT statement.
+  const seen = new Map<string, TenderIngestItem>()
+  for (const it of items) {
+    seen.set(`${it.sourceId}:${it.externalGuid}`, it)
+  }
+  const deduped = [...seen.values()]
+
+  const rows = deduped.map((it) => ({
     sourceId: it.sourceId,
     externalGuid: it.externalGuid,
     law: it.law,
@@ -92,14 +103,14 @@ export async function upsertTendersBatch(
   // Heuristic: the SET clause only fires when the WHERE matched, so any
   // returned row is either inserted (version=1) or updated (version>1).
   // Skipped rows (same hash) don't appear in `returning` because the
-  // WHERE filtered them out — len(rows) - len(result) = skipped.
+  // WHERE filtered them out — len(deduped) - len(result) = skipped.
   let inserted = 0
   let updated = 0
   for (const r of result) {
     if (r.version === 1) inserted++
     else updated++
   }
-  const skipped = items.length - result.length
+  const skipped = deduped.length - result.length
   return { inserted, updated, skipped }
 }
 
@@ -144,11 +155,7 @@ export async function listTenders(opts: ListTendersOptions): Promise<ListTenders
     }
   }
 
-  const conds = [eq(tenders.deletedAt, sql<Date>`null`)]
-  // ↑ trick: we want "deleted_at IS NULL"; drizzle doesn't have an
-  //   obvious helper for that — use a raw isNull expression instead:
-  conds.length = 0
-  conds.push(sql`${tenders.deletedAt} is null`)
+  const conds = [sql`${tenders.deletedAt} is null`]
   if (opts.status) conds.push(eq(tenders.status, opts.status))
   if (opts.sourceId) conds.push(eq(tenders.sourceId, opts.sourceId))
   if (opts.regions && opts.regions.length > 0) {
