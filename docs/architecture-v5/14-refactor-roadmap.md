@@ -1834,3 +1834,61 @@ Commit:
 - `pnpm docs:v5:verify` → all Doc-10 matrix rows confirmed ✓
 
 **Результат**: Wave 9 / 9b / 9c work consolidated, v5.3 backend architecture fully enforced, matrix reality-aligned. Wave 10 lint sweep confirms zero architectural drift. Ready for delivery.
+
+---
+
+## Tenders Platform — W1.A: Backend skeleton
+
+### [done] 2026-04-27 — W1.A backend scaffold landed
+
+**Scope (per `docs/architecture-v5/25-tenders-platform.md` and `26-tenders-ingest-spec.md`):**
+
+- `shared/types/tenders-ingest.ts` — Source / UnifiedTender / SourceConfig / TransportKind contracts (cross-runtime).
+- `shared/types/tenders.ts` — domain types (TenderRow, TenderStatus, ingest/search request/response).
+- `shared/constants/regions.ts` — ОКАТО ↔ ISO 3166-2:RU mapping for the 6 cityofroads regions.
+- `server/db/schema/tenders.ts` — `tenders` table (28 cols, OCC `version`, soft-delete, GIN index on `okpd2`, partial unique on `(source_id, external_guid)`) + `tender_events` audit append-log.
+- `server/db/schema/messenger-secrets.ts` — AES-256-GCM column triple (`value_encrypted` + `iv` + `auth_tag`) with partial unique on `(scope, scope_ref_id, key)`.
+- `server/db/migrations/0011_*.sql` — applied to dev (`pnpm db:migrate` not used due to drift; new migration applied directly via psql against `daria_admin_refactor`).
+- `server/modules/tenders/` — types (zod) / repository / service / ingest.service / errors.
+- `server/modules/secrets/` — crypto (`SECRETS_MASTER_KEY` from env, fail-fast) / repository / service. `getSecret()` returns plaintext for service-internal use; CRUD returns masked views.
+- `server/api/tenders/{ingest.post,index.get}.ts` — service-token auth (Bearer + idempotency-key), cursor pagination on `(published_at desc, id desc)`.
+- `server/api/secrets/{index.get,index.post,[id].delete}.ts` — masked CRUD, soft-delete only.
+- `services/tenders-ingest/` — standalone package with `package.json`, `tsconfig.json`, `__tests__/`. Pieces:
+  - `src/config.ts` — fail-fast loadConfig (`MAIN_APP_URL`, `TENDERS_INGEST_SERVICE_TOKEN` required).
+  - `src/observability/{logger,metrics}.ts` — JSON logger, per-source counters.
+  - `src/core/{pipeline,publisher,cursor,dedup,retry,source}.ts` — fetch → parse → filter → publish flow with idempotency key.
+  - `src/core/filter/okpd.ts` — CITYOFROADS_OKPD2_WHITELIST (30+ codes from §26 §3.2 verified W0).
+  - `src/core/filter/region.ts` — re-export from shared layer + matchesRegionWhitelist().
+  - `src/sources/zakupki/{index,soap-client,xml-parser,mapper}.ts` — adapter skeleton; SOAP+XML body deferred to W1.B.
+  - `src/sources/torgi/{index,api-client,mapper}.ts` — Spring-pagination REST client + lot-card mapper (no auth).
+  - `src/sources/registry.ts` — declarative SOURCE_REGISTRY (zakupki+torgi enabled, 10 placeholders disabled with TODO).
+  - `src/secrets-resolver.ts` — REST GET → main app `/api/secrets/value`, returns null on 404 (graceful degradation).
+  - `src/cron.ts` — minute-tick cron (no external deps; daily/2h schedules are well within precision).
+  - `src/health-server.ts` — `node:http` GET /health with statuses + metrics.
+  - `src/index.ts` — bootstrap, registry → buildSource(), cron registration, SIGTERM/SIGINT graceful shutdown.
+  - `__tests__/{filter,pipeline,sources/torgi-mapper}.test.ts` — green via `node --experimental-strip-types`.
+- `ecosystem.config.cjs` — PM2 block `tenders-ingest` (`max_memory_restart: 512M`, kill_timeout 10s).
+- Root `package.json` scripts: `tenders:ingest:{dev,start,typecheck,test}`.
+- `eslint.config.mjs` — `services/tenders-ingest/**` cross-runtime isolation rule (only `shared/**` allowed); `services/tenders-ingest/src/config.ts` whitelisted for `process.env`.
+
+### Graceful degradation
+
+- Missing `messenger_secrets/tenders.zakupki.individualPersonToken` → zakupki source goes to status `degraded:no-secret`, yields zero items, `/health` exposes the state. torgi continues running. Service stays online.
+- Missing `MAIN_APP_URL` or `TENDERS_INGEST_SERVICE_TOKEN` → fail-fast at boot (config layer).
+- Missing `SECRETS_MASTER_KEY` in main app → fail-fast on first secret read (crypto layer).
+
+### Verification
+
+- `pnpm tenders:ingest:test` → 3 test files green (filter, torgi-mapper, pipeline).
+- `pnpm tenders:ingest:typecheck` → 0 errors.
+- `pnpm lint:errors` → no new architectural violations (5 pre-existing errors unchanged).
+- `pnpm exec vue-tsc --noEmit` → no new errors in `shared/`, `server/modules/`, `server/api/`, `services/tenders-ingest/`.
+
+### Out of scope (deferred to W1.B / W2)
+
+- Real SOAP envelope construction + ZIP unpacking for zakupki (`services/tenders-ingest/src/sources/zakupki/soap-client.ts` is skeleton).
+- Real sax-streaming XML parser for zakupki notification documents (`xml-parser.ts` throws "not implemented").
+- Redis-backed cursor store (currently in-memory; production target in W2).
+- Frontend project-tenders feed widget — separate W1.B work item.
+
+**Результат**: W1.A backend skeleton landed on `claude/workroom-tenders-w1a-backend`. Schema, modules, API endpoints, ingest service runtime, observability, registry, and tests all in place. Service runs end-to-end against a mock fixture. Ready to merge to `refactor/architecture-v5` and unblock W1.B (real adapters).

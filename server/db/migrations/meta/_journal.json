@@ -78,6 +78,20 @@
       "when": 1776978595954,
       "tag": "0010_foamy_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1777294075620,
+      "tag": "0011_tearful_namor",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1777308728375,
+      "tag": "0012_abandoned_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }
