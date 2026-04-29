@@ -30,6 +30,7 @@
 23. [Project-Centric Messenger — проекты, коннекторы, скилы, MCP, bootstrap composer](./23-project-centric-messenger.md)
 24. [AIDev Module — Project-Centric Dev Flow inside Messenger](./24-aidev-module.md)
 25. [Arch Audit: Project-Centric Messenger (2026-04-20)](./24-arch-audit-2026-04-20.md)
+27. [Session Provisioning — автоматическое создание сессий из карточки проекта](./27-session-provisioning.md)
 28. [Code Excellence — эволюция паттернов модулей до идеала](./28-code-excellence-plan.md)
 26. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
 
