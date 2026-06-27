@@ -104,9 +104,9 @@ export async function createMessengerServer() {
   await app.register(cors, {
     origin(origin, callback) {
       if (!origin) {
-        // Deny requests without Origin header to prevent CSRF via form submissions
-        // Only WebSocket upgrades and same-origin requests are exempt (handled by browser)
-        callback(new Error('Origin header required'), false)
+        // Allow server-to-server requests, healthchecks, and same-origin calls.
+        // Browser cross-origin requests still carry Origin and are checked below.
+        callback(null, true)
         return
       }
 
