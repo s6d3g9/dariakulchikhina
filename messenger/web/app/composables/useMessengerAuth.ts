@@ -123,6 +123,23 @@ export function useMessengerAuth() {
     }
   }
 
+  async function tryEnsureDeviceIdentity(userId: string) {
+    if (!import.meta.client) {
+      return
+    }
+
+    if (!globalThis.crypto?.subtle) {
+      console.warn('[messenger] Device identity is unavailable outside a secure browser context.')
+      return
+    }
+
+    try {
+      await messengerCrypto.ensureDeviceIdentity(request, userId)
+    } catch (error) {
+      console.warn('[messenger] Failed to prepare device identity.', error)
+    }
+  }
+
   async function request<T>(path: string, options: Parameters<typeof $fetch<T>>[1] = {}) {
     const headers = new Headers(options.headers as HeadersInit | undefined)
     if (token.value) {
@@ -153,7 +170,7 @@ export function useMessengerAuth() {
     try {
       const response = await request<{ user: MessengerAuthUser }>('/auth/me')
       user.value = response.user
-      await messengerCrypto.ensureDeviceIdentity(request, response.user.id)
+      await tryEnsureDeviceIdentity(response.user.id)
       writeStoredAuth({ token: token.value, user: user.value }, persistenceMode.value)
     } catch (error) {
       if (isUnauthorizedError(error)) {
@@ -187,7 +204,7 @@ export function useMessengerAuth() {
       body: payload,
     })
     acceptAuth(response)
-    await messengerCrypto.ensureDeviceIdentity(request, response.user.id)
+    await tryEnsureDeviceIdentity(response.user.id)
   }
 
   async function register(payload: { login: string; password: string; displayName: string }) {
@@ -196,7 +213,7 @@ export function useMessengerAuth() {
       body: payload,
     })
     acceptAuth(response)
-    await messengerCrypto.ensureDeviceIdentity(request, response.user.id)
+    await tryEnsureDeviceIdentity(response.user.id)
   }
 
   function logout() {
