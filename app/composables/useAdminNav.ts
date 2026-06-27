@@ -19,14 +19,19 @@ import {
 import {
   ADMIN_ROOT_MENU_GROUP,
   CLIENT_CABINET_BLOCKS,
+  CONSTRUCTION_OS_BLOCKS,
   CONTRACTOR_CABINET_BLOCKS,
+  CRM_OS_BLOCKS,
+  DESIGN_OS_BLOCKS,
   DESIGNER_CABINET_BLOCKS,
   DOCUMENT_LIBRARY_BLOCKS,
   GALLERY_LIBRARY_BLOCKS,
   MANAGER_CABINET_BLOCKS,
+  MESSENGER_OS_BLOCKS,
   PROJECT_CABINET_BLOCKS,
   PROJECT_PHASE_BLOCKS,
   SELLER_CABINET_BLOCKS,
+  STUDIO_OS_BLOCKS,
   toPayloadItems,
 } from '~~/shared/constants/navigation/app-catalog'
 
@@ -67,6 +72,11 @@ export interface ContentSpec {
 
 interface NavRuntimeCatalog {
   root: PayloadItem[]
+  crmOs: PayloadItem[]
+  studioOs: PayloadItem[]
+  designOs: PayloadItem[]
+  constructionOs: PayloadItem[]
+  messengerOs: PayloadItem[]
   designerCabinet: PayloadItem[]
   clientCabinet: PayloadItem[]
   contractorCabinet: PayloadItem[]
@@ -116,6 +126,11 @@ function createNavRuntimeCatalog(blueprint: AppBlueprintDef | null): NavRuntimeC
 
   return {
     root: getBlueprintPayload('admin-root', ADMIN_ROOT_MENU_GROUP.items, blueprint),
+    crmOs: getBlueprintPayload('crm-os', CRM_OS_BLOCKS, blueprint),
+    studioOs: getBlueprintPayload('studio-os', STUDIO_OS_BLOCKS, blueprint),
+    designOs: getBlueprintPayload('design-os', DESIGN_OS_BLOCKS, blueprint),
+    constructionOs: getBlueprintPayload('construction-os', CONSTRUCTION_OS_BLOCKS, blueprint),
+    messengerOs: getBlueprintPayload('messenger-os', MESSENGER_OS_BLOCKS, blueprint),
     designerCabinet: getBlueprintPayload('designer-cabinet', DESIGNER_CABINET_BLOCKS, blueprint),
     clientCabinet: getBlueprintPayload('client-cabinet', CLIENT_CABINET_BLOCKS, blueprint),
     contractorCabinet: getBlueprintPayload('contractor-cabinet', CONTRACTOR_CABINET_BLOCKS, blueprint),
@@ -138,6 +153,76 @@ function rootNode(payload: PayloadItem[]): NavigationNode {
     filter: { placeholder: 'поиск...', value: '' },
     payload,
   }
+}
+
+type OsRootConfig = {
+  nodeId: string
+  title: string
+  section: string
+  route: string
+  payloadKey: 'crmOs' | 'studioOs' | 'designOs' | 'constructionOs' | 'messengerOs'
+}
+
+const OS_ROOT_CONFIG: Record<string, OsRootConfig> = {
+  cat_crm: {
+    nodeId: 'os_crm',
+    title: 'CRM',
+    section: 'crm',
+    route: '/admin/clients',
+    payloadKey: 'crmOs',
+  },
+  cat_studio_os: {
+    nodeId: 'os_studio',
+    title: 'Studio OS',
+    section: 'studio',
+    route: '/admin/designers',
+    payloadKey: 'studioOs',
+  },
+  cat_design_os: {
+    nodeId: 'os_design',
+    title: 'Design OS',
+    section: 'design-os',
+    route: '/admin?os=design',
+    payloadKey: 'designOs',
+  },
+  cat_construction_os: {
+    nodeId: 'os_construction',
+    title: 'Construction OS',
+    section: 'construction-os',
+    route: '/admin/contractors',
+    payloadKey: 'constructionOs',
+  },
+  cat_messenger: {
+    nodeId: 'os_messenger',
+    title: 'Messenger',
+    section: 'messenger',
+    route: '/admin?os=messenger',
+    payloadKey: 'messengerOs',
+  },
+}
+
+const OS_ITEM_CATEGORY_MAP: Record<string, string> = {
+  crm_clients: 'cat_clients',
+  crm_projects: 'cat_projects',
+  crm_managers: 'cat_managers',
+  crm_documents: 'cat_docs',
+  studio_designers: 'cat_designers',
+  studio_clients: 'cat_clients',
+  studio_projects: 'cat_projects',
+  studio_documents: 'cat_docs',
+  studio_gallery: 'cat_gallery',
+  studio_moodboards: 'cat_moodboards',
+  design_projects: 'cat_projects',
+  design_designers: 'cat_designers',
+  design_documents: 'cat_docs',
+  design_gallery: 'cat_gallery',
+  construction_projects: 'cat_projects',
+  construction_contractors: 'cat_contractors',
+  construction_managers: 'cat_managers',
+  construction_documents: 'cat_docs',
+  messenger_projects: 'cat_projects',
+  messenger_clients: 'cat_clients',
+  messenger_managers: 'cat_managers',
 }
 
 // ─── Composable ───────────────────────────────────────────────────────────────
@@ -471,6 +556,24 @@ async function buildNextNode(
 
   // ── ROOT → registry секций ────────────────────────────────────────────────
   if (current.nodeId === 'root') {
+    const osRoot = OS_ROOT_CONFIG[item.id]
+    if (osRoot) {
+      newCtx.section = osRoot.section
+      await router.push(osRoot.route)
+
+      return {
+        ctx: newCtx,
+        node: {
+          step: 'B',
+          nodeId: osRoot.nodeId,
+          nodeType: 'os_root',
+          context: { title: osRoot.title, breadcrumbs: [...crumbs, osRoot.title] },
+          filter: { placeholder: `Поиск в ${osRoot.title}...`, value: '' },
+          payload: catalog[osRoot.payloadKey],
+        },
+      }
+    }
+
     newCtx.section = normalizeAdminSectionKey(item.id.replace('cat_', ''))
     const route = getAdminCategoryRoute(item.id)
     if (route) router.push(route)
@@ -526,6 +629,19 @@ async function buildNextNode(
         type: 'node' as const,
       })),
     }}
+  }
+
+  // ── OS ROOT → existing registries ─────────────────────────────────────────
+  if (current.nodeType === 'os_root') {
+    const categoryId = OS_ITEM_CATEGORY_MAP[item.id]
+    if (!categoryId) {
+      return null
+    }
+
+    const rootItem = catalog.root.find(payloadItem => payloadItem.id === categoryId)
+      || { id: categoryId, name: item.name, type: 'node' as const }
+
+    return buildNextNode(rootNode(catalog.root), { section: '' }, rootItem, router, catalog)
   }
 
   // ── REGISTRY → cabinet ────────────────────────────────────────────────────

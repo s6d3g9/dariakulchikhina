@@ -134,9 +134,9 @@
 </template>
 
 <script setup lang="ts">
-import { PHASE_LABELS, getAdminNavGroups, findPage } from '~~/shared/constants/pages'
+import { PHASE_LABELS, getAdminNavGroups, findPage } from '~~/shared/constants/navigation/pages'
 import { findPreset } from '~~/shared/constants/presets'
-import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/project-control'
+import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/project/project-control'
 
 const props = defineProps<{
   slug: string

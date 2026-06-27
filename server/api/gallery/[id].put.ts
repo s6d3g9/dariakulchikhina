@@ -2,6 +2,8 @@ import { useDb } from '~/server/db'
 import { galleryItems } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { requireAdmin } from '~/server/utils/auth'
+import { requireIntParam } from '~/server/utils/query'
+import { sanitizeRecord, zSafeJsonObject } from '~/server/utils/sanitize'
 import { z } from 'zod'
 
 const UpdateGallerySchema = z.object({
@@ -15,13 +17,13 @@ const UpdateGallerySchema = z.object({
   width: z.number().int().positive().nullable().optional(),
   height: z.number().int().positive().nullable().optional(),
   sortOrder: z.number().int().optional(),
-  properties: z.record(z.unknown()).optional(),
+  properties: zSafeJsonObjectnal(),
 })
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
-  const id = Number(getRouterParam(event, 'id'))
+  const id = requireIntParam(event, 'id')
   const body = await readValidatedNodeBody(event, UpdateGallerySchema)
 
   const setData: Record<string, unknown> = {}
@@ -35,7 +37,7 @@ export default defineEventHandler(async (event) => {
   if (body.featured !== undefined) setData.featured = body.featured
   if (body.width !== undefined) setData.width = body.width
   if (body.height !== undefined) setData.height = body.height
-  if (body.properties !== undefined) setData.properties = body.properties
+  if (body.properties !== undefined) setData.properties = sanitizeRecord(body.properties as Record<string, unknown>)
 
   const [row] = await db.update(galleryItems)
     .set(setData)

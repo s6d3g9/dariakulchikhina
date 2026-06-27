@@ -30,3 +30,16 @@ export function safeGetQuery(event: H3Event): Record<string, string> {
     return result
   }
 }
+
+/**
+ * Parse a router param as a positive integer.
+ * Throws 400 if missing, NaN, non-finite, zero, or negative.
+ */
+export function requireIntParam(event: H3Event, name: string): number {
+  const raw = getRouterParam(event, name)
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n < 1 || n !== Math.floor(n)) {
+    throw createError({ statusCode: 400, statusMessage: `Invalid ${name}` })
+  }
+  return n
+}

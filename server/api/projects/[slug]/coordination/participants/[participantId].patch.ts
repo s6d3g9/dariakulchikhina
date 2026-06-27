@@ -1,8 +1,9 @@
 import { requireAdmin } from '~/server/utils/auth'
 import { readValidatedNodeBody } from '~/server/utils/body'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
-import { updateProjectGovernanceParticipant } from '~/server/utils/project-governance'
-import { UpdateProjectParticipantSchema } from '~/shared/types/project-governance'
+import { updateProjectGovernanceParticipant } from '~/server/modules/projects/project-governance.service'
+import { UpdateProjectParticipantSchema } from '~/shared/types/project/project-governance'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
   applyMessengerCors(event, { methods: ['PATCH', 'OPTIONS'] })
@@ -13,7 +14,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Project slug is required' })
   }
 
-  const participantId = Number(getRouterParam(event, 'participantId'))
+  const participantId = requireIntParam(event, 'participantId')
   if (!Number.isInteger(participantId) || participantId <= 0) {
     throw createError({ statusCode: 400, statusMessage: 'Некорректный participantId' })
   }

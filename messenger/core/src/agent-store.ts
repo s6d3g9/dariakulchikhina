@@ -439,6 +439,13 @@ async function buildMessengerAgentConsultation(
       return condenseText(await callMessengerAgentModel(prompt, {
         model: settings.model,
         apiKey: settings.apiKey,
+        taskClass: 'agent-consultation',
+        riskTier: 'low',
+        costTier: 'cheap',
+        effort: 'low',
+        budgetCaps: {
+          maxTokens: 360,
+        },
       }), 320)
     } catch {
       // fallback below keeps orchestration working without hard failure
@@ -591,6 +598,10 @@ export async function buildMessengerAgentReply(
       {
         model: settings.model,
         apiKey: settings.apiKey,
+        taskClass: 'agent-reply',
+        riskTier: 'low',
+        costTier: 'balanced',
+        effort: 'medium',
       },
     )
   } catch {

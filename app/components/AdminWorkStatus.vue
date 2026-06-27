@@ -172,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
+import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/project/catalogs'
 const WORK_TYPE_OPTIONS = CONTRACTOR_WORK_TYPE_OPTIONS
 const props = defineProps<{ slug: string }>()
 

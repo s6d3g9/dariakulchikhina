@@ -2,7 +2,7 @@ import { useDb } from '~/server/db/index'
 import { projects, uploads, workStatusItems, workStatusItemPhotos, documents } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 import { unlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -29,15 +29,21 @@ export default defineEventHandler(async (event) => {
   await db.delete(projects).where(eq(projects.id, proj.id))
 
   // Best-effort cleanup of physical files
-  const base = join(process.cwd(), 'public')
+  const base = resolve(process.cwd(), 'public')
   for (const row of uploadRows) {
     if (row.filename) {
-      try { await unlink(join(base, 'uploads', row.filename)) } catch { /* file may not exist */ }
+      const target = resolve(base, 'uploads', row.filename)
+      if (target.startsWith(base)) {
+        try { await unlink(target) } catch { /* file may not exist */ }
+      }
     }
   }
   for (const row of photoUrls) {
     if (row.url) {
-      try { await unlink(join(base, row.url.replace(/^\//, ''))) } catch { /* file may not exist */ }
+      const target = resolve(base, row.url.replace(/^\//, ''))
+      if (target.startsWith(base)) {
+        try { await unlink(target) } catch { /* file may not exist */ }
+      }
     }
   }
 

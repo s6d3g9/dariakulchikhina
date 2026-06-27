@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { HybridControl, HybridControlPhase, HybridControlSprint } from '~/shared/types/project'
+import type { HybridControl, HybridControlPhase, HybridControlSprint } from '~/shared/types/project/project'
 
 const props = defineProps<{
   control: HybridControl

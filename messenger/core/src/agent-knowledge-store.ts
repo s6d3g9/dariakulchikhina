@@ -438,31 +438,54 @@ async function buildKnowledgeChunks(settings: MessengerAgentSettingsRecord, sour
   ensureTextSourceAllowed(source)
 
   const { content, displayPath } = await readKnowledgeSourceContent(settings, source)
+
+  // Concurrency-limited embedding generation — max 8 parallel requests to
+  // avoid overloading Ollama/external embedding API during reindex
+  const EMBEDDING_CONCURRENCY = 8
+
   if (source.type === 'vector') {
     const entries = parseVectorPayload(content)
-    return await Promise.all(entries.map(async (entry) => ({
+    const results: Array<{
+      id: string; sourceId: string; sourceLabel: string; sourcePath: string
+      type: 'vector'; title: string; text: string; embedding: number[]
+    }> = []
+    for (let i = 0; i < entries.length; i += EMBEDDING_CONCURRENCY) {
+      const batch = entries.slice(i, i + EMBEDDING_CONCURRENCY)
+      const batchResults = await Promise.all(batch.map(async (entry) => ({
+        id: randomUUID(),
+        sourceId: source.id,
+        sourceLabel: source.label,
+        sourcePath: displayPath,
+        type: 'vector' as const,
+        title: entry.title,
+        text: condenseText(entry.text, 1800),
+        embedding: entry.embedding || await getEmbeddingOrEmpty(entry.text),
+      })))
+      results.push(...batchResults)
+    }
+    return results
+  }
+
+  const chunks = splitIntoChunks(content)
+  const results: Array<{
+    id: string; sourceId: string; sourceLabel: string; sourcePath: string
+    type: 'rag'; title: string; text: string; embedding: number[]
+  }> = []
+  for (let i = 0; i < chunks.length; i += EMBEDDING_CONCURRENCY) {
+    const batch = chunks.slice(i, i + EMBEDDING_CONCURRENCY)
+    const batchResults = await Promise.all(batch.map(async (chunk, batchIndex) => ({
       id: randomUUID(),
       sourceId: source.id,
       sourceLabel: source.label,
       sourcePath: displayPath,
-      type: 'vector' as const,
-      title: entry.title,
-      text: condenseText(entry.text, 1800),
-      embedding: entry.embedding || await getEmbeddingOrEmpty(entry.text),
+      type: 'rag' as const,
+      title: `${source.label} · ${i + batchIndex + 1}`,
+      text: chunk,
+      embedding: await getEmbeddingOrEmpty(chunk),
     })))
+    results.push(...batchResults)
   }
-
-  const chunks = splitIntoChunks(content)
-  return await Promise.all(chunks.map(async (chunk, index) => ({
-    id: randomUUID(),
-    sourceId: source.id,
-    sourceLabel: source.label,
-    sourcePath: displayPath,
-    type: 'rag' as const,
-    title: `${source.label} · ${index + 1}`,
-    text: chunk,
-    embedding: await getEmbeddingOrEmpty(chunk),
-  })))
+  return results
 }
 
 function getAgentIndex(payload: AgentKnowledgeIndexFile, agentId: string) {

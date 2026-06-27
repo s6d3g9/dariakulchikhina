@@ -2,7 +2,7 @@ import { useDb } from '~/server/db/index'
 import { projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { CLIENT_PROFILE_EDITABLE_KEYS } from '~/shared/constants/profile-fields'
+import { CLIENT_PROFILE_EDITABLE_KEYS } from '~/shared/constants/profile/profile-fields'
 
 // Build a Zod schema dynamically from the editable keys constant
 const profileSchema = z.object(

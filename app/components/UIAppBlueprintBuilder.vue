@@ -221,9 +221,9 @@ import type {
   AppScope,
   MenuBlockDef,
   MenuBlockGroupDef,
-} from '~~/shared/types/app-catalog'
-import { AppBlueprintImportPayloadSchema, appScopeValues } from '~~/shared/types/app-catalog'
-import { designPanelTabIds } from '~~/shared/types/design-modules'
+} from '~~/shared/types/navigation/app-catalog'
+import { AppBlueprintImportPayloadSchema, appScopeValues } from '~~/shared/types/navigation/app-catalog'
+import { designPanelTabIds } from '~~/shared/types/design-system/design-modules'
 
 const {
   activeBlueprint,

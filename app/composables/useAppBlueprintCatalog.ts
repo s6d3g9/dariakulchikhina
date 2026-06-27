@@ -1,10 +1,10 @@
-import { APP_BLUEPRINTS } from '~~/shared/constants/app-catalog'
+import { APP_BLUEPRINTS } from '~~/shared/constants/navigation/app-catalog'
 import {
   createDefaultAppBlueprintCatalogConfig,
   normalizeAppBlueprintCatalogConfig,
   type AppBlueprintCatalogConfig,
   type AppBlueprintDef,
-} from '~~/shared/types/app-catalog'
+} from '~~/shared/types/navigation/app-catalog'
 
 export const APP_BLUEPRINTS_STORAGE_KEY = 'app-blueprints-config'
 const APP_BLUEPRINTS_API = '/api/admin/app-blueprints'

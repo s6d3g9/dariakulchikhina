@@ -1,8 +1,8 @@
 import { requireAdmin } from '~/server/utils/auth'
 import { readValidatedNodeBody } from '~/server/utils/body'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
-import { createProjectGovernanceParticipant } from '~/server/utils/project-governance'
-import { CreateProjectParticipantSchema } from '~/shared/types/project-governance'
+import { createProjectGovernanceParticipant } from '~/server/modules/projects/project-governance.service'
+import { CreateProjectParticipantSchema } from '~/shared/types/project/project-governance'
 
 export default defineEventHandler(async (event) => {
   applyMessengerCors(event, { methods: ['POST', 'OPTIONS'] })

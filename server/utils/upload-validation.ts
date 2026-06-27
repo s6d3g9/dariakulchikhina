@@ -13,7 +13,6 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/png',
   'image/gif',
   'image/webp',
-  'image/svg+xml',
   'image/avif',
   'image/heic',
   'image/heif',
@@ -26,7 +25,7 @@ const ALLOWED_MIME_TYPES = new Set([
 
 /** Allowed extensions (fallback when MIME not reliable) */
 const ALLOWED_EXTENSIONS = new Set([
-  '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg',
+  '.jpg', '.jpeg', '.png', '.gif', '.webp',
   '.avif', '.heic', '.heif',
   '.pdf', '.doc', '.docx', '.xls', '.xlsx',
 ])
@@ -37,6 +36,7 @@ const BLOCKED_EXTENSIONS = new Set([
   '.com', '.scr', '.pif', '.vbs', '.js', '.mjs',
   '.php', '.py', '.rb', '.pl', '.cgi', '.jsp',
   '.war', '.jar', '.class', '.dll', '.so',
+  '.svg', '.html', '.htm', '.xml', '.xhtml',
 ])
 
 export interface FileValidationResult {

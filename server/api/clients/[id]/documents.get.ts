@@ -1,10 +1,11 @@
 import { useDb } from '~/server/db/index'
 import { documents } from '~/server/db/schema'
 import { like, and, isNull } from 'drizzle-orm'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const clientId = Number(getRouterParam(event, 'id'))
+  const clientId = requireIntParam(event, 'id')
   if (!clientId || !Number.isFinite(clientId)) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid client id' })
   }

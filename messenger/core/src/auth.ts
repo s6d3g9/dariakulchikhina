@@ -22,7 +22,7 @@ export function createMessengerToken(user: MessengerUserRecord, secret: string) 
     sub: user.id,
     login: user.login,
     displayName: user.displayName,
-    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 2, // 2 hours (was 7 days)
   }
 
   const encodedPayload = toBase64Url(JSON.stringify(payload))

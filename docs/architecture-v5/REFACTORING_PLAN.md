@@ -10,6 +10,7 @@
 4. Messenger + Services: матрица realtime-контуров: ./12-messenger-services-refactor-map.md
 5. Волны рефакторинга: ./13-refactor-waves.md
 6. Рабочий roadmap исполнения: ./14-refactor-roadmap.md
+7. Refactor deploy и домен fork-контура: ./15-refactor-deploy-domain.md
 
 ## Роль этого файла
 - зафиксировать общую стратегию
@@ -31,6 +32,7 @@
 Для рефакторинга уже выделяем отдельный контур:
 - git-ветка refactor/architecture-v5
 - PM2 конфиг ecosystem.refactor.config.cjs
+- deploy script scripts/deploy-refactor-safe.sh
 - PM2 конфиг messenger/ecosystem.refactor.config.cjs
 - отдельный порт приложения
 - отдельная БД и отдельная Redis DB

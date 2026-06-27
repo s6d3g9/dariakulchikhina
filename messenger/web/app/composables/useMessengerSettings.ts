@@ -42,8 +42,23 @@ interface MessengerAiConfiguredState {
   transcriptionApi: boolean
 }
 
+interface MessengerUiSettingsSnapshot {
+  projectActionsRailOrder: string[]
+}
+
 const MESSENGER_STYLE_KEYS = ['liquid', 'material'] as const
 const MESSENGER_THEME_MODE_KEYS = ['system', 'light', 'dark'] as const
+const MESSENGER_PROJECT_ACTIONS_RAIL_ORDER_DEFAULT = [
+  'overview:subjects',
+  'overview:timeline',
+  'overview:sprints',
+  'category:communication',
+  'category:documents',
+  'category:tasks',
+  'category:finance',
+  'category:stages',
+] as const
+const MESSENGER_PROJECT_ACTIONS_RAIL_KEY_PATTERN = /^[a-z0-9:-]{1,64}$/u
 
 interface MessengerSettingsSnapshot {
   profile: {
@@ -174,8 +189,44 @@ function createDefaultMessengerAiModelOptions(): MessengerAiModelOptions {
   }
 }
 
+function createDefaultMessengerUiSettings(): MessengerUiSettingsSnapshot {
+  return {
+    projectActionsRailOrder: [...MESSENGER_PROJECT_ACTIONS_RAIL_ORDER_DEFAULT],
+  }
+}
+
 function normalizeAiModelValue(value: string | undefined) {
   return typeof value === 'string' ? value.trim().slice(0, 160) : ''
+}
+
+function normalizeProjectActionsRailOrderItem(value: string | undefined) {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  return MESSENGER_PROJECT_ACTIONS_RAIL_KEY_PATTERN.test(normalized) ? normalized : ''
+}
+
+function normalizeProjectActionsRailOrder(value: string[] | undefined) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  const normalized: string[] = []
+  const seen = new Set<string>()
+
+  for (const item of value) {
+    const key = normalizeProjectActionsRailOrderItem(item)
+    if (!key || seen.has(key)) {
+      continue
+    }
+
+    seen.add(key)
+    normalized.push(key)
+
+    if (normalized.length >= 32) {
+      break
+    }
+  }
+
+  return normalized
 }
 
 function mergeMessengerAiSettings(source?: Partial<MessengerAiSettingsSnapshot> | null): MessengerAiSettingsSnapshot {
@@ -205,6 +256,17 @@ function mergeMessengerAiModelOptions(source?: Partial<MessengerAiModelOptions> 
     transcription: Array.from(new Set((Array.isArray(source?.transcription) ? source?.transcription : defaults.transcription)
       .map(item => normalizeAiModelValue(item))
       .filter(Boolean))),
+  }
+}
+
+function mergeMessengerUiSettings(source?: Partial<MessengerUiSettingsSnapshot> | null): MessengerUiSettingsSnapshot {
+  const defaults = createDefaultMessengerUiSettings()
+  const projectActionsRailOrder = normalizeProjectActionsRailOrder(source?.projectActionsRailOrder)
+
+  return {
+    projectActionsRailOrder: projectActionsRailOrder.length
+      ? projectActionsRailOrder
+      : defaults.projectActionsRailOrder,
   }
 }
 
@@ -369,6 +431,10 @@ export function useMessengerSettings() {
   const aiSettingsReady = useState<boolean>('messenger-ai-settings-ready', () => false)
   const aiSettingsPending = useState<boolean>('messenger-ai-settings-pending', () => false)
   const aiSettingsError = useState<string>('messenger-ai-settings-error', () => '')
+  const uiSettings = useState<MessengerUiSettingsSnapshot>('messenger-ui-settings-state', () => createDefaultMessengerUiSettings())
+  const uiSettingsReady = useState<boolean>('messenger-ui-settings-ready', () => false)
+  const uiSettingsPending = useState<boolean>('messenger-ui-settings-pending', () => false)
+  const uiSettingsError = useState<string>('messenger-ui-settings-error', () => '')
   const ready = useState<boolean>('messenger-settings-ready', () => false)
   const systemPrefersDark = useState<boolean>('messenger-settings-system-prefers-dark', () => false)
   const activeSection = useState<MessengerSettingsSectionKey>('messenger-settings-section', () => 'profile')
@@ -677,6 +743,62 @@ export function useMessengerSettings() {
     }
   }
 
+  async function hydrateUiSettings(request: MessengerAuthRequest) {
+    if (uiSettingsPending.value) {
+      return null
+    }
+
+    uiSettingsPending.value = true
+    uiSettingsError.value = ''
+
+    try {
+      const response = await request<{
+        settings: MessengerUiSettingsSnapshot
+      }>('/settings/ui')
+
+      uiSettings.value = mergeMessengerUiSettings(response.settings)
+      uiSettingsReady.value = true
+      return uiSettings.value
+    } catch {
+      uiSettingsError.value = 'Не удалось загрузить пользовательский порядок кнопок.'
+      return null
+    } finally {
+      uiSettingsPending.value = false
+    }
+  }
+
+  async function persistUiSettings(request: MessengerAuthRequest, patch?: Partial<MessengerUiSettingsSnapshot>) {
+    if (uiSettingsPending.value) {
+      return null
+    }
+
+    uiSettingsPending.value = true
+    uiSettingsError.value = ''
+
+    try {
+      const payload = mergeMessengerUiSettings({
+        ...uiSettings.value,
+        ...(patch || {}),
+      })
+
+      const response = await request<{
+        settings: MessengerUiSettingsSnapshot
+      }>('/settings/ui', {
+        method: 'PUT',
+        body: payload,
+      })
+
+      uiSettings.value = mergeMessengerUiSettings(response.settings)
+      uiSettingsReady.value = true
+      return uiSettings.value
+    } catch {
+      uiSettingsError.value = 'Не удалось сохранить пользовательский порядок кнопок.'
+      return null
+    } finally {
+      uiSettingsPending.value = false
+    }
+  }
+
   function setTheme(theme: MessengerColorSchemeKey) {
     settings.value.themes.active = theme
     applyMessengerThemePreference(theme)
@@ -852,6 +974,10 @@ export function useMessengerSettings() {
     aiSettingsReady,
     aiSettingsPending,
     aiSettingsError,
+    uiSettings,
+    uiSettingsReady,
+    uiSettingsPending,
+    uiSettingsError,
     interpretationProviderOptions,
     transcriptionProviderOptions,
     runtimeInterpretationProvider,
@@ -874,8 +1000,10 @@ export function useMessengerSettings() {
     ready,
     hydrate,
     hydrateAiSettings,
+    hydrateUiSettings,
     openSection,
     persistAiSettings,
+    persistUiSettings,
     setTheme,
     setThemeMode,
     setThemeContrast,

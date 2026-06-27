@@ -1,6 +1,7 @@
 import { useDb } from '~/server/db/index'
 import { projectExtraServices, projects } from '~/server/db/schema'
 import { eq, and } from 'drizzle-orm'
+import { requireIntParam } from '~/server/utils/query'
 
 /**
  * DELETE /api/projects/[slug]/extra-services/[id]
@@ -9,7 +10,7 @@ import { eq, and } from 'drizzle-orm'
  */
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
-  const serviceId = Number(getRouterParam(event, 'id'))
+  const serviceId = requireIntParam(event, 'id')
   const auth = requireAdminOrClient(event, slug)
 
   if (!Number.isFinite(serviceId)) {

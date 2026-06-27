@@ -1,21 +1,21 @@
 import { useDb } from '~/server/db/index'
-import { documents } from '~/server/db/schema'
+import { documents, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { requireIntParam } from '~/server/utils/query'
 
 /**
  * GET /api/documents/[id]
  * Возвращает документ по id.
  * Доступен для admin и для аутентифицированного клиента
- * (клиент получит документ только если у него активная сессия).
+ * (клиент получит документ только если он принадлежит его проекту).
  */
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
-  if (!Number.isFinite(id)) throw createError({ statusCode: 400, message: 'Invalid id' })
+  const id = requireIntParam(event, 'id')
 
   // Нужна хотя бы одна активная сессия (admin или client)
   const admin  = getAdminSession(event)
-  const client = getClientSession(event)
-  if (!admin && !client) throw createError({ statusCode: 401, message: 'Unauthorized' })
+  const clientSlug = getClientSession(event)
+  if (!admin && !clientSlug) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
   const db = useDb()
   const [doc] = await db
@@ -25,6 +25,14 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (!doc) throw createError({ statusCode: 404, message: 'Document not found' })
+
+  // Scope check: client can only access documents belonging to their project
+  if (!admin && clientSlug) {
+    const [project] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, clientSlug)).limit(1)
+    if (!project || doc.projectId !== project.id) {
+      throw createError({ statusCode: 404, message: 'Document not found' })
+    }
+  }
 
   return doc
 })

@@ -47,6 +47,7 @@ export async function joinLiveKitRoomAsBot(
   const at = new AccessToken(apiKey, apiSecret, {
     identity: botId,
     name: 'Transcription Bot',
+    ttl: '1h',
   })
 
   // The bot is hidden so it doesn't appear in the regular UI grid

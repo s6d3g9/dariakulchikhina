@@ -11,6 +11,12 @@ import {
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 import type { DesignModulesConfig } from '~/shared/types/design-modules'
+import type {
+  ApiV1OutboxActor,
+  ApiV1OutboxAudience,
+  ApiV1OutboxDeliveryStatus,
+  ApiV1OutboxDeliveryTarget,
+} from '~/shared/types/api-v1'
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -44,6 +50,31 @@ export const projects = pgTable('projects', {
   profile: jsonb('profile').$type<Record<string, string>>().default({}).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const eventOutbox = pgTable('event_outbox', {
+  id: serial('id').primaryKey(),
+  eventId: text('event_id').notNull().unique(),
+  idempotencyKey: text('idempotency_key').notNull().unique(),
+  eventType: text('event_type').notNull(),
+  eventVersion: integer('event_version').default(1).notNull(),
+  aggregateType: text('aggregate_type').notNull(),
+  aggregateId: text('aggregate_id').notNull(),
+  projectId: integer('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  projectSlug: text('project_slug'),
+  actor: jsonb('actor').$type<ApiV1OutboxActor>().notNull(),
+  audience: text('audience').$type<ApiV1OutboxAudience>().default('internal').notNull(),
+  payload: jsonb('payload').$type<Record<string, unknown>>().default({}).notNull(),
+  deliveryTargets: text('delivery_targets').array().$type<ApiV1OutboxDeliveryTarget[]>().default([]).notNull(),
+  status: text('status').$type<ApiV1OutboxDeliveryStatus>().default('pending').notNull(),
+  attempts: integer('attempts').default(0).notNull(),
+  lastError: text('last_error'),
+  nextRetryAt: timestamp('next_retry_at'),
+  processedAt: timestamp('processed_at'),
+  occurredAt: timestamp('occurred_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  correlationId: text('correlation_id'),
+  causationId: text('causation_id'),
 })
 
 export const pageConfigs = pgTable('page_configs', {
@@ -507,5 +538,4 @@ export const workStatusItemsRelations = relations(workStatusItems, ({ one }) => 
   project: one(projects, { fields: [workStatusItems.projectId], references: [projects.id] }),
   contractor: one(contractors, { fields: [workStatusItems.contractorId], references: [contractors.id] }),
 }))
-
 

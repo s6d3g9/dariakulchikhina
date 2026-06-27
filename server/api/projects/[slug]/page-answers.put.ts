@@ -3,13 +3,15 @@ import { pageContent, projects } from '~/server/db/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 
+import { sanitizeRecord } from '~/server/utils/sanitize'
+
 const ANSWERS_PREFIX = '__answers__:'
 
 const Body = z.object({
-  pageSlug: z.string().min(1),
-  selections: z.record(z.union([z.boolean(), z.number()])).default({}),
-  textAnswers: z.record(z.string()).default({}),
-  numberAnswers: z.record(z.union([z.number(), z.string()])).default({}),
+  pageSlug: z.string().min(1).max(200),
+  selections: z.record(z.string().max(200), z.union([z.boolean(), z.number()])).default({}),
+  textAnswers: z.record(z.string().max(200), z.string().max(10_000)).default({}),
+  numberAnswers: z.record(z.string().max(200), z.union([z.number(), z.string().max(100)])).default({}),
 })
 
 export default defineEventHandler(async (event) => {
@@ -36,9 +38,9 @@ export default defineEventHandler(async (event) => {
 
   const storageSlug = `${ANSWERS_PREFIX}${body.pageSlug}`
   const content = {
-    selections: body.selections,
-    textAnswers: body.textAnswers,
-    numberAnswers: normalizedNumberAnswers,
+    selections: sanitizeRecord(body.selections),
+    textAnswers: sanitizeRecord(body.textAnswers),
+    numberAnswers: sanitizeRecord(normalizedNumberAnswers),
   }
 
   const existing = await db

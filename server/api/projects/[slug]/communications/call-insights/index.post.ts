@@ -2,9 +2,9 @@ import { eq } from 'drizzle-orm'
 
 import { useDb } from '~/server/db'
 import { projects } from '~/server/db/schema'
-import { buildProjectCommunicationBootstrap } from '~/server/utils/communications'
-import { ProjectCallInsightIngestSchema } from '~/shared/types/project'
-import { buildHybridControlSummary, ensureHybridControl, ingestHybridControlCallInsight } from '~/shared/utils/project-control'
+import { buildProjectCommunicationBootstrap } from '~/server/modules/communications/communications-bootstrap.service'
+import { ProjectCallInsightIngestSchema } from '~/shared/types/project/project'
+import { buildHybridControlSummary, ensureHybridControl, ingestHybridControlCallInsight } from '~/shared/utils/project/project-control'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')

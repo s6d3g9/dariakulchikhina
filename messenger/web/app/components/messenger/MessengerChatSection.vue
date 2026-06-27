@@ -25,6 +25,7 @@ const messengerCrypto = useMessengerCrypto()
 const klipy = useMessengerKlipy()
 const viewport = useMessengerViewport()
 const navigation = useMessengerConversationState()
+const settingsModel = useMessengerSettings()
 const draft = ref('')
 const actionError = ref('')
 const composerMediaMenuRef = ref<{
@@ -84,6 +85,8 @@ const messageReactionOptions = ['👍', '❤️', '🔥', '😂', '👏', '😮'
 const securitySummary = ref<MessengerConversationSecuritySummary | null>(null)
 const securitySummaryPending = ref(false)
 const securitySummaryUpdatedAt = ref<string | null>(null)
+const projectActionsRailReorderMode = ref(false)
+const projectActionsRailOrderDraft = ref<string[]>([])
 
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
@@ -1611,6 +1614,74 @@ async function handleComposerPrimaryAction() {
   await toggleAudioRecording()
 }
 
+function syncProjectActionsRailOrderDraft() {
+  projectActionsRailOrderDraft.value = [...settingsModel.uiSettings.value.projectActionsRailOrder]
+}
+
+function cancelProjectActionsRailReorder() {
+  projectActionsRailReorderMode.value = false
+  syncProjectActionsRailOrderDraft()
+}
+
+function startProjectActionsRailReorder() {
+  if (!conversations.activeConversation.value || conversations.messagePending.value) {
+    return
+  }
+
+  actionError.value = ''
+  projectActions.openPanel()
+  syncProjectActionsRailOrderDraft()
+  projectActionsRailReorderMode.value = true
+}
+
+async function confirmProjectActionsRailReorder() {
+  if (!projectActionsRailReorderMode.value) {
+    return
+  }
+
+  actionError.value = ''
+
+  if (!auth.token.value) {
+    cancelProjectActionsRailReorder()
+    return
+  }
+
+  const nextSettings = await settingsModel.persistUiSettings(auth.request, {
+    projectActionsRailOrder: projectActionsRailOrderDraft.value,
+  })
+
+  if (!nextSettings) {
+    actionError.value = settingsModel.uiSettingsError.value || 'Не удалось сохранить порядок кнопок.'
+    return
+  }
+
+  projectActionsRailOrderDraft.value = [...nextSettings.projectActionsRailOrder]
+  projectActionsRailReorderMode.value = false
+}
+
+function updateProjectActionsRailOrder(order: string[]) {
+  projectActionsRailOrderDraft.value = [...order]
+}
+
+function handleProjectActionsDockTrigger() {
+  actionError.value = ''
+
+  if (projectActionsRailReorderMode.value) {
+    void confirmProjectActionsRailReorder()
+    return
+  }
+
+  projectActions.handleDockTrigger()
+}
+
+function handleProjectActionsPanelClose() {
+  if (projectActionsRailReorderMode.value) {
+    cancelProjectActionsRailReorder()
+  }
+
+  projectActions.closePanel()
+}
+
 function clearComposerRelation() {
   composerRelationMode.value = null
   composerRelationMessageId.value = null
@@ -2375,7 +2446,7 @@ function handleDocumentPointerDown(event: PointerEvent) {
       && Boolean(event.target.closest('.v-overlay__content, [role="listbox"]'))
 
     if (projectActionsRoot && !projectActionsRoot.contains(event.target) && !overlayTarget) {
-      projectActions.closePanel()
+      handleProjectActionsPanelClose()
     }
   }
 
@@ -2412,6 +2483,21 @@ watch(() => activeConversationAgent.value, (value) => {
   }
 })
 
+watch(() => auth.token.value, (nextToken) => {
+  if (!nextToken) {
+    cancelProjectActionsRailReorder()
+    return
+  }
+
+  void settingsModel.hydrateUiSettings(auth.request)
+})
+
+watch(() => settingsModel.uiSettings.value.projectActionsRailOrder, () => {
+  if (!projectActionsRailReorderMode.value) {
+    syncProjectActionsRailOrderDraft()
+  }
+}, { deep: true, immediate: true })
+
 function relationTitle(mode: 'reply' | 'comment' | null) {
   if (mode === 'reply') {
     return 'Ответ'
@@ -2442,6 +2528,10 @@ function relationPreviewText(message: { body: string; kind: 'text' | 'file'; att
 
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown)
+
+  if (auth.token.value) {
+    void settingsModel.hydrateUiSettings(auth.request)
+  }
 
   nextTick(() => {
     resetComposerInputHeight()
@@ -2709,7 +2799,8 @@ onBeforeUnmount(() => {
         @toggle-media-menu="toggleComposerMediaMenu"
         @open-file-picker="openFilePicker()"
         @toggle-agent-workspace="agentWorkspaceCollapsed = !agentWorkspaceCollapsed"
-        @toggle-project-actions="projectActions.togglePanel()"
+        @toggle-project-actions="handleProjectActionsDockTrigger"
+        @enter-project-actions-reorder="startProjectActionsRailReorder"
         @primary-pointerdown="handleComposerPrimaryPointerDown"
         @primary-action="handleComposerPrimaryAction"
         @cancel-audio-draft="cancelAudioComposerState"
@@ -2726,6 +2817,8 @@ onBeforeUnmount(() => {
             :projects-error="projectActions.platformProjectsError.value"
             :projects-require-platform-session="projectActions.platformProjectsRequirePlatformSession.value"
             :selected-project-slug="projectActions.selectedProjectSlug.value"
+            :peer-role="projectActions.peerRole.value"
+            :back-request-id="projectActions.panelBackRequestId.value"
             :selected-action-id="projectActions.selectedActionId.value"
             :catalog="projectActions.platformCatalog.value"
             :catalog-pending="projectActions.platformCatalogPending.value"
@@ -2736,11 +2829,18 @@ onBeforeUnmount(() => {
             :governance-mutation-pending="projectActions.governanceMutationPending.value"
             :governance-mutation-error="projectActions.governanceMutationError.value"
             :governance-mutation-notice="projectActions.governanceMutationNotice.value"
-            @close="projectActions.closePanel()"
+            :rail-order="projectActionsRailReorderMode ? projectActionsRailOrderDraft : settingsModel.uiSettings.value.projectActionsRailOrder"
+            :reorder-mode="projectActionsRailReorderMode"
+            :reorder-pending="settingsModel.uiSettingsPending.value"
+            @close="handleProjectActionsPanelClose"
             @execute="handleProjectAction"
             @select-project="projectActions.setSelectedProjectSlug($event)"
             @select-action="projectActions.setSelectedAction($event)"
-            @open-scope-detail="projectActions.openScopeDetail($event.scopeType, $event.scopeId)"
+            @update-can-step-back="projectActions.setPanelCanStepBack($event)"
+            @request-reorder-mode="startProjectActionsRailReorder"
+            @confirm-reorder-mode="confirmProjectActionsRailReorder"
+            @update-rail-order="updateProjectActionsRailOrder"
+            @open-scope-detail="projectActions.openScopeDetail($event.scopeType, $event.scopeId, $event.projectSlug || '')"
             @create-scope-participant="projectActions.createScopeParticipant($event)"
             @update-scope-assignment="projectActions.updateScopeAssignment($event.assignmentId, { responsibility: $event.responsibility })"
             @delete-scope-assignment="projectActions.deleteScopeAssignment($event.assignmentId)"

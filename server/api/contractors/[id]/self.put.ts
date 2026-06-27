@@ -1,6 +1,7 @@
 import { useDb } from '~/server/db/index'
 import { contractors } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { requireIntParam } from '~/server/utils/query'
 import { z } from 'zod'
 
 const SelfUpdateSchema = z.object({
@@ -52,7 +53,7 @@ const SelfUpdateSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = requireIntParam(event, 'id')
   // Auth: contractor can only edit themselves, admin can edit anyone
   requireAdminOrContractor(event, id)
 

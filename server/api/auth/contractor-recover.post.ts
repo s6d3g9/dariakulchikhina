@@ -1,7 +1,7 @@
 import { useDb } from '~/server/db'
 import { contractors } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { ContractorRecoverSchema } from '~/shared/types/auth'
+import { ContractorRecoverSchema } from '~/shared/types/auth/auth'
 
 export default defineEventHandler(async (event) => {
   const body = await readValidatedNodeBody(event, ContractorRecoverSchema)
@@ -16,13 +16,11 @@ export default defineEventHandler(async (event) => {
     .where(eq(contractors.login, body.login))
     .limit(1)
 
-  if (!contractor || !contractor.recoveryPhraseHash) {
-    throw createError({ statusCode: 404, statusMessage: 'Подрядчик не найден или recovery phrase не настроена' })
-  }
+  const DUMMY_HASH = '$2a$12$000000000000000000000uGBPRnpKe7P6TBGgKOjHR0INdZOhHIi'
+  const ok = await verifyPassword(body.recoveryPhrase, contractor?.recoveryPhraseHash || DUMMY_HASH)
 
-  const ok = await verifyPassword(body.recoveryPhrase, contractor.recoveryPhraseHash)
-  if (!ok) {
-    throw createError({ statusCode: 401, statusMessage: 'Неверная recovery phrase' })
+  if (!contractor || !contractor.recoveryPhraseHash || !ok) {
+    throw createError({ statusCode: 401, statusMessage: 'Неверный логин или recovery phrase' })
   }
 
   const passwordHash = await hashPassword(body.newPassword)

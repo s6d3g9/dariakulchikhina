@@ -1,6 +1,8 @@
 import { useDb } from '~/server/db/index'
 import { clients } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { sanitizeRecord, zStringRecord } from '~/server/utils/sanitize'
+import { requireIntParam } from '~/server/utils/query'
 import { z } from 'zod'
 
 const UpdateClientSchema = z.object({
@@ -11,15 +13,19 @@ const UpdateClientSchema = z.object({
   messengerNick: z.string().max(100).nullable().optional().transform(v => v?.trim() || null),
   address: z.string().max(500).nullable().optional().transform(v => v?.trim() || null),
   notes: z.string().max(5000).nullable().optional().transform(v => v?.trim() || null),
-  brief: z.record(z.unknown()).nullable().optional(),
+  brief: zStringRecorde().optional(),
 })
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
+  const id = requireIntParam(event, 'id')
   const body = await readValidatedNodeBody(event, UpdateClientSchema)
+  const setData = { ...body } as Record<string, unknown>
+  if (body.brief && typeof body.brief === 'object') {
+    setData.brief = sanitizeRecord(body.brief as Record<string, unknown>)
+  }
   const db = useDb()
-  const [c] = await db.update(clients).set(body).where(eq(clients.id, id)).returning()
+  const [c] = await db.update(clients).set(setData).where(eq(clients.id, id)).returning()
   if (!c) throw createError({ statusCode: 404, statusMessage: 'Client not found' })
   return c
 })

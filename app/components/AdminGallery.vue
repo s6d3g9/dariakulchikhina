@@ -926,7 +926,7 @@ async function del(id: number) {
 .agal-desc {
   font-size: .75rem; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .5;
   line-height: 1.45; margin: 0;
-  display: -webkit-box; -webkit-line-clamp: 2;
+  display: -webkit-box; line-clamp: 2; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden;
 }
 .agal-tags { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -1051,7 +1051,7 @@ async function del(id: number) {
 .msn-desc {
   font-size: .74rem; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .48;
   line-height: 1.45; margin: 0;
-  display: -webkit-box; -webkit-line-clamp: 2;
+  display: -webkit-box; line-clamp: 2; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden;
 }
 .msn-tags { display: flex; flex-wrap: wrap; gap: 4px; }

@@ -37,6 +37,7 @@ const emit = defineEmits<{
   'open-file-picker': []
   'toggle-agent-workspace': []
   'toggle-project-actions': []
+  'enter-project-actions-reorder': []
   'primary-pointerdown': [event: PointerEvent]
   'primary-action': []
   'cancel-audio-draft': []
@@ -48,6 +49,10 @@ const fileInputEl = ref<HTMLInputElement | null>(null)
 const projectActionsRootEl = ref<HTMLDivElement | null>(null)
 const composerBarEl = ref<HTMLDivElement | null>(null)
 const composerInputEl = ref<HTMLTextAreaElement | HTMLDivElement | null>(null)
+const PROJECT_ACTIONS_HOLD_DELAY_MS = 1000
+
+let projectActionsHoldTimer: ReturnType<typeof setTimeout> | null = null
+let suppressProjectActionsClickUntil = 0
 
 // iOS: contenteditable="plaintext-only" убирает keyboard accessory bar (стрелки ↑↓ и ✓).
 // На Android contenteditable ломает IME (Gboard), поэтому там оставляем textarea.
@@ -85,6 +90,59 @@ function onCEKeydown(event: KeyboardEvent) {
   }
 }
 
+function clearProjectActionsHoldTimer() {
+  if (!projectActionsHoldTimer) {
+    return
+  }
+
+  clearTimeout(projectActionsHoldTimer)
+  projectActionsHoldTimer = null
+}
+
+function startProjectActionsHold() {
+  if (!props.showProjectActionsButton || props.isRecording || props.audioDraft || props.projectActionsOpen) {
+    return
+  }
+
+  if (!props.activeConversation || props.messagePending) {
+    return
+  }
+
+  clearProjectActionsHoldTimer()
+  projectActionsHoldTimer = setTimeout(() => {
+    emit('enter-project-actions-reorder')
+    suppressProjectActionsClickUntil = Date.now() + 800
+    projectActionsHoldTimer = null
+  }, PROJECT_ACTIONS_HOLD_DELAY_MS)
+}
+
+function cancelProjectActionsHold() {
+  clearProjectActionsHoldTimer()
+}
+
+function openProjectActionsReorderDirectly() {
+  clearProjectActionsHoldTimer()
+  if (!props.activeConversation || props.messagePending) {
+    return
+  }
+
+  emit('enter-project-actions-reorder')
+  suppressProjectActionsClickUntil = Date.now() + 800
+}
+
+function handleProjectActionsTriggerClick() {
+  if (Date.now() <= suppressProjectActionsClickUntil) {
+    suppressProjectActionsClickUntil = 0
+    return
+  }
+
+  emit('toggle-project-actions')
+}
+
+onBeforeUnmount(() => {
+  clearProjectActionsHoldTimer()
+})
+
 defineExpose({
   fileInputEl,
   projectActionsRootEl,
@@ -98,13 +156,21 @@ defineExpose({
     <input ref="fileInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="emit('file-select', $event)">
     <div ref="projectActionsRootEl" class="composer-dock-wrapper" :class="{ 'composer-dock-wrapper--project-actions-open': props.projectActionsOpen }">
       <button
-        v-if="props.showProjectActionsButton && !props.isRecording && !props.audioDraft"
+        v-if="props.showProjectActionsButton && !props.isRecording && !props.audioDraft && !props.projectActionsOpen"
         type="button"
         class="pa-trigger"
         :class="{ 'pa-trigger--active': props.projectActionsOpen }"
         :disabled="!props.activeConversation || props.messagePending"
         aria-label="Проектные действия"
-        @click="emit('toggle-project-actions')"
+        @mousedown.left="startProjectActionsHold"
+        @mouseup="cancelProjectActionsHold"
+        @mouseleave="cancelProjectActionsHold"
+        @touchstart.passive="startProjectActionsHold"
+        @touchend="cancelProjectActionsHold"
+        @touchcancel="cancelProjectActionsHold"
+        @touchmove="cancelProjectActionsHold"
+        @contextmenu.prevent="openProjectActionsReorderDirectly"
+        @click="handleProjectActionsTriggerClick"
       >
         <VIcon icon="mdi-lightning-bolt" :size="14" />
       </button>
@@ -252,6 +318,17 @@ defineExpose({
   isolation: isolate;
 }
 
+.pa-trigger {
+  position: absolute;
+  inset-inline-start: 14px;
+  top: -30px;
+  z-index: 42;
+}
+
+.composer-dock-wrapper--project-actions-open .pa-trigger {
+  z-index: 44;
+}
+
 .composer-bar-anchor {
   position: relative;
   display: block;
@@ -285,6 +362,10 @@ defineExpose({
 }
 
 @media (max-width: 430px) {
+  .pa-trigger {
+    inset-inline-start: 12px;
+  }
+
   .composer-project-actions-popover {
     bottom: calc(100% + 8px);
   }

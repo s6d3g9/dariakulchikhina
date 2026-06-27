@@ -45,10 +45,28 @@ function writeError(response: ServerResponse, statusCode: number, message: strin
   writeJson(response, statusCode, { error: message })
 }
 
+/** Known safe error messages (validation, business logic). Others are replaced with a generic message. */
+const SAFE_ERROR_PREFIXES = ['PAYLOAD_TOO_LARGE', 'must be a non-empty string', 'Unauthorized', 'Room not found', 'Actor not found', 'Participant not found', 'Invalid']
+
+function safeErrorMessage(error: unknown, fallback: string): string {
+  if (!(error instanceof Error)) return fallback
+  const msg = error.message
+  if (SAFE_ERROR_PREFIXES.some(prefix => msg.startsWith(prefix) || msg.includes(prefix))) return msg
+  return fallback
+}
+
+const MAX_BODY_BYTES = 512 * 1024 // 512 KB
+
 async function readJsonBody(request: IncomingMessage) {
   const chunks: Buffer[] = []
+  let totalBytes = 0
   for await (const chunk of request) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+    const buf = typeof chunk === 'string' ? Buffer.from(chunk) : chunk
+    totalBytes += buf.length
+    if (totalBytes > MAX_BODY_BYTES) {
+      throw new Error('PAYLOAD_TOO_LARGE')
+    }
+    chunks.push(buf)
   }
 
   if (!chunks.length) {
@@ -264,6 +282,12 @@ function startSse(response: ServerResponse) {
 const server = createServer(async (request, response) => {
   setCorsHeaders(response)
 
+  // Security headers
+  response.setHeader('X-Content-Type-Options', 'nosniff')
+  response.setHeader('X-Frame-Options', 'DENY')
+  response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+
   if (!request.url) {
     writeError(response, 400, 'Invalid request URL')
     return
@@ -311,7 +335,7 @@ const server = createServer(async (request, response) => {
         payload,
       })
     } catch (error) {
-      writeError(response, 400, error instanceof Error ? error.message : 'Invalid token request')
+      writeError(response, 400, safeErrorMessage(error, 'Invalid token request'))
     }
     return
   }
@@ -337,7 +361,7 @@ const server = createServer(async (request, response) => {
 
       writeJson(response, 201, { room })
     } catch (error) {
-      writeError(response, 400, error instanceof Error ? error.message : 'Unable to create room')
+      writeError(response, 400, safeErrorMessage(error, 'Unable to create room'))
     }
     return
   }
@@ -421,7 +445,7 @@ const server = createServer(async (request, response) => {
 
       writeJson(response, 200, { room: updatedRoom })
     } catch (error) {
-      writeError(response, 400, error instanceof Error ? error.message : 'Unable to update participant')
+      writeError(response, 400, safeErrorMessage(error, 'Unable to update participant'))
     }
     return
   }
@@ -465,7 +489,7 @@ const server = createServer(async (request, response) => {
         participant: updatedParticipant,
       })
     } catch (error) {
-      writeError(response, 400, error instanceof Error ? error.message : 'Unable to update nickname')
+      writeError(response, 400, safeErrorMessage(error, 'Unable to update nickname'))
     }
     return
   }
@@ -493,7 +517,7 @@ const server = createServer(async (request, response) => {
         broadcastRoomEvent(room.id, 'key-bundle.published', { roomId: room.id, keyBundle })
         writeJson(response, 201, { keyBundle })
       } catch (error) {
-        writeError(response, 400, error instanceof Error ? error.message : 'Unable to publish key bundle')
+        writeError(response, 400, safeErrorMessage(error, 'Unable to publish key bundle'))
       }
       return
     }
@@ -525,7 +549,7 @@ const server = createServer(async (request, response) => {
         broadcastRoomEvent(room.id, 'message.created', { roomId: room.id, message })
         writeJson(response, 201, { message })
       } catch (error) {
-        writeError(response, 400, error instanceof Error ? error.message : 'Unable to create message')
+        writeError(response, 400, safeErrorMessage(error, 'Unable to create message'))
       }
       return
     }
@@ -610,7 +634,7 @@ const server = createServer(async (request, response) => {
         deliveredTo,
       })
     } catch (error) {
-      writeError(response, 400, error instanceof Error ? error.message : 'Unable to send signal')
+      writeError(response, 400, safeErrorMessage(error, 'Unable to send signal'))
     }
     return
   }

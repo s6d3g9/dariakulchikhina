@@ -5,7 +5,8 @@
  */
 import postgres from 'postgres'
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://daria:daria_secret_2026@localhost:5433/daria_admin'
+const DATABASE_URL = process.env.DATABASE_URL
+if (!DATABASE_URL) { console.error('DATABASE_URL is required'); process.exit(1) }
 
 const sql = postgres(DATABASE_URL)
 

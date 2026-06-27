@@ -56,6 +56,13 @@ export async function retrieveLegalContextWithChunks(
   try {
     const db        = useDb()
     const embedding = await getEmbedding(query)
+
+    // Validate embedding is array of finite numbers (defense against poisoned Ollama response)
+    if (!Array.isArray(embedding) || !embedding.every(v => typeof v === 'number' && Number.isFinite(v))) {
+      console.warn('[RAG] Invalid embedding response from Ollama')
+      return { context: '', chunks: [] }
+    }
+
     const embStr    = `[${embedding.join(',')}]`
 
     const result = await db.execute(sql`

@@ -1,13 +1,11 @@
 import { useDb } from '~/server/db/index'
 import { documents } from '~/server/db/schema'
 import { like, and, isNull } from 'drizzle-orm'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const designerId = Number(getRouterParam(event, 'id'))
-  if (!designerId || !Number.isFinite(designerId)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
-  }
+  const designerId = requireIntParam(event, 'id')
 
   const db = useDb()
   const prefix = `designer:${designerId}:`

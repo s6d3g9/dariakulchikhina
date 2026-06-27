@@ -127,15 +127,21 @@
 </template>
 
 <script setup lang="ts">
+import type {
+  ApiV1ClientProjectPage,
+  ApiV1ClientProjectPageAnswers,
+  ApiV1Envelope,
+} from '~~/shared/types/api-v1'
+
 const props = defineProps<{ slug: string; page: string }>()
 
 const reqHeaders = useRequestHeaders(['cookie'])
-const { data: payload, pending, refresh } = await useFetch<any>(
-  () => `/api/projects/${props.slug}/page-content?page=${props.page}`,
+const { data: payload, pending, refresh } = await useFetch<ApiV1Envelope<ApiV1ClientProjectPage>>(
+  () => `/api/v1/client/projects/${props.slug}/pages/${encodeURIComponent(props.page)}`,
   { headers: reqHeaders }
 )
 
-const normalizedContent = computed(() => payload.value?.content ?? payload.value ?? null)
+const normalizedContent = computed<any>(() => payload.value?.data.content ?? null)
 const selections = ref<Record<string, boolean | number>>({})
 const textAnswers = ref<Record<string, string>>({})
 const numberAnswers = ref<Record<string, number>>({})
@@ -241,42 +247,31 @@ function getAnsweredQuestionsCount(section: any, sectionIndex: number) {
     : 0
 }
 
-async function loadSelections() {
-  try {
-    const data = await $fetch<{
-      selections?: Record<string, boolean | number>
-      textAnswers?: Record<string, string>
-      numberAnswers?: Record<string, number>
-    }>(`/api/projects/${props.slug}/page-answers?page=${props.page}`)
-
-    suppressSave.value = true
-    selections.value = data?.selections || {}
-    textAnswers.value = data?.textAnswers || {}
-    numberAnswers.value = data?.numberAnswers || {}
-    await nextTick()
-    suppressSave.value = false
-  } catch {
-    suppressSave.value = true
-    selections.value = {}
-    textAnswers.value = {}
-    numberAnswers.value = {}
-    await nextTick()
-    suppressSave.value = false
-  }
+async function applyAnswers(answers: ApiV1ClientProjectPageAnswers | null | undefined) {
+  suppressSave.value = true
+  selections.value = answers?.selections || {}
+  textAnswers.value = answers?.textAnswers || {}
+  numberAnswers.value = answers?.numberAnswers || {}
+  await nextTick()
+  suppressSave.value = false
 }
 
 async function saveSelectionsNow() {
   if (suppressSave.value) return
   try {
-    await $fetch(`/api/projects/${props.slug}/page-answers`, {
-      method: 'PUT',
-      body: {
-        pageSlug: props.page,
-        selections: selections.value,
-        textAnswers: textAnswers.value,
-        numberAnswers: numberAnswers.value,
+    const response = await $fetch<ApiV1Envelope<ApiV1ClientProjectPage>>(
+      `/api/v1/client/projects/${props.slug}/pages/${encodeURIComponent(props.page)}/answers`,
+      {
+        method: 'PUT',
+        body: {
+          selections: selections.value,
+          textAnswers: textAnswers.value,
+          numberAnswers: numberAnswers.value,
+        },
       },
-    })
+    )
+
+    await applyAnswers(response.data.answers)
   } catch {}
 }
 
@@ -290,7 +285,6 @@ function scheduleSave() {
 
 watch(() => props.page, async () => {
   refresh()
-  await loadSelections()
 })
 
 const activeTab = ref('')
@@ -310,9 +304,9 @@ watch(() => normalizedContent.value?.sections, (sections) => {
   }
 }, { immediate: true })
 
-onMounted(() => {
-  void loadSelections()
-})
+watch(() => payload.value?.data.answers, answers => {
+  void applyAnswers(answers)
+}, { immediate: true })
 
 onBeforeUnmount(() => {
   if (saveTimer) clearTimeout(saveTimer)

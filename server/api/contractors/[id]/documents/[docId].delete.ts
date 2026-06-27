@@ -3,10 +3,12 @@ import { contractorDocuments } from '~/server/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { unlink } from 'node:fs/promises'
 import { join } from 'node:path'
+import { getUploadDir } from '~/server/utils/storage'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
-  const contractorId = Number(getRouterParam(event, 'id'))
-  const docId = Number(getRouterParam(event, 'docId'))
+  const contractorId = requireIntParam(event, 'id')
+  const docId = requireIntParam(event, 'docId')
   requireAdminOrContractor(event, contractorId)
 
   const db = useDb()
@@ -21,7 +23,7 @@ export default defineEventHandler(async (event) => {
   // Try to delete file from disk
   if (doc.filename) {
     try {
-      await unlink(join(process.cwd(), 'public', 'uploads', 'contractor-docs', doc.filename))
+      await unlink(join(getUploadDir(), 'contractor-docs', doc.filename))
     } catch { /* ignore */ }
   }
 

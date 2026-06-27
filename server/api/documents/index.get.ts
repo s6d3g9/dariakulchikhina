@@ -20,9 +20,11 @@ export default defineEventHandler(async (event) => {
       ? await db.select().from(documents)
           .where(eq(documents.projectId, project.id))
           .orderBy(desc(documents.createdAt))
+          .limit(500)
       : await db.select().from(documents)
           .where(eq(documents.projectId, project.id))
           .orderBy(desc(documents.createdAt))
+          .limit(500)
     // filter category in JS to avoid complex where
     if (category) rows = rows.filter(r => r.category === category)
   } else {
@@ -34,6 +36,7 @@ export default defineEventHandler(async (event) => {
       .from(documents)
       .leftJoin(projects, eq(documents.projectId, projects.id))
       .orderBy(desc(documents.createdAt))
+      .limit(500)
 
     // flatten and filter
     rows = rows.map((r: any) => ({

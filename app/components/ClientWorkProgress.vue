@@ -20,13 +20,17 @@
           <div class="cwp-task-body">
             <div class="cwp-task-head">
               <span class="cwp-task-title">{{ item.title }}</span>
-              <span class="cwp-pill" :class="`cwp-pill--${normalizeWorkStatus(item.status)}`">{{ workStatusLabel(item.status) }}</span>
+              <span class="cwp-pill" :class="`cwp-pill--${normalizeWorkStatus(item.status)}`">{{ item.statusLabel || workStatusLabel(item.status) }}</span>
             </div>
-            <div v-if="item.contractorName" class="cwp-task-meta">{{ item.contractorName }}</div>
+            <div v-if="item.responsibleName || item.workTypeLabel" class="cwp-task-meta">
+              <span v-if="item.responsibleName">{{ item.responsibleName }}</span>
+              <template v-if="item.responsibleName && item.workTypeLabel"> · </template>
+              <span v-if="item.workTypeLabel">{{ item.workTypeLabel }}</span>
+            </div>
             <div v-if="item.dateStart || item.dateEnd" class="cwp-task-meta">
               {{ item.dateStart }}<template v-if="item.dateEnd"> — {{ item.dateEnd }}</template>
             </div>
-            <div v-if="item.notes" class="cwp-task-notes">{{ item.notes }}</div>
+            <div v-if="item.overdue" class="cwp-task-alert">срок требует внимания</div>
           </div>
         </div>
       </div>
@@ -40,18 +44,23 @@ import {
   normalizeWorkStatus,
   workStatusLabel,
 } from '~~/shared/utils/work-status'
+import type { ApiV1ClientProjectWorkItems, ApiV1Envelope } from '~~/shared/types/api-v1'
 
 const props = defineProps<{ slug: string }>()
 
 const reqHeaders = useRequestHeaders(['cookie'])
 
 // ── Work status (construction) ──────────────────────────────
-const { data: workItems, pending: wsPending } = await useFetch<any[]>(`/api/projects/${props.slug}/work-status`, { headers: reqHeaders })
+const { data: workItemsEnvelope, pending: wsPending } = await useFetch<ApiV1Envelope<ApiV1ClientProjectWorkItems>>(
+  () => `/api/v1/client/projects/${props.slug}/work-items`,
+  { headers: reqHeaders },
+)
+
+const workItems = computed(() => workItemsEnvelope.value?.data.items || [])
+const workSummary = computed(() => workItemsEnvelope.value?.data.summary || null)
 
 const buildProgress = computed(() => {
-  if (!workItems.value?.length) return null
-  const done = workItems.value.filter(i => normalizeWorkStatus(i.status) === 'done').length
-  return Math.round((done / workItems.value.length) * 100)
+  return workSummary.value?.progressPercent ?? null
 })
 </script>
 
@@ -150,7 +159,7 @@ const buildProgress = computed(() => {
 .cwp-task-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .cwp-task-title { font-size: .82rem; font-weight: 500; color: var(--glass-text); }
 .cwp-task-meta { font-size: .72rem; color: var(--glass-text); opacity: .4; margin-top: 2px; }
-.cwp-task-notes { font-size: .74rem; color: var(--glass-text); opacity: .45; margin-top: 4px; font-style: italic; white-space: pre-line; }
+.cwp-task-alert { font-size: .72rem; color: var(--ds-warning, #a16207); opacity: .85; margin-top: 4px; }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {

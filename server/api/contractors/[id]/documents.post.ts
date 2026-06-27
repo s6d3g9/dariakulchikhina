@@ -4,9 +4,11 @@ import { writeFile, mkdir } from 'node:fs/promises'
 import { join, extname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { validateUploadedFile } from '~/server/utils/upload-validation'
+import { getUploadDir } from '~/server/utils/storage'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
-  const contractorId = Number(getRouterParam(event, 'id'))
+  const contractorId = requireIntParam(event, 'id')
   requireAdminOrContractor(event, contractorId)
 
   const form = await readMultipartFormData(event)
@@ -24,12 +26,12 @@ export default defineEventHandler(async (event) => {
   if (!validation.valid) throw createError({ statusCode: 400, message: validation.error })
 
   const ext = extname(fileField.filename || '.pdf')
-  const filename = `contractor_${contractorId}_${randomUUID()}${ext}`
-  const uploadDir = join(process.cwd(), 'public', 'uploads', 'contractor-docs')
+  const filename = `${randomUUID()}${ext}`
+  const uploadDir = join(getUploadDir(), 'contractor-docs')
   await mkdir(uploadDir, { recursive: true })
   await writeFile(join(uploadDir, filename), fileField.data)
 
-  const url = `/uploads/contractor-docs/${filename}`
+  const url = `/api/files/contractor-docs/${filename}`
   const db = useDb()
   const [doc] = await db.insert(contractorDocuments).values({
     contractorId,

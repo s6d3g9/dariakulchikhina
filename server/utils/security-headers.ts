@@ -35,17 +35,35 @@ function deriveRealtimeOrigins(serviceUrl: string | null | undefined) {
 
 export function buildContentSecurityPolicy(event: H3Event, nonce?: string) {
   const config = useRuntimeConfig()
-  const connectSources = ["'self'", 'https:', 'wss:']
+  const pub = config.public as Record<string, unknown>
+  const connectSources = ["'self'"]
 
-  for (const origin of deriveRealtimeOrigins(config.public.communicationsServiceUrl?.trim())) {
+  // Yandex Maps geocoding and suggest APIs
+  pushUnique(connectSources, 'https://geocode-maps.yandex.ru')
+  pushUnique(connectSources, 'https://suggest-maps.yandex.ru')
+  pushUnique(connectSources, 'https://api-maps.yandex.ru')
+  pushUnique(connectSources, 'https://*.yandex.net')
+
+  // Communications service (HTTP + WebSocket)
+  for (const origin of deriveRealtimeOrigins((pub.communicationsServiceUrl as string | undefined)?.trim())) {
     pushUnique(connectSources, origin)
+  }
+
+  // Messenger core if configured
+  const messengerCoreUrl = pub.messengerCoreBaseUrl as string | undefined
+  if (messengerCoreUrl?.trim()) {
+    try {
+      const parsed = new URL(messengerCoreUrl.trim())
+      pushUnique(connectSources, parsed.origin)
+      pushUnique(connectSources, parsed.protocol === 'https:' ? `wss://${parsed.host}` : `ws://${parsed.host}`)
+    } catch {}
   }
 
   return [
     "default-src 'self'",
     nonce
-      ? `script-src 'self' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' https://api-maps.yandex.ru https://yandex.st https://*.yastatic.net https://*.yandex.net https://*.yandex.ru`
-      : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api-maps.yandex.ru https://yandex.st https://*.yastatic.net https://*.yandex.net https://*.yandex.ru",
+      ? `script-src 'self' 'nonce-${nonce}' https://api-maps.yandex.ru https://yandex.st https://*.yastatic.net https://*.yandex.net https://*.yandex.ru`
+      : "script-src 'self' 'unsafe-inline' https://api-maps.yandex.ru https://yandex.st https://*.yastatic.net https://*.yandex.net https://*.yandex.ru",
     "worker-src 'self' blob:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",

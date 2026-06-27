@@ -315,7 +315,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { registerWipe2Data } from '~/composables/useWipe2'
 
 const props = defineProps<{ sellerId: number; modelValue?: string; showSidebar?: boolean }>()
@@ -387,9 +386,6 @@ watch(section, (val) => {
 
 const saving = ref(false)
 const saveMsg = ref('')
-type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
-const profileSaveState = ref<InlineAutosaveState>('')
-let profileSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 const sellerId = computed(() => Number.isInteger(props.sellerId) && props.sellerId > 0 ? props.sellerId : null)
 const sellerAsyncKey = computed(() => `admin-seller:${sellerId.value || 'none'}`)
@@ -461,13 +457,6 @@ const profilePct = computed(() => {
   return Math.round(filled / fields.length * 100)
 })
 
-function toggleCategory(cat: string) {
-  const idx = form.categories.indexOf(cat)
-  if (idx === -1) form.categories.push(cat)
-  else form.categories.splice(idx, 1)
-  queueProfileAutosave()
-}
-
 async function saveProfile() {
   saving.value = true; saveMsg.value = ''
   try {
@@ -482,129 +471,34 @@ async function saveProfile() {
   } finally { saving.value = false }
 }
 
-function clearProfileSaveTimer() {
-  if (!profileSaveTimer) return
-  clearTimeout(profileSaveTimer)
-  profileSaveTimer = null
-}
-
-function setAutosaveSettled(expected: InlineAutosaveState) {
-  setTimeout(() => {
-    if (profileSaveState.value === expected) profileSaveState.value = ''
-  }, 1400)
-}
-
-async function autoSaveProfile() {
-  clearProfileSaveTimer()
-  profileSaveState.value = 'saving'
-  try {
-    await saveProfile()
-    profileSaveState.value = 'saved'
-    setAutosaveSettled('saved')
-  } catch {
-    profileSaveState.value = 'error'
-  }
-}
-
-function queueProfileAutosave() {
-  clearProfileSaveTimer()
-  saveMsg.value = ''
-  profileSaveTimer = setTimeout(() => {
-    autoSaveProfile()
-  }, 420)
-}
-
-onBeforeUnmount(() => {
-  clearProfileSaveTimer()
+const {
+  profileSaveState,
+  queueProfileAutosave,
+  toggleCategory,
+} = useSellerCabinetProfileState({
+  saveProfile,
+  saveMsg,
+  form,
 })
 
 // ── Wipe2 card view ──
-const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
-const showAll = computed(() => !isWipe2Mode.value)
+const {
+  isWipe2Mode,
+  showAll,
+  onNavClick,
+} = useCabinetSectionRibbonNav({
+  contentViewMode,
+  section,
+  viewportRef,
+})
 
-// ── Ribbon nav: scroll to section on click ──
-function scrollToSection(key: string) {
-  const vp = viewportRef.value
-  const root = vp ?? document.body
-  const el = root.querySelector<HTMLElement>(`.cab-section[data-section="${key}"]`)
-  if (!el) return
-  // scroll-margin-top handles sticky header offset (set in CSS)
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
-function onNavClick(key: string) {
-  section.value = key
-  if (showAll.value) requestAnimationFrame(() => scrollToSection(key))
-}
-watch(section, (key) => {
-  if (!showAll.value) return
-  requestAnimationFrame(() => scrollToSection(key))
-}, { flush: 'post' })
-
-const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
-  const s = seller.value
-  if (!s) return null
-  const projs = linkedProjects.value || []
-  const allSections = [
-      { title: 'Обзор', fields: [
-        { label: 'Телефон', value: form.phone },
-        { label: 'Email', value: form.email },
-        { label: 'Город', value: form.city },
-        { label: 'Рейтинг', value: form.rating != null ? String(form.rating) : '—' },
-        { label: 'Проектов', value: String(projs.length), span: 2 as const },
-        { label: 'Категории', value: form.categories.join(', '), span: 2 as const },
-      ]},
-      { title: 'Профиль', fields: [
-        { label: 'Телефон', value: form.phone, description: 'основной контакт поставщика', badge: 'контакт', caption: 'связь', eyebrow: 'профиль', tone: 'default' as const },
-        { label: 'Email', value: form.email, description: 'почта для коммерческих запросов', badge: 'mail', caption: 'канал', eyebrow: 'профиль', tone: 'default' as const },
-        { label: 'Город', value: form.city, description: 'основная география работы', badge: 'geo', caption: 'регион', eyebrow: 'профиль', tone: 'default' as const },
-        { label: 'Контактное лицо', value: form.contactPerson, description: 'человек, который ведёт клиента', badge: 'owner', caption: 'менеджер', eyebrow: 'профиль', tone: 'accent' as const },
-        { label: 'Telegram', value: form.telegram, description: 'оперативная связь', badge: 'tg', caption: 'чат', eyebrow: 'профиль', tone: 'default' as const },
-        { label: 'Сайт', value: form.website, description: 'витрина поставщика', badge: 'web', caption: 'url', eyebrow: 'профиль', tone: 'default' as const },
-        { label: 'Категории', value: form.categories.join(', '), span: 2 as const },
-        { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
-      ]},
-      { title: 'Условия работы', fields: [
-        { label: 'Условия доставки', value: form.deliveryTerms, span: 2 as const, description: 'логистика и сроки поставки', badge: 'delivery', caption: 'исполнение', eyebrow: 'условия', tone: 'accent' as const },
-        { label: 'Условия оплаты', value: form.paymentTerms, span: 2 as const, description: 'аванс, постоплата и график', badge: 'finance', caption: 'расчёты', eyebrow: 'условия', tone: 'success' as const },
-        { label: 'Мин. заказ', value: form.minOrder, description: 'минимальный порог по заявке', badge: 'min', caption: 'порог', eyebrow: 'условия', tone: 'default' as const },
-        { label: 'Скидка', value: form.discount, description: 'базовая коммерческая уступка', badge: 'discount', caption: 'коммерция', eyebrow: 'условия', tone: 'success' as const },
-      ]},
-      { title: 'Реквизиты', fields: [
-        { label: 'ИНН', value: form.inn },
-        { label: 'КПП', value: form.kpp },
-        { label: 'ОГРН', value: form.ogrn },
-        { label: 'Банк', value: form.bankName, span: 2 as const },
-        { label: 'БИК', value: form.bik },
-        { label: 'Р/с', value: form.settlementAccount, span: 2 as const },
-        { label: 'Юр. адрес', value: form.legalAddress, span: 2 as const },
-      ]},
-      { title: 'Проекты', fields: projs.length
-        ? projs.slice(0, 8).map((p: any) => ({
-            label: p.title ?? p.name ?? 'Проект',
-            value: p.status ?? '',
-            type: 'status' as const,
-            span: 2 as const,
-            description: p.address ?? '',
-            badge: p.slug ? 'live' : 'draft',
-            caption: p.area ? `${p.area} м²` : 'без площади',
-            eyebrow: 'проект',
-            tone: 'accent' as const,
-          }))
-        : [{ label: '', value: 'нет связанных проектов', span: 2 as const }],
-      },
-    ]
-    const W2_SECTION: Record<string, string> = {
-      profile: 'Профиль', terms: 'Условия работы', requisites: 'Реквизиты', projects: 'Проекты',
-    }
-    const sectionTitle = W2_SECTION[section.value]
-    return {
-      entityTitle: s.name,
-      entitySubtitle: form.city || undefined,
-      entityStatus: 'поставщик',
-      entityStatusColor: 'amber' as const,
-      sections: sectionTitle ? allSections.filter(s => s.title === sectionTitle) : allSections,
-    }
+const {
+  wipe2CabinetData,
+} = useSellerCabinetWipe2View({
+  seller,
+  linkedProjects,
+  section,
+  form,
 })
 registerWipe2Data(wipe2CabinetData)
 </script>

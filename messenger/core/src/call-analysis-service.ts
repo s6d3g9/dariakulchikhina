@@ -1,4 +1,4 @@
-import { callMessengerAgentModel } from './agent-llm.ts'
+import { callMessengerAgentModelWithRoute, type MessengerAgentLlmResult } from './agent-llm.ts'
 
 export type MessengerCallAnalysisToolId = 'psychology' | 'business' | 'intent' | 'objections' | 'speech-risks' | 'next-steps'
 
@@ -29,8 +29,8 @@ function buildSystemPrompt(toolId: MessengerCallAnalysisToolId) {
   }
 }
 
-export async function buildMessengerCallAnalysis(options: BuildMessengerCallAnalysisOptions) {
-  return await callMessengerAgentModel([
+export async function buildMessengerCallAnalysisWithRoute(options: BuildMessengerCallAnalysisOptions): Promise<MessengerAgentLlmResult> {
+  return await callMessengerAgentModelWithRoute([
     {
       role: 'system',
       content: buildSystemPrompt(options.toolId),
@@ -48,5 +48,17 @@ export async function buildMessengerCallAnalysis(options: BuildMessengerCallAnal
   ], {
     apiKey: options.apiKey,
     model: options.model,
+    taskClass: 'call-analysis',
+    riskTier: 'medium',
+    costTier: 'premium',
+    effort: 'medium',
+    budgetCaps: {
+      maxTokens: 900,
+    },
   })
+}
+
+export async function buildMessengerCallAnalysis(options: BuildMessengerCallAnalysisOptions) {
+  const result = await buildMessengerCallAnalysisWithRoute(options)
+  return result.content
 }

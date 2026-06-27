@@ -6,10 +6,11 @@ import { workStatusItemPhotos, workStatusItems, contractors } from '~/server/db/
 import { eq, and, inArray } from 'drizzle-orm'
 import { ensureUploadDir, getUploadUrl } from '~/server/utils/storage'
 import { validateUploadedFile } from '~/server/utils/upload-validation'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
-  const contractorId = Number(getRouterParam(event, 'id'))
-  const itemId = Number(getRouterParam(event, 'itemId'))
+  const contractorId = requireIntParam(event, 'id')
+  const itemId = requireIntParam(event, 'itemId')
 
   // Auth: require admin or the contractor themselves
   requireAdminOrContractor(event, contractorId)

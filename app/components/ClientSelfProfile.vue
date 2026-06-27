@@ -352,11 +352,10 @@ import {
   BRIEF_STYLE_OPTIONS,
   BRIEF_COLOR_OPTIONS,
   createEmptyClientProfileDraft,
-} from '~~/shared/constants/profile-fields'
+} from '~~/shared/constants/profile/profile-fields'
 const props = defineProps<{ slug: string }>()
 
-const reqHeaders = useRequestHeaders(['cookie'])
-const { data: project } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
+const { data: profileEnvelope } = await useClientProjectProfile(() => props.slug)
 
 const currentStep = ref(0)
 const saving = ref(false)
@@ -376,10 +375,10 @@ function toggleSingleChoice(field: string, option: string) {
   form[field] = form[field] === option ? '' : option
 }
 
-watch(project, (p) => {
-  if (p?.profile) {
+watch(() => profileEnvelope.value?.data.profile, (p) => {
+  if (p) {
     Object.keys(form).forEach(k => {
-      if (p.profile[k] !== undefined && p.profile[k] !== null) form[k] = p.profile[k]
+      if (p[k] !== undefined && p[k] !== null) form[k] = p[k]
     })
   }
 }, { immediate: true })
@@ -400,10 +399,10 @@ async function saveData() {
   saving.value = true
   saveError.value = ''
   try {
-    await $fetch(`/api/projects/${props.slug}/client-profile`, {
-      method: 'PUT',
-      body: { ...form }
-    })
+    const response = await updateClientProjectProfile(props.slug, { ...form })
+    if (profileEnvelope.value?.data.profile) {
+      Object.assign(profileEnvelope.value.data.profile, response.data.profile)
+    }
   } catch (e: any) {
     saveError.value = e.data?.message || 'Ошибка сохранения'
   } finally {

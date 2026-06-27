@@ -99,6 +99,16 @@ export function isMessengerTranscriptionConfigured(config: MessengerTranscriptio
   )
 }
 
+// Allowed characters for model name: alphanumeric, dot, dash, underscore, colon, slash
+const SAFE_MODEL_NAME_PATTERN = /^[a-zA-Z0-9._\-:/]+$/
+
+function sanitizeModelName(value: string | undefined, fallback: string): string {
+  const trimmed = value?.trim()
+  if (!trimmed) return fallback
+  if (!SAFE_MODEL_NAME_PATTERN.test(trimmed)) return fallback
+  return trimmed
+}
+
 async function transcribeMessengerAudioChunkViaCommand(
   config: MessengerTranscriptionConfig,
   input: MessengerChunkTranscriptionInput,
@@ -115,13 +125,15 @@ async function transcribeMessengerAudioChunkViaCommand(
   try {
     await writeFile(tempFilePath, bytes)
 
+    const safeModel = sanitizeModelName(input.model, config.MESSENGER_TRANSCRIPTION_MODEL)
+
     const { stdout } = await execFileAsync(
       command,
       [
         tempFilePath,
         input.mimeType || 'audio/webm',
         input.language || config.MESSENGER_TRANSCRIPTION_LANGUAGE,
-        input.model?.trim() || config.MESSENGER_TRANSCRIPTION_MODEL,
+        safeModel,
       ],
       {
         timeout: config.MESSENGER_TRANSCRIPTION_TIMEOUT_MS,
@@ -131,7 +143,7 @@ async function transcribeMessengerAudioChunkViaCommand(
           MESSENGER_TRANSCRIPTION_INPUT_PATH: tempFilePath,
           MESSENGER_TRANSCRIPTION_MIME_TYPE: input.mimeType || 'audio/webm',
           MESSENGER_TRANSCRIPTION_LANGUAGE: input.language || config.MESSENGER_TRANSCRIPTION_LANGUAGE,
-          MESSENGER_TRANSCRIPTION_MODEL: input.model?.trim() || config.MESSENGER_TRANSCRIPTION_MODEL,
+          MESSENGER_TRANSCRIPTION_MODEL: safeModel,
         },
       },
     )
@@ -164,7 +176,7 @@ async function transcribeMessengerAudioChunkViaHttp(
     })
 
     formData.append('file', file)
-    formData.append('model', input.model?.trim() || config.MESSENGER_TRANSCRIPTION_MODEL)
+    formData.append('model', sanitizeModelName(input.model, config.MESSENGER_TRANSCRIPTION_MODEL))
     formData.append('language', input.language || config.MESSENGER_TRANSCRIPTION_LANGUAGE)
     formData.append('temperature', '0')
 

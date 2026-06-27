@@ -10,10 +10,16 @@ export interface MessengerAgentEdgePayload {
 
 export function useMessengerAgentEdgePayloads() {
   const auth = useMessengerAuth()
+  const { agentsEnabled, disableAgents } = useMessengerFeatures()
   const edgePayloads = useState<MessengerAgentEdgePayload[]>('messenger-agent-edge-payloads', () => [])
   const pending = useState<boolean>('messenger-agent-edge-payloads-pending', () => false)
 
   async function refresh(agentId?: string, limit = 24) {
+    if (!agentsEnabled.value) {
+      edgePayloads.value = []
+      return
+    }
+
     pending.value = true
 
     try {
@@ -26,6 +32,14 @@ export function useMessengerAgentEdgePayloads() {
       })
 
       edgePayloads.value = response.edgePayloads
+    } catch (error) {
+      if (isMessengerAgentsApiDisabledError(error)) {
+        edgePayloads.value = []
+        disableAgents()
+        return
+      }
+
+      throw error
     } finally {
       pending.value = false
     }

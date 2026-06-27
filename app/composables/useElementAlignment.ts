@@ -4,13 +4,13 @@ import {
   type ElementAlignmentConfig,
   type ElementAlignmentRule,
   type ElementAlignmentScope,
-} from '~~/shared/types/element-alignment'
+} from '~~/shared/types/design-system/element-alignment'
 
 export type {
   ElementAlignmentConfig,
   ElementAlignmentRule,
   ElementAlignmentScope,
-} from '~~/shared/types/element-alignment'
+} from '~~/shared/types/design-system/element-alignment'
 
 const ELEMENT_ALIGNMENT_STORAGE_KEY = 'element-alignment-config'
 const ELEMENT_ALIGNMENT_API = '/api/admin/element-alignment'

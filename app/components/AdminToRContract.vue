@@ -230,7 +230,7 @@
 
 <script setup lang="ts">
 import { CONTRACT_STATUSES, PAYMENT_STATUSES } from '~~/shared/utils/status-maps'
-import { DESIGNER_TARIFFS, DESIGNER_SERVICE_TYPE_OPTIONS } from '~~/shared/types/catalogs'
+import { DESIGNER_TARIFFS, DESIGNER_SERVICE_TYPE_OPTIONS } from '~~/shared/types/project/catalogs'
 
 // template aliases
 const contractStatuses = CONTRACT_STATUSES

@@ -1,9 +1,12 @@
 import { useDb } from '~/server/db/index'
 import { users } from '~/server/db/schema'
 import { eq, or } from 'drizzle-orm'
-import { LoginSchema } from '~/shared/types/auth'
+import { LoginSchema } from '~/shared/types/auth/auth'
+import { timingSafeEqual } from 'crypto'
+import { enforceLoginThrottle, recordLoginFailure, recordLoginSuccess, getClientIp } from '~/server/utils/login-throttle'
 
 export default defineEventHandler(async (event) => {
+  await enforceLoginThrottle(event)
   const body = await readValidatedNodeBody(event, LoginSchema)
   const db = useDb()
 
@@ -24,9 +27,17 @@ export default defineEventHandler(async (event) => {
     .where(or(eq(users.login, body.login), eq(users.email, body.login)))
     .limit(1)
 
-  if (!user) {
+  // Bootstrap auto-create: only when user not in DB and env password is set
+  if (!user && initialPassword) {
     const matchesBootstrapIdentity = body.login === preferredLogin || body.login === preferredEmail.toLowerCase()
-    if (matchesBootstrapIdentity && initialPassword && body.password === initialPassword) {
+    // Timing-safe comparison of bootstrap password
+    const inputBuf = Buffer.from(body.password)
+    const expectedBuf = Buffer.from(initialPassword)
+    const bootstrapMatch = inputBuf.length === expectedBuf.length &&
+      timingSafeEqual(inputBuf, expectedBuf)
+
+    if (matchesBootstrapIdentity && bootstrapMatch) {
+      // User may exist under the canonical identity but login was typed differently
       ;[user] = await db
         .select({
           id: users.id,
@@ -51,11 +62,15 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (!user) throw createError({ statusCode: 401, statusMessage: 'Пользователь не найден' })
+  // Timing-safe: always run bcrypt to prevent user enumeration
+  const DUMMY_HASH = '$2a$12$000000000000000000000uGBPRnpKe7P6TBGgKOjHR0INdZOhHIi'
+  const ok = await verifyPassword(body.password, user?.passwordHash || DUMMY_HASH)
 
-  const ok = await verifyPassword(body.password, user.passwordHash)
-
-  if (!ok) throw createError({ statusCode: 401, statusMessage: 'Неверный пароль' })
+  if (!user || !ok) {
+    recordLoginFailure(getClientIp(event))
+    throw createError({ statusCode: 401, statusMessage: 'Неверный логин или пароль' })
+  }
+  recordLoginSuccess(getClientIp(event))
   setAdminSession(event, user.id)
   return { ok: true, name: user.name, email: user.email, login: user.login }
 })

@@ -6,6 +6,7 @@ import { findMessengerAgentById, type MessengerAgentRecord } from './agent-store
 import type { MessengerUserRecord } from './auth-store.ts'
 import { readMessengerConfig } from './config.ts'
 import type { MessengerDevicePublicKeyRecord } from './crypto-store.ts'
+import { encryptAtRest, decryptAtRest, isEncryptionAtRestEnabled } from './server-encryption.ts'
 import { resolveMessengerDataPath } from './storage-paths.ts'
 
 type MessengerConversationKind = 'direct' | 'direct-secret' | 'agent'
@@ -362,11 +363,28 @@ function getMessageBodyPreview(
     return 'Защищённое сообщение'
   }
 
-  return message.body
+  return readStoredTextBody(message.body)
 }
 
 function getStoredTextBody(body: string, conversation: Pick<MessengerConversationRecord, 'kind' | 'policy'>) {
-  return getConversationPolicy(conversation).secret ? '' : body.trim()
+  if (getConversationPolicy(conversation).secret) return ''
+  const text = body.trim()
+  // Encrypt at rest for non-secret conversations
+  const config = readMessengerConfig()
+  if (isEncryptionAtRestEnabled(config.MESSENGER_ENCRYPTION_KEY)) {
+    return encryptAtRest(text, config.MESSENGER_ENCRYPTION_KEY!)
+  }
+  return text
+}
+
+/** Decrypt a stored body field for reading */
+function readStoredTextBody(storedBody: string) {
+  if (!storedBody) return storedBody
+  const config = readMessengerConfig()
+  if (isEncryptionAtRestEnabled(config.MESSENGER_ENCRYPTION_KEY)) {
+    return decryptAtRest(storedBody, config.MESSENGER_ENCRYPTION_KEY!)
+  }
+  return storedBody
 }
 
 function buildMessageReactions(
@@ -992,6 +1010,10 @@ export async function toggleReactionInConversation(
   const currentReaction = reactions.find(item => item.emoji === normalizedEmoji)
 
   if (!currentReaction) {
+    if (reactions.length >= 20) {
+      throw new Error('MESSAGE_REACTION_LIMIT_REACHED')
+    }
+
     reactions.push({
       emoji: normalizedEmoji,
       userIds: [actor.id],
@@ -1067,9 +1089,15 @@ export async function saveConversationKeyPackages(
       throw new Error('CONVERSATION_FORBIDDEN')
     }
 
-    if (!nextPackages[item.recipientUserId]) {
-      nextPackages[item.recipientUserId] = item
+    // Prevent race condition: only allow overwrite if same sender
+    if (nextPackages[item.recipientUserId]) {
+      const existing = nextPackages[item.recipientUserId]
+      if (existing.senderPublicKey.x !== item.senderPublicKey.x || existing.senderPublicKey.y !== item.senderPublicKey.y) {
+        throw new Error('KEY_PACKAGE_ALREADY_EXISTS')
+      }
     }
+
+    nextPackages[item.recipientUserId] = item
   }
 
   conversation.encryption = {

@@ -1,8 +1,9 @@
 import { requireAdmin } from '~/server/utils/auth'
 import { readValidatedNodeBody } from '~/server/utils/body'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
-import { updateProjectGovernanceAssignment } from '~/server/utils/project-governance'
-import { UpdateProjectScopeAssignmentSchema } from '~/shared/types/project-governance'
+import { updateProjectGovernanceAssignment } from '~/server/modules/projects/project-governance.service'
+import { UpdateProjectScopeAssignmentSchema } from '~/shared/types/project/project-governance'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
   applyMessengerCors(event, { methods: ['PATCH', 'OPTIONS'] })
@@ -13,7 +14,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Project slug is required' })
   }
 
-  const assignmentId = Number(getRouterParam(event, 'assignmentId'))
+  const assignmentId = requireIntParam(event, 'assignmentId')
   if (!Number.isInteger(assignmentId) || assignmentId <= 0) {
     throw createError({ statusCode: 400, statusMessage: 'Некорректный assignmentId' })
   }

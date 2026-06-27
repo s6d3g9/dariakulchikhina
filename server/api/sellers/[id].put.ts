@@ -2,41 +2,41 @@ import { useDb } from '../../db/index'
 import { sellers } from '../../db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { requireIntParam } from '~/server/utils/query'
 
 const UpdateSellerSchema = z.object({
-  name: z.string().min(1).optional(),
-  companyName: z.string().optional(),
-  contactPerson: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
-  inn: z.string().optional(),
-  kpp: z.string().optional(),
-  ogrn: z.string().optional(),
-  bankName: z.string().optional(),
-  bik: z.string().optional(),
-  settlementAccount: z.string().optional(),
-  correspondentAccount: z.string().optional(),
-  legalAddress: z.string().optional(),
-  factAddress: z.string().optional(),
-  categories: z.array(z.string()).optional(),
-  notes: z.string().optional(),
-  messenger: z.string().optional(),
-  messengerNick: z.string().optional(),
-  website: z.string().optional(),
-  telegram: z.string().optional(),
-  whatsapp: z.string().optional(),
-  city: z.string().optional(),
-  deliveryTerms: z.string().optional(),
-  paymentTerms: z.string().optional(),
-  minOrder: z.string().optional(),
-  discount: z.string().optional(),
+  name: z.string().min(1).max(200).optional(),
+  companyName: z.string().max(200).optional(),
+  contactPerson: z.string().max(200).optional(),
+  phone: z.string().max(50).optional(),
+  email: z.string().max(200).optional(),
+  inn: z.string().max(20).optional(),
+  kpp: z.string().max(20).optional(),
+  ogrn: z.string().max(20).optional(),
+  bankName: z.string().max(200).optional(),
+  bik: z.string().max(20).optional(),
+  settlementAccount: z.string().max(30).optional(),
+  correspondentAccount: z.string().max(30).optional(),
+  legalAddress: z.string().max(500).optional(),
+  factAddress: z.string().max(500).optional(),
+  categories: z.array(z.string().max(200)).max(50).optional(),
+  notes: z.string().max(5000).optional(),
+  messenger: z.string().max(100).optional(),
+  messengerNick: z.string().max(100).optional(),
+  website: z.string().max(500).optional(),
+  telegram: z.string().max(100).optional(),
+  whatsapp: z.string().max(100).optional(),
+  city: z.string().max(200).optional(),
+  deliveryTerms: z.string().max(2000).optional(),
+  paymentTerms: z.string().max(2000).optional(),
+  minOrder: z.string().max(100).optional(),
+  discount: z.string().max(100).optional(),
   rating: z.number().int().min(1).max(5).optional(),
 })
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id || !Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid seller id' })
+  const id = requireIntParam(event, 'id')
 
   const body = await readValidatedNodeBody(event, UpdateSellerSchema)
   const db = useDb()

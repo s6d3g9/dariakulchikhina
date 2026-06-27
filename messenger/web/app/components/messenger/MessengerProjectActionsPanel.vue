@@ -11,9 +11,12 @@ import type {
   ProjectActionDefinition,
   ProjectActionExecutePayload,
   ProjectActionId,
+  ProjectActionRole,
 } from '../../composables/useMessengerProjectActions'
+import { parseProjectScopedId } from '../../composables/useMessengerProjectActions'
 
 type ProjectOverviewPane = 'timeline' | 'sprints' | 'subjects' | 'scope-detail'
+type AdminRoleKind = MessengerPlatformSubjectOption['kind']
 
 type SubjectFabulaPreset = {
   title: string
@@ -25,6 +28,30 @@ type SubjectFabulaPreset = {
 type GovernanceRoleKey = 'client' | 'manager' | 'designer' | 'lawyer' | 'contractor' | 'seller' | 'engineer' | 'consultant' | 'service' | 'other'
 type GovernanceResponsibilityKey = 'lead' | 'owner' | 'executor' | 'reviewer' | 'approver' | 'observer' | 'consultant'
 type ScopeSettingFieldKind = 'select' | 'number' | 'boolean' | 'list' | 'text'
+type BuilderEntityFieldKey = 'phase' | 'sprint' | 'subject' | 'object' | 'document' | 'service'
+
+type BuilderEntityField = {
+  key: BuilderEntityFieldKey
+  title: string
+  label: string
+  summary: string
+  active: boolean
+  items: unknown[]
+  itemTitle: string
+  itemValue: string
+  modelValue: string
+}
+
+type ProjectActionsRailItem = {
+  orderKey: string
+  kind: 'overview' | 'category'
+  label: string
+  icon: string
+  count: number
+  active: boolean
+  pane?: ProjectOverviewPane
+  category?: ProjectActionCategoryGroup['category']
+}
 
 const props = defineProps<{
   open: boolean
@@ -35,6 +62,8 @@ const props = defineProps<{
   projectsError: string
   projectsRequirePlatformSession: boolean
   selectedProjectSlug: string
+  peerRole: ProjectActionRole
+  backRequestId: number
   selectedActionId: ProjectActionId | null
   catalog: MessengerPlatformActionCatalog | null
   catalogPending: boolean
@@ -45,22 +74,38 @@ const props = defineProps<{
   governanceMutationPending: boolean
   governanceMutationError: string
   governanceMutationNotice: string
+  railOrder?: string[]
+  reorderMode?: boolean
+  reorderPending?: boolean
 }>()
+
+const auth = useMessengerAuth()
 
 const emit = defineEmits<{
   close: []
   execute: [actionId: ProjectActionId, payload?: ProjectActionExecutePayload]
   selectProject: [slug: string]
   selectAction: [actionId: ProjectActionId | null]
-  openScopeDetail: [target: { scopeType: MessengerPlatformScopeType; scopeId: string }]
+  openScopeDetail: [target: { scopeType: MessengerPlatformScopeType; scopeId: string; projectSlug?: string }]
+  updateCanStepBack: [value: boolean]
   createScopeParticipant: [payload: { displayName: string; roleKey: GovernanceRoleKey; responsibility: GovernanceResponsibilityKey }]
   updateScopeAssignment: [payload: { assignmentId: string; responsibility: GovernanceResponsibilityKey }]
   deleteScopeAssignment: [payload: { assignmentId: string }]
   updateScopeSettings: [payload: { settings: Record<string, unknown> }]
+  requestReorderMode: []
+  confirmReorderMode: []
+  updateRailOrder: [order: string[]]
 }>()
 
 const projectPickerOpen = ref(false)
 const searchPanelOpen = ref(false)
+const adminRolePickerOpen = ref(false)
+const adminSubjectPickerOpen = ref(false)
+const selectedAdminRoleKind = ref<AdminRoleKind | ''>('')
+const selectedAdminSubjectId = ref('')
+const selectedAdminSubjectRawId = ref('')
+const adminCabinetProjectPickerOpen = ref(false)
+const adminSubjectPinnedProjects = ref<MessengerPlatformProjectSummary[]>([])
 const overviewPane = ref<ProjectOverviewPane | ''>('')
 const activeSubjectContextId = ref('')
 const taskMode = ref<'existing' | 'new'>('new')
@@ -84,34 +129,373 @@ const scopeParticipantName = ref('')
 const scopeParticipantRole = ref<GovernanceRoleKey>('manager')
 const scopeParticipantResponsibility = ref<GovernanceResponsibilityKey>('owner')
 const scopeSettingsDraft = ref<Record<string, unknown>>({})
+const selectedRailSwapKey = ref('')
+
+const PANEL_REORDER_HOLD_DELAY_MS = 1000
+
+let panelReorderHoldTimer: ReturnType<typeof setTimeout> | null = null
+let suppressPanelEntryClickUntil = 0
+
+const adminRoleMeta: Record<AdminRoleKind, { label: string; listLabel: string; cabinetTitle: string; icon: string; order: number }> = {
+  designer: {
+    label: 'Дизайнер',
+    listLabel: 'Дизайнеры',
+    cabinetTitle: 'Кабинет дизайнера',
+    icon: 'mdi-pencil-ruler',
+    order: 0,
+  },
+  manager: {
+    label: 'Менеджер',
+    listLabel: 'Менеджеры',
+    cabinetTitle: 'Кабинет менеджера',
+    icon: 'mdi-briefcase-account-outline',
+    order: 1,
+  },
+  client: {
+    label: 'Клиент',
+    listLabel: 'Клиенты',
+    cabinetTitle: 'Кабинет клиента',
+    icon: 'mdi-account-heart-outline',
+    order: 2,
+  },
+  contractor: {
+    label: 'Подрядчик',
+    listLabel: 'Подрядчики',
+    cabinetTitle: 'Кабинет подрядчика',
+    icon: 'mdi-hammer-wrench',
+    order: 3,
+  },
+  seller: {
+    label: 'Поставщик',
+    listLabel: 'Поставщики',
+    cabinetTitle: 'Кабинет поставщика',
+    icon: 'mdi-package-variant-closed',
+    order: 4,
+  },
+  custom: {
+    label: 'Участник',
+    listLabel: 'Участники',
+    cabinetTitle: 'Кабинет участника',
+    icon: 'mdi-account-cog-outline',
+    order: 5,
+  },
+}
 
 const allActions = computed(() => props.groups.flatMap(group => group.actions))
 const currentAction = computed(() => allActions.value.find(action => action.id === props.selectedActionId) || null)
 const normalizedActionSearch = computed(() => actionSearch.value.trim().toLowerCase())
 const normalizedProjectSearch = computed(() => projectSearch.value.trim().toLowerCase())
-const selectedProjectLabel = computed(() => {
-  return props.catalog?.project.title
-    || props.projects.find(project => project.slug === props.selectedProjectSlug)?.title
-    || props.selectedProjectSlug
-    || 'Проект'
+const viewerIsAdmin = computed(() => {
+  const login = auth.user.value?.login?.trim().toLowerCase() || ''
+  return login === 'admin' || login.startsWith('admin@') || login.includes('admin')
 })
-const searchChipLabel = computed(() => actionSearch.value.trim() || 'Поиск')
 const activeProjectCatalog = computed(() => {
-  if (!props.catalog || props.catalog.project.slug !== props.selectedProjectSlug) {
+  if (!props.catalog) {
+    return null
+  }
+
+  if (props.selectedProjectSlug && props.catalog.project.slug !== props.selectedProjectSlug) {
     return null
   }
 
   return props.catalog
 })
+
+const roleScopedSubjectKind = computed<MessengerPlatformSubjectOption['kind'] | ''>(() => {
+  if (viewerIsAdmin.value && selectedAdminRoleKind.value) {
+    return selectedAdminRoleKind.value
+  }
+
+  switch (props.peerRole) {
+    case 'client':
+      return 'client'
+    case 'contractor':
+      return 'contractor'
+    case 'designer':
+      return 'designer'
+    default:
+      return ''
+  }
+})
+
+const allCatalogSubjects = computed(() => activeProjectCatalog.value?.subjects || [])
+const adminRoleEntries = computed(() => {
+  const grouped = new Map<AdminRoleKind, MessengerPlatformSubjectOption[]>()
+
+  for (const subject of allCatalogSubjects.value) {
+    const bucket = grouped.get(subject.kind) || []
+    bucket.push(subject)
+    grouped.set(subject.kind, bucket)
+  }
+
+  return Array.from(grouped.entries())
+    .map(([kind, subjects]) => {
+      const uniqueSubjects = dedupeAdminSubjects(subjects)
+
+      return {
+        kind,
+        label: adminRoleMeta[kind].label,
+        listLabel: adminRoleMeta[kind].listLabel,
+        cabinetTitle: adminRoleMeta[kind].cabinetTitle,
+        icon: adminRoleMeta[kind].icon,
+        count: uniqueSubjects.length,
+        summary: Array.from(new Set(uniqueSubjects.slice(0, 2).map(subject => resolveAdminSubjectHeadline(subject)))).join(' · '),
+      }
+    })
+    .sort((left, right) => adminRoleMeta[left.kind].order - adminRoleMeta[right.kind].order)
+})
+
+const selectedAdminRoleEntry = computed(() => adminRoleEntries.value.find(entry => entry.kind === selectedAdminRoleKind.value) || null)
+const selectedAdminRoleLabel = computed(() => selectedAdminRoleEntry.value?.label || 'Роль')
+const selectedAdminRoleListLabel = computed(() => selectedAdminRoleEntry.value?.listLabel || 'Участники роли')
+const selectedAdminRoleIcon = computed(() => selectedAdminRoleEntry.value?.icon || 'mdi-account-switch-outline')
+const adminSubjectItems = computed(() => {
+  if (!selectedAdminRoleKind.value) {
+    return [] as MessengerPlatformSubjectOption[]
+  }
+
+  return dedupeAdminSubjects(
+    allCatalogSubjects.value.filter(subject => subject.kind === selectedAdminRoleKind.value),
+  )
+})
+
+function resolveAdminSubjectRawId(value: string) {
+  const normalizedValue = value.trim()
+  if (!normalizedValue) {
+    return ''
+  }
+
+  return parseProjectScopedId(normalizedValue).rawId || normalizedValue
+}
+
+function matchesAdminSubjectIdentity(subject: MessengerPlatformSubjectOption, candidateId: string) {
+  const normalizedCandidateId = candidateId.trim()
+  if (!normalizedCandidateId) {
+    return false
+  }
+
+  return subject.id === normalizedCandidateId || resolveAdminSubjectRawId(subject.id) === normalizedCandidateId
+}
+
+const selectedAdminSubject = computed(() => {
+  return adminSubjectItems.value.find(subject => (
+    matchesAdminSubjectIdentity(subject, selectedAdminSubjectId.value)
+    || matchesAdminSubjectIdentity(subject, selectedAdminSubjectRawId.value)
+  )) || null
+})
+
+function normalizeProjectDisplayLabel(value: string) {
+  return value.replace(/^preview:\s*/i, '').trim()
+}
+
+function normalizeAdminSubjectSecondary(value?: string) {
+  return normalizeProjectDisplayLabel(String(value || ''))
+}
+
+function buildAdminSubjectDisplayTitle(subject: MessengerPlatformSubjectOption) {
+  const normalizedLabel = subject.label.trim()
+  const normalizedSecondary = normalizeAdminSubjectSecondary(subject.secondary)
+  const roleLabel = adminRoleMeta[subject.kind].label
+  const scopedProjectSlug = parseProjectScopedId(subject.id).projectSlug || props.selectedProjectSlug
+  const scopedProjectTitle = scopedProjectSlug ? resolveProjectTitleBySlug(scopedProjectSlug) : ''
+
+  if (normalizedLabel === roleLabel) {
+    if (scopedProjectTitle && scopedProjectTitle !== roleLabel) {
+      return scopedProjectTitle
+    }
+
+    if (normalizedSecondary) {
+      return normalizedSecondary.split('·')[0]?.trim() || normalizedLabel
+    }
+  }
+
+  return normalizedLabel || normalizedSecondary || roleLabel
+}
+
+function buildAdminSubjectDisplayMeta(subject: MessengerPlatformSubjectOption) {
+  const normalizedLabel = subject.label.trim()
+  const normalizedSecondary = normalizeAdminSubjectSecondary(subject.secondary)
+  const roleLabel = adminRoleMeta[subject.kind].label
+  const scopedProjectSlug = parseProjectScopedId(subject.id).projectSlug || props.selectedProjectSlug
+  const scopedProjectTitle = scopedProjectSlug ? resolveProjectTitleBySlug(scopedProjectSlug) : ''
+
+  if (!normalizedSecondary) {
+    return 'Перейти в мини-кабинет по синхронизированным данным проекта.'
+  }
+
+  if (normalizedLabel === roleLabel) {
+    const segments = normalizedSecondary.split('·').map(segment => segment.trim()).filter(Boolean)
+
+    if (scopedProjectTitle) {
+      if (segments[0] === scopedProjectTitle) {
+        return segments.slice(1).join(' · ') || 'Перейти в мини-кабинет по синхронизированным данным проекта.'
+      }
+
+      return normalizedSecondary
+    }
+
+    return segments.slice(1).join(' · ') || 'Перейти в мини-кабинет по синхронизированным данным проекта.'
+  }
+
+  return normalizedSecondary
+}
+
+const adminStatusHeadlines = new Set([
+  'активен',
+  'черновик',
+  'завершён',
+  'завершен',
+  'пауза',
+  'active',
+  'draft',
+  'done',
+  'planned',
+  'review',
+  'blocked',
+])
+
+function resolveAdminSubjectHeadline(subject: MessengerPlatformSubjectOption) {
+  const title = buildAdminSubjectDisplayTitle(subject).trim()
+  const normalizedTitle = title.toLowerCase()
+
+  if (!adminStatusHeadlines.has(normalizedTitle)) {
+    return title
+  }
+
+  const scopedProjectSlug = parseProjectScopedId(subject.id).projectSlug || props.selectedProjectSlug
+  if (scopedProjectSlug) {
+    return resolveProjectTitleBySlug(scopedProjectSlug)
+  }
+
+  return title
+}
+
+function buildAdminSubjectAffinityKey(subject: MessengerPlatformSubjectOption) {
+  return `${subject.kind}:${resolveAdminSubjectHeadline(subject).trim().toLowerCase()}`
+}
+
+function isGenericAdminSubject(subject: MessengerPlatformSubjectOption) {
+  return subject.label.trim().toLowerCase() === adminRoleMeta[subject.kind].label.toLowerCase()
+}
+
+function getAdminSubjectSpecificityScore(subject: MessengerPlatformSubjectOption) {
+  const secondary = normalizeAdminSubjectSecondary(subject.secondary)
+
+  return (isGenericAdminSubject(subject) ? 0 : 10)
+    + (secondary ? Math.min(secondary.length, 40) : 0)
+    + (parseProjectScopedId(subject.id).projectSlug ? 1 : 0)
+}
+
+function dedupeAdminSubjects(subjects: MessengerPlatformSubjectOption[]) {
+  const deduped = new Map<string, MessengerPlatformSubjectOption>()
+
+  for (const subject of subjects) {
+    const affinityKey = buildAdminSubjectAffinityKey(subject)
+    const current = deduped.get(affinityKey)
+
+    if (!current || getAdminSubjectSpecificityScore(subject) > getAdminSubjectSpecificityScore(current)) {
+      deduped.set(affinityKey, subject)
+    }
+  }
+
+  return Array.from(deduped.values())
+}
+
+function resolveProjectTitleBySlug(slug: string) {
+  return normalizeProjectDisplayLabel(
+    props.projects.find(project => project.slug === slug)?.title
+    || slug
+  )
+}
+
+function buildFallbackProjectSummary(slug: string): MessengerPlatformProjectSummary {
+  return {
+    slug,
+    title: resolveProjectTitleBySlug(slug),
+    status: '',
+    projectType: '',
+    activePhaseTitle: '',
+    activeSprintName: '',
+    taskTotal: 0,
+  }
+}
+
+function buildAdminSubjectPinnedProjects(subjectId: string) {
+  const selectedSubject = adminSubjectItems.value.find(subject => subject.id === subjectId)
+    || allCatalogSubjects.value.find(subject => subject.id === subjectId)
+    || adminSubjectItems.value.find(subject => matchesAdminSubjectIdentity(subject, resolveAdminSubjectRawId(subjectId)))
+    || null
+
+  if (!selectedSubject) {
+    return [] as MessengerPlatformProjectSummary[]
+  }
+
+  const affinityKey = buildAdminSubjectAffinityKey(selectedSubject)
+  const rawSubjectId = resolveAdminSubjectRawId(subjectId)
+  const seen = new Set<string>()
+  const result: MessengerPlatformProjectSummary[] = []
+
+  function pushProject(slug: string) {
+    const normalizedSlug = slug.trim()
+    if (!normalizedSlug || seen.has(normalizedSlug)) {
+      return
+    }
+
+    seen.add(normalizedSlug)
+    result.push(
+      props.projects.find(project => project.slug === normalizedSlug) || buildFallbackProjectSummary(normalizedSlug),
+    )
+  }
+
+  const scopedCandidates = props.selectedProjectSlug
+    ? allCatalogSubjects.value.filter(subject => subject.kind === selectedSubject.kind && matchesAdminSubjectIdentity(subject, rawSubjectId))
+    : allCatalogSubjects.value.filter(subject => subject.kind === selectedSubject.kind && buildAdminSubjectAffinityKey(subject) === affinityKey)
+
+  for (const subject of scopedCandidates) {
+    pushProject(parseProjectScopedId(subject.id).projectSlug)
+  }
+
+  pushProject(parseProjectScopedId(subjectId).projectSlug)
+  pushProject(props.selectedProjectSlug)
+
+  return result
+}
+
+const selectedProjectLabel = computed(() => {
+  if (!props.selectedProjectSlug) {
+    return 'Все проекты'
+  }
+
+  return normalizeProjectDisplayLabel(
+    activeProjectCatalog.value?.project.title
+    || props.projects.find(project => project.slug === props.selectedProjectSlug)?.title
+    || props.selectedProjectSlug
+    || 'Все проекты'
+  )
+})
+const searchChipLabel = computed(() => actionSearch.value.trim() || 'Поиск')
+const showAdminRolePane = computed(() => viewerIsAdmin.value && adminRolePickerOpen.value)
+const showAdminSubjectPane = computed(() => viewerIsAdmin.value && adminSubjectPickerOpen.value && Boolean(selectedAdminRoleKind.value))
 const showProjectPane = computed(() => projectPickerOpen.value)
 const showSearchPane = computed(() => searchPanelOpen.value)
 const showTimelinePane = computed(() => overviewPane.value === 'timeline')
 const showSprintsPane = computed(() => overviewPane.value === 'sprints')
 const showSubjectsPane = computed(() => overviewPane.value === 'subjects')
 const showScopeDetailPane = computed(() => overviewPane.value === 'scope-detail')
-const canShowProjectOverview = computed(() => Boolean(props.selectedProjectSlug))
-const catalogLockedBySession = computed(() => Boolean(props.selectedProjectSlug && props.projectsRequirePlatformSession && !props.catalogPending && !props.catalog))
-const canUseCatalogFeatures = computed(() => Boolean(props.selectedProjectSlug && !catalogLockedBySession.value))
+const showAdminCabinetPane = computed(() => Boolean(
+  viewerIsAdmin.value
+  && selectedAdminSubjectId.value
+  && !showProjectPane.value
+  && !showSearchPane.value
+  && !showTimelinePane.value
+  && !showSprintsPane.value
+  && !showSubjectsPane.value
+  && !showScopeDetailPane.value
+  && !currentAction.value
+))
+const canShowProjectOverview = computed(() => Boolean(props.projects.length))
+const catalogLockedBySession = computed(() => Boolean(props.projectsRequirePlatformSession && !props.catalogPending && !activeProjectCatalog.value))
+const canUseCatalogFeatures = computed(() => Boolean(activeProjectCatalog.value && !catalogLockedBySession.value))
 const miniTimelineCatalog = computed(() => {
   if (!activeProjectCatalog.value || props.catalogPending || !activeProjectCatalog.value.phases.length) {
     return null
@@ -129,8 +513,31 @@ const sprintOverviewItems = computed(() => {
 const timelineChipCount = computed(() => activeProjectCatalog.value?.phases.length || 0)
 const sprintChipCount = computed(() => activeProjectCatalog.value?.sprints.length || 0)
 const subjectChipCount = computed(() => subjectItems.value.length)
+const canNavigateBack = computed(() => Boolean(
+  adminCabinetProjectPickerOpen.value
+  || showAdminRolePane.value
+  || showAdminSubjectPane.value
+  || showProjectPane.value
+  || showSearchPane.value
+  || showTimelinePane.value
+  || showSprintsPane.value
+  || showSubjectsPane.value
+  || showScopeDetailPane.value
+  || selectedAdminSubjectId.value
+  || selectedAdminRoleKind.value
+  || currentAction.value
+  || selectedCategoryGroup.value
+  || formError.value
+))
 const showExpansion = computed(() => {
-  return showProjectPane.value
+  if (props.reorderMode) {
+    return false
+  }
+
+  return showAdminRolePane.value
+    || showAdminSubjectPane.value
+    || showAdminCabinetPane.value
+    || showProjectPane.value
     || showSearchPane.value
     || showTimelinePane.value
     || showSprintsPane.value
@@ -140,11 +547,29 @@ const showExpansion = computed(() => {
     || Boolean(formError.value)
 })
 
+const projectPickerItems = computed<MessengerPlatformProjectSummary[]>(() => {
+  const totalTasks = props.projects.reduce((total, project) => total + Number(project.taskTotal || 0), 0)
+
+  if (!props.selectedProjectSlug) {
+    return [...props.projects]
+  }
+
+  return [{
+    slug: '',
+    title: 'Все проекты',
+    status: '',
+    projectType: 'aggregate',
+    activePhaseTitle: '',
+    activeSprintName: '',
+    taskTotal: totalTasks,
+  }, ...props.projects]
+})
+
 const filteredProjectItems = computed(() => {
   const query = normalizedProjectSearch.value
   const projects = !query
-    ? [...props.projects]
-    : props.projects.filter(project => projectMatchesSearch(project, query))
+    ? [...projectPickerItems.value]
+    : projectPickerItems.value.filter(project => projectMatchesSearch(project, query))
 
   return projects.sort((left, right) => {
     const leftSelected = Number(left.slug === props.selectedProjectSlug)
@@ -158,7 +583,7 @@ const filteredProjectItems = computed(() => {
 })
 
 const taskItems = computed(() => {
-  const catalogTasks = props.catalog?.tasks || []
+  const catalogTasks = activeProjectCatalog.value?.tasks || []
 
   return catalogTasks.filter((task) => {
     if (selectedSprintId.value) {
@@ -173,20 +598,28 @@ const taskItems = computed(() => {
   })
 })
 
-const phaseItems = computed(() => props.catalog?.phases || [])
+const phaseItems = computed(() => activeProjectCatalog.value?.phases || [])
 const sprintItems = computed(() => {
-  const catalogSprints = props.catalog?.sprints || []
+  const catalogSprints = activeProjectCatalog.value?.sprints || []
   if (!selectedPhaseKey.value) {
     return catalogSprints
   }
 
   return catalogSprints.filter(sprint => !sprint.linkedPhaseKey || sprint.linkedPhaseKey === selectedPhaseKey.value)
 })
-const subjectItems = computed(() => props.catalog?.subjects || [])
-const objectItems = computed(() => props.catalog?.objects || [])
-const documentItems = computed(() => props.catalog?.documents || [])
+const subjectItems = computed(() => {
+  const catalogSubjects = activeProjectCatalog.value?.subjects || []
+  if (!roleScopedSubjectKind.value) {
+    return catalogSubjects
+  }
+
+  const scopedSubjects = catalogSubjects.filter(subject => subject.kind === roleScopedSubjectKind.value)
+  return scopedSubjects.length ? scopedSubjects : catalogSubjects
+})
+const objectItems = computed(() => activeProjectCatalog.value?.objects || [])
+const documentItems = computed(() => activeProjectCatalog.value?.documents || [])
 const serviceItems = computed(() => {
-  const catalogServices = props.catalog?.extraServices || []
+  const catalogServices = activeProjectCatalog.value?.extraServices || []
   if (currentAction.value?.id === 'create_invoice') {
     return catalogServices.filter(service => ['quoted', 'approved'].includes(service.status))
   }
@@ -197,7 +630,7 @@ const serviceItems = computed(() => {
 const selectedTask = computed(() => taskItems.value.find(task => task.id === selectedTaskId.value) || null)
 const selectedPhase = computed(() => phaseItems.value.find(phase => phase.phaseKey === selectedPhaseKey.value) || null)
 const selectedSprint = computed(() => sprintItems.value.find(sprint => sprint.id === selectedSprintId.value) || null)
-const selectedSubject = computed(() => subjectItems.value.find(subject => subject.id === selectedSubjectId.value) || null)
+const selectedSubject = computed(() => subjectItems.value.find(subject => matchesAdminSubjectIdentity(subject, selectedSubjectId.value)) || null)
 const selectedObject = computed(() => objectItems.value.find(object => object.id === selectedObjectId.value) || null)
 const selectedDocument = computed(() => documentItems.value.find(document => document.id === selectedDocumentId.value) || null)
 const selectedService = computed(() => serviceItems.value.find(service => service.id === selectedServiceId.value) || null)
@@ -209,7 +642,7 @@ const sprintStatusLabels: Record<MessengerPlatformSprintOption['status'], string
   done: 'Завершён',
 }
 
-const catalogRecommendations = computed(() => props.catalog?.coordination.recommendations?.slice(0, 3) || [])
+const catalogRecommendations = computed(() => activeProjectCatalog.value?.coordination.recommendations?.slice(0, 3) || [])
 
 const workTaskStatusItems = [
   { title: 'Запланировано', value: 'planned' },
@@ -254,6 +687,226 @@ const selectedTaskStatusItems = computed(() => {
 
 const selectedTaskStatusLabel = computed(() => {
   return selectedTaskStatusItems.value.find(option => option.value === selectedTaskStatus.value)?.title || ''
+})
+
+const taskFieldSummary = computed(() => {
+  if (taskMode.value === 'existing') {
+    if (selectedTask.value) {
+      return [selectedTask.value.title, selectedTask.value.secondary].filter(Boolean).join(' · ')
+    }
+
+    return taskItems.value.length
+      ? `${formatCountLabel(taskItems.value.length, 'задача', 'задачи', 'задач')} в каталоге`
+      : 'Выберите задачу из каталога'
+  }
+
+  return taskTitle.value.trim() || 'Новая задача проекта'
+})
+
+const phaseFieldSummary = computed(() => {
+  if (selectedPhase.value) {
+    return [selectedPhase.value.title, selectedPhase.value.secondary].filter(Boolean).join(' · ')
+  }
+
+  return phaseItems.value.length
+    ? `${formatCountLabel(phaseItems.value.length, 'этап', 'этапа', 'этапов')} в проекте`
+    : 'Этап не выбран'
+})
+
+const sprintFieldSummary = computed(() => {
+  if (selectedSprint.value) {
+    return [selectedSprint.value.name, selectedSprint.value.linkedPhaseTitle].filter(Boolean).join(' · ')
+  }
+
+  return sprintItems.value.length
+    ? `${formatCountLabel(sprintItems.value.length, 'спринт', 'спринта', 'спринтов')} в контуре`
+    : 'Спринт не выбран'
+})
+
+const subjectFieldSummary = computed(() => {
+  if (selectedSubject.value) {
+    return [selectedSubject.value.label, selectedSubject.value.secondary].filter(Boolean).join(' · ')
+  }
+
+  return subjectItems.value.length
+    ? `${formatCountLabel(subjectItems.value.length, 'субъект', 'субъекта', 'субъектов')} в проекте`
+    : 'Субъект не выбран'
+})
+
+const objectFieldSummary = computed(() => {
+  if (selectedObject.value) {
+    return [selectedObject.value.label, selectedObject.value.secondary].filter(Boolean).join(' · ')
+  }
+
+  return objectItems.value.length
+    ? `${formatCountLabel(objectItems.value.length, 'объект', 'объекта', 'объектов')} в проекте`
+    : 'Объект не выбран'
+})
+
+const documentFieldSummary = computed(() => {
+  if (selectedDocument.value) {
+    return [selectedDocument.value.title, selectedDocument.value.category].filter(Boolean).join(' · ')
+  }
+
+  return documentItems.value.length
+    ? `${formatCountLabel(documentItems.value.length, 'документ', 'документа', 'документов')} в проекте`
+    : 'Документ не выбран'
+})
+
+const serviceFieldSummary = computed(() => {
+  if (selectedService.value) {
+    return [selectedService.value.title, selectedService.value.status].filter(Boolean).join(' · ')
+  }
+
+  return serviceItems.value.length
+    ? `${formatCountLabel(serviceItems.value.length, 'услуга', 'услуги', 'услуг')} доступно`
+    : 'Услуга не выбрана'
+})
+
+const taskStatusFieldSummary = computed(() => {
+  return selectedTaskStatusLabel.value || 'Выберите новый статус задачи'
+})
+
+const rangeFieldSummary = computed(() => {
+  const start = rangeStart.value || selectedTask.value?.rangeStart || selectedSprint.value?.startDate || selectedPhase.value?.startDate || ''
+  const end = rangeEnd.value || selectedTask.value?.rangeEnd || selectedSprint.value?.endDate || selectedPhase.value?.endDate || ''
+
+  return formatRangeLabel(start, end)
+})
+
+const builderContextChips = computed(() => {
+  const chips: Array<{ key: string; label: string; value: string }> = []
+
+  const taskValue = taskMode.value === 'existing'
+    ? selectedTask.value?.title || ''
+    : taskTitle.value.trim()
+
+  if (taskValue) {
+    chips.push({ key: 'task', label: 'Задача', value: taskValue })
+  }
+
+  if (selectedTaskStatusLabel.value) {
+    chips.push({ key: 'task-status', label: 'Статус', value: selectedTaskStatusLabel.value })
+  }
+
+  if (selectedPhase.value?.title) {
+    chips.push({ key: 'phase', label: 'Этап', value: selectedPhase.value.title })
+  }
+
+  if (selectedSprint.value?.name) {
+    chips.push({ key: 'sprint', label: 'Спринт', value: selectedSprint.value.name })
+  }
+
+  if (selectedSubject.value?.label) {
+    chips.push({ key: 'subject', label: 'Субъект', value: selectedSubject.value.label })
+  }
+
+  if (selectedObject.value?.label) {
+    chips.push({ key: 'object', label: 'Объект', value: selectedObject.value.label })
+  }
+
+  if (selectedDocument.value?.title) {
+    chips.push({ key: 'document', label: 'Документ', value: selectedDocument.value.title })
+  }
+
+  if (selectedService.value?.title) {
+    chips.push({ key: 'service', label: 'Услуга', value: selectedService.value.title })
+  }
+
+  const rangeValue = rangeFieldSummary.value
+  if (rangeValue && rangeValue !== 'Период не задан') {
+    chips.push({ key: 'range', label: 'Срок', value: rangeValue })
+  }
+
+  return chips
+})
+
+const builderEntityFields = computed<BuilderEntityField[]>(() => {
+  const fields: BuilderEntityField[] = []
+
+  if (usesStageSelection.value || usesTaskSelection.value) {
+    fields.push({
+      key: 'phase',
+      title: 'Этап',
+      label: 'Этап',
+      summary: phaseFieldSummary.value,
+      active: Boolean(selectedPhaseKey.value),
+      items: phaseItems.value,
+      itemTitle: 'title',
+      itemValue: 'phaseKey',
+      modelValue: selectedPhaseKey.value,
+    })
+
+    fields.push({
+      key: 'sprint',
+      title: 'Спринт',
+      label: 'Спринт',
+      summary: sprintFieldSummary.value,
+      active: Boolean(selectedSprintId.value),
+      items: sprintItems.value,
+      itemTitle: 'name',
+      itemValue: 'id',
+      modelValue: selectedSprintId.value,
+    })
+  }
+
+  if (usesSubjectSelection.value && !activeSubjectContext.value) {
+    fields.push({
+      key: 'subject',
+      title: 'Субъект',
+      label: 'Субъект',
+      summary: subjectFieldSummary.value,
+      active: Boolean(selectedSubjectId.value),
+      items: subjectItems.value,
+      itemTitle: 'label',
+      itemValue: 'id',
+      modelValue: selectedSubjectId.value,
+    })
+  }
+
+  if (usesObjectSelection.value) {
+    fields.push({
+      key: 'object',
+      title: 'Объект',
+      label: 'Объект',
+      summary: objectFieldSummary.value,
+      active: Boolean(selectedObjectId.value),
+      items: objectItems.value,
+      itemTitle: 'label',
+      itemValue: 'id',
+      modelValue: selectedObjectId.value,
+    })
+  }
+
+  if (usesDocumentSelection.value) {
+    fields.push({
+      key: 'document',
+      title: 'Документ',
+      label: 'Документ',
+      summary: documentFieldSummary.value,
+      active: Boolean(selectedDocumentId.value),
+      items: documentItems.value,
+      itemTitle: 'title',
+      itemValue: 'id',
+      modelValue: selectedDocumentId.value,
+    })
+  }
+
+  if (usesFinanceSelection.value) {
+    fields.push({
+      key: 'service',
+      title: 'Услуга',
+      label: 'Услуга',
+      summary: serviceFieldSummary.value,
+      active: Boolean(selectedServiceId.value),
+      items: serviceItems.value,
+      itemTitle: 'title',
+      itemValue: 'id',
+      modelValue: selectedServiceId.value,
+    })
+  }
+
+  return fields
 })
 
 const governanceRoleItems = [
@@ -357,7 +1010,8 @@ const subjectFabulaPresets: Record<MessengerPlatformSubjectOption['kind'], Subje
 const fallbackSubjectActionCategoryOrder = ['communication', 'documents', 'tasks', 'finance', 'stages'] as const
 
 const activeSubjectContext = computed(() => {
-  return subjectItems.value.find(subject => subject.id === activeSubjectContextId.value) || null
+  const subjectId = activeSubjectContextId.value || selectedAdminSubjectId.value || selectedAdminSubjectRawId.value
+  return subjectItems.value.find(subject => matchesAdminSubjectIdentity(subject, subjectId)) || null
 })
 
 const subjectActionMenus = computed(() => {
@@ -379,6 +1033,40 @@ const subjectActionMenus = computed(() => {
       actions: [...preferredActions, ...fallbackActions].slice(0, 4),
     }
   })
+})
+
+const adminCabinetEntry = computed(() => {
+  const subjectId = selectedAdminSubjectId.value || selectedAdminSubjectRawId.value
+  return subjectActionMenus.value.find(entry => matchesAdminSubjectIdentity(entry.subject, subjectId)) || null
+})
+const adminCabinetTitle = computed(() => selectedAdminRoleEntry.value?.cabinetTitle || 'Мини-кабинет')
+const adminCabinetStats = computed(() => {
+  return [
+    {
+      key: 'projects',
+      label: 'Проекты',
+      value: props.selectedProjectSlug ? '1' : String(props.projects.length || 0),
+      meta: props.selectedProjectSlug ? selectedProjectLabel.value : 'Все проекты',
+    },
+    {
+      key: 'timeline',
+      label: 'Этапы',
+      value: String(timelineChipCount.value),
+      meta: 'Таймлайн проекта',
+    },
+    {
+      key: 'sprints',
+      label: 'Спринты',
+      value: String(sprintChipCount.value),
+      meta: 'Активные контуры',
+    },
+    {
+      key: 'subjects',
+      label: 'Субъекты',
+      value: String(subjectChipCount.value),
+      meta: selectedAdminRoleListLabel.value,
+    },
+  ]
 })
 
 const canCreateScopeParticipant = computed(() => {
@@ -500,8 +1188,73 @@ const selectedCategoryActions = computed(() => {
   return group.actions.filter(action => matchesActionSearch(action, query))
 })
 
+const overviewRailItems = computed<ProjectActionsRailItem[]>(() => {
+  const items: ProjectActionsRailItem[] = []
+
+  if (canShowProjectOverview.value && subjectChipCount.value) {
+    items.push({
+      orderKey: 'overview:subjects',
+      kind: 'overview',
+      label: 'Субъекты',
+      icon: 'mdi-account-group-outline',
+      count: subjectChipCount.value,
+      active: showSubjectsPane.value,
+      pane: 'subjects',
+    })
+  }
+
+  if (canShowProjectOverview.value) {
+    items.push({
+      orderKey: 'overview:timeline',
+      kind: 'overview',
+      label: 'Таймлайн',
+      icon: 'mdi-chart-timeline-variant',
+      count: timelineChipCount.value,
+      active: showTimelinePane.value,
+      pane: 'timeline',
+    })
+    items.push({
+      orderKey: 'overview:sprints',
+      kind: 'overview',
+      label: 'Спринты',
+      icon: 'mdi-flag-outline',
+      count: sprintChipCount.value,
+      active: showSprintsPane.value,
+      pane: 'sprints',
+    })
+  }
+
+  return items
+})
+
+const categoryRailItems = computed<ProjectActionsRailItem[]>(() => {
+  return filteredCategoryGroups.value.map(group => ({
+    orderKey: `category:${group.category}`,
+    kind: 'category',
+    label: group.label,
+    icon: group.icon,
+    count: group.visibleActions.length,
+    active: selectedCategory.value === group.category,
+    category: group.category,
+  }))
+})
+
+const orderedRailItems = computed<ProjectActionsRailItem[]>(() => {
+  const allItems = [...overviewRailItems.value, ...categoryRailItems.value]
+  const itemMap = new Map(allItems.map(item => [item.orderKey, item]))
+  const preferredOrder = Array.isArray(props.railOrder) ? props.railOrder : []
+  const nextOrder = [
+    ...preferredOrder.filter(key => itemMap.has(key)),
+    ...allItems.map(item => item.orderKey).filter(key => !preferredOrder.includes(key)),
+  ]
+
+  return nextOrder
+    .map(key => itemMap.get(key) || null)
+    .filter(Boolean) as ProjectActionsRailItem[]
+})
+
 const canSubmit = computed(() => {
-  if (!currentAction.value || !props.selectedProjectSlug || props.catalogPending || Boolean(props.pendingAction)) {
+  if (!canUseCatalogFeatures.value || !currentAction.value || !props.selectedProjectSlug || props.catalogPending || Boolean(props.pendingAction)) {
     return false
   }
 
@@ -618,9 +1371,14 @@ function projectMatchesSearch(project: MessengerPlatformProjectSummary, query: s
 }
 
 function buildProjectPickerMeta(project: MessengerPlatformProjectSummary) {
+  if (!project.slug) {
+    return [
+      props.projects.length ? formatCountLabel(props.projects.length, 'проект', 'проекта', 'проектов') : '',
+      project.taskTotal ? formatCountLabel(project.taskTotal, 'задача', 'задачи', 'задач') : '',
+    ].filter(Boolean).join(' · ')
+  }
+
   return [
-    project.slug,
-    project.status,
     project.activePhaseTitle,
     project.activeSprintName,
     project.taskTotal ? formatCountLabel(project.taskTotal, 'задача', 'задачи', 'задач') : '',
@@ -671,24 +1429,120 @@ function resetCategorySelection() {
   emit('selectAction', null)
 }
 
+function resetCatalogPanels() {
+  searchPanelOpen.value = false
+  overviewPane.value = ''
+  resetCategorySelection()
+}
+
 function closeUtilityPanes() {
+  adminCabinetProjectPickerOpen.value = false
   projectPickerOpen.value = false
   projectSearch.value = ''
   searchPanelOpen.value = false
   overviewPane.value = ''
 }
 
-function primeDefaults() {
-  if (!props.catalog) {
+function selectAdminRole(kind: AdminRoleKind) {
+  if (selectedAdminRoleKind.value !== kind) {
+    selectedAdminSubjectId.value = ''
+    selectedAdminSubjectRawId.value = ''
+    activeSubjectContextId.value = ''
+    adminSubjectPinnedProjects.value = []
+  }
+
+  selectedAdminRoleKind.value = kind
+  adminRolePickerOpen.value = false
+  adminSubjectPickerOpen.value = true
+  closeUtilityPanes()
+  resetCategorySelection()
+}
+
+function selectAdminSubject(subjectId: string) {
+  const nextPinnedProjects = buildAdminSubjectPinnedProjects(subjectId)
+  const nextRawSubjectId = resolveAdminSubjectRawId(subjectId)
+  const preferredProjectSlug = parseProjectScopedId(subjectId).projectSlug || nextPinnedProjects[0]?.slug || ''
+
+  selectedAdminSubjectId.value = subjectId
+  selectedAdminSubjectRawId.value = nextRawSubjectId
+  adminSubjectPinnedProjects.value = nextPinnedProjects
+  activeSubjectContextId.value = subjectId
+  adminRolePickerOpen.value = false
+  adminSubjectPickerOpen.value = false
+  closeUtilityPanes()
+  formError.value = ''
+
+  if (preferredProjectSlug && preferredProjectSlug !== props.selectedProjectSlug) {
+    emit('selectProject', preferredProjectSlug)
+  }
+}
+
+const adminCabinetProjectItems = computed(() => {
+  return [...adminSubjectPinnedProjects.value].sort((left, right) => {
+    const leftSelected = Number(left.slug === props.selectedProjectSlug)
+    const rightSelected = Number(right.slug === props.selectedProjectSlug)
+
+    if (leftSelected !== rightSelected) {
+      return rightSelected - leftSelected
+    }
+
+    return left.title.localeCompare(right.title, 'ru')
+  })
+})
+
+const adminCabinetProjectButtonLabel = computed(() => {
+  if (!adminSubjectPinnedProjects.value.length) {
+    return '+'
+  }
+
+  if (props.selectedProjectSlug) {
+    return resolveProjectTitleBySlug(props.selectedProjectSlug)
+  }
+
+  return 'Проекты'
+})
+
+const adminCabinetProjectButtonMeta = computed(() => {
+  if (!adminSubjectPinnedProjects.value.length) {
+    return 'добавить проект'
+  }
+
+  return formatCountLabel(adminSubjectPinnedProjects.value.length, 'закреплённый проект', 'закреплённых проекта', 'закреплённых проектов')
+})
+
+function toggleAdminCabinetProjectPicker() {
+  if (!adminSubjectPinnedProjects.value.length) {
+    toggleProjectPane()
     return
   }
 
-  if (!selectedPhaseKey.value && props.catalog.project.activePhaseKey) {
-    selectedPhaseKey.value = props.catalog.project.activePhaseKey
+  const shouldOpen = !adminCabinetProjectPickerOpen.value
+  closeUtilityPanes()
+  resetCategorySelection()
+  adminCabinetProjectPickerOpen.value = shouldOpen
+}
+
+function selectAdminCabinetProject(slug: string) {
+  adminCabinetProjectPickerOpen.value = false
+
+  if (!slug || slug === props.selectedProjectSlug) {
+    return
   }
 
-  if (!selectedSprintId.value && props.catalog.project.activeSprintId) {
-    selectedSprintId.value = props.catalog.project.activeSprintId
+  emit('selectProject', slug)
+}
+
+function primeDefaults() {
+  if (!activeProjectCatalog.value) {
+    return
+  }
+
+  if (!selectedPhaseKey.value && activeProjectCatalog.value.project.activePhaseKey) {
+    selectedPhaseKey.value = activeProjectCatalog.value.project.activePhaseKey
+  }
+
+  if (!selectedSprintId.value && activeProjectCatalog.value.project.activeSprintId) {
+    selectedSprintId.value = activeProjectCatalog.value.project.activeSprintId
   }
 
   if (currentAction.value?.id === 'update_work_status') {
@@ -701,6 +1555,10 @@ function primeDefaults() {
 }
 
 function handleActionClick(action: ProjectActionDefinition) {
+  if (catalogLockedBySession.value) {
+    return
+  }
+
   activeSubjectContextId.value = ''
   closeUtilityPanes()
 
@@ -713,6 +1571,18 @@ function handleActionClick(action: ProjectActionDefinition) {
 }
 
 function openSubjectAction(subjectId: string, action: ProjectActionDefinition) {
+  if (catalogLockedBySession.value) {
+    return
+  }
+
+  if (viewerIsAdmin.value) {
+    selectedAdminSubjectId.value = subjectId
+    selectedAdminSubjectRawId.value = resolveAdminSubjectRawId(subjectId)
+    if (!adminSubjectPinnedProjects.value.length) {
+      adminSubjectPinnedProjects.value = buildAdminSubjectPinnedProjects(subjectId)
+    }
+  }
+
   activeSubjectContextId.value = subjectId
   selectedSubjectId.value = subjectId
   formError.value = ''
@@ -735,6 +1605,10 @@ function clearCategorySelection() {
 }
 
 function selectCategory(category: ProjectActionCategoryGroup['category']) {
+  if (catalogLockedBySession.value) {
+    return
+  }
+
   closeUtilityPanes()
 
   if (selectedCategory.value === category) {
@@ -768,6 +1642,10 @@ function selectProjectFromPicker(slug: string) {
 }
 
 function toggleSearchPane() {
+  if (catalogLockedBySession.value) {
+    return
+  }
+
   const shouldOpen = !searchPanelOpen.value
   closeUtilityPanes()
   resetCategorySelection()
@@ -778,6 +1656,10 @@ function toggleSearchPane() {
 }
 
 function toggleOverviewPane(pane: ProjectOverviewPane) {
+  if (!canUseCatalogFeatures.value) {
+    return
+  }
+
   const shouldOpen = overviewPane.value !== pane
   closeUtilityPanes()
   resetCategorySelection()
@@ -799,10 +1681,199 @@ function removeParticipantAssignment(assignmentId: string) {
 }
 
 function openScopeDetail(scopeType: MessengerPlatformScopeType, scopeId: string) {
+  const parsedScopeId = parseProjectScopedId(scopeId)
+
   closeUtilityPanes()
   resetCategorySelection()
   overviewPane.value = 'scope-detail'
-  emit('openScopeDetail', { scopeType, scopeId })
+  emit('openScopeDetail', {
+    scopeType,
+    scopeId: parsedScopeId.rawId,
+    projectSlug: parsedScopeId.projectSlug || props.selectedProjectSlug || undefined,
+  })
+}
+
+function stepBackOneLevel() {
+  formError.value = ''
+
+  if (adminCabinetProjectPickerOpen.value) {
+    adminCabinetProjectPickerOpen.value = false
+    return
+  }
+
+  if (currentAction.value) {
+    emit('selectAction', null)
+    return
+  }
+
+  if (selectedCategoryGroup.value) {
+    clearCategorySelection()
+    return
+  }
+
+  if (showScopeDetailPane.value || showSubjectsPane.value || showSprintsPane.value || showTimelinePane.value || showSearchPane.value || showProjectPane.value) {
+    if (showSubjectsPane.value) {
+      activeSubjectContextId.value = ''
+    }
+
+    closeUtilityPanes()
+    return
+  }
+
+  if (selectedAdminSubjectId.value) {
+    selectedAdminSubjectId.value = ''
+    selectedAdminSubjectRawId.value = ''
+    adminSubjectPinnedProjects.value = []
+    activeSubjectContextId.value = ''
+    adminSubjectPickerOpen.value = true
+    return
+  }
+
+  if (selectedAdminRoleKind.value) {
+    selectedAdminRoleKind.value = ''
+    selectedAdminSubjectRawId.value = ''
+    adminSubjectPinnedProjects.value = []
+    adminSubjectPickerOpen.value = false
+    adminRolePickerOpen.value = true
+    return
+  }
+
+  if (showAdminSubjectPane.value) {
+    adminSubjectPickerOpen.value = false
+    adminRolePickerOpen.value = true
+    return
+  }
+
+  if (showAdminRolePane.value) {
+    adminRolePickerOpen.value = false
+  }
+}
+
+function handleEntryControl() {
+  if (canNavigateBack.value) {
+    stepBackOneLevel()
+    return
+  }
+
+  emit('close')
+}
+
+function clearPanelReorderHoldTimer() {
+  if (!panelReorderHoldTimer) {
+    return
+  }
+
+  clearTimeout(panelReorderHoldTimer)
+  panelReorderHoldTimer = null
+}
+
+function startPanelReorderHold() {
+  if (props.reorderMode || props.reorderPending) {
+    return
+  }
+
+  clearPanelReorderHoldTimer()
+  panelReorderHoldTimer = setTimeout(() => {
+    emit('requestReorderMode')
+    suppressPanelEntryClickUntil = Date.now() + 800
+    panelReorderHoldTimer = null
+  }, PANEL_REORDER_HOLD_DELAY_MS)
+}
+
+function cancelPanelReorderHold() {
+  clearPanelReorderHoldTimer()
+}
+
+function requestPanelReorderModeDirectly() {
+  if (props.reorderMode || props.reorderPending) {
+    return
+  }
+
+  clearPanelReorderHoldTimer()
+  emit('requestReorderMode')
+  suppressPanelEntryClickUntil = Date.now() + 800
+}
+
+function handleBaseIconClick() {
+  if (props.reorderMode && props.reorderPending) {
+    return
+  }
+
+  if (Date.now() <= suppressPanelEntryClickUntil) {
+    suppressPanelEntryClickUntil = 0
+    return
+  }
+
+  if (props.reorderMode) {
+    emit('confirmReorderMode')
+    return
+  }
+
+  handleEntryControl()
+}
+
+function handleRailItemClick(item: ProjectActionsRailItem) {
+  if (props.reorderMode) {
+    if (props.reorderPending) {
+      return
+    }
+
+    if (!selectedRailSwapKey.value) {
+      selectedRailSwapKey.value = item.orderKey
+      return
+    }
+
+    if (selectedRailSwapKey.value === item.orderKey) {
+      selectedRailSwapKey.value = ''
+      return
+    }
+
+    const nextOrder = orderedRailItems.value.map(entry => entry.orderKey)
+    const currentIndex = nextOrder.indexOf(selectedRailSwapKey.value)
+    const targetIndex = nextOrder.indexOf(item.orderKey)
+
+    if (currentIndex >= 0 && targetIndex >= 0) {
+      [nextOrder[currentIndex], nextOrder[targetIndex]] = [nextOrder[targetIndex], nextOrder[currentIndex]]
+      emit('updateRailOrder', nextOrder)
+    }
+
+    selectedRailSwapKey.value = ''
+    return
+  }
+
+  if (item.kind === 'overview' && item.pane) {
+    toggleOverviewPane(item.pane)
+    return
+  }
+
+  if (item.kind === 'category' && item.category) {
+    selectCategory(item.category)
+  }
+}
+
+function updateBuilderEntityField(key: BuilderEntityFieldKey, value: unknown) {
+  const normalizedValue = typeof value === 'string' ? value : ''
+
+  switch (key) {
+    case 'phase':
+      selectedPhaseKey.value = normalizedValue
+      break
+    case 'sprint':
+      selectedSprintId.value = normalizedValue
+      break
+    case 'subject':
+      selectedSubjectId.value = normalizedValue
+      break
+    case 'object':
+      selectedObjectId.value = normalizedValue
+      break
+    case 'document':
+      selectedDocumentId.value = normalizedValue
+      break
+    case 'service':
+      selectedServiceId.value = normalizedValue
+      break
+  }
 }
 
 function buildExecutePayload(): ProjectActionExecutePayload {
@@ -817,7 +1888,7 @@ function buildExecutePayload(): ProjectActionExecutePayload {
     text: detailsText.value.trim() || undefined,
     note: detailsText.value.trim() || undefined,
     projectSlug: props.selectedProjectSlug,
-    projectTitle: props.catalog?.project.title || props.projects.find(project => project.slug === props.selectedProjectSlug)?.title || props.selectedProjectSlug,
+    projectTitle: activeProjectCatalog.value?.project.title || props.projects.find(project => project.slug === props.selectedProjectSlug)?.title || props.selectedProjectSlug,
     taskMode: taskMode.value,
     taskId: selectedTask.value?.id,
     taskTitle: effectiveTaskTitle || undefined,
@@ -846,6 +1917,11 @@ function submitAction() {
 
   if (!currentAction.value) {
     formError.value = 'Выберите действие.'
+    return
+  }
+
+  if (catalogLockedBySession.value) {
+    formError.value = 'Откройте основной домен и обновите сессию платформы.'
     return
   }
 
@@ -917,7 +1993,12 @@ function resolveNextTaskStatus() {
 
 watch(() => props.selectedProjectSlug, (value, previousValue) => {
   resetFormState()
-  activeSubjectContextId.value = ''
+  activeSubjectContextId.value = selectedAdminSubjectId.value || ''
+
+  if (selectedAdminSubjectId.value && !adminSubjectPinnedProjects.value.length) {
+    adminSubjectPinnedProjects.value = buildAdminSubjectPinnedProjects(selectedAdminSubjectId.value)
+  }
+
   primeDefaults()
 
   if (value !== previousValue) {
@@ -925,20 +2006,25 @@ watch(() => props.selectedProjectSlug, (value, previousValue) => {
   }
 })
 
-const platformSessionNotice = computed(() => {
-  if (!props.projectsRequirePlatformSession) {
-    return ''
-  }
-
-  return 'Список проектов взят из messenger. Для таймлайна, каталога и отправки проектных действий нужна активная сессия основной платформы на основном домене.'
+const catalogUnavailableMessage = computed(() => {
+  return props.catalogError || ''
 })
 
-const catalogUnavailableMessage = computed(() => {
-  if (!props.selectedProjectSlug) {
-    return ''
+watch(canNavigateBack, (value) => {
+  emit('updateCanStepBack', value)
+}, { immediate: true })
+
+watch(() => props.backRequestId, (value, previousValue) => {
+  if (value === previousValue || !props.open) {
+    return
   }
 
-  return props.catalogError || ''
+  if (canNavigateBack.value) {
+    stepBackOneLevel()
+    return
+  }
+
+  emit('close')
 })
 
 watch(currentAction, (action) => {
@@ -958,7 +2044,7 @@ watch(currentAction, (action) => {
     taskMode.value = 'existing'
   }
 
-  if (activeSubjectContextId.value && subjectItems.value.some(subject => subject.id === activeSubjectContextId.value)) {
+  if (activeSubjectContextId.value && subjectItems.value.some(subject => matchesAdminSubjectIdentity(subject, activeSubjectContextId.value))) {
     selectedSubjectId.value = activeSubjectContextId.value
   }
 
@@ -966,12 +2052,52 @@ watch(currentAction, (action) => {
 }, { immediate: true })
 
 watch(() => props.catalog, () => {
-  if (activeSubjectContextId.value && !subjectItems.value.some(subject => subject.id === activeSubjectContextId.value)) {
+  if (activeSubjectContextId.value && !subjectItems.value.some(subject => matchesAdminSubjectIdentity(subject, activeSubjectContextId.value))) {
     activeSubjectContextId.value = ''
+  }
+
+  if (selectedAdminSubjectRawId.value) {
+    const matchedAdminSubject = adminSubjectItems.value.find(subject => (
+      matchesAdminSubjectIdentity(subject, selectedAdminSubjectId.value)
+      || matchesAdminSubjectIdentity(subject, selectedAdminSubjectRawId.value)
+    ))
+
+    if (matchedAdminSubject) {
+      selectedAdminSubjectId.value = matchedAdminSubject.id
+      if (!adminSubjectPinnedProjects.value.length) {
+        adminSubjectPinnedProjects.value = buildAdminSubjectPinnedProjects(matchedAdminSubject.id)
+      }
+    } else if (selectedAdminSubjectId.value) {
+      selectedAdminSubjectId.value = ''
+      selectedAdminSubjectRawId.value = ''
+      adminSubjectPinnedProjects.value = []
+    }
+  } else if (selectedAdminSubjectId.value && !adminSubjectItems.value.some(subject => matchesAdminSubjectIdentity(subject, selectedAdminSubjectId.value))) {
+    selectedAdminSubjectId.value = ''
+    adminSubjectPinnedProjects.value = []
   }
 
   primeDefaults()
 }, { immediate: true })
+
+watch(catalogLockedBySession, (locked) => {
+  if (!locked) {
+    return
+  }
+
+  activeSubjectContextId.value = ''
+  resetCatalogPanels()
+})
+
+watch(selectedAdminSubjectId, (value) => {
+  if (value) {
+    return
+  }
+
+  selectedAdminSubjectRawId.value = ''
+  adminSubjectPinnedProjects.value = []
+  adminCabinetProjectPickerOpen.value = false
+})
 
 watch(() => props.scopeDetail, (detail) => {
   if (detail) {
@@ -980,17 +2106,35 @@ watch(() => props.scopeDetail, (detail) => {
   }
 })
 
+watch(() => props.reorderMode, (enabled) => {
+  if (!enabled) {
+    selectedRailSwapKey.value = ''
+  }
+})
+
 watch(() => props.open, (open) => {
   if (open) {
+    if (viewerIsAdmin.value && !props.selectedActionId) {
+      if (!selectedAdminRoleKind.value && !selectedAdminSubjectId.value) {
+        adminRolePickerOpen.value = true
+      } else if (selectedAdminRoleKind.value && !selectedAdminSubjectId.value) {
+        adminSubjectPickerOpen.value = true
+      }
+    }
     return
   }
 
+  adminRolePickerOpen.value = false
+  adminSubjectPickerOpen.value = false
+  adminCabinetProjectPickerOpen.value = false
+  selectedRailSwapKey.value = ''
+  clearPanelReorderHoldTimer()
   closeUtilityPanes()
   actionSearch.value = ''
   if (!props.selectedActionId) {
     selectedCategory.value = ''
   }
-})
+}, { immediate: true })
 
 watch(serviceItems, (items) => {
   if (selectedServiceId.value && !items.some(service => service.id === selectedServiceId.value)) {
@@ -1001,6 +2145,10 @@ watch(serviceItems, (items) => {
     selectedServiceId.value = items[0]?.id || ''
   }
 }, { immediate: true })
+
+onBeforeUnmount(() => {
+  clearPanelReorderHoldTimer()
+})
 
 watch(() => props.governanceMutationNotice, (value) => {
   if (value.includes('Участник добавлен')) {
@@ -1039,12 +2187,152 @@ watch(selectedTask, (task) => {
   <div v-if="props.open" class="pa-shell" :class="{ 'pa-shell--expanded': showExpansion }" @click.stop>
     <Transition name="pa-expand">
       <div v-if="showExpansion" class="pa-expand">
-        <section v-if="showProjectPane" class="pa-pane pa-pane--project">
+        <section v-if="showAdminRolePane" class="pa-pane pa-pane--admin-role">
           <div class="pa-pane__head">
-            <span class="pa-pane__title">Проект</span>
+            <span class="pa-pane__title">Выбор роли</span>
             <span class="pa-pane__value">{{ selectedProjectLabel }}</span>
           </div>
 
+          <div v-if="props.catalogPending" class="pa-empty-state">
+            Собираю роли проекта…
+          </div>
+
+          <div v-else-if="catalogUnavailableMessage" class="pa-state pa-state--error">
+            {{ catalogUnavailableMessage }}
+          </div>
+
+          <div v-else-if="adminRoleEntries.length" class="pa-project-list">
+            <button
+              v-for="role in adminRoleEntries"
+              :key="role.kind"
+              type="button"
+              class="pa-project-card"
+              :class="{ 'pa-project-card--active': selectedAdminRoleKind === role.kind }"
+              @click="selectAdminRole(role.kind)"
+            >
+              <div class="pa-project-card__head">
+                <span class="pa-project-card__title pa-role-card__title">
+                  <VIcon :icon="role.icon" size="16" />
+                  <span>{{ role.listLabel }}</span>
+                </span>
+                <span class="pa-project-card__badge">{{ role.count }}</span>
+              </div>
+              <span class="pa-project-card__meta">{{ role.summary || 'Участники этой роли доступны для перехода в мини-кабинет.' }}</span>
+            </button>
+          </div>
+
+          <div v-else class="pa-empty-state">
+            В каталоге пока нет ролей для перехода.
+          </div>
+        </section>
+
+        <section v-if="showAdminSubjectPane" class="pa-pane pa-pane--admin-subjects">
+          <div class="pa-pane__head">
+            <span class="pa-pane__title">{{ selectedAdminRoleListLabel }}</span>
+            <span class="pa-pane__value">{{ formatCountLabel(adminSubjectItems.length, 'участник', 'участника', 'участников') }}</span>
+          </div>
+
+          <div v-if="adminSubjectItems.length" class="pa-project-list">
+            <button
+              v-for="subject in adminSubjectItems"
+              :key="subject.id"
+              type="button"
+              class="pa-project-card"
+              :class="{ 'pa-project-card--active': selectedAdminSubjectId === subject.id }"
+              @click="selectAdminSubject(subject.id)"
+            >
+              <div class="pa-project-card__head">
+                <span class="pa-project-card__title">{{ resolveAdminSubjectHeadline(subject) }}</span>
+                <span class="pa-project-card__badge">кабинет</span>
+              </div>
+              <span class="pa-project-card__meta">{{ buildAdminSubjectDisplayMeta(subject) }}</span>
+            </button>
+          </div>
+
+          <div v-else class="pa-empty-state">
+            Для этой роли пока нет участников.
+          </div>
+        </section>
+
+        <section v-if="showAdminCabinetPane" class="pa-pane pa-pane--admin-cabinet">
+          <div class="pa-pane__head">
+            <span class="pa-pane__title">{{ adminCabinetTitle }}</span>
+            <span class="pa-pane__value">{{ selectedAdminSubject ? resolveAdminSubjectHeadline(selectedAdminSubject) : selectedAdminRoleLabel }}</span>
+          </div>
+
+          <div class="pa-admin-project-switch">
+            <button
+              type="button"
+              class="pa-admin-project-switch__trigger"
+              :class="{
+                'pa-admin-project-switch__trigger--open': adminCabinetProjectPickerOpen,
+                'pa-admin-project-switch__trigger--empty': !adminSubjectPinnedProjects.length,
+              }"
+              @click="toggleAdminCabinetProjectPicker"
+            >
+              <span class="pa-admin-project-switch__glyph">{{ adminSubjectPinnedProjects.length ? '◒' : '+' }}</span>
+              <span class="pa-admin-project-switch__copy">
+                <span class="pa-admin-project-switch__title">{{ adminCabinetProjectButtonLabel }}</span>
+                <span class="pa-admin-project-switch__meta">{{ adminCabinetProjectButtonMeta }}</span>
+              </span>
+              <VIcon
+                v-if="adminSubjectPinnedProjects.length"
+                :icon="adminCabinetProjectPickerOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                size="16"
+              />
+            </button>
+
+            <div v-if="adminCabinetProjectPickerOpen && adminCabinetProjectItems.length" class="pa-admin-project-switch__list">
+              <button
+                v-for="project in adminCabinetProjectItems"
+                :key="project.slug"
+                type="button"
+                class="pa-admin-project-switch__project"
+                :class="{ 'pa-admin-project-switch__project--active': project.slug === props.selectedProjectSlug }"
+                @click="selectAdminCabinetProject(project.slug)"
+              >
+                <span class="pa-admin-project-switch__project-title">{{ normalizeProjectDisplayLabel(project.title) }}</span>
+                <span class="pa-admin-project-switch__project-meta">{{ buildProjectPickerMeta(project) || project.slug }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="pa-admin-cabinet-hero">
+            <div class="pa-admin-cabinet-hero__head">
+              <span class="pa-admin-cabinet-hero__badge">
+                <VIcon :icon="selectedAdminRoleIcon" size="14" />
+                <span>{{ selectedAdminRoleLabel }}</span>
+              </span>
+              <span class="pa-admin-cabinet-hero__scope">{{ selectedProjectLabel }}</span>
+            </div>
+            <strong class="pa-admin-cabinet-hero__title">{{ selectedAdminSubject ? resolveAdminSubjectHeadline(selectedAdminSubject) : 'Участник не выбран' }}</strong>
+            <p class="pa-admin-cabinet-hero__meta">{{ selectedAdminSubject ? buildAdminSubjectDisplayMeta(selectedAdminSubject) : 'Мини-кабинет синхронизирован с основным проектным контуром.' }}</p>
+          </div>
+
+          <div class="pa-admin-cabinet-stats">
+            <article v-for="item in adminCabinetStats" :key="item.key" class="pa-admin-cabinet-stat">
+              <span class="pa-admin-cabinet-stat__value">{{ item.value }}</span>
+              <span class="pa-admin-cabinet-stat__label">{{ item.label }}</span>
+              <span class="pa-admin-cabinet-stat__meta">{{ item.meta }}</span>
+            </article>
+          </div>
+
+          <div v-if="adminCabinetEntry?.actions.length" class="pa-admin-cabinet-actions">
+            <VBtn
+              v-for="action in adminCabinetEntry.actions"
+              :key="`${adminCabinetEntry.subject.id}:${action.id}`"
+              color="primary"
+              variant="tonal"
+              size="small"
+              :prepend-icon="action.icon"
+              @click="openSubjectAction(adminCabinetEntry.subject.id, action)"
+            >
+              {{ action.label }}
+            </VBtn>
+          </div>
+        </section>
+
+        <section v-if="showProjectPane" class="pa-pane pa-pane--project">
           <VTextField
             v-model="projectSearch"
             class="pa-search-field"
@@ -1054,9 +2342,6 @@ watch(selectedTask, (task) => {
             clearable
             hide-details
             bg-color="surface-container-highest"
-            prepend-inner-icon="mdi-magnify"
-            label="Поиск проекта"
-            placeholder="Название, slug, фаза, статус"
           />
 
           <div v-if="!props.projectsPending && filteredProjectItems.length" class="pa-project-list">
@@ -1069,7 +2354,7 @@ watch(selectedTask, (task) => {
               @click="selectProjectFromPicker(project.slug)"
             >
               <div class="pa-project-card__head">
-                <span class="pa-project-card__title">{{ project.title }}</span>
+                <span class="pa-project-card__title">{{ normalizeProjectDisplayLabel(project.title) }}</span>
                 <span v-if="project.slug === props.selectedProjectSlug" class="pa-project-card__badge">выбран</span>
               </div>
               <span class="pa-project-card__meta">{{ buildProjectPickerMeta(project) }}</span>
@@ -1077,11 +2362,8 @@ watch(selectedTask, (task) => {
           </div>
 
           <p v-if="props.projectsError" class="pa-state pa-state--error">{{ props.projectsError }}</p>
-          <p v-else-if="platformSessionNotice" class="pa-state pa-state--muted">{{ platformSessionNotice }}</p>
-          <p v-else-if="props.catalogError" class="pa-state pa-state--error">{{ props.catalogError }}</p>
-          <p v-else-if="props.catalogPending" class="pa-state pa-state--muted">Загружаю каталог проекта…</p>
-          <p v-else-if="props.projectsPending" class="pa-state pa-state--muted">Загружаю список проектов…</p>
-          <p v-else-if="!filteredProjectItems.length" class="pa-empty-state">По этому запросу проекты не найдены.</p>
+          <p v-else-if="props.projectsPending" class="pa-state pa-state--muted">Загружаю проекты…</p>
+          <p v-else-if="!filteredProjectItems.length" class="pa-empty-state">{{ normalizedProjectSearch ? 'Ничего не найдено.' : 'Нет проектов.' }}</p>
         </section>
 
         <section v-if="showSearchPane" class="pa-pane pa-pane--search">
@@ -1117,11 +2399,7 @@ watch(selectedTask, (task) => {
             </div>
           </div>
 
-          <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
-            Сначала выберите проект.
-          </div>
-
-          <div v-else-if="props.catalogPending" class="pa-empty-state">
+          <div v-if="props.catalogPending" class="pa-empty-state">
             Загружаю таймлайн проекта…
           </div>
 
@@ -1142,11 +2420,7 @@ watch(selectedTask, (task) => {
             <span class="pa-pane__value">{{ formatCountLabel(subjectActionMenus.length, 'субъект', 'субъекта', 'субъектов') }}</span>
           </div>
 
-          <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
-            Сначала выберите проект.
-          </div>
-
-          <div v-else-if="props.catalogPending" class="pa-empty-state">
+          <div v-if="props.catalogPending" class="pa-empty-state">
             Подготавливаю субъектный контур проекта…
           </div>
 
@@ -1432,11 +2706,7 @@ watch(selectedTask, (task) => {
             <span class="pa-pane__value">{{ selectedProjectLabel }}</span>
           </div>
 
-          <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
-            Сначала выберите проект.
-          </div>
-
-          <div v-else-if="props.catalogPending" class="pa-empty-state">
+          <div v-if="props.catalogPending" class="pa-empty-state">
             Загружаю спринты проекта…
           </div>
 
@@ -1490,6 +2760,13 @@ watch(selectedTask, (task) => {
             <span class="pa-subject-context__meta">{{ activeSubjectContext.secondary || 'Действие будет собрано в контексте этого субъекта.' }}</span>
           </div>
 
+          <div v-if="builderContextChips.length" class="pa-context-strip">
+            <span v-for="chip in builderContextChips" :key="chip.key" class="pa-context-pill">
+              <span class="pa-context-pill__label">{{ chip.label }}</span>
+              <span class="pa-context-pill__value">{{ chip.value }}</span>
+            </span>
+          </div>
+
           <div v-if="!props.selectedProjectSlug" class="pa-empty-state">
             Сначала выберите проект.
           </div>
@@ -1502,11 +2779,11 @@ watch(selectedTask, (task) => {
             {{ catalogUnavailableMessage }}
           </div>
 
-          <div v-else-if="props.catalog" class="pa-form-grid">
+          <div v-else-if="activeProjectCatalog" class="pa-form-grid">
             <div v-if="usesTaskSelection" class="pa-field-block pa-field-block--full">
               <div class="pa-field-block__head">
                 <span class="pa-field-block__title">Задача</span>
-                <span class="pa-field-block__hint">Новая или из существующего списка.</span>
+                <span class="pa-field-block__hint">{{ taskFieldSummary }}</span>
               </div>
 
               <div class="pa-mode-row">
@@ -1521,7 +2798,7 @@ watch(selectedTask, (task) => {
                 item-title="title"
                 item-value="id"
                 variant="outlined"
-                density="comfortable"
+                density="compact"
                 label="Задача"
                 clearable
                 hide-details
@@ -1531,133 +2808,94 @@ watch(selectedTask, (task) => {
                 v-else
                 v-model="taskTitle"
                 variant="outlined"
-                density="comfortable"
+                density="compact"
                 label="Название задачи"
                 placeholder="Например: Согласовать акт"
                 hide-details
               />
 
-              <VSelect
-                v-if="usesTaskStatusSelection"
-                v-model="selectedTaskStatus"
-                :items="selectedTaskStatusItems"
-                item-title="title"
-                item-value="value"
-                variant="outlined"
-                density="comfortable"
-                label="Статус"
-                hide-details
-              />
+              <section v-if="usesTaskStatusSelection" class="pa-entity-field pa-entity-field--full" :class="{ 'pa-entity-field--active': Boolean(selectedTaskStatus) }">
+                <div class="pa-entity-field__head">
+                  <span class="pa-entity-field__title">Статус задачи</span>
+                  <span class="pa-entity-field__meta">{{ taskStatusFieldSummary }}</span>
+                </div>
+
+                <VSelect
+                  v-model="selectedTaskStatus"
+                  :items="selectedTaskStatusItems"
+                  item-title="title"
+                  item-value="value"
+                  variant="outlined"
+                  density="compact"
+                  label="Статус"
+                  hide-details
+                />
+              </section>
             </div>
 
-            <VSelect
-              v-if="usesStageSelection || usesTaskSelection"
-              v-model="selectedPhaseKey"
-              :items="phaseItems"
-              item-title="title"
-              item-value="phaseKey"
-              variant="outlined"
-              density="comfortable"
-              label="Этап"
-              clearable
-              hide-details
-            />
+            <div v-if="builderEntityFields.length" class="pa-entity-grid pa-field-block--full">
+              <section v-for="field in builderEntityFields" :key="field.key" class="pa-entity-field" :class="{ 'pa-entity-field--active': field.active }">
+                <div class="pa-entity-field__head">
+                  <span class="pa-entity-field__title">{{ field.title }}</span>
+                  <span class="pa-entity-field__meta">{{ field.summary }}</span>
+                </div>
 
-            <VSelect
-              v-if="usesStageSelection || usesTaskSelection"
-              v-model="selectedSprintId"
-              :items="sprintItems"
-              item-title="name"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Спринт"
-              clearable
-              hide-details
-            />
+                <VSelect
+                  :model-value="field.modelValue"
+                  :items="field.items"
+                  :item-title="field.itemTitle"
+                  :item-value="field.itemValue"
+                  variant="outlined"
+                  density="compact"
+                  :label="field.label"
+                  clearable
+                  hide-details
+                  @update:model-value="updateBuilderEntityField(field.key, $event)"
+                />
+              </section>
+            </div>
 
-            <VSelect
-              v-if="usesSubjectSelection"
-              v-model="selectedSubjectId"
-              :items="subjectItems"
-              item-title="label"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Субъект"
-              clearable
-              hide-details
-            />
+            <div v-if="usesRangeSelection" class="pa-field-block pa-field-block--full">
+              <div class="pa-field-block__head">
+                <span class="pa-field-block__title">Срок</span>
+                <span class="pa-field-block__hint">{{ rangeFieldSummary }}</span>
+              </div>
 
-            <VSelect
-              v-if="usesObjectSelection"
-              v-model="selectedObjectId"
-              :items="objectItems"
-              item-title="label"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Объект"
-              clearable
-              hide-details
-            />
-
-            <VSelect
-              v-if="usesDocumentSelection"
-              v-model="selectedDocumentId"
-              :items="documentItems"
-              item-title="title"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Документ"
-              clearable
-              hide-details
-            />
-
-            <VSelect
-              v-if="usesFinanceSelection"
-              v-model="selectedServiceId"
-              :items="serviceItems"
-              item-title="title"
-              item-value="id"
-              variant="outlined"
-              density="comfortable"
-              label="Услуга"
-              clearable
-              hide-details
-            />
-
-            <div v-if="usesRangeSelection" class="pa-range-row pa-field-block--full">
-              <VTextField
-                v-model="rangeStart"
-                type="date"
-                variant="outlined"
-                density="comfortable"
-                label="Начало"
-                hide-details
-              />
-              <VTextField
-                v-model="rangeEnd"
-                type="date"
-                variant="outlined"
-                density="comfortable"
-                label="Конец"
-                hide-details
-              />
+              <div class="pa-range-row">
+                <VTextField
+                  v-model="rangeStart"
+                  type="date"
+                  variant="outlined"
+                  density="compact"
+                  label="Начало"
+                  hide-details
+                />
+                <VTextField
+                  v-model="rangeEnd"
+                  type="date"
+                  variant="outlined"
+                  density="compact"
+                  label="Конец"
+                  hide-details
+                />
+              </div>
             </div>
 
             <VTextarea
               v-model="detailsText"
               class="pa-field-block--full"
               variant="outlined"
-              density="comfortable"
-              rows="3"
+              density="compact"
+              rows="2"
               auto-grow
               label="Комментарий"
               placeholder="Уточнение для отправки или выполнения"
               hide-details
             />
+          </div>
+
+          <div v-else class="pa-empty-state">
+            Каталог проекта обновляется…
           </div>
         </section>
 
@@ -1671,15 +2909,41 @@ watch(selectedTask, (task) => {
     </Transition>
 
     <div class="pa-base">
-      <button type="button" class="pa-base-chip" :class="{ 'pa-base-chip--active': showProjectPane }" @click="toggleProjectPane">
+      <button
+        type="button"
+        class="pa-base-icon"
+        :class="{ 'pa-base-icon--confirm': props.reorderMode }"
+        :aria-label="props.reorderMode ? 'Подтвердить порядок кнопок' : 'Назад на уровень'"
+        @mousedown.left="startPanelReorderHold"
+        @mouseup="cancelPanelReorderHold"
+        @mouseleave="cancelPanelReorderHold"
+        @touchstart.passive="startPanelReorderHold"
+        @touchend="cancelPanelReorderHold"
+        @touchcancel="cancelPanelReorderHold"
+        @touchmove="cancelPanelReorderHold"
+        @contextmenu.prevent="requestPanelReorderModeDirectly"
+        @click="handleBaseIconClick"
+      >
+        <VIcon :icon="props.reorderMode ? 'mdi-check' : 'mdi-lightning-bolt'" size="18" />
+      </button>
+
+      <button
+        v-if="!viewerIsAdmin"
+        type="button"
+        class="pa-base-chip"
+        :class="{ 'pa-base-chip--active': showProjectPane }"
+        @click="toggleProjectPane"
+      >
         <VIcon icon="mdi-briefcase-outline" size="16" />
         <span class="pa-base-chip__label">{{ selectedProjectLabel }}</span>
       </button>
 
       <button
+        v-if="!viewerIsAdmin || selectedAdminSubjectId"
         type="button"
         class="pa-base-chip"
         :class="{ 'pa-base-chip--active': showSearchPane, 'pa-base-chip--compact': !actionSearch.trim() }"
+        :disabled="catalogLockedBySession"
         @click="toggleSearchPane"
       >
         <VIcon icon="mdi-magnify" size="16" />
@@ -1689,7 +2953,7 @@ watch(selectedTask, (task) => {
       <div class="pa-base__rail">
         <div class="pa-base__scroll">
           <button
-            v-if="selectedCategoryGroup"
+            v-if="selectedCategoryGroup && !props.reorderMode"
             type="button"
             class="pa-rail-chip pa-rail-chip--ghost"
             @click="clearCategorySelection"
@@ -1698,7 +2962,7 @@ watch(selectedTask, (task) => {
             <span>Категории</span>
           </button>
 
-          <template v-if="selectedCategoryGroup && selectedCategoryActions.length">
+          <template v-if="selectedCategoryGroup && selectedCategoryActions.length && !props.reorderMode">
             <button
               v-for="action in selectedCategoryActions"
               :key="action.id"
@@ -1708,7 +2972,7 @@ watch(selectedTask, (task) => {
                 'pa-rail-chip--active': props.selectedActionId === action.id,
                 'pa-rail-chip--pending': props.pendingAction === action.id,
               }"
-              :disabled="Boolean(props.pendingAction)"
+              :disabled="Boolean(props.pendingAction) || !canUseCatalogFeatures"
               @click="handleActionClick(action)"
             >
               <VIcon :icon="action.icon" size="16" />
@@ -1716,70 +2980,31 @@ watch(selectedTask, (task) => {
             </button>
           </template>
 
-          <template v-else-if="!selectedCategoryGroup">
+          <template v-else-if="props.reorderMode || !selectedCategoryGroup">
             <button
-              v-if="canShowProjectOverview"
+              v-for="item in orderedRailItems"
+              :key="item.orderKey"
               type="button"
               class="pa-rail-chip"
-              :class="{ 'pa-rail-chip--active': showTimelinePane }"
-              :disabled="!canUseCatalogFeatures"
-              @click="toggleOverviewPane('timeline')"
+              :class="{
+                'pa-rail-chip--active': item.active,
+                'pa-rail-chip--reorder': props.reorderMode,
+                'pa-rail-chip--reorder-selected': props.reorderMode && selectedRailSwapKey === item.orderKey,
+              }"
+              :disabled="props.reorderMode ? Boolean(props.reorderPending) : Boolean(props.pendingAction) || !canUseCatalogFeatures"
+              @click="handleRailItemClick(item)"
             >
-              <VIcon icon="mdi-chart-timeline-variant" size="16" />
-              <span>Таймлайн</span>
-              <span class="pa-rail-chip__count">{{ timelineChipCount }}</span>
-            </button>
-
-            <button
-              v-if="canShowProjectOverview"
-              type="button"
-              class="pa-rail-chip"
-              :class="{ 'pa-rail-chip--active': showSprintsPane }"
-              :disabled="!canUseCatalogFeatures"
-              @click="toggleOverviewPane('sprints')"
-            >
-              <VIcon icon="mdi-flag-outline" size="16" />
-              <span>Спринты</span>
-              <span class="pa-rail-chip__count">{{ sprintChipCount }}</span>
-            </button>
-
-            <button
-              v-if="canShowProjectOverview && subjectChipCount"
-              type="button"
-              class="pa-rail-chip"
-              :class="{ 'pa-rail-chip--active': showSubjectsPane }"
-              :disabled="!canUseCatalogFeatures"
-              @click="toggleOverviewPane('subjects')"
-            >
-              <VIcon icon="mdi-account-group-outline" size="16" />
-              <span>Субъекты</span>
-              <span class="pa-rail-chip__count">{{ subjectChipCount }}</span>
-            </button>
-
-            <button
-              v-for="group in filteredCategoryGroups"
-              :key="group.category"
-              type="button"
-              class="pa-rail-chip"
-              :class="{ 'pa-rail-chip--active': selectedCategory === group.category }"
-              :disabled="Boolean(props.pendingAction) || !canUseCatalogFeatures"
-              @click="selectCategory(group.category)"
-            >
-              <VIcon :icon="group.icon" size="16" />
-              <span>{{ group.label }}</span>
-              <span class="pa-rail-chip__count">{{ group.visibleActions.length }}</span>
+              <VIcon :icon="item.icon" size="16" />
+              <span>{{ item.label }}</span>
+              <span class="pa-rail-chip__count">{{ item.count }}</span>
             </button>
           </template>
 
           <span v-else class="pa-base__empty">
-            {{ selectedCategoryGroup ? 'Нет действий' : 'Ничего не найдено' }}
+            {{ selectedCategoryGroup ? 'Нет действий' : viewerIsAdmin && !selectedAdminSubjectId ? 'Выберите роль' : 'Ничего не найдено' }}
           </span>
         </div>
       </div>
-
-      <button type="button" class="pa-base-icon" aria-label="Закрыть" @click="emit('close')">
-        <VIcon icon="mdi-close" size="18" />
-      </button>
     </div>
   </div>
 </template>
@@ -1855,8 +3080,7 @@ watch(selectedTask, (task) => {
 }
 
 .pa-base {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  display: flex;
   width: 100%;
   box-sizing: border-box;
   align-items: center;
@@ -1932,8 +3156,15 @@ watch(selectedTask, (task) => {
   border-radius: 999px;
 }
 
+.pa-base-icon--confirm {
+  border-color: rgba(var(--v-theme-primary), 0.58);
+  background: rgba(var(--v-theme-primary), 0.16);
+  color: rgb(var(--v-theme-primary));
+}
+
 .pa-base__rail {
-  width: 100%;
+  flex: 1 1 auto;
+  width: auto;
   min-width: 0;
 }
 
@@ -1965,6 +3196,17 @@ watch(selectedTask, (task) => {
 
 .pa-rail-chip--pending {
   opacity: 0.68;
+}
+
+.pa-rail-chip--reorder {
+  border-style: dashed;
+}
+
+.pa-rail-chip--reorder-selected {
+  border-color: rgba(var(--v-theme-primary), 0.72);
+  background: rgba(var(--v-theme-primary), 0.18);
+  color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 1px rgba(var(--v-theme-primary), 0.16);
 }
 
 .pa-rail-chip__count {
@@ -2076,6 +3318,40 @@ watch(selectedTask, (task) => {
   flex-wrap: wrap;
 }
 
+.pa-context-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pa-context-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+
+.pa-context-pill__label {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+}
+
+.pa-context-pill__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: rgb(var(--v-theme-on-surface));
+}
+
 .pa-sprint-card {
   display: grid;
   gap: 8px;
@@ -2137,6 +3413,10 @@ watch(selectedTask, (task) => {
 .pa-project-list {
   display: grid;
   gap: 8px;
+  max-height: min(240px, 42vh);
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
 }
 
 .pa-project-card {
@@ -2165,6 +3445,12 @@ watch(selectedTask, (task) => {
   font-weight: 700;
 }
 
+.pa-role-card__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .pa-project-card__meta {
   font-size: 12px;
   line-height: 1.45;
@@ -2188,6 +3474,173 @@ watch(selectedTask, (task) => {
 .pa-project-card--active {
   border-color: rgba(var(--v-theme-primary), 0.28);
   background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.pa-admin-project-switch {
+  display: grid;
+  gap: 8px;
+}
+
+.pa-admin-project-switch__trigger,
+.pa-admin-project-switch__project {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  color: rgb(var(--v-theme-on-surface));
+  cursor: pointer;
+  text-align: left;
+}
+
+.pa-admin-project-switch__trigger--open,
+.pa-admin-project-switch__project--active,
+.pa-admin-project-switch__trigger:hover,
+.pa-admin-project-switch__project:hover {
+  border-color: rgba(var(--v-theme-primary), 0.22);
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.pa-admin-project-switch__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.18);
+  background: rgba(var(--v-theme-primary), 0.08);
+  color: rgb(var(--v-theme-primary));
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.pa-admin-project-switch__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pa-admin-project-switch__title,
+.pa-admin-project-switch__project-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.pa-admin-project-switch__meta,
+.pa-admin-project-switch__project-meta {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.pa-admin-project-switch__list {
+  display: grid;
+  gap: 8px;
+}
+
+.pa-admin-project-switch__project {
+  display: grid;
+  gap: 2px;
+  padding-left: 50px;
+}
+
+.pa-admin-cabinet-hero {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.18);
+  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.14), rgba(var(--v-theme-surface-bright), 0.92));
+}
+
+.pa-admin-cabinet-hero__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pa-admin-cabinet-hero__badge,
+.pa-admin-cabinet-hero__scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pa-admin-cabinet-hero__badge {
+  background: rgba(var(--v-theme-primary), 0.14);
+  color: rgb(var(--v-theme-primary));
+}
+
+.pa-admin-cabinet-hero__scope {
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.pa-admin-cabinet-hero__title {
+  font-size: 16px;
+  font-weight: 800;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.pa-admin-cabinet-hero__meta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.pa-admin-cabinet-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pa-admin-cabinet-stat {
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.pa-admin-cabinet-stat__value {
+  font-size: 18px;
+  font-weight: 800;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.pa-admin-cabinet-stat__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+}
+
+.pa-admin-cabinet-stat__meta {
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.pa-admin-cabinet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .pa-scope-hero {
@@ -2292,9 +3745,56 @@ watch(selectedTask, (task) => {
   gap: 10px;
 }
 
+.pa-entity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .pa-field-block {
   display: grid;
   gap: 10px;
+}
+
+.pa-entity-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.pa-entity-field--full {
+  grid-column: 1 / -1;
+}
+
+.pa-entity-field--active {
+  border-color: rgba(var(--v-theme-primary), 0.24);
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.pa-entity-field__head {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pa-entity-field__title {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.pa-entity-field__meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .pa-field-block--full {
@@ -2363,7 +3863,9 @@ watch(selectedTask, (task) => {
   }
 
   .pa-form-grid,
-  .pa-range-row {
+  .pa-entity-grid,
+  .pa-range-row,
+  .pa-admin-cabinet-stats {
     grid-template-columns: 1fr;
   }
 

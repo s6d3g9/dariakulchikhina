@@ -36,6 +36,11 @@ export const ADMIN_ROOT_MENU_GROUP: MenuBlockGroupDef = {
   category: 'root',
   description: 'Корневые разделы платформы, из которых собираются разные приложения на общей базе.',
   items: [
+    block('cat_crm', 'CRM', 'node', 'root', 'crm-os', 'Продажи, клиенты, сделки и активности.', ['crm'], ['crm', 'studio-os']),
+    block('cat_studio_os', 'Studio OS', 'node', 'root', 'studio-os', 'Операционный контур дизайн-студии.', ['studio'], ['studio', 'designer-cabinet']),
+    block('cat_design_os', 'Design OS', 'node', 'root', 'design-os', 'Дизайн-проект, документы, согласования и авторский надзор.', ['design-os', 'project'], ['design-project', 'project-os']),
+    block('cat_construction_os', 'Construction OS', 'node', 'root', 'construction-os', 'Стройка, подрядчики, бригады и статусы работ.', ['construction-os', 'project'], ['construction', 'workers', 'crews']),
+    block('cat_messenger', 'Messenger', 'node', 'root', 'messenger-os', 'Коммуникации и action-интерфейс проекта.', ['messenger'], ['messenger', 'actions']),
     block('cat_projects', 'Проекты', 'node', 'root', 'projects', 'Проектный контур и проектные кабинеты.', ['admin', 'project'], ['projects', 'project-root']),
     block('cat_clients', 'Клиенты', 'node', 'root', 'clients', 'Клиентские профили и кабинеты.', ['admin', 'client-cabinet'], ['clients']),
     block('cat_designers', 'Дизайнеры', 'node', 'root', 'designers', 'Кабинеты дизайнеров и связанные реестры.', ['admin', 'designer-cabinet'], ['designers']),
@@ -47,6 +52,42 @@ export const ADMIN_ROOT_MENU_GROUP: MenuBlockGroupDef = {
     block('cat_moodboards', 'Мудборды', 'node', 'root', 'moodboards', 'Мудборды как отдельный продуктовый контур.', ['admin'], ['moodboards']),
   ],
 }
+
+export const CRM_OS_BLOCKS: MenuBlockDef[] = [
+  block('crm_clients', 'Клиенты', 'node', 'root', 'crm-clients', 'Клиентский реестр CRM.', ['admin', 'crm', 'client-cabinet']),
+  block('crm_projects', 'Проекты', 'node', 'root', 'crm-projects', 'Проекты как lifecycle клиента.', ['admin', 'crm', 'project']),
+  block('crm_managers', 'Менеджеры', 'node', 'root', 'crm-owners', 'Ответственные за клиентов и сделки.', ['admin', 'crm', 'manager-cabinet']),
+  block('crm_documents', 'Документы', 'node', 'root', 'crm-documents', 'Договоры, счета, акты и клиентские документы.', ['admin', 'crm']),
+]
+
+export const STUDIO_OS_BLOCKS: MenuBlockDef[] = [
+  block('studio_designers', 'Дизайнеры и архитекторы', 'node', 'root', 'studio-team', 'Создатели дизайн-проектов.', ['admin', 'studio', 'designer-cabinet']),
+  block('studio_clients', 'Клиенты', 'node', 'root', 'studio-clients', 'Клиенты студии.', ['admin', 'studio', 'client-cabinet']),
+  block('studio_projects', 'Проекты', 'node', 'root', 'studio-projects', 'Операционные проекты студии.', ['admin', 'studio', 'project']),
+  block('studio_documents', 'Документы', 'node', 'root', 'studio-documents', 'Документная база студии.', ['admin', 'studio']),
+  block('studio_gallery', 'Галереи', 'node', 'root', 'studio-assets', 'Визуальные материалы и референсы.', ['admin', 'studio']),
+  block('studio_moodboards', 'Мудборды', 'node', 'root', 'studio-moodboards', 'Мудборды и концептуальные подборки.', ['admin', 'studio']),
+]
+
+export const DESIGN_OS_BLOCKS: MenuBlockDef[] = [
+  block('design_projects', 'Дизайн-проекты', 'node', 'root', 'design-projects', 'Проекты как источник дизайн-задач.', ['admin', 'design-os', 'project']),
+  block('design_designers', 'Дизайнеры / архитекторы', 'node', 'root', 'design-authors', 'Авторский контур и команда проекта.', ['admin', 'design-os', 'designer-cabinet']),
+  block('design_documents', 'Документы и согласования', 'node', 'root', 'design-documents', 'ТЗ, договоры, альбомы и approvals.', ['admin', 'design-os']),
+  block('design_gallery', 'Референсы', 'node', 'root', 'design-gallery', 'Галереи, мудборды и материалы.', ['admin', 'design-os']),
+]
+
+export const CONSTRUCTION_OS_BLOCKS: MenuBlockDef[] = [
+  block('construction_projects', 'Проекты стройки', 'node', 'root', 'construction-projects', 'Проекты с исполнением на объекте.', ['admin', 'construction-os', 'project']),
+  block('construction_contractors', 'Подрядчики и бригады', 'node', 'root', 'construction-subjects', 'Юрлица, подрядчики и будущие crew/workers.', ['admin', 'construction-os', 'contractor-cabinet']),
+  block('construction_managers', 'Прорабы / менеджеры', 'node', 'root', 'construction-foremen', 'Управление исполнением и ревью работ.', ['admin', 'construction-os', 'manager-cabinet']),
+  block('construction_documents', 'Акты и документы', 'node', 'root', 'construction-documents', 'Документы стройки и закрывающие материалы.', ['admin', 'construction-os']),
+]
+
+export const MESSENGER_OS_BLOCKS: MenuBlockDef[] = [
+  block('messenger_projects', 'Проектные комнаты', 'node', 'root', 'messenger-projects', 'Коммуникации по проектам.', ['admin', 'messenger', 'project']),
+  block('messenger_clients', 'Клиентские диалоги', 'node', 'root', 'messenger-clients', 'Коммуникации с клиентами.', ['admin', 'messenger', 'client-cabinet']),
+  block('messenger_managers', 'Операторы и агенты', 'node', 'root', 'messenger-agents', 'Сервисные роли, агенты и менеджеры.', ['admin', 'messenger', 'manager-cabinet']),
+]
 
 export const DESIGNER_CABINET_BLOCKS: MenuBlockDef[] = [
   block('des_dashboard', 'Обзор', 'leaf', 'cabinet', 'designer-dashboard', 'Сводка кабинета дизайнера.', ['designer-cabinet', 'admin']),
@@ -171,6 +212,41 @@ export const GALLERY_LIBRARY_BLOCKS: MenuBlockDef[] = [
 export const ADMIN_MENU_GROUPS: MenuBlockGroupDef[] = [
   ADMIN_ROOT_MENU_GROUP,
   {
+    id: 'crm-os',
+    title: 'CRM',
+    category: 'root',
+    description: 'Навигационный слой CRM поверх существующих реестров.',
+    items: CRM_OS_BLOCKS,
+  },
+  {
+    id: 'studio-os',
+    title: 'Studio OS',
+    category: 'root',
+    description: 'Операционная система дизайн-студии.',
+    items: STUDIO_OS_BLOCKS,
+  },
+  {
+    id: 'design-os',
+    title: 'Design OS',
+    category: 'root',
+    description: 'Контур создания и согласования дизайн-проектов.',
+    items: DESIGN_OS_BLOCKS,
+  },
+  {
+    id: 'construction-os',
+    title: 'Construction OS',
+    category: 'root',
+    description: 'Контур стройки, подрядчиков и будущих worker/crew flows.',
+    items: CONSTRUCTION_OS_BLOCKS,
+  },
+  {
+    id: 'messenger-os',
+    title: 'Messenger',
+    category: 'root',
+    description: 'Коммуникации и action-интерфейсы проекта.',
+    items: MESSENGER_OS_BLOCKS,
+  },
+  {
     id: 'designer-cabinet',
     title: 'Кабинет дизайнера',
     category: 'cabinet',
@@ -240,9 +316,9 @@ export const APP_BLUEPRINTS: AppBlueprintDef[] = [
     id: 'design-studio',
     title: 'ОС дизайн-студии',
     description: 'Полный контур администрирования дизайн-студии: проекты, субъекты, документы, галереи.',
-    scopes: ['admin', 'project', 'designer-cabinet'],
-    menuGroupIds: ['admin-root', 'designer-cabinet', 'project-cabinet', 'project-phases', 'documents-library', 'gallery-library'],
-    featuredBlockIds: ['cat_projects', 'cat_designers', 'alpha_phases', 'prj_spaceplanning', 'doc_template', 'gal_moodboards'],
+    scopes: ['admin', 'crm', 'studio', 'design-os', 'construction-os', 'messenger', 'project', 'designer-cabinet'],
+    menuGroupIds: ['admin-root', 'crm-os', 'studio-os', 'design-os', 'construction-os', 'messenger-os', 'designer-cabinet', 'project-cabinet', 'project-phases', 'documents-library', 'gallery-library'],
+    featuredBlockIds: ['cat_crm', 'cat_studio_os', 'cat_design_os', 'cat_construction_os', 'cat_messenger', 'crm_clients', 'studio_designers', 'design_projects', 'construction_contractors', 'messenger_projects', 'alpha_phases', 'prj_spaceplanning', 'doc_template', 'gal_moodboards'],
   },
   {
     id: 'contractor-office',

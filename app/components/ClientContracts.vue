@@ -2,7 +2,7 @@
   <GlassSurface  class="cct-root ">
     <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
 
-    <template v-else-if="project">
+    <template v-else-if="hasProfile">
 
       <!-- ── Тариф ── -->
       <div class="cct-tariff-section">
@@ -146,12 +146,40 @@
 
 <script setup lang="ts">
 import { CONTRACT_STATUS_MAP, PAYMENT_STATUS_MAP } from '~~/shared/utils/status-maps'
-import { DESIGNER_TARIFFS, DESIGNER_SERVICE_TYPE_OPTIONS } from '~~/shared/types/catalogs'
+import { DESIGNER_TARIFFS, DESIGNER_SERVICE_TYPE_OPTIONS } from '~~/shared/types/project/catalogs'
 const props = defineProps<{ slug: string }>()
-const reqHeaders = useRequestHeaders(['cookie'])
-const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
+const { data: profileEnvelope, pending: profilePending, refresh } = await useClientProjectProfile(() => props.slug)
+const { data: documentsEnvelope, pending: documentsPending } = await useClientProjectDocuments(() => props.slug)
 
-const profile = computed(() => project.value?.profile || {})
+const pending = computed(() => profilePending.value || documentsPending.value)
+const hasProfile = computed(() => Boolean(profileEnvelope.value?.data || documentsEnvelope.value?.data))
+const documentFacts = computed(() => documentsEnvelope.value?.data.facts)
+const documentItems = computed(() => documentsEnvelope.value?.data.items || [])
+const profile = computed(() => {
+  const base = profileEnvelope.value?.data.profile || {}
+  const facts = documentFacts.value
+  const contractDocument = documentItems.value.find(document => document.kind === 'contract' && document.isDownloadable)
+  const invoiceDocument = documentItems.value.find(document => document.kind === 'invoice' && document.isDownloadable)
+
+  return {
+    ...base,
+    contract_number: facts?.contractNumber || base.contract_number || '',
+    contract_date: facts?.contractDate || base.contract_date || '',
+    contract_status: facts?.contractStatus || base.contract_status || '',
+    contract_parties: facts?.contractParties || base.contract_parties || '',
+    contract_file: contractDocument?.url || base.contract_file || '',
+    invoice_amount: facts?.invoiceAmount || base.invoice_amount || '',
+    invoice_advance_pct: facts?.invoiceAdvancePct || base.invoice_advance_pct || '',
+    invoice_date: facts?.invoiceDate || base.invoice_date || '',
+    invoice_payment_details: facts?.invoicePaymentDetails || base.invoice_payment_details || '',
+    payment_status: facts?.paymentStatus || base.payment_status || base.invoice_payment_status || '',
+    invoice_file: invoiceDocument?.url || base.invoice_file || '',
+    tor_scope: facts?.torScope || base.tor_scope || '',
+    tor_timeline: facts?.torTimeline || base.tor_timeline || '',
+    tor_deliverables: facts?.torDeliverables || base.tor_deliverables || '',
+    tor_exclusions: facts?.torExclusions || base.tor_exclusions || '',
+  }
+})
 
 const svcLabelMap = Object.fromEntries(DESIGNER_SERVICE_TYPE_OPTIONS.map(o => [o.value, o.label]))
 function serviceLabel(s: string) { return svcLabelMap[s] || s }
@@ -181,10 +209,7 @@ async function sendRequest() {
   if (!selectedTariff.value || selectedTariff.value === profile.value.service_tariff) return
   reqSaving.value = true
   try {
-    await $fetch(`/api/projects/${props.slug}/client-profile`, {
-      method: 'PUT',
-      body: { service_tariff_request: selectedTariff.value },
-    })
+    await updateClientProjectProfile(props.slug, { service_tariff_request: selectedTariff.value })
     await refresh()
     reqDone.value = true
   } finally {
@@ -195,10 +220,7 @@ async function sendRequest() {
 async function cancelRequest() {
   reqSaving.value = true
   try {
-    await $fetch(`/api/projects/${props.slug}/client-profile`, {
-      method: 'PUT',
-      body: { service_tariff_request: '' },
-    })
+    await updateClientProjectProfile(props.slug, { service_tariff_request: '' })
     await refresh()
     selectedTariff.value = profile.value.service_tariff || ''
     reqDone.value = false
@@ -215,10 +237,10 @@ const hasInvoice = computed(() => !!(
   profile.value.invoice_amount || profile.value.invoice_date || profile.value.invoice_payment_details
 ))
 
-const contractStatusLabel = computed(() => CONTRACT_STATUS_MAP[profile.value.contract_status]?.label || 'не заполнен')
-const contractStatusColor = computed(() => CONTRACT_STATUS_MAP[profile.value.contract_status]?.token || 'gray')
-const paymentStatusLabel  = computed(() => PAYMENT_STATUS_MAP[profile.value.payment_status]?.label   || 'не выставлен')
-const paymentStatusColor  = computed(() => PAYMENT_STATUS_MAP[profile.value.payment_status]?.token   || 'gray')
+const contractStatusLabel = computed(() => documentFacts.value?.contractStatusLabel || CONTRACT_STATUS_MAP[String(profile.value.contract_status || '')]?.label || 'не заполнен')
+const contractStatusColor = computed(() => documentFacts.value?.contractStatusColor || CONTRACT_STATUS_MAP[String(profile.value.contract_status || '')]?.token || 'gray')
+const paymentStatusLabel  = computed(() => documentFacts.value?.paymentStatusLabel || PAYMENT_STATUS_MAP[String(profile.value.payment_status || '')]?.label || 'не выставлен')
+const paymentStatusColor  = computed(() => documentFacts.value?.paymentStatusColor || PAYMENT_STATUS_MAP[String(profile.value.payment_status || '')]?.token || 'gray')
 
 function fmtDate(d: string) {
   if (!d) return ''

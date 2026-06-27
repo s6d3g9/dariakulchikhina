@@ -445,6 +445,11 @@
 </template>
 
 <script setup lang="ts">
+import { useAdminDocumentEditorChatState } from '~~/app/composables/useAdminDocumentEditorChatState'
+import { useAdminDocumentEditorAiRuntime } from '~~/app/composables/useAdminDocumentEditorAiRuntime'
+import { useAdminDocumentEditorDataFill } from '~~/app/composables/useAdminDocumentEditorDataFill'
+import { useAdminDocumentEditorOutput } from '~~/app/composables/useAdminDocumentEditorOutput'
+
 const props = defineProps<{
   templates: Array<{
     key: string
@@ -470,12 +475,6 @@ const STEPS = ['Шаблон', 'Данные', 'Редактор']
 // ── State ──
 const step = ref(0)
 const selectedTpl = ref<typeof props.templates[number] | null>(null)
-const pickedProjectSlug  = ref('')
-const pickedClientId     = ref(0)
-const pickedContractorId = ref(0)
-const pickedDesignerId   = ref(0)
-const designersList      = ref<any[]>([])
-const executorSaved      = ref(false)
 const fieldValues = ref<Record<string, string>>({})
 const fieldAutoFilled = ref<Record<string, boolean>>({})
 const editorContent = ref('')
@@ -485,85 +484,9 @@ const saving        = ref(false)
 const copyMsg       = ref('')
 const saveMsg       = ref('')
 const saveMsgType   = ref<'ok' | 'err'>('ok')
-const ctx           = ref<any>(null)
-const loadingCtx    = ref(false)
-// ── Diff-состояние (для «улучшить») ──
-const diffMode     = ref<'' | 'streaming' | 'review'>('')
-const diffOriginal = ref('')
-const diffNew      = ref('')
 
 // ── Панель переменных {{...}} ──
 const varsOpen = ref(false)
-
-// Все доступные переменные: поля шаблона + проектные мета-данные
-const allVars = computed(() => {
-  const result: Array<{ key: string; label: string; value: string; group: string }> = []
-  const vals = fieldValues.value
-
-  // 1. Поля текущего шаблона
-  if (selectedTpl.value) {
-    for (const f of selectedTpl.value.fields) {
-      result.push({ key: f.key, label: f.label, value: vals[f.key] || '', group: 'Поля шаблона' })
-    }
-  }
-
-  // 2. Проектные данные (автозаполнение из проекта/клиента)
-  const p = ctx.value?.project
-  const projectVars: Array<[string, string, string]> = [
-    ['client_name',          'ФИО клиента',              p?.client_name || vals.client_name || ''],
-    ['client_phone',         'Телефон клиента',           p?.phone || vals.client_phone || ''],
-    ['client_email',         'Email клиента',             p?.email || vals.client_email || ''],
-    ['client_passport',      'Паспорт (серия номер)',     vals.client_passport || ''],
-    ['client_passport_issued','Паспорт выдан',            vals.client_passport_issued || ''],
-    ['client_passport_date', 'Дата выдачи паспорта',      vals.client_passport_date || ''],
-    ['client_registration',  'Адрес регистрации',         vals.client_registration || ''],
-    ['client_inn',           'ИНН клиента',               vals.client_inn || ''],
-    ['client_address',       'Адрес клиента',             vals.client_address || ''],
-    ['object_address',       'Адрес объекта',             p?.objectAddress || vals.object_address || ''],
-    ['object_type',          'Тип объекта',               p?.objectType || vals.object_type || ''],
-    ['area',                 'Площадь (кв.м)',            p?.objectArea || vals.area || ''],
-    ['budget',               'Бюджет',                    p?.budget || vals.budget || ''],
-    ['deadline',             'Срок выполнения',           p?.deadline || vals.deadline || ''],
-    ['style',                'Стиль интерьера',           p?.style || vals.style || ''],
-    ['contractor_name',      'Подрядчик',                 vals.contractor_name || ''],
-    ['contractor_inn',       'ИНН подрядчика',            vals.contractor_inn || ''],
-    ['contractor_address',   'Адрес подрядчика',          vals.contractor_address || ''],
-    ['contractor_phone',     'Телефон подрядчика',        vals.contractor_phone || ''],
-    ['contractor_account',   'Расчётный счёт',            vals.contractor_account || ''],
-    ['contractor_bik',       'БИК',                       vals.contractor_bik || ''],
-    ['contractor_bank',      'Банк',                      vals.contractor_bank || ''],
-    ['remaining_amount',     'Остаток суммы',             computedRemaining.value || ''],
-  ]
-  for (const [key, label, value] of projectVars) {
-    // Не дублируем поля шаблона
-    if (!result.find(r => r.key === key)) {
-      result.push({ key, label, value, group: 'Данные проекта' })
-    }
-  }
-
-  // 3. Реквизиты исполнителя
-  const executorVars: Array<[string, string]> = [
-    ['executor_name',            'ФИО исполнителя'],
-    ['executor_inn',             'ИНН исполнителя'],
-    ['executor_passport',        'Паспорт исполнителя'],
-    ['executor_passport_issued', 'Паспорт выдан'],
-    ['executor_passport_date',   'Дата выдачи'],
-    ['executor_registration',    'Прописка исполнителя'],
-    ['executor_phone',           'Телефон исполнителя'],
-    ['executor_email',           'Email исполнителя'],
-    ['executor_bank',            'Банк'],
-    ['executor_bik',             'БИК'],
-    ['executor_account',         'Расчётный счёт'],
-    ['executor_corr_account',    'Корреспондентский счёт'],
-  ]
-  for (const [key, label] of executorVars) {
-    if (!result.find(r => r.key === key)) {
-      result.push({ key, label, value: vals[key] || EXECUTOR_DEFAULTS[key] || '', group: 'Исполнитель' })
-    }
-  }
-
-  return result
-})
 
 function insertVar(key: string) {
   const token = `{{${key}}}`
@@ -593,133 +516,10 @@ function insertVar(key: string) {
   }
 }
 
-type DiffSeg = { type: 'equal' | 'del' | 'ins'; text: string }
-
-function computeWordDiff(oldText: string, newText: string): DiffSeg[] {
-  const tok = (s: string) => s.match(/[^\s]+|\s+/g) ?? []
-  const a = tok(oldText), b = tok(newText)
-  if (a.length * b.length > 150_000) {
-    return [{ type: 'del', text: oldText }, { type: 'ins', text: newText }]
-  }
-  const m = a.length, n = b.length
-  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
-  for (let i = m - 1; i >= 0; i--)
-    for (let j = n - 1; j >= 0; j--)
-      dp[i][j] = a[i] === b[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1])
-  const segs: DiffSeg[] = []
-  let i = 0, j = 0
-  while (i < m || j < n) {
-    if (i < m && j < n && a[i] === b[j]) { segs.push({ type: 'equal', text: a[i++] }); j++ }
-    else if (j < n && (i >= m || dp[i][j+1] >= (dp[i+1]?.[j] ?? 0))) { segs.push({ type: 'ins', text: b[j++] }) }
-    else { segs.push({ type: 'del', text: a[i++] }) }
-  }
-  return segs.reduce<DiffSeg[]>((acc, s) => {
-    const last = acc[acc.length - 1]
-    if (last && last.type === s.type) { last.text += s.text; return acc }
-    acc.push({ ...s }); return acc
-  }, [])
-}
-
-const diffResult = computed<DiffSeg[]>(() =>
-  diffMode.value === 'review' ? computeWordDiff(diffOriginal.value, diffNew.value) : []
-)
-const diffStats = computed(() => ({
-  added:   diffResult.value.filter(s => s.type === 'ins').reduce((n, s) => n + s.text.split(/\s+/).filter(Boolean).length, 0),
-  removed: diffResult.value.filter(s => s.type === 'del').reduce((n, s) => n + s.text.split(/\s+/).filter(Boolean).length, 0),
-}))
-
-function acceptDiff() {
-  editorContent.value = diffNew.value
-  if (editorEl.value) editorEl.value.innerText = editorContent.value
-  diffMode.value = ''; diffOriginal.value = ''; diffNew.value = ''
-}
-function rejectDiff() {
-  editorContent.value = diffOriginal.value
-  if (editorEl.value) editorEl.value.innerText = editorContent.value
-  diffMode.value = ''; diffOriginal.value = ''; diffNew.value = ''
-}
-
-// ── Утилита: убрать markdown-разметку из текста ──
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/^#{1,6}\s+/gm, '')          // # заголовки
-    .replace(/\*\*\*(.+?)\*\*\*/g, '$1')  // ***bold italic***
-    .replace(/\*\*(.+?)\*\*/g, '$1')      // **bold**
-    .replace(/\*(.+?)\*/g, '$1')          // *italic*
-    .replace(/~~(.+?)~~/g, '$1')          // ~~strike~~
-    .replace(/`{1,3}[^`]*`{1,3}/g, (m) => m.replace(/`/g, '')) // `code`
-    .replace(/^[-*_]{3,}\s*$/gm, '──────────────────────────────') // --- → читаемый разделитель
-    .replace(/^[ \t]*[>][ \t]?/gm, '')   // > цитаты
-    .replace(/^[ \t]*[-*+]\s+/gm, '• ')  // - list → bullet
-    .replace(/^\d+\.\s+/gm, (m, o, s) => m) // нумерованные списки оставляем
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [text](url)
-    .trim()
-}
-
-// ── Computed ──
-const pickedClient = computed(() =>
-  ctx.value?.clients?.find((c: any) => c.id === pickedClientId.value) || null
-)
-const pickedContractor = computed(() =>
-  ctx.value?.contractors?.find((c: any) => c.id === pickedContractorId.value) || null
-)
-const pickedDesigner = computed(() =>
-  designersList.value.find((d: any) => d.id === pickedDesignerId.value) || null
-)
-
 // ── Navigation ──
 function handleBack() {
   if (step.value > 0) { step.value-- }
   else { emit('close') }
-}
-
-// ── Template selection ──
-// ── Реквизиты исполнителя (Кульчихина Дария Андреевна) — дефолты
-// Заполните один раз — будут подставляться во все шаблоны автоматически
-const EXECUTOR_DEFAULTS: Record<string, string> = {
-  executor_name:            'Кульчихина Дария Андреевна',
-  executor_inn:             '',   // ← заполнить ИНН
-  executor_passport:        '',
-  executor_passport_issued: '',
-  executor_passport_date:   '',
-  executor_registration:    '',
-  executor_phone:           '',
-  executor_email:           'daria@kulchikhina.ru',
-  executor_bank:            '',
-  executor_bik:             '',
-  executor_account:         '',
-  executor_corr_account:    '',
-}
-
-function selectTemplate(tpl: typeof props.templates[number]) {
-  selectedTpl.value = tpl
-  // Сбрасываем ID сохранённого документа — новый шаблон = новый документ
-  savedDocId.value = null
-  autoSaveStatus.value = ''
-  if (_autoSaveTimer) { clearTimeout(_autoSaveTimer); _autoSaveTimer = null }
-  const vals: Record<string, string> = {}
-  const auto: Record<string, boolean> = {}
-  for (const f of tpl.fields) {
-    vals[f.key] = fieldValues.value[f.key] || ''
-    auto[f.key] = false
-  }
-  const today = new Date().toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
-  for (const f of tpl.fields) {
-    if ((f.key.includes('date') || f.key === 'date') && !vals[f.key]) {
-      vals[f.key] = today
-      auto[f.key] = true
-    }
-  }
-  fieldValues.value = vals
-  fieldAutoFilled.value = auto
-  // Авто-заполняем поля исполнителя: сначала localStorage, потом дефолты
-  const storedExecutor = loadExecutorFromStorage()
-  for (const f of tpl.fields) {
-    if (f.key.startsWith('executor_') && !vals[f.key]) {
-      const val = storedExecutor[f.key] || EXECUTOR_DEFAULTS[f.key] || ''
-      if (val) { vals[f.key] = val; auto[f.key] = true }
-    }
-  }
 }
 
 function goToStep(i: number) {
@@ -727,13 +527,7 @@ function goToStep(i: number) {
   if (i >= 1 && !selectedTpl.value) return
   // Загружаем дизайнеров при переходе на шаг 1 (даже без проекта)
   if (i === 1 && !designersList.value.length) {
-    $fetch<any[]>('/api/designers').then(ds => {
-      designersList.value = ds || []
-      if (designersList.value.length === 1 && !pickedDesignerId.value) {
-        pickedDesignerId.value = designersList.value[0].id
-        applyDesignerData()
-      }
-    }).catch(() => {})
+    void ensureDesignersLoaded()
   }
   // syncEditorContent вызовет watch(step) ниже — не дублируем
   step.value = i
@@ -746,298 +540,7 @@ async function goGenerateAndEdit() {
   onAiGenerate()
 }
 
-// ── Load context from API ──
-async function loadContext() {
-  loadingCtx.value = true
-  // Загружаем список дизайнеров при первом обращении
-  if (!designersList.value.length) {
-    try {
-      const ds = await $fetch<any[]>('/api/designers')
-      designersList.value = ds || []
-      // Авто-выбор первого дизайнера если только один
-      if (designersList.value.length === 1 && !pickedDesignerId.value) {
-        pickedDesignerId.value = designersList.value[0].id
-        applyDesignerData()
-      }
-    } catch { /* ignore */ }
-  }
-  try {
-    ctx.value = await $fetch('/api/documents/context', {
-      query: { projectSlug: pickedProjectSlug.value || '' },
-    })
-    if (ctx.value?.project) {
-      applyProjectData()
-    }
-    if (ctx.value?.clients?.length === 1) {
-      pickedClientId.value = ctx.value.clients[0].id
-      applyClientData()
-    }
-  } catch (e) {
-    console.error('Failed to load context', e)
-  } finally {
-    loadingCtx.value = false
-  }
-}
-
-function applyProjectData() {
-  if (!ctx.value?.project || !selectedTpl.value) return
-  const p = ctx.value.project
-  const map: Record<string, string> = {
-    object_address: p.objectAddress || '',
-    delivery_address: p.objectAddress || '',
-    area: p.objectArea || '',
-    budget: p.budget || '',
-    deadline: p.deadline || '',
-    client_name: p.client_name || '',
-    client_address: p.objectAddress || '',
-    client_phone: p.phone || '',
-    client_email: p.email || '',
-    object_type: p.objectType || '',
-    object: `${p.objectType || ''} ${p.objectArea || ''} кв.м, ${p.objectAddress || ''}`.trim(),
-    style: p.style || p._profile?.style || '',
-    // Passport data from project profile
-    client_passport: [p.passport_series, p.passport_number].filter(Boolean).join(' '),
-    client_passport_issued: p.passport_issued_by || '',
-    client_passport_date: p.passport_issue_date || '',
-    client_registration: p.passport_registration_address || '',
-    client_inn: p.passport_inn || '',
-    penalty_pct: '0,1%',
-  }
-  applyMap(map)
-}
-
-function applyClientData() {
-  const c = pickedClient.value
-  if (!c || !selectedTpl.value) return
-  applyMap({
-    client_name: c.name || '',
-    client_address: c.address || '',
-    client_phone: c.phone || '',
-    client_email: c.email || '',
-  })
-}
-
-function applyContractorData() {
-  const c = pickedContractor.value
-  if (!c || !selectedTpl.value) return
-  const companyOrName = c.companyName || c.name || ''
-  applyMap({
-    contractor_name: companyOrName,
-    contractor: companyOrName,
-    supplier_name: companyOrName,
-    contractor_inn: c.inn || '',
-    contractor_address: c.legalAddress || c.factAddress || '',
-    contractor_phone: c.phone || '',
-    contractor_email: c.email || '',
-    contractor_bank: c.bankName || '',
-    contractor_bik: c.bik || '',
-    contractor_account: c.settlementAccount || '',
-  })
-}
-
-function applyDesignerData() {
-  const d = pickedDesigner.value
-  if (!selectedTpl.value) return
-  // Берём сохранённые реквизиты из localStorage
-  const stored = loadExecutorFromStorage()
-  const map: Record<string, string> = {
-    ...stored,
-    executor_name:  d?.name  || stored.executor_name  || EXECUTOR_DEFAULTS.executor_name,
-    executor_phone: d?.phone || stored.executor_phone || EXECUTOR_DEFAULTS.executor_phone,
-    executor_email: d?.email || stored.executor_email || EXECUTOR_DEFAULTS.executor_email,
-  }
-  applyMap(map)
-}
-
-const EXECUTOR_STORAGE_KEY = 'de_executor_defaults'
-
-function loadExecutorFromStorage(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(EXECUTOR_STORAGE_KEY)
-    return raw ? JSON.parse(raw) : {}
-  } catch { return {} }
-}
-
-function saveExecutorToStorage() {
-  const vals = fieldValues.value
-  const data: Record<string, string> = {}
-  for (const key of Object.keys(EXECUTOR_DEFAULTS)) {
-    if (vals[key]) data[key] = vals[key]
-  }
-  try {
-    localStorage.setItem(EXECUTOR_STORAGE_KEY, JSON.stringify(data))
-    executorSaved.value = true
-    setTimeout(() => { executorSaved.value = false }, 2500)
-  } catch { /* ignore */ }
-}
-
-function applyMap(map: Record<string, string>) {
-  if (!selectedTpl.value) return
-  for (const f of selectedTpl.value.fields) {
-    if (map[f.key] && (!fieldValues.value[f.key] || fieldAutoFilled.value[f.key])) {
-      fieldValues.value[f.key] = map[f.key]
-      fieldAutoFilled.value[f.key] = true
-    }
-  }
-}
-
 // ── Editor ──
-function generateText(): string {
-  if (!selectedTpl.value) return ''
-  let text = selectedTpl.value.template
-  for (const [k, v] of Object.entries(fieldValues.value)) {
-    text = text.split(`{{${k}}}`).join(v || '__________')
-  }
-  // Replace any {{remaining}} shorthand
-  const rem = computedRemaining.value
-  text = text.split('{{remaining_amount}}').join(rem || '__________')
-  return text
-}
-
-// ── Number → Russian words ──────────────────────────────────────────────────
-const ONES  = ['','один','два','три','четыре','пять','шесть','семь','восемь','девять',
-                'десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать',
-                'шестнадцать','семнадцать','восемнадцать','девятнадцать']
-const TENS  = ['','','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто']
-const HUND  = ['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот']
-const THOU  = ['','одна','две','три','четыре','пять','шесть','семь','восемь','девять',
-                'десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать',
-                'шестнадцать','семнадцать','восемнадцать','девятнадцать']
-const THOUS_SFX = (n: number) => {
-  const r100 = n % 100
-  if (r100 >= 11 && r100 <= 14) return 'тысяч'
-  const r = n % 10
-  if (r === 1) return 'тысяча'
-  if (r >= 2 && r <= 4) return 'тысячи'
-  return 'тысяч'
-}
-const MILL_SFX = (n: number) => {
-  const r100 = n % 100
-  if (r100 >= 11 && r100 <= 14) return 'миллионов'
-  const r = n % 10
-  if (r === 1) return 'миллион'
-  if (r >= 2 && r <= 4) return 'миллиона'
-  return 'миллионов'
-}
-
-function threeDigitsToWords(n: number, fem = false): string {
-  if (n === 0) return ''
-  const parts: string[] = []
-  const h = Math.floor(n / 100)
-  const t = Math.floor((n % 100) / 10)
-  const o = n % 10
-  if (h) parts.push(HUND[h])
-  if (t === 1) {
-    parts.push(fem ? THOU[t * 10 + o] : ONES[t * 10 + o])
-  } else {
-    if (t) parts.push(TENS[t])
-    if (o) parts.push(fem ? THOU[o] : ONES[o])
-  }
-  return parts.join(' ')
-}
-
-function numberToWords(n: number): string {
-  if (n === 0) return 'ноль'
-  const parts: string[] = []
-  const mill = Math.floor(n / 1_000_000)
-  const thou = Math.floor((n % 1_000_000) / 1000)
-  const rest = n % 1000
-
-  if (mill) {
-    parts.push(threeDigitsToWords(mill, false))
-    parts.push(MILL_SFX(mill))
-  }
-  if (thou) {
-    parts.push(threeDigitsToWords(thou, true))
-    parts.push(THOUS_SFX(thou))
-  }
-  if (rest || (!mill && !thou)) {
-    parts.push(threeDigitsToWords(rest, false))
-  }
-  return parts.filter(Boolean).join(' ')
-}
-
-// Capitalize first letter
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-// Parse amount from string like "350 000 руб." or "350000" → number
-function parseRuAmount(s: string): number {
-  const n = parseInt(s.replace(/\s/g, '').replace(/[^0-9]/g, ''), 10)
-  return isNaN(n) ? 0 : n
-}
-
-// Format ISO date YYYY-MM-DD → DD.MM.YYYY
-function formatIsoDate(s: string): string {
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (m) return `${m[3]}.${m[2]}.${m[1]}`
-  return s
-}
-
-// Computed: remaining = price - advance_amount
-const computedRemaining = computed<string>(() => {
-  const priceNum = parseRuAmount(fieldValues.value['price'] || '')
-  const advAmt   = parseRuAmount(fieldValues.value['advance_amount'] || '')
-  if (!priceNum || !advAmt) return ''
-  const rem = priceNum - advAmt
-  if (rem <= 0) return ''
-  return `${rem.toLocaleString('ru-RU')} руб.`
-})
-
-// Auto-derive advance_amount and price_words when price/advance changes
-function computeDerivedFields() {
-  const vals = fieldValues.value
-  const priceNum = parseRuAmount(vals['price'] || '')
-
-  // advance_amount: if price + advance% filled and advance_amount empty
-  if (priceNum && vals['advance'] && !vals['advance_amount']) {
-    const pct = parseFloat(vals['advance'].replace('%', '').replace(',', '.'))
-    if (!isNaN(pct) && pct > 0 && pct <= 100) {
-      const amt = Math.round(priceNum * pct / 100)
-      fieldValues.value['advance_amount'] = `${amt.toLocaleString('ru-RU')} руб.`
-      fieldAutoFilled.value['advance_amount'] = true
-    }
-  }
-
-  // price_words: if price filled and price_words empty
-  if (priceNum && !vals['price_words']) {
-    const words = capitalize(numberToWords(priceNum))
-    const kopecks = `00 копеек`
-    fieldValues.value['price_words'] = `${words} рублей ${kopecks}`
-    fieldAutoFilled.value['price_words'] = true
-  }
-
-  // Format ISO dates
-  for (const key of ['contract_date', 'client_passport_date', 'act_date', 'date', 'delivery_date']) {
-    if (vals[key] && /^\d{4}-\d{2}-\d{2}/.test(vals[key])) {
-      fieldValues.value[key] = formatIsoDate(vals[key])
-      fieldAutoFilled.value[key] = true
-    }
-  }
-}
-
-// Watch price + advance to auto-fill
-watch(
-  () => [fieldValues.value['price'], fieldValues.value['advance']],
-  ([price, advance]) => {
-    if (!price) return
-    const priceNum = parseRuAmount(price)
-    if (!priceNum) return
-
-    const pct = parseFloat((advance || '').replace('%', '').replace(',', '.'))
-    if (!isNaN(pct) && pct > 0 && pct <= 100) {
-      const amt = Math.round(priceNum * pct / 100)
-      fieldValues.value['advance_amount'] = `${amt.toLocaleString('ru-RU')} руб.`
-      fieldAutoFilled.value['advance_amount'] = true
-    }
-    if (!fieldValues.value['price_words']) {
-      fieldValues.value['price_words'] = `${capitalize(numberToWords(priceNum))} рублей 00 копеек`
-      fieldAutoFilled.value['price_words'] = true
-    }
-  }
-)
-
 function syncEditorContent() {
   computeDerivedFields()
   editorContent.value = generateText()
@@ -1046,554 +549,168 @@ function syncEditorContent() {
   })
 }
 
-function regenerateText() { syncEditorContent() }
+// ── Автосохранение ──────────────────────────────────────────────────
+const savedDocId   = ref<number | null>(null)
+const autoSaveStatus = ref<'' | 'saving' | 'saved' | 'error'>('')
+let _autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
-function escHtml(s: string): string {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-}
-
-function buildPaymentTable(vals: Record<string,string>): string {
-  const price = vals['price'] || '__________'
-  const adv   = vals['advance_amount'] || computedRemaining.value ? (vals['advance_amount'] || '__________') : '__________'
-  const rem   = computedRemaining.value || '__________'
-  const advPct = vals['advance'] || '50'
-  const advPctNum = parseFloat((vals['advance'] || '50').replace('%', '').replace(',', '.'))
-  const remPct = isNaN(advPctNum) ? '50' : String(100 - advPctNum)
-  return `<table class="pay-table">
-<thead><tr><th>№</th><th>Платёж</th><th>Сумма, руб.</th><th>Срок</th></tr></thead>
-<tbody>
-<tr><td>1</td><td>Аванс (${advPct}%)</td><td>${adv}</td><td>При подписании договора</td></tr>
-<tr><td>2</td><td>Доплата (${remPct}%)</td><td>${rem}</td><td>По окончании работ</td></tr>
-<tr class="total-row"><td colspan="2"><b>Итого</b></td><td colspan="2"><b>${price}</b></td></tr>
-</tbody></table>`
-}
-
-function renderLinesToHtml(lines: string[], vals: Record<string,string>): string {
-  const out: string[] = []
-  for (const line of lines) {
-    const t = line.trim()
-    if (!t) { out.push('<div class="doc-gap"></div>'); continue }
-
-    // All-caps section heading: "1. НАЗВАНИЕ РАЗДЕЛА"
-    if (/^\d+(\.\d+)?\.\s+[А-ЯЁA-Z «»"\-–—\/]{4,}$/.test(t)) {
-      out.push(`<div class="doc-section">${escHtml(t)}</div>`); continue
-    }
-
-    // Sub-point: "2.3. текст"
-    if (/^\d+\.\d+\./.test(t)) {
-      out.push(`<div class="doc-sub">${escHtml(line)}</div>`); continue
-    }
-
-    // Bullet / dash
-    if (/^[•–—-]\s/.test(t)) {
-      out.push(`<div class="doc-bullet">${escHtml(t)}</div>`); continue
-    }
-
-    // Payment schedule marker
-    if (/оплат|платёж|стоимость.*работ/i.test(t) && t.includes('{{')) {
-      out.push(`<div class="doc-line">${escHtml(t)}</div>`)
-      out.push(buildPaymentTable(vals))
-      continue
-    }
-
-    // Total marker — skip the placeholder line if we inserted the table
-    if (t.startsWith('|') || /^\+[-+]+\+$/.test(t)) continue
-
-    out.push(`<div class="doc-line">${escHtml(line)}</div>`)
-  }
-  return out.join('\n')
-}
-
-function printDocument() {
-  const rawText = editorContent.value || generateText()
-  const title   = selectedTpl.value?.name || 'Документ'
-  const lines   = rawText.split('\n')
-  const vals    = fieldValues.value
-
-  const bodyHtml = renderLinesToHtml(lines, vals)
-
-  const htmlContent = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>${escHtml(title)}</title>
-  <style>
-    @page { size: A4; margin: 20mm 20mm 25mm 30mm; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Times New Roman', Times, serif;
-      font-size: 14pt;
-      line-height: 1.6;
-      color: #000;
-      background: #fff;
-    }
-    .doc-gap    { height: 6pt; }
-    .doc-line   { text-align: justify; white-space: pre-wrap; margin-bottom: 2pt; }
-    .doc-sub    { text-align: justify; white-space: pre-wrap; margin-bottom: 2pt; padding-left: 18pt; }
-    .doc-bullet { padding-left: 18pt; margin-bottom: 2pt; }
-    .doc-section {
-      font-weight: bold; text-transform: uppercase;
-      margin-top: 16pt; margin-bottom: 4pt; text-align: center;
-    }
-    .pay-table {
-      width: 100%; border-collapse: collapse; margin: 10pt 0;
-      font-size: 12pt;
-    }
-    .pay-table th, .pay-table td {
-      border: 1px solid #000; padding: 4pt 6pt; text-align: left;
-    }
-    .pay-table thead th { background: #e8e8e8; font-weight: bold; }
-    .pay-table .total-row td { font-weight: bold; background: #f5f5f5; }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
-  </style>
-</head>
-<body>
-<div class="doc-body">
-${bodyHtml}
-</div>
-<script>window.onload = function() { window.print(); }<\/script>
-</body>
-</html>`
-
-  const win = window.open('', '_blank')
-  if (win) {
-    win.document.write(htmlContent)
-    win.document.close()
+function clearAutoSaveTimer() {
+  if (_autoSaveTimer) {
+    clearTimeout(_autoSaveTimer)
+    _autoSaveTimer = null
   }
 }
 
-function onEditorInput() {
-  if (editorEl.value) editorContent.value = editorEl.value.innerText
-}
+const {
+  pickedProjectSlug,
+  pickedClientId,
+  pickedContractorId,
+  pickedDesignerId,
+  designersList,
+  executorSaved,
+  ctx,
+  loadingCtx,
+  allVars,
+  pickedClient,
+  pickedContractor,
+  pickedDesigner,
+  computedRemaining,
+  selectTemplate,
+  ensureDesignersLoaded,
+  loadContext,
+  applyClientData,
+  applyContractorData,
+  applyDesignerData,
+  saveExecutorToStorage,
+  generateText,
+  computeDerivedFields,
+} = useAdminDocumentEditorDataFill({
+  selectedTpl,
+  fieldValues,
+  fieldAutoFilled,
+  savedDocId,
+  autoSaveStatus,
+  clearAutoSaveTimer,
+})
 
-watch(step, (v) => { if (v === 2) syncEditorContent() })
+const {
+  diffMode,
+  diffOriginal,
+  diffNew,
+  diffResult,
+  diffStats,
+  docxLoading,
+  acceptDiff,
+  rejectDiff,
+  stripMarkdown,
+  printDocument,
+  downloadTxt,
+  copyToClipboard,
+  downloadDocx,
+} = useAdminDocumentEditorOutput({
+  selectedTpl,
+  fieldValues,
+  editorContent,
+  editorEl,
+  computedRemaining,
+  generateText,
+  copyMsg,
+})
 
-// При смене проекта — сбрасываем ID автосохранения, чтобы новый документ
-// привязался к правильному проекту
+const {
+  chatVisible,
+  chatMessages,
+  chatEl,
+  chatInputEl,
+  chatInput,
+  chatChips,
+  applyChip,
+  chatPushUser: _chatPushUser,
+  chatPushGemma: _chatPushGemma,
+  chatToken: _chatToken,
+  chatDone: _chatDone,
+  applyPatches,
+  tryInstantEdit,
+  applyFromChat,
+  clearChat,
+} = useAdminDocumentEditorChatState({
+  editorContent,
+  editorEl,
+})
+
+const {
+  AI_MODELS,
+  aiLoading,
+  aiError,
+  aiAction,
+  aiProgress,
+  aiElapsed,
+  aiTokenCount,
+  aiTruncated,
+  aiReviewNotes,
+  aiCitations,
+  abortAi,
+  clearReview,
+  clearCitations,
+  selectedAiModel,
+  selectedAiModelLabel,
+  aiPhaseHint,
+  aiPrefillPct,
+  onSendChatMessage,
+  onContinueGeneration,
+  onAiGenerate,
+  onAiImprove,
+  onAiReview,
+} = useAdminDocumentEditorAiRuntime({
+  selectedTpl,
+  fieldValues,
+  editorContent,
+  editorEl,
+  pickedProjectSlug,
+  pickedClientId,
+  pickedContractorId,
+  generateText,
+  stripMarkdown,
+  chatInput,
+  chatInputEl,
+  chatVisible,
+  applyPatches,
+  tryInstantEdit,
+  chatPushUser: _chatPushUser,
+  chatPushGemma: _chatPushGemma,
+  chatToken: _chatToken,
+  chatDone: _chatDone,
+  autoSave,
+})
+
+watch(step, (value) => {
+  if (value === 2) syncEditorContent()
+})
+
 watch(pickedProjectSlug, () => {
   savedDocId.value = null
   autoSaveStatus.value = ''
 })
 
-// Если передан existingDoc — сразу открываем редактор с его содержимым
 onMounted(() => {
   const doc = props.existingDoc
   if (!doc) return
+
   savedDocId.value = doc.id
   editorContent.value = doc.content
   if (doc.projectSlug) pickedProjectSlug.value = doc.projectSlug
-  // Пробуем найти шаблон по templateKey
   if (doc.templateKey) {
-    const tpl = props.templates.find(t => t.key === doc.templateKey)
+    const tpl = props.templates.find((template) => template.key === doc.templateKey)
     if (tpl) {
       selectTemplate(tpl)
     }
   }
-  // Переходим сразу в редактор
+
   step.value = 2
   nextTick(() => {
     if (editorEl.value) editorEl.value.innerText = doc.content
   })
 })
-
-// ── Actions ──
-function downloadTxt() {
-  const text = editorContent.value || generateText()
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `${selectedTpl.value?.name || 'document'}.txt`
-  a.click()
-  URL.revokeObjectURL(a.href)
-}
-
-async function copyToClipboard() {
-  try {
-    await navigator.clipboard.writeText(editorContent.value)
-    copyMsg.value = '✓ скопировано'
-    setTimeout(() => { copyMsg.value = '' }, 2000)
-  } catch {
-    copyMsg.value = '✗ ошибка'
-    setTimeout(() => { copyMsg.value = '' }, 2000)
-  }
-}
-
-// ── AI ──────────────────────────────────────────────────────────────────────
-const { aiLoading, aiError, aiAction, aiProgress, aiElapsed, aiTokenCount, aiTruncated, aiReviewNotes, aiCitations, streamDocument, reviewDocument, abortAi, clearReview, clearCitations } = useAiDocument()
-
-// Выбранная AI-модель
-const AI_MODELS = [
-  { value: '',                          label: '🏠 Авто (локальная)',         group: 'Локальные (бесплатно)' },
-  { value: 'gemma3:27b',                label: '🏠 Gemma 3 27B (документы)',  group: 'Локальные (бесплатно)' },
-  { value: 'qwen3:4b',                  label: '🏠 Qwen3 4B (чат, быстро)',   group: 'Локальные (бесплатно)' },
-  { value: 'claude-haiku-4-5-20251001',  label: '☁️ Claude Haiku 4.5 (дешевле)', group: 'Anthropic Claude' },
-  { value: 'claude-sonnet-4-5-20250929', label: '☁️ Claude Sonnet 4.5 (рек.)', group: 'Anthropic Claude' },
-  { value: 'claude-sonnet-4-6',          label: '☁️ Claude Sonnet 4.6 (новинка)', group: 'Anthropic Claude' },
-]
-const selectedAiModel = ref('')
-const selectedAiModelLabel = computed(() => AI_MODELS.find(m => m.value === selectedAiModel.value)?.label || '🤖 модель')
-
-// Фазовые подсказки пока нет ни одного токена
-const aiPhaseHint = computed(() => {
-  if (!aiLoading.value || aiTokenCount.value > 0) return ''
-  const s = aiElapsed.value
-  if (aiAction.value === 'review') {
-    if (s < 5)  return 'отправляет документ на анализ...'
-    if (s < 20) return 'читает и оценивает содержимое...'
-    if (s < 45) return 'проверяет юридические формулировки...'
-    if (s < 80) return 'формулирует замечания... обычно 1–2 минуты'
-    return 'почти готово — большой документ требует времени'
-  }
-  if (s < 5)  return 'инициализирует запрос...'
-  if (s < 15) return 'загружает контекст в память...'
-  if (s < 30) return 'оценивает данные проекта...'
-  if (s < 50) return 'формирует структуру документа... обычно 30–60с'
-  if (s < 80) return 'работает над деталями... почти готово'
-  return 'большой документ — продолжает, не останавливайся'
-})
-
-// Прогресс 0–100 до первого токена (базовый эстимейт)
-const aiPrefillPct = computed(() => {
-  if (aiTokenCount.value > 0 || !aiLoading.value) return 100
-  const estimate = aiAction.value === 'review' ? 120 : 90
-  return Math.min(95, Math.round((aiElapsed.value / estimate) * 100))
-})
-
-// ── Чат-панель ────────────────────────────────────────────────────────────
-interface ChatMsg {
-  id: number
-  role: 'user' | 'gemma'
-  actionLabel: string
-  text: string
-  streaming: boolean
-  done: boolean
-  time: string
-  charCount: number
-  elapsed?: number   // секунды на генерацию ответа
-  _startedAt?: number
-  _applyText?: string
-}
-const chatVisible = ref(true)
-const chatMessages = ref<ChatMsg[]>([])
-const chatEl = ref<HTMLElement | null>(null)
-const chatInputEl = ref<HTMLTextAreaElement | null>(null)
-const chatInput = ref('')
-let _chatIdSeq = 0
-
-// ── Быстрые команды-заготовки ─────────────────────────────────────────────
-const chatChips = [
-  { label: '✏️ замени слово',      tpl: 'замени [старый текст] на [новый текст]' },
-  { label: '💰 изменить сумму',    tpl: 'замени [старая сумма] на [новая сумма]' },
-  { label: '📅 изменить дату',     tpl: 'замени [старая дата] на [новая дата]' },
-  { label: '👤 изменить ФИО',      tpl: 'замени [старое ФИО] на [новое ФИО]' },
-  { label: '📍 изменить адрес',    tpl: 'замени [старый адрес] на [новый адрес]' },
-  { label: '➕ добавить пункт',    tpl: 'добавь пункт: [текст нового пункта]' },
-  { label: '🗑 удалить фрагмент',  tpl: 'удали фрагмент: [точный текст для удаления]' },
-  { label: '🔢 изменить номер',    tpl: 'замени [старый номер/срок] на [новый номер/срок]' },
-]
-
-function applyChip(tpl: string) {
-  chatInput.value = tpl
-  nextTick(() => {
-    const el = chatInputEl.value
-    if (!el) return
-    el.focus()
-    el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
-    // Выделяем первый [плейсхолдер]
-    const start = tpl.indexOf('[')
-    const end = tpl.indexOf(']') + 1
-    if (start !== -1 && end > start) {
-      el.setSelectionRange(start, end)
-    }
-  })
-}
-
-function _chatNow() {
-  return new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-}
-function _chatScroll() {
-  nextTick(() => { if (chatEl.value) chatEl.value.scrollTop = chatEl.value.scrollHeight })
-}
-function _chatPushUser(actionLabel: string) {
-  chatMessages.value.push({ id: ++_chatIdSeq, role: 'user', actionLabel, text: '', streaming: false, done: true, time: _chatNow(), charCount: 0 })
-  _chatScroll()
-}
-function _chatPushGemma(): ChatMsg {
-  const msg: ChatMsg = { id: ++_chatIdSeq, role: 'gemma', actionLabel: '', text: '', streaming: true, done: false, time: _chatNow(), charCount: 0, _startedAt: Date.now() }
-  chatMessages.value.push(msg)
-  _chatScroll()
-  return msg
-}
-function _chatToken(msg: ChatMsg, token: string) {
-  msg.text += token
-  msg.charCount = msg.text.length
-  _chatScroll()
-}
-function _chatDone(msg: ChatMsg) {
-  msg.streaming = false
-  msg.done = true
-  if (msg._startedAt) msg.elapsed = Math.round((Date.now() - msg._startedAt) / 1000)
-  _chatScroll()
-}
-function applyPatches(original: string, response: string): { result: string; count: number; failed: number } {
-  const patchRegex = /<<<REPLACE>>>\n?([\s\S]*?)<<<WITH>>>\n?([\s\S]*?)<<<END>>>/g
-  let result = original
-  let count = 0
-  let failed = 0
-  let match: RegExpExecArray | null
-
-  // Нормализация пробелов
-  function normWs(s: string) {
-    return s.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim()
-  }
-  // Агрессивная нормализация: убираем пунктуацию и лишние пробелы
-  function normAggressive(s: string) {
-    return s.replace(/\r\n/g, '\n')
-            .replace(/[^\p{L}\p{N}\n]+/gu, ' ')
-            .replace(/[ \t]+/g, ' ')
-            .trim()
-            .toLowerCase()
-  }
-
-  function findAndReplace(doc: string, oldText: string, newText: string): { doc: string; found: boolean } {
-    // 1. Точное совпадение
-    if (doc.includes(oldText)) {
-      return { doc: doc.replace(oldText, newText), found: true }
-    }
-    // 2. Нормализация пробелов (убираем двойные пробелы/переносы)
-    const normOld = normWs(oldText)
-    if (normOld.length < 3) return { doc, found: false }
-    const lines = doc.split('\n')
-    const oldLines = normOld.split('\n').filter(Boolean)
-    if (oldLines.length === 1) {
-      // Одна строка — ищем подстроку в каждой строке документа
-      for (let i = 0; i < lines.length; i++) {
-        if (normWs(lines[i]).includes(normOld)) {
-          lines[i] = lines[i].replace(lines[i].trim(), newText.trim())
-          return { doc: lines.join('\n'), found: true }
-        }
-      }
-      // 3. Агрессивный поиск: без пунктуации (для случаев «—» vs «-», «"» vs «"» и т.п.)
-      const normOldAgg = normAggressive(oldText)
-      for (let i = 0; i < lines.length; i++) {
-        if (normAggressive(lines[i]).includes(normOldAgg)) {
-          lines[i] = newText.trim()
-          return { doc: lines.join('\n'), found: true }
-        }
-      }
-    } else {
-      // Несколько строк — ищем по первой строке, затем проверяем блок
-      const firstNorm = oldLines[0]
-      for (let i = 0; i <= lines.length - oldLines.length; i++) {
-        if (normWs(lines[i]).includes(firstNorm)) {
-          const chunk = lines.slice(i, i + oldLines.length)
-          if (normWs(chunk.join('\n')).includes(normWs(oldLines.join('\n')))) {
-            lines.splice(i, oldLines.length, ...newText.split('\n'))
-            return { doc: lines.join('\n'), found: true }
-          }
-        }
-      }
-      // 3. Агрессивный многострочный: сравниваем блоки без пунктуации
-      const normOldAgg = normAggressive(oldLines.join(' '))
-      for (let i = 0; i <= lines.length - oldLines.length; i++) {
-        const chunk = lines.slice(i, i + oldLines.length)
-        if (normAggressive(chunk.join(' ')).includes(normOldAgg)) {
-          lines.splice(i, oldLines.length, ...newText.split('\n'))
-          return { doc: lines.join('\n'), found: true }
-        }
-      }
-    }
-    return { doc, found: false }
-  }
-
-  while ((match = patchRegex.exec(response)) !== null) {
-    const oldText = match[1].trim()
-    const newText = match[2].trim()
-    if (!oldText) { failed++; continue }
-    const { doc: patched, found } = findAndReplace(result, oldText, newText)
-    if (found) { result = patched; count++ }
-    else { failed++ }
-  }
-  return { result, count, failed }
-}
-
-// ── Мгновенная замена без вызова AI ───────────────────────────────────────
-// Распознаёт паттерны: "замени X на Y", "X → Y", '"X" → "Y"' и т.п.
-function tryInstantEdit(instruction: string, doc: string): { applied: boolean; result: string; oldText: string; newText: string } {
-  const none = { applied: false, result: doc, oldText: '', newText: '' }
-  if (!doc.trim()) return none
-
-  // Паттерны замены с кавычками или без
-  const patterns = [
-    // замени «X» на «Y» / замени "X" на "Y" / замени 'X' на 'Y'
-    /^(?:замени(?:те)?|поменяй(?:те)?|измени(?:те)?|replace)\s+[«"'"](.+?)[»"'"]\s+на\s+[«"'"](.+?)[»"'"]/i,
-    // замени X на Y (без кавычек, до конца строки)
-    /^(?:замени(?:те)?|поменяй(?:те)?|измени(?:те)?)\s+(.+?)\s+на\s+(.+)$/i,
-    // "X" → "Y" или "X" -> "Y"
-    /^[«"'"](.+?)[»"'"]\s*[→\->]+\s*[«"'"](.+?)[»"'"]/,
-    // X → Y (без кавычек)
-    /^(.+?)\s*→\s*(.+)$/,
-  ]
-
-  for (const pattern of patterns) {
-    const m = instruction.trim().match(pattern)
-    if (m) {
-      const oldText = m[1].trim()
-      const newText = m[2].trim()
-      if (!oldText || oldText === newText) continue
-      // Ищем в документе (нормализуем пробелы)
-      if (doc.includes(oldText)) {
-        return { applied: true, result: doc.replace(oldText, newText), oldText, newText }
-      }
-      // Нечёткий поиск: игнорируем регистр первой буквы
-      const lower = oldText[0].toLowerCase() + oldText.slice(1)
-      const upper = oldText[0].toUpperCase() + oldText.slice(1)
-      for (const variant of [lower, upper]) {
-        if (doc.includes(variant)) {
-          return { applied: true, result: doc.replace(variant, newText), oldText: variant, newText }
-        }
-      }
-    }
-  }
-  return none
-}
-
-async function onSendChatMessage() {
-  const text = chatInput.value.trim()
-  if (!text || aiLoading.value) return
-  chatInput.value = ''
-  await nextTick()
-  const ta = document.querySelector('.de-chat-input') as HTMLTextAreaElement | null
-  if (ta) { ta.style.height = 'auto' }
-  _chatPushUser(text)
-
-  // ── Сначала пробуем мгновенную замену без AI ──────────────────
-  const instant = tryInstantEdit(text, editorContent.value)
-  if (instant.applied) {
-    const clean = stripMarkdown(instant.result)
-    editorContent.value = clean
-    if (editorEl.value) editorEl.value.innerText = clean
-    const msg = _chatPushGemma()
-    msg.streaming = false
-    msg.done = true
-    msg.elapsed = 0
-    msg.text = `⚡ Заменено мгновенно: «${instant.oldText.slice(0, 40)}» → «${instant.newText.slice(0, 40)}»`
-    msg.charCount = msg.text.length
-    _chatScroll()
-    return
-  }
-
-  // ── Детект «продолжай» — перенаправляем в continue action ──────
-  const CONTINUE_RE = /^(продолжай|продолжи|продолжить|continue|дальше|допиши|дописать|продолжение)\W*$/i
-  if (CONTINUE_RE.test(text)) {
-    const chatMsg2 = _chatPushGemma()
-    chatMsg2.text = ''
-    let acc2 = ''
-    await streamDocument('continue', { ...buildAiPayload(), currentText: editorContent.value }, (token) => {
-      editorContent.value += token
-      if (editorEl.value) editorEl.value.innerText = editorContent.value
-      acc2 += token
-      chatMsg2.text = `▶ Дописываю... (${acc2.length} симв.)`
-      chatMsg2.charCount = acc2.length
-    })
-    chatMsg2.text = `✓ Дописано (${acc2.length} символов добавлено)`
-    chatMsg2.charCount = acc2.length
-    _chatDone(chatMsg2)
-    return
-  }
-
-  // ── Иначе — вызываем AI ───────────────────────────────────────
-  const chatMsg = _chatPushGemma()
-
-  // Показываем "редактирую..." пока нет токенов
-  chatMsg.text = ''
-
-  let accumulated = ''
-  const payload = { ...buildAiPayload(), currentText: editorContent.value, customInstruction: text }
-  const ok = await streamDocument('chat', payload, (token) => {
-    accumulated += token
-    // Показываем короткий превью в пузыре (до 120 симв.)
-    if (accumulated.length <= 120) {
-      chatMsg.text = accumulated
-      chatMsg.charCount = accumulated.length
-    } else {
-      // длинный ответ — прячем контент, показываем статус
-      chatMsg.text = ''
-      chatMsg.charCount = accumulated.length
-    }
-  })
-
-  const result = accumulated // НЕ трогаем — патчи должны содержать <<< маркеры
-  const hasPatch = /<<<REPLACE>>>/.test(result)
-
-  // Guard: модель вернула весь документ вместо патча
-  // Признак: ответ длиннее 60% оригинала И нет патч-маркеров
-  const docLen = editorContent.value.length
-  const isFullDocResponse = !hasPatch && docLen > 200 && result.length > docLen * 0.6
-
-  if (isFullDocResponse) {
-    chatMsg.text = `⚠️ Модель написала весь документ целиком вместо точечной правки. Попробуйте:\n• Выбрать Claude в селекторе модели (☁️ Claude Haiku) — он надёжнее\n• Или сформулируй точнее: «замени [точный текст] на [новый текст]»`
-    chatMsg.charCount = chatMsg.text.length
-    _chatDone(chatMsg)
-    return
-  }
-
-  if (hasPatch) {
-    // Патч-режим: передаём сырой ответ с <<< маркерами в applyPatches
-    const { result: patched, count, failed } = applyPatches(editorContent.value, result)
-    if (count > 0) {
-      const clean = stripMarkdown(patched)
-      editorContent.value = clean
-      if (editorEl.value) editorEl.value.innerText = clean
-      chatMsg.text = `✓ Изменено фрагментов: ${count}${failed ? ` (не найдено: ${failed})` : ''}`
-    } else {
-      // Патч не сработал — сообщаем, не трогаем документ
-      chatMsg.text = `⚠️ Не удалось найти указанный текст в документе (${failed} патч(ей) не совпали). Попробуйте процитировать точнее.`
-    }
-    chatMsg.charCount = chatMsg.text.length
-  } else {
-    // Обычный текстовый ответ — показываем в пузыре
-    chatMsg.text = stripMarkdown(result) || result
-    chatMsg.charCount = chatMsg.text.length
-  }
-  _chatDone(chatMsg)
-}
-
-function applyFromChat(text: string) {
-  editorContent.value = text
-  if (editorEl.value) editorEl.value.innerText = text
-  // убираем кнопку применения с всех сообщений
-  chatMessages.value.forEach(m => { m._applyText = undefined })
-}
-
-function clearChat() {
-  chatMessages.value = []
-}
-
-function buildAiPayload() {
-  return {
-    templateKey:    selectedTpl.value?.key      || '',
-    templateName:   selectedTpl.value?.name     || '',
-    templateText:   selectedTpl.value?.template || '',
-    fields:         { ...fieldValues.value },
-    currentText:    editorContent.value         || generateText(),
-    projectSlug:    pickedProjectSlug.value     || '',
-    clientId:       pickedClientId.value        || 0,
-    contractorId:   pickedContractorId.value    || 0,
-    aiModel:        selectedAiModel.value       || undefined,
-  }
-}
-
-// ── Скачивание DOCX ──────────────────────────────────────────────────────────
-const docxLoading = ref(false)
-
-// ── Автосохранение ──────────────────────────────────────────────────
-const savedDocId   = ref<number | null>(null)
-const autoSaveStatus = ref<'' | 'saving' | 'saved' | 'error'>('')
-let _autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 async function autoSave() {
   if (!editorContent.value || !selectedTpl.value) return
@@ -1632,128 +749,6 @@ watch(editorContent, (val) => {
   // чтобы не мигать при каждом нажатии клавиши
   _autoSaveTimer = setTimeout(autoSave, 2000)
 })
-
-async function downloadDocx() {
-  if (!editorContent.value || docxLoading.value) return
-  docxLoading.value = true
-  try {
-    const title = selectedTpl.value?.name || 'Документ'
-    // Читаем CSRF-токен из куки напрямую
-    const csrfToken = document.cookie
-      .split(';')
-      .map(c => c.trim())
-      .find(c => c.startsWith('csrf_token='))
-      ?.split('=')[1] ?? ''
-    const resp = await fetch('/api/documents/export-docx', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-csrf-token': decodeURIComponent(csrfToken),
-      },
-      body: JSON.stringify({ text: editorContent.value, title }),
-    })
-    if (!resp.ok) throw new Error(await resp.text())
-    const blob = await resp.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${title}.docx`
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 10000)
-  } catch (e: any) {
-    alert('Ошибка создания DOCX: ' + (e?.message || e))
-  } finally {
-    docxLoading.value = false
-  }
-}
-
-async function onContinueGeneration() {
-  if (aiLoading.value) return
-  clearCitations()
-  const existingText = editorContent.value
-  _chatPushUser('▶ Продолжить генерацию')
-  const chatMsg = _chatPushGemma()
-  chatVisible.value = true
-  await streamDocument('continue', { ...buildAiPayload(), currentText: existingText }, (token) => {
-    // добавляем продолжение прямо в редактор
-    editorContent.value += token
-    if (editorEl.value) editorEl.value.innerText = editorContent.value
-    _chatToken(chatMsg, token)
-  })
-  _chatDone(chatMsg)
-}
-
-async function onAiGenerate() {
-  if (!selectedTpl.value) return
-  clearReview()
-  clearCitations()
-  editorContent.value = ''
-  if (editorEl.value) editorEl.value.innerText = ''
-  chatVisible.value = true
-  _chatPushUser('🤖 Сгенерировать документ')
-  const chatMsg = _chatPushGemma()
-  await streamDocument('generate', buildAiPayload(), (token) => {
-    editorContent.value += token
-    if (editorEl.value) {
-      editorEl.value.innerText = stripMarkdown(editorContent.value)
-      editorEl.value.scrollTop = editorEl.value.scrollHeight
-    }
-    _chatToken(chatMsg, token)
-  })
-  // Чистим markdown из накопленного текста (сохраняем чистый вариант)
-  editorContent.value = stripMarkdown(editorContent.value)
-  if (editorEl.value) editorEl.value.innerText = editorContent.value
-  _chatDone(chatMsg)
-  autoSave() // сразу сохраняем после генерации
-}
-
-async function onAiImprove() {
-  if (!selectedTpl.value) return
-  clearReview()
-  clearCitations()
-  const originalText = editorContent.value || generateText()
-  editorContent.value = ''
-  if (editorEl.value) editorEl.value.innerText = ''
-  chatVisible.value = true
-  _chatPushUser('✨ Улучшить текст')
-  const chatMsg = _chatPushGemma()
-  const ok = await streamDocument('improve', { ...buildAiPayload(), currentText: originalText }, (token) => {
-    editorContent.value += token
-    if (editorEl.value) {
-      editorEl.value.innerText = stripMarkdown(editorContent.value)
-      editorEl.value.scrollTop = editorEl.value.scrollHeight
-    }
-    _chatToken(chatMsg, token)
-  })
-  // Чистим markdown
-  editorContent.value = stripMarkdown(editorContent.value)
-  if (editorEl.value) editorEl.value.innerText = editorContent.value
-  _chatDone(chatMsg)
-  if (!ok && !editorContent.value) {
-    editorContent.value = originalText
-    if (editorEl.value) editorEl.value.innerText = originalText
-  }
-}
-
-async function onAiReview() {
-  if (!selectedTpl.value) return
-  chatVisible.value = true
-  _chatPushUser('📋 Проверить документ')
-  const chatMsg = _chatPushGemma()
-  // review теперь тоже стримит — токены идут в чат, notes приходят в конце
-  const notes = await reviewDocument(buildAiPayload(), (token) => {
-    _chatToken(chatMsg, token)
-  })
-  if (notes?.length) {
-    // Заменяем chat-пузырь структурированным списком замечаний
-    chatMsg.text = notes.map(n => `${n.type === 'error' ? '⚠️' : '💡'} ${n.text}`).join('\n')
-    chatMsg.charCount = chatMsg.text.length
-  } else if (!chatMsg.text) {
-    chatMsg.text = 'Анализ завершён. Замечаний нет.'
-    chatMsg.charCount = chatMsg.text.length
-  }
-  _chatDone(chatMsg)
-}
 
 // ── Сохранение ────────────────────────────────────────────────────────────
 async function saveDocument() {

@@ -1,4 +1,4 @@
-import { CONTRACTOR_ROLE_TYPE_OPTIONS, CONTRACTOR_WORK_TYPE_OPTIONS, WORK_TYPE_STAGES } from '~~/shared/types/catalogs'
+import { CONTRACTOR_ROLE_TYPE_OPTIONS, CONTRACTOR_WORK_TYPE_OPTIONS, WORK_TYPE_STAGES } from '~~/shared/types/project/catalogs'
 import { workTypeLabel } from '~~/shared/utils/work-status'
 
 export const PAYMENT_METHOD_OPTIONS = [

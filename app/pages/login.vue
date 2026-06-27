@@ -83,33 +83,6 @@
         </GlassButton>
       </form>
 
-      <div v-if="selectedRole === 'client'" class="auth-secondary glass-surface">
-        <p class="auth-secondary__title">Вход по коду проекта</p>
-        <form @submit.prevent="submitClientLegacy" class="auth-form-grid">
-          <div class="auth-field auth-field--compact">
-            <label>Код проекта</label>
-            <GlassInput
-              v-model="clientLegacySlug"
-              type="text"
-              placeholder="например: ivanov-project-2024"
-              autocomplete="off"
-              spellcheck="false"
-              required
-              class=" auth-input"
-            />
-          </div>
-
-          <p v-if="clientLegacyError" class="auth-error">{{ clientLegacyError }}</p>
-          <div v-if="clientLegacyLoading" class="auth-progress" aria-hidden="true">
-            <span class="auth-progress__label">[ ИЩЕМ ПРОЕКТ ]</span>
-            <span class="auth-progress__line"></span>
-          </div>
-          <GlassButton variant="secondary" density="compact" type="submit" :disabled="clientLegacyLoading" class=" auth-submit auth-submit--secondary">
-            {{ clientLegacyLoading ? 'Вход…' : 'Войти по коду проекта' }}
-          </GlassButton>
-        </form>
-      </div>
-
       <div v-if="selectedRole === 'contractor'" class="auth-secondary glass-surface">
         <p class="auth-secondary__title">Вход по ID и коду доступа</p>
         <form @submit.prevent="submitContractorLegacy" class="auth-form-grid">
@@ -131,6 +104,17 @@
               v-model="contractorLegacy.slug"
               type="text"
               placeholder="slug, выданный дизайнером"
+              required
+              class=" auth-input"
+            />
+          </div>
+
+          <div class="auth-field auth-field--compact">
+            <label>Токен</label>
+            <GlassInput
+              v-model="contractorLegacy.token"
+              type="text"
+              placeholder="токен из ссылки от дизайнера"
               required
               class=" auth-input"
             />
@@ -236,14 +220,15 @@ function getCurrentRoleQueryValue() {
 
 const selectedRole = ref<LoginRole>(normalizeRole(route.query.role))
 const credentials = reactive({ login: '', password: '' })
-const clientLegacySlug = ref('')
-const contractorLegacy = reactive({ id: null as number | null, slug: '' })
+const contractorLegacy = reactive({
+  id: route.query.cid ? Number(route.query.cid) || null : null as number | null,
+  slug: (Array.isArray(route.query.cslug) ? route.query.cslug[0] : route.query.cslug) || '',
+  token: (Array.isArray(route.query.ctoken) ? route.query.ctoken[0] : route.query.ctoken) || '',
+})
 
 const credentialsError = ref('')
-const clientLegacyError = ref('')
 const contractorLegacyError = ref('')
 const credentialsLoading = ref(false)
-const clientLegacyLoading = ref(false)
 const contractorLegacyLoading = ref(false)
 
 const activeRoleInsight = computed(() => roleInsights[selectedRole.value])
@@ -258,7 +243,6 @@ const submitLabel = computed(() => {
 
 function resetErrors() {
   credentialsError.value = ''
-  clientLegacyError.value = ''
   contractorLegacyError.value = ''
 }
 
@@ -346,34 +330,10 @@ async function submitCredentials() {
   }
 }
 
-async function submitClientLegacy() {
-  resetErrors()
-  const slug = clientLegacySlug.value.trim().toLowerCase()
-  if (!slug) {
-    clientLegacyError.value = 'Введите код проекта'
-    return
-  }
-
-  clientLegacyLoading.value = true
-  try {
-    await ensureCsrfCookie()
-    const result = await $fetch<{ ok: boolean; slug: string }>('/api/auth/client-login', {
-      method: 'POST',
-      body: { slug },
-      headers: csrfHeaders(),
-    })
-    await router.push(`/client/${result.slug}`)
-  } catch (e: any) {
-    clientLegacyError.value = e.data?.statusMessage || e.data?.message || 'Неверный код проекта'
-  } finally {
-    clientLegacyLoading.value = false
-  }
-}
-
 async function submitContractorLegacy() {
   resetErrors()
-  if (!contractorLegacy.id || !contractorLegacy.slug.trim()) {
-    contractorLegacyError.value = 'Заполните ID и код доступа'
+  if (!contractorLegacy.id || !contractorLegacy.slug.trim() || !contractorLegacy.token.trim()) {
+    contractorLegacyError.value = 'Заполните ID, код доступа и токен'
     return
   }
 
@@ -385,6 +345,7 @@ async function submitContractorLegacy() {
       body: {
         id: contractorLegacy.id,
         slug: contractorLegacy.slug.trim(),
+        token: contractorLegacy.token.trim(),
       },
       headers: csrfHeaders(),
     })

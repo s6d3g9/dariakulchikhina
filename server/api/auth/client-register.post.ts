@@ -1,7 +1,7 @@
 import { useDb } from '~/server/db'
 import { projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { ClientRegisterSchema } from '~/shared/types/auth'
+import { ClientRegisterSchema } from '~/shared/types/auth/auth'
 import { generateRecoveryPhrase } from '~/server/utils/recovery-phrase'
 import { createUniqueProjectSlug } from '~/server/utils/auth-registration'
 
@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (existing) {
-    throw createError({ statusCode: 409, statusMessage: 'Клиент с таким логином уже существует' })
+    throw createError({ statusCode: 409, statusMessage: 'Регистрация невозможна. Попробуйте другой логин' })
   }
 
   const recoveryPhrase = generateRecoveryPhrase()

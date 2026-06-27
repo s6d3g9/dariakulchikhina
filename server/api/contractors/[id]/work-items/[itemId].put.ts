@@ -2,17 +2,18 @@ import { useDb } from '~/server/db/index'
 import { workStatusItems, contractors } from '~/server/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { requireIntParam } from '~/server/utils/query'
 
 const UpdateSchema = z.object({
-  status: z.string().optional(),
-  notes: z.string().nullable().optional(),
-  dateStart: z.string().nullable().optional(),
-  dateEnd: z.string().nullable().optional(),
+  status: z.string().max(50).optional(),
+  notes: z.string().max(5000).nullable().optional(),
+  dateStart: z.string().max(50).nullable().optional(),
+  dateEnd: z.string().max(50).nullable().optional(),
 })
 
 export default defineEventHandler(async (event) => {
-  const contractorId = Number(getRouterParam(event, 'id'))
-  const itemId = Number(getRouterParam(event, 'itemId'))
+  const contractorId = requireIntParam(event, 'id')
+  const itemId = requireIntParam(event, 'itemId')
   // Auth: admin or the contractor themselves
   requireAdminOrContractor(event, contractorId)
 

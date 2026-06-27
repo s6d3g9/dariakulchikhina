@@ -114,6 +114,7 @@ export const HybridControlCallInsightSchema = z.object({
   createdAt: z.string().min(1),
   relatedPhaseKey: z.string().optional(),
   tone: HybridControlHealthStatusSchema.default('stable'),
+  clientVisible: z.boolean().optional(),
   decisions: z.array(z.string()).default([]),
   nextSteps: z.array(z.string()).default([]),
   blockers: z.array(z.string()).default([]),

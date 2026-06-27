@@ -1,4 +1,5 @@
 import { generateExtraServiceDocuments } from '~/server/utils/extra-service-documents'
+import { requireIntParam } from '~/server/utils/query'
 
 /**
  * POST /api/projects/[slug]/extra-services/[id]/generate-docs
@@ -13,7 +14,7 @@ export default defineEventHandler(async (event) => {
   requireAdmin(event)
 
   const slug = getRouterParam(event, 'slug')!
-  const serviceId = Number(getRouterParam(event, 'id'))
+  const serviceId = requireIntParam(event, 'id')
   const { service, contractDoc, invoiceDoc } = await generateExtraServiceDocuments(slug, serviceId)
 
   return {

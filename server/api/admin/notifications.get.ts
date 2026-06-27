@@ -5,7 +5,7 @@
 import { useDb } from '~/server/db/index'
 import { projects, projectExtraServices, workStatusItems } from '~/server/db/schema'
 import { sql, eq, and, not, inArray, lt, isNotNull } from 'drizzle-orm'
-import { buildHybridControlSummary, ensureHybridControl } from '~/shared/utils/project-control'
+import { buildHybridControlSummary, ensureHybridControl } from '~/shared/utils/project/project-control'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -41,6 +41,7 @@ export default defineEventHandler(async (event) => {
       profile: projects.profile,
     })
     .from(projects)
+    .limit(2000)
 
   const controlCount = projectRows.reduce((count, project) => {
     const control = ensureHybridControl(project.profile?.hybridControl, project)

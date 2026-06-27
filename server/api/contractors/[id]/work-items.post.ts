@@ -1,23 +1,24 @@
 import { useDb } from '~/server/db/index'
-import { workStatusItems, projects, contractors } from '~/server/db/schema'
+import { workStatusItems, projects, contractors, projectContractors } from '~/server/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
+import { requireIntParam } from '~/server/utils/query'
 
 const Body = z.object({
-  projectSlug: z.string(),
+  projectSlug: z.string().max(200),
   contractorId: z.number(),
-  title: z.string().min(1),
-  workType: z.string().optional().nullable(),
-  dateStart: z.string().optional().nullable(),
-  dateEnd: z.string().optional().nullable(),
-  budget: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
+  title: z.string().min(1).max(500),
+  workType: z.string().max(200).optional().nullable(),
+  dateStart: z.string().max(50).optional().nullable(),
+  dateEnd: z.string().max(50).optional().nullable(),
+  budget: z.string().max(100).optional().nullable(),
+  notes: z.string().max(5000).optional().nullable(),
 })
 
 export default defineEventHandler(async (event) => {
-  const companyId = Number(getRouterParam(event, 'id'))
+  const companyId = requireIntParam(event, 'id')
   // Auth: admin or the contractor themselves
-  requireAdminOrContractor(event, companyId)
+  const auth = requireAdminOrContractor(event, companyId)
   const body = await readValidatedNodeBody(event, Body)
   const db = useDb()
 
@@ -43,6 +44,19 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (!project) throw createError({ statusCode: 404, statusMessage: 'Project not found' })
+
+  // Verify contractor is linked to this project (skip for admin)
+  if (auth.role === 'contractor') {
+    const [linked] = await db
+      .select({ id: projectContractors.id })
+      .from(projectContractors)
+      .where(and(
+        eq(projectContractors.projectId, project.id),
+        eq(projectContractors.contractorId, companyId),
+      ))
+      .limit(1)
+    if (!linked) throw createError({ statusCode: 403, statusMessage: 'Contractor not linked to project' })
+  }
 
   const [item] = await db.insert(workStatusItems).values({
     projectId: project.id,

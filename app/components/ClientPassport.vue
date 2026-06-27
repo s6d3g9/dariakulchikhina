@@ -60,8 +60,7 @@
 <script setup lang="ts">
 const props = defineProps<{ slug: string }>()
 
-const reqHeaders = useRequestHeaders(['cookie'])
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
+const { data: profileEnvelope, pending } = await useClientProjectProfile(() => props.slug)
 
 const form = reactive<Record<string, any>>({
   passport_series: '',
@@ -75,18 +74,18 @@ const form = reactive<Record<string, any>>({
   passport_snils: '',
 })
 
-watch(project, (p) => {
-  if (p?.profile) {
+watch(() => profileEnvelope.value?.data.profile, (p) => {
+  if (p) {
     Object.assign(form, {
-      passport_series: p.profile.passport_series || '',
-      passport_number: p.profile.passport_number || '',
-      passport_issued_by: p.profile.passport_issued_by || '',
-      passport_issue_date: p.profile.passport_issue_date || '',
-      passport_department_code: p.profile.passport_department_code || '',
-      passport_birth_place: p.profile.passport_birth_place || '',
-      passport_registration_address: p.profile.passport_registration_address || '',
-      passport_inn: p.profile.passport_inn || '',
-      passport_snils: p.profile.passport_snils || '',
+      passport_series: p.passport_series || '',
+      passport_number: p.passport_number || '',
+      passport_issued_by: p.passport_issued_by || '',
+      passport_issue_date: p.passport_issue_date || '',
+      passport_department_code: p.passport_department_code || '',
+      passport_birth_place: p.passport_birth_place || '',
+      passport_registration_address: p.passport_registration_address || '',
+      passport_inn: p.passport_inn || '',
+      passport_snils: p.passport_snils || '',
     })
   }
 }, { immediate: true })
@@ -98,12 +97,9 @@ async function save() {
   if (pending.value) return
   saving.value = true
   try {
-    await $fetch(`/api/projects/${props.slug}/client-profile`, {
-      method: 'PUT',
-      body: { ...form },
-    })
-    if (project.value?.profile) {
-      Object.assign(project.value.profile, { ...form })
+    const response = await updateClientProjectProfile(props.slug, { ...form })
+    if (profileEnvelope.value?.data.profile) {
+      Object.assign(profileEnvelope.value.data.profile, response.data.profile)
     }
     markSaved()
   } finally {

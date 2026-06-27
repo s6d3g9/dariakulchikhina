@@ -1,6 +1,7 @@
 import { useDb } from '~/server/db'
 import { galleryItems } from '~/server/db/schema'
 import { requireAdmin } from '~/server/utils/auth'
+import { sanitizeRecord, zSafeJsonObject } from '~/server/utils/sanitize'
 import { z } from 'zod'
 
 const CreateGallerySchema = z.object({
@@ -14,7 +15,7 @@ const CreateGallerySchema = z.object({
   width: z.number().int().positive().nullable().optional(),
   height: z.number().int().positive().nullable().optional(),
   sortOrder: z.number().int().default(0),
-  properties: z.record(z.unknown()).default({}),
+  properties: zSafeJsonObjectlt({}),
 })
 
 export default defineEventHandler(async (event) => {
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
     width: body.width ?? null,
     height: body.height ?? null,
     sortOrder: body.sortOrder,
-    properties: body.properties,
+    properties: sanitizeRecord(body.properties as Record<string, unknown>),
   }).returning()
 
   return row

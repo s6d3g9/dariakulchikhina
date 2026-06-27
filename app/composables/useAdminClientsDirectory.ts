@@ -2,10 +2,16 @@ export function useAdminClientsDirectory(projectSlugFilter: Ref<string>) {
   const clientsCacheByProject = useState<Record<string, any[]>>('cache-admin-clients-by-project', () => ({}))
   const clientsCacheKey = computed(() => projectSlugFilter.value || '__all__')
 
-  const { data: clients, pending, refresh } = useFetch<any[]>(
-    () => projectSlugFilter.value ? `/api/clients?projectSlug=${encodeURIComponent(projectSlugFilter.value)}` : '/api/clients',
-    { server: false, default: () => clientsCacheByProject.value[clientsCacheKey.value] || [] },
+  const { data: crmClientsEnvelope, pending, refresh } = useFetch<any>(
+    () => projectSlugFilter.value
+      ? `/api/v1/crm/clients?projectSlug=${encodeURIComponent(projectSlugFilter.value)}`
+      : '/api/v1/crm/clients',
+    { server: false, default: () => null },
   )
+  const clients = computed(() => {
+    const items = crmClientsEnvelope.value?.data?.items
+    return Array.isArray(items) ? items : (clientsCacheByProject.value[clientsCacheKey.value] || [])
+  })
 
   watch(clients, (value) => {
     if (!Array.isArray(value)) {

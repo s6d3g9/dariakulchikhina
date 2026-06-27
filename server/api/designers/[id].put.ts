@@ -2,29 +2,31 @@ import { useDb } from '~/server/db/index'
 import { designerProjects, designers } from '~/server/db/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
-import { getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer-catalogs'
+import { getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer/designer-catalogs'
+import { requireIntParam } from '~/server/utils/query'
+
+const zCatalogItem = z.record(z.string().max(200), z.union([z.string().max(1000), z.number(), z.boolean(), z.null(), z.array(z.string().max(200)).max(50)]))
 
 const UpdateDesignerSchema = z.object({
-  name: z.string().min(1).optional(),
-  companyName: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
-  telegram: z.string().optional(),
-  website: z.string().optional(),
-  city: z.string().optional(),
-  experience: z.string().optional(),
-  about: z.string().optional(),
-  specializations: z.array(z.string()).optional(),
-  services: z.array(z.any()).optional(),
-  packages: z.array(z.any()).optional(),
-  subscriptions: z.array(z.any()).optional(),
-  clearProjectPackageKeysForIds: z.array(z.number().int().positive()).optional(),
+  name: z.string().min(1).max(200).optional(),
+  companyName: z.string().max(200).optional(),
+  phone: z.string().max(50).optional(),
+  email: z.string().max(200).optional(),
+  telegram: z.string().max(100).optional(),
+  website: z.string().max(500).optional(),
+  city: z.string().max(200).optional(),
+  experience: z.string().max(200).optional(),
+  about: z.string().max(5000).optional(),
+  specializations: z.array(z.string().max(200)).max(50).optional(),
+  services: z.array(zCatalogItem).max(100).optional(),
+  packages: z.array(zCatalogItem).max(100).optional(),
+  subscriptions: z.array(zCatalogItem).max(100).optional(),
+  clearProjectPackageKeysForIds: z.array(z.number().int().positive()).max(200).optional(),
 })
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id || !Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
+  const id = requireIntParam(event, 'id')
 
   const body = await readValidatedNodeBody(event, UpdateDesignerSchema)
   const db = useDb()

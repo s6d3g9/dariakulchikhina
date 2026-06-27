@@ -22,8 +22,8 @@ export default defineEventHandler(async (event) => {
 
   if (!projectSlug) {
     // Return all clients and contractors without project context
-    const allClients = await db.select().from(clients).orderBy(clients.name)
-    const allContractors = await db.select().from(contractors).orderBy(contractors.name)
+    const allClients = await db.select().from(clients).orderBy(clients.name).limit(1000)
+    const allContractors = await db.select().from(contractors).orderBy(contractors.name).limit(1000)
     result.clients = allClients
     result.contractors = allContractors
     return result
@@ -70,6 +70,7 @@ export default defineEventHandler(async (event) => {
   // Fetch page content for first-contact / smart-brief if available
   const pageRows = await db.select().from(pageContent)
     .where(eq(pageContent.projectId, proj.id))
+    .limit(200)
 
   for (const pg of pageRows) {
     const content = (pg.content || {}) as Record<string, any>
@@ -99,7 +100,7 @@ export default defineEventHandler(async (event) => {
     result.clients = linkedClients
   } else {
     // Fallback: return all clients
-    result.clients = await db.select().from(clients).orderBy(clients.name)
+    result.clients = await db.select().from(clients).orderBy(clients.name).limit(1000)
   }
 
   // Fetch linked contractors
@@ -111,7 +112,7 @@ export default defineEventHandler(async (event) => {
   if (contractorIds.length) {
     result.contractors = await db.select().from(contractors).where(inArray(contractors.id, contractorIds))
   } else {
-    result.contractors = await db.select().from(contractors).orderBy(contractors.name)
+    result.contractors = await db.select().from(contractors).orderBy(contractors.name).limit(1000)
   }
 
   return result

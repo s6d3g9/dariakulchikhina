@@ -1,6 +1,7 @@
 import { and, asc, eq } from 'drizzle-orm'
 
 import { useDb } from '~/server/db'
+import { getProjectRelationsSnapshot, type ProjectRelationsSnapshot } from '~/server/modules/projects/project-relations.service'
 import {
   contractors,
   documents,
@@ -11,15 +12,12 @@ import {
   projectScopeSettings,
   workStatusItems,
 } from '~/server/db/schema'
-import { getProjectRelationsSnapshot, type ProjectRelationsSnapshot } from '~/server/utils/project-relations'
 import type {
-  CreateProjectParticipant,
-  CreateProjectScopeAssignment,
   HybridControl,
   HybridControlPhase,
   HybridControlSprint,
   HybridControlTask,
-} from '~/shared/types/project'
+} from '~/shared/types/project/project'
 import {
   PROJECT_PARTICIPANT_ROLE_KEYS,
   PROJECT_PARTICIPANT_SOURCE_KINDS,
@@ -27,6 +25,8 @@ import {
   PROJECT_SCOPE_ASSIGNMENT_STATUSES,
   PROJECT_SCOPE_SOURCES,
   PROJECT_SCOPE_TYPES,
+  type CreateProjectParticipant,
+  type CreateProjectScopeAssignment,
   type ProjectGovernanceDetailItem,
   type ProjectGovernanceSummary,
   type ProjectGovernanceSummaryParticipant,
@@ -40,22 +40,22 @@ import {
   type ProjectScopeLink,
   type ProjectScopeParticipantSummary,
   type ProjectScopeRuleSummary,
-  type ProjectScopeSource,
   type ProjectScopeSettings,
+  type ProjectScopeSource,
   type ProjectScopeTaskSummary,
   type ProjectScopeType,
   type UpdateProjectParticipant,
   type UpdateProjectScopeAssignment,
   type UpdateProjectScopeSettings,
-} from '~/shared/types/project-governance'
+} from '~/shared/types/project/project-governance'
 import {
   buildDefaultProjectScopeSettings,
   buildProjectScopeRefKey,
   buildProjectScopeSettingEntries,
   getProjectParticipantRoleLabel,
   getProjectResponsibilityLabel,
-} from '~/shared/utils/project-governance'
-import { buildHybridCoordinationBrief, ensureHybridControl, getHybridCommunicationChannelLabel } from '~/shared/utils/project-control'
+} from '~/shared/utils/project/project-governance'
+import { buildHybridCoordinationBrief, ensureHybridControl, getHybridCommunicationChannelLabel } from '~/shared/utils/project/project-control'
 
 type ProjectGovernanceProjectRow = {
   id: number
@@ -505,9 +505,9 @@ function buildDerivedParticipants(project: ProjectGovernanceProjectRow, control:
       id: `linked:seller:${seller.id}`,
       projectId: project.id,
       sourceKind: 'seller',
-      sourceId: seller.id,
       roleKey: 'seller',
       displayName: seller.name,
+      sourceId: seller.id,
       companyName: seller.companyName || undefined,
       messengerNick: seller.messengerNick || undefined,
       isPrimary: false,
@@ -1818,7 +1818,8 @@ export async function createProjectGovernanceAssignment(projectSlug: string, inp
   const project = await getProjectGovernanceProjectOrThrow(projectSlug)
   const state = await getGovernanceState(project)
   const participant = state.participantByPersistedId.get(input.participantId)
-  if (!participant?.persistedId) {
+  const persistedParticipantId = participant?.persistedId
+  if (!persistedParticipantId) {
     throw createError({ statusCode: 404, statusMessage: 'Участник проекта не найден' })
   }
 
@@ -1833,7 +1834,7 @@ export async function createProjectGovernanceAssignment(projectSlug: string, inp
       const [assignmentRow] = await tx.insert(projectScopeAssignments)
         .values({
           projectId: project.id,
-          participantId: participant.persistedId,
+          participantId: persistedParticipantId,
           scopeType: context.scopeType,
           scopeSource: context.scopeSource,
           scopeId: context.scopeId,

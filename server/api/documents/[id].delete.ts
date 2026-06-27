@@ -4,11 +4,11 @@ import { eq } from 'drizzle-orm'
 import { unlink } from 'fs/promises'
 import path from 'path'
 import { getUploadDir } from '~/server/utils/storage'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id) throw createError({ statusCode: 400 })
+  const id = requireIntParam(event, 'id')
 
   const db = useDb()
   const [deleted] = await db.delete(documents).where(eq(documents.id, id)).returning()

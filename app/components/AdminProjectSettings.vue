@@ -88,8 +88,8 @@
 
 <script setup lang="ts">
 import { PROJECT_PRESETS, getPresetsByCategory, findPreset } from '~~/shared/constants/presets'
-import { getAdminNavGroups } from '~~/shared/constants/pages'
-import { PROJECT_PHASES } from '~~/shared/types/catalogs'
+import { getAdminNavGroups } from '~~/shared/constants/navigation/pages'
+import { PROJECT_PHASES } from '~~/shared/types/project/catalogs'
 
 const props = defineProps<{ slug: string }>()
 

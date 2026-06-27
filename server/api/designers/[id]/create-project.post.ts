@@ -2,26 +2,24 @@ import { useDb } from '~/server/db/index'
 import { designerProjects, designers, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { CORE_PAGES } from '~/shared/constants/pages'
-import { getAvailableDesignerPackageKeySet, getNormalizedDesignerServiceKeySet, normalizeDesignerServices } from '~/shared/utils/designer-catalogs'
+import { CORE_PAGES } from '~/shared/constants/navigation/pages'
+import { getAvailableDesignerPackageKeySet, getNormalizedDesignerServiceKeySet, normalizeDesignerServices } from '~/shared/utils/designer/designer-catalogs'
+import { requireIntParam } from '~/server/utils/query'
 
 const CreateDesignerProjectSchema = z.object({
   designerId: z.number(),
   title: z.string().min(1),
   slug: z.string().min(1),
-  packageKey: z.string().optional(),
+  packageKey: z.string().max(200).optional(),
   pricePerSqm: z.number().optional(),
   area: z.number().optional(),
   totalPrice: z.number().optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(5000).optional(),
 })
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const routeDesignerId = Number(getRouterParam(event, 'id'))
-  if (!routeDesignerId || !Number.isFinite(routeDesignerId)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
-  }
+  const routeDesignerId = requireIntParam(event, 'id')
 
   const body = await readValidatedNodeBody(event, CreateDesignerProjectSchema)
   if (body.designerId !== routeDesignerId) {

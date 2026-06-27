@@ -7,6 +7,11 @@ const DEV_MESSENGER_ORIGINS = [
   'http://localhost:3300',
 ]
 
+const DEV_MESSENGER_ORIGIN_PATTERNS = [
+  /^http:\/\/127\.0\.0\.1:\d+$/,
+  /^http:\/\/localhost:\d+$/,
+]
+
 function parseConfiguredOrigins() {
   const raw = [
     process.env.MESSENGER_WEB_ORIGINS,
@@ -22,9 +27,31 @@ function parseConfiguredOrigins() {
     .filter(Boolean)
 }
 
+function getNodeResponse(event: H3Event) {
+  return event.node?.res || null
+}
+
+function getHeaderValue(event: H3Event, name: string) {
+  const response = getNodeResponse(event)
+  if (!response || typeof response.getHeader !== 'function') {
+    return undefined
+  }
+
+  return response.getHeader(name)
+}
+
+function setHeaderValue(event: H3Event, name: string, value: string) {
+  const response = getNodeResponse(event)
+  if (!response || typeof response.setHeader !== 'function') {
+    return false
+  }
+
+  response.setHeader(name, value)
+  return true
+}
+
 function appendVaryHeader(event: H3Event, nextValue: string) {
-  const res = event.node?.res ?? event.res
-  const current = res.getHeader('Vary')
+  const current = getHeaderValue(event, 'Vary')
   const values = new Set(
     [current]
       .flat()
@@ -35,7 +62,12 @@ function appendVaryHeader(event: H3Event, nextValue: string) {
   )
 
   values.add(nextValue)
-  res.setHeader('Vary', Array.from(values).join(', '))
+  setHeaderValue(event, 'Vary', Array.from(values).join(', '))
+}
+
+function isAllowedDevMessengerOrigin(origin: string) {
+  return DEV_MESSENGER_ORIGINS.includes(origin)
+    || DEV_MESSENGER_ORIGIN_PATTERNS.some(pattern => pattern.test(origin))
 }
 
 export function applyMessengerCors(event: H3Event, options: { methods?: string[] } = {}) {
@@ -45,15 +77,17 @@ export function applyMessengerCors(event: H3Event, options: { methods?: string[]
   }
 
   const allowedOrigins = new Set([...DEV_MESSENGER_ORIGINS, ...parseConfiguredOrigins()])
-  if (!allowedOrigins.has(origin)) {
+  if (!allowedOrigins.has(origin) && !isAllowedDevMessengerOrigin(origin)) {
     return false
   }
 
-  const res = event.node?.res ?? event.res
-  res.setHeader('Access-Control-Allow-Origin', origin)
-  res.setHeader('Access-Control-Allow-Credentials', 'true')
-  res.setHeader('Access-Control-Allow-Methods', (options.methods || ['GET']).join(', '))
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-csrf-token')
+  if (!setHeaderValue(event, 'Access-Control-Allow-Origin', origin)) {
+    return false
+  }
+
+  setHeaderValue(event, 'Access-Control-Allow-Credentials', 'true')
+  setHeaderValue(event, 'Access-Control-Allow-Methods', (options.methods || ['GET']).join(', '))
+  setHeaderValue(event, 'Access-Control-Allow-Headers', 'Content-Type, x-csrf-token')
   appendVaryHeader(event, 'Origin')
   return true
 }

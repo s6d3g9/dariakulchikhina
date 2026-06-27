@@ -6,8 +6,10 @@
  */
 
 const BASE = 'http://localhost:3000'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'changeme'
-const DB_URL = process.env.DATABASE_URL || 'postgresql://daria:daria_secret_2026@localhost:5433/daria_admin'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+if (!ADMIN_PASSWORD) { console.error('ADMIN_PASSWORD env is required'); process.exit(1) }
+const DB_URL = process.env.DATABASE_URL
+if (!DB_URL) { console.error('DATABASE_URL is required'); process.exit(1) }
 
 // ─── API клиент ───────────────────────────────────────────────────────────────
 let cookie = ''

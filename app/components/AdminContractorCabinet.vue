@@ -162,217 +162,40 @@
             </div>
           </template>
 
-          <template v-if="(section === 'tasks') || showAll">
-            <div class="cab-section" data-section="tasks">
-            <CabSectionHeader
-              title="Задачи"
-              eyebrow="contractor"
-              :brutalist="isBrutalistContractorCabinetMode"
-              note="Статусы меняются сразу, а даты и заметки внутри карточки сохраняются автоматически."
-            >
-              <template #actions>
-                <button class="cab-add-task-btn" @click="openNewTaskModal">＋ Добавить задачу</button>
-              </template>
-            </CabSectionHeader>
-            <div class="cab-add-task-row" :class="{ 'cab-add-task-row--brutalist': isBrutalistContractorCabinetMode }">
-              <div class="cab-add-task-row__hint">[ TASK FLOW ]</div>
-            </div>
-
-            <div v-if="showNewTaskModal" class="u-modal glass-surface" :class="{ 'u-modal--brutalist-task': isBrutalistContractorCabinetMode }">
-              <div class="u-modal__head">
-                <span class="u-modal__title">Новая задача</span>
-                <button class="u-modal__close" @click="showNewTaskModal = false">✕</button>
-              </div>
-              <div class="u-modal__body">
-                <div v-if="contractor?.contractorType === 'company' && staff?.length" class="u-field">
-                  <label class="u-field__label">Мастер</label>
-                  <select v-model="newTask.masterContractorId" class="glass-input">
-                    <option :value="null">— сам подрядчик —</option>
-                    <option v-for="m in staff" :key="m.id" :value="m.id">{{ m.name }}</option>
-                  </select>
-                </div>
-                <div class="u-field">
-                  <label class="u-field__label">Проект *</label>
-                  <select v-model="newTask.projectSlug" class="glass-input">
-                    <option value="" disabled>— выберите проект —</option>
-                    <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
-                  </select>
-                </div>
-                <div class="u-field">
-                  <label class="u-field__label">Название задачи *</label>
-                  <GlassInput v-model="newTask.title"  placeholder="Что нужно сделать…" />
-                </div>
-                <div class="u-field">
-                  <label class="u-field__label">Вид работ</label>
-                  <select v-model="newTask.workType" class="glass-input">
-                    <option value="">— не указан —</option>
-                    <option v-for="w in CONTRACTOR_WORK_TYPE_OPTIONS" :key="w.value" :value="w.value">{{ w.label }}</option>
-                  </select>
-                </div>
-                <div class="u-modal__row2">
-                  <div class="u-field">
-                    <label class="u-field__label">Дата начала</label>
-                    <GlassInput v-model="newTask.dateStart"  placeholder="дд.мм.гггг" />
-                  </div>
-                  <div class="u-field">
-                    <label class="u-field__label">Дата окончания</label>
-                    <GlassInput v-model="newTask.dateEnd"  placeholder="дд.мм.гггг" />
-                  </div>
-                </div>
-                <div class="u-field">
-                  <label class="u-field__label">Бюджет</label>
-                  <GlassInput v-model="newTask.budget"  placeholder="например: 50 000 ₽" />
-                </div>
-                <div class="u-field">
-                  <label class="u-field__label">Примечание</label>
-                  <textarea v-model="newTask.notes" class="glass-input u-ta" rows="3" placeholder="Уточнения, материалы, особые требования…" />
-                </div>
-              </div>
-              <div class="u-modal__foot">
-                <button
-                  class="cab-task-save"
-                  :disabled="creatingTask || !newTask.projectSlug || !newTask.title.trim()"
-                  @click="createTask"
-                >{{ creatingTask ? 'Создание…' : 'Создать задачу' }}</button>
-                <button class="cab-task-cancel" @click="showNewTaskModal = false">Отмена</button>
-              </div>
-            </div>
-
-            <div v-if="workItems?.length" class="cab-filters" :class="{ 'cab-filters--brutalist': isBrutalistContractorCabinetMode }">
-              <button
-                v-for="f in FILTERS"
-                :key="f.value"
-                class="cab-filter-btn"
-                :class="{ active: statusFilter === f.value }"
-                @click="statusFilter = f.value"
-              >
-                {{ f.label }}
-                <span v-if="f.count" class="cab-filter-count">{{ f.count }}</span>
-              </button>
-            </div>
-
-            <div v-if="!workItems?.length" class="u-empty glass-surface">
-              <span>◎</span>
-              <p>Задач пока нет.<br>Они появятся когда дизайнер добавит вас к проекту.</p>
-            </div>
-            <div v-else-if="!byProject.length" class="u-empty glass-surface">
-              <span>◉</span>
-              <p>Нет задач с выбранным фильтром.</p>
-            </div>
-            <template v-else>
-              <div v-for="proj in byProject" :key="proj.slug" class="cab-project-group" :class="{ 'cab-project-group--brutalist': isBrutalistContractorCabinetMode }">
-                <div class="cab-proj-header">
-                  <span class="cab-proj-title">{{ proj.title }}</span>
-                  <span class="cab-proj-stats">{{ proj.doneCount }} / {{ proj.totalCount }}</span>
-                </div>
-                <div class="cab-proj-progress">
-                  <div class="cab-proj-progress-bar" :style="{ width: proj.totalCount ? (proj.doneCount / proj.totalCount * 100) + '%' : '0%' }" />
-                </div>
-
-                <div v-for="wtGroup in proj.wtGroups" :key="wtGroup.workType" class="cab-wt-group">
-                  <button class="cab-wt-head" @click="toggleWtGroup(proj.slug, wtGroup.workType)">
-                    <span class="cab-wt-icon">{{ isWtGroupOpen(proj.slug, wtGroup.workType) ? '▾' : '▸' }}</span>
-                    <span class="cab-wt-name">{{ wtGroup.label }}</span>
-                    <span class="cab-wt-count">{{ wtGroup.items.length }} зад.</span>
-                    <span v-if="wtGroup.stages.length" class="cab-wt-prog">
-                      {{ stagesPct(proj.slug, wtGroup.workType, wtGroup.stages.length) }}% этапов
-                    </span>
-                  </button>
-
-                  <div v-if="isWtGroupOpen(proj.slug, wtGroup.workType)" class="cab-wt-body">
-                    <div class="cab-tasks">
-                      <div
-                        v-for="item in wtGroup.items"
-                        :key="item.id"
-                        class="cab-task glass-surface"
-                        :class="{ expanded: expandedId === item.id, 'cab-task--brutalist': isBrutalistContractorCabinetMode }"
-                      >
-                        <div class="cab-task-top" @click="toggleExpand(item.id)">
-                          <span class="cab-task-expand-icon">{{ expandedId === item.id ? '▾' : '▸' }}</span>
-                          <span class="cab-task-name">{{ item.title }}</span>
-                          <span v-if="item.assignedToName" class="cab-task-assigned-badge">→ {{ item.assignedToName }}</span>
-                          <select
-                            :value="item.status"
-                            class="u-status-sel"
-                            :class="`cab-status--${item.status}`"
-                            @click.stop
-                            @change="updateStatus(item, ($event.target as HTMLSelectElement).value)"
-                          >
-                            <option v-for="s in STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
-                          </select>
-                        </div>
-
-                        <template v-if="expandedId !== item.id">
-                          <div v-if="item.dateStart || item.dateEnd || item.budget" class="cab-task-meta">
-                            <span v-if="item.dateStart">с {{ item.dateStart }}</span>
-                            <span v-if="item.dateEnd" :class="{ 'cab-task-overdue': isDue(item.dateEnd) && item.status !== 'done' }">по {{ item.dateEnd }}</span>
-                            <span v-if="item.budget" class="cab-task-budget">{{ item.budget }}</span>
-                          </div>
-                          <div class="cab-task-counters">
-                            <span v-if="item.photoCount" class="cab-task-counter">📷 {{ item.photoCount }}</span>
-                            <span v-if="item.commentCount" class="cab-task-counter">💬 {{ item.commentCount }}</span>
-                          </div>
-                          <div v-if="item.notes" class="cab-task-notes cab-task-notes--preview">{{ item.notes }}</div>
-                        </template>
-
-                        <template v-else>
-                          <div class="cab-task-edit">
-                            <div class="cab-task-edit-row">
-                              <div class="cab-task-edit-field">
-                                <label>Дата начала</label>
-                                <GlassInput v-model="editMap[item.id].dateStart" class=" cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" @blur="queueTaskDetailsSave(item)" @change="queueTaskDetailsSave(item)" />
-                              </div>
-                              <div class="cab-task-edit-field">
-                                <label>Дата окончания</label>
-                                <GlassInput v-model="editMap[item.id].dateEnd" class=" cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" @blur="queueTaskDetailsSave(item)" @change="queueTaskDetailsSave(item)" />
-                              </div>
-                              <div v-if="item.budget" class="cab-task-edit-field">
-                                <label>Бюджет</label>
-                                <span class="cab-task-budget cab-task-budget--lg">{{ item.budget }}</span>
-                              </div>
-                            </div>
-
-                            <div class="cab-task-edit-field">
-                              <label>Заметка для дизайнера</label>
-                              <textarea v-model="editMap[item.id].notes" class="glass-input u-ta" rows="3" placeholder="Статус работ, вопросы, уточнения…" @blur="queueTaskDetailsSave(item)" />
-                            </div>
-
-                            <div class="cab-task-edit-actions">
-                              <CabAutosaveStatus :state="taskSaveStates[item.id] || (savingItem === item.id ? 'saving' : '')" idle-label="[ TASK AUTOSAVE ]" />
-                              <button type="button" class="cab-task-cancel" @click.stop="expandedId = null">Отмена</button>
-                            </div>
-                          </div>
-                        </template>
-                      </div>
-                    </div>
-
-                    <div v-if="wtGroup.stages.length" class="cab-stages-inline glass-surface" :class="{ 'cab-stages-inline--brutalist': isBrutalistContractorCabinetMode }">
-                      <div class="cab-stages-inline-head">
-                        <span class="cab-stages-inline-title">Технологические этапы</span>
-                        <span class="cab-stages-inline-pct">{{ stagesPct(proj.slug, wtGroup.workType, wtGroup.stages.length) }}%</span>
-                      </div>
-                      <div class="cab-stages-inline-bar-wrap">
-                        <div class="cab-stages-inline-bar" :style="{ width: stagesPct(proj.slug, wtGroup.workType, wtGroup.stages.length) + '%' }" />
-                      </div>
-                      <div
-                        v-for="(stage, idx) in wtGroup.stages"
-                        :key="stage.key"
-                        class="cab-stage-check-row"
-                        :class="{ done: isStageDone(proj.slug, wtGroup.workType, stage.key) }"
-                        @click="toggleStage(proj.slug, wtGroup.workType, stage.key)"
-                      >
-                        <span class="cab-stage-check-icon">{{ isStageDone(proj.slug, wtGroup.workType, stage.key) ? '✓' : '○' }}</span>
-                        <span class="cab-stage-num">{{ (idx as number) + 1 }}</span>
-                        <span class="cab-stage-label">{{ stage.label }}</span>
-                        <span v-if="stage.hint" class="cab-stage-hint">{{ stage.hint }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </template>
-            </div>
-          </template>
+          <AdminContractorTasksSection
+            v-if="(section === 'tasks') || showAll"
+            :contractor="contractor"
+            :staff="staff"
+            :work-items="workItems"
+            :is-brutalist="isBrutalistContractorCabinetMode"
+            :show-new-task-modal="showNewTaskModal"
+            :new-task="newTask"
+            :creating-task="creatingTask"
+            :all-projects="allProjects"
+            :contractor-work-type-options="CONTRACTOR_WORK_TYPE_OPTIONS"
+            :filters="FILTERS"
+            :status-filter="statusFilter"
+            :by-project="byProject"
+            :expanded-id="expandedId"
+            :statuses="STATUSES"
+            :edit-map="editMap"
+            :task-save-states="taskSaveStates"
+            :saving-item="savingItem"
+            :is-due="isDue"
+            :stages-pct="stagesPct"
+            :is-wt-group-open="isWtGroupOpen"
+            :toggle-wt-group="toggleWtGroup"
+            :toggle-expand="toggleExpand"
+            :update-status="updateStatus"
+            :queue-task-details-save="queueTaskDetailsSave"
+            :is-stage-done="isStageDone"
+            :toggle-stage="toggleStage"
+            :open-new-task-modal="openNewTaskModal"
+            :create-task="createTask"
+            @update:show-new-task-modal="showNewTaskModal = $event"
+            @update:status-filter="statusFilter = $event"
+            @update:expanded-id="expandedId = $event"
+          />
 
           <template v-if="(section === 'contacts') || showAll">
             <div class="cab-section" data-section="contacts">
@@ -907,7 +730,6 @@ import {
   ROLE_GROUPS,
   WORK_GROUPS,
 } from '~/composables/useContractorCabinet'
-import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { registerWipe2Data } from '~/composables/useWipe2'
 
 const props = defineProps<{
@@ -1013,244 +835,73 @@ watch(section, (val) => {
   if (props.modelValue !== undefined) emit('update:modelValue', val)
 })
 
-const docsSearch = ref('')
-const docsFilter = ref('')
-const docsSort = ref<'new' | 'old'>('new')
-const filteredContractorDocs = computed(() => {
-  const rows = contractorDocs.value || []
-  const q = docsSearch.value.trim().toLowerCase()
-  return rows.filter((doc: any) => {
-    const byCategory = !docsFilter.value || doc.category === docsFilter.value
-    if (!byCategory) return false
-    if (!q) return true
-    const hay = `${doc.title || ''} ${doc.notes || ''} ${doc.category || ''}`.toLowerCase()
-    return hay.includes(q)
-  }).slice().sort((a: any, b: any) => {
-    const at = new Date(a.createdAt || 0).getTime()
-    const bt = new Date(b.createdAt || 0).getTime()
-    return docsSort.value === 'new' ? bt - at : at - bt
-  })
+const {
+  docsSearch,
+  docsFilter,
+  docsSort,
+  filteredContractorDocs,
+  formatDocDate,
+  getDocCategoryLabel,
+} = useContractorCabinetDocumentsView({
+  contractorDocs,
+  docCategories: DOC_CATEGORIES,
 })
 
-const showBrutalistContractorDashboardHero = computed(() => isBrutalistContractorCabinetMode.value && section.value === 'dashboard')
-const contractorHeroSubtitle = computed(() => {
-  const type = contractor.value?.contractorType === 'company' ? 'подрядчик / компания' : 'мастер'
-  const city = contractor.value?.city ? ` · ${contractor.value.city}` : ''
-  return `${type}${city}`
-})
-const contractorDashboardFacts = computed(() => [
-  { label: 'профиль', value: `${profilePct.value}%` },
-  { label: 'активные задачи', value: String(activeCount.value) },
-  { label: 'проекты', value: String(linkedProjects.value?.length || 0) },
-  { label: 'документы', value: String(contractorDocs.value?.length || 0) },
-])
-type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
-const profileSaveState = ref<InlineAutosaveState>('')
-let profileSaveTimer: ReturnType<typeof setTimeout> | null = null
-
-function formatDocDate(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('ru-RU')
-}
-
-function getDocCategoryLabel(category: string): string {
-  return DOC_CATEGORIES.find(c => c.value === category)?.label ?? category
-}
-
-function clearProfileSaveTimer() {
-  if (!profileSaveTimer) return
-  clearTimeout(profileSaveTimer)
-  profileSaveTimer = null
-}
-
-function setAutosaveSettled(expected: InlineAutosaveState) {
-  setTimeout(() => {
-    if (profileSaveState.value === expected) profileSaveState.value = ''
-  }, 1400)
-}
-
-async function autoSaveProfile() {
-  clearProfileSaveTimer()
-  profileSaveState.value = 'saving'
-  try {
-    await saveProfile()
-    profileSaveState.value = 'saved'
-    setAutosaveSettled('saved')
-  } catch {
-    profileSaveState.value = 'error'
-  }
-}
-
-function queueProfileAutosave() {
-  clearProfileSaveTimer()
-  saveMsg.value = ''
-  profileSaveTimer = setTimeout(() => {
-    autoSaveProfile()
-  }, 420)
-}
-
-function toggleProfileArray(target: string[], value: string) {
-  toggleArr(target, value)
-  queueProfileAutosave()
-}
-
-function addCertification() {
-  const hasValue = !!newCert.value.trim()
-  addCert()
-  if (!hasValue) return
-  queueProfileAutosave()
-}
-
-function removeCertification(index: number) {
-  removeCert(index)
-  queueProfileAutosave()
-}
-
-// ── Wipe2 card view ──
-const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
-const showAll = computed(() => !isWipe2Mode.value)
-
-// ── Ribbon nav: scroll to section on click ──
-function scrollToSection(key: string) {
-  const vp = viewportRef.value
-  const root = vp ?? document.body
-  const el = root.querySelector<HTMLElement>(`.cab-section[data-section="${key}"]`)
-  if (!el) return
-  // scroll-margin-top handles sticky header offset (set in CSS)
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
-function onNavClick(key: string) {
-  section.value = key
-  if (showAll.value) requestAnimationFrame(() => scrollToSection(key))
-}
-watch(section, (key) => {
-  if (!showAll.value) return
-  requestAnimationFrame(() => scrollToSection(key))
-}, { flush: 'post' })
-
-onBeforeUnmount(() => {
-  clearProfileSaveTimer()
+const {
+  showBrutalistContractorDashboardHero,
+  contractorHeroSubtitle,
+  contractorDashboardFacts,
+} = useContractorCabinetDashboardView({
+  contractor,
+  section,
+  profilePct,
+  activeCount,
+  linkedProjects,
+  contractorDocs,
+  isBrutalistContractorCabinetMode,
 })
 
-const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
-  const c = contractor.value
-  if (!c) return null
-  const items = workItems.value || []
-  const active = items.filter((i: any) => ['planned', 'in_progress'].includes(i.status))
-  const docs = contractorDocs.value || []
-  const members = staff.value || []
-  const allSections = [
-      { title: 'Обзор', fields: [
-        { label: 'Задач всего', value: String(dashStats.value?.total ?? 0) },
-        { label: 'В работе', value: String(dashStats.value?.inProgress ?? 0) },
-        { label: 'Выполнено', value: String(dashStats.value?.done ?? 0) },
-        { label: 'Просрочено', value: String(dashStats.value?.overdue ?? 0) },
-        { label: 'Проектов', value: String(linkedProjects.value?.length ?? 0), span: 2 as const },
-        { label: 'Профиль заполнен', value: `${profilePct.value}%`, span: 2 as const },
-      ]},
-      { title: 'Активные задачи', fields: active.length
-        ? active.slice(0, 8).map((i: any) => ({
-            label: i.title ?? 'Задача',
-            value: i.status,
-            type: 'status' as const,
-            span: 2 as const,
-            description: i.description ?? i.notes ?? '',
-            badge: i.priority ? `приоритет ${i.priority}` : 'в работе',
-            caption: i.deadline ? formatDocDate(i.deadline) : 'без дедлайна',
-            eyebrow: 'задача',
-            tone: i.status === 'done' ? 'success' as const : 'accent' as const,
-          }))
-        : [{ label: 'Всего задач', value: String(items.length) }, { label: 'Нет активных', value: '', span: 2 as const }],
-      },
-      { title: 'Контакты', fields: [
-        { label: 'Телефон', value: form.phone },
-        { label: 'Email', value: form.email },
-        { label: 'Компания', value: form.companyName },
-        { label: 'Telegram', value: (form as any).telegram ?? '' },
-        { label: 'Сайт', value: form.website },
-        { label: 'Виды работ', value: Array.isArray(form.workTypes) ? form.workTypes.join(', ') : '', span: 2 as const },
-        { label: 'Роли', value: Array.isArray(form.roleTypes) ? form.roleTypes.join(', ') : '', span: 2 as const },
-        { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
-      ]},
-      { title: 'Паспортные данные', fields: [
-        { label: 'Серия', value: form.passportSeries },
-        { label: 'Номер', value: form.passportNumber },
-        { label: 'Выдан', value: form.passportIssuedBy, span: 2 as const },
-        { label: 'Дата выдачи', value: form.passportIssueDate },
-        { label: 'Код подразделения', value: form.passportDepartmentCode },
-        { label: 'Дата рождения', value: form.birthDate },
-        { label: 'Место рождения', value: form.birthPlace, span: 2 as const },
-        { label: 'СНИЛС', value: form.snils },
-        { label: 'ИНН', value: form.inn },
-      ]},
-      { title: 'Реквизиты', fields: [
-        { label: 'ИНН', value: form.inn },
-        { label: 'КПП', value: form.kpp },
-        { label: 'ОГРН', value: form.ogrn },
-        { label: 'Банк', value: form.bankName, span: 2 as const },
-        { label: 'БИК', value: form.bik },
-        { label: 'Р/с', value: form.settlementAccount, span: 2 as const },
-        { label: 'Юр. адрес', value: form.legalAddress, span: 2 as const },
-      ]},
-      { title: 'Документы', fields: docs.length
-        ? docs.slice(0, 8).map((d: any) => ({
-            label: d.title ?? d.name ?? 'Документ',
-            value: getDocCategoryLabel(d.category ?? ''),
-            description: d.notes ?? '',
-            badge: d.fileName ? 'файл' : 'запись',
-            caption: d.createdAt ? formatDocDate(d.createdAt) : 'без даты',
-            eyebrow: 'документы',
-            tone: 'default' as const,
-          }))
-        : [{ label: 'Документы', value: 'нет загруженных документов', span: 2 as const }],
-      },
-      { title: 'Специализация', fields: [
-        { label: 'Виды работ', value: Array.isArray(form.workTypes) ? form.workTypes.join(', ') : '', span: 2 as const },
-        { label: 'Роли', value: Array.isArray(form.roleTypes) ? form.roleTypes.join(', ') : '', span: 2 as const },
-        { label: 'Сертификаты', value: (form as any).certifications?.length ? String((form as any).certifications.length) : '—' },
-      ]},
-      { title: 'Финансы', fields: [
-        { label: 'Система налогообложения', value: form.taxSystem ?? '', span: 2 as const },
-        { label: 'Ставка в час', value: form.hourlyRate ?? '' },
-        { label: 'Способы оплаты', value: Array.isArray(form.paymentMethods) ? form.paymentMethods.join(', ') : '', span: 2 as const },
-      ]},
-      { title: 'Портфолио', fields: [
-        { label: 'Выполненных задач', value: String(portfolioStats.value?.doneCount ?? 0), description: 'закрытые позиции в work log', badge: 'портфолио', caption: 'за всё время', eyebrow: 'результат', tone: 'success' as const },
-        { label: 'Проектов', value: String(portfolioStats.value?.projectCount ?? 0), description: 'объекты, где подрядчик участвовал', badge: 'кейсы', caption: 'в базе', eyebrow: 'проектный след', tone: 'accent' as const },
-        { label: 'Фотографий', value: String(portfolioStats.value?.photoCount ?? 0), description: 'визуальные подтверждения работ', badge: 'медиа', caption: 'загружено', eyebrow: 'архив', tone: 'default' as const },
-      ]},
-      { title: 'Настройки', fields: [
-        { label: 'Уведомления: новые задачи', value: notifSettings.newTasks ? 'включено' : 'выключено' },
-        { label: 'Уведомления: дедлайны', value: notifSettings.deadlines ? 'включено' : 'выключено' },
-      ]},
-      { title: 'Бригада', fields: members.length
-        ? members.slice(0, 8).map((m: any) => ({
-            label: m.name ?? 'Сотрудник',
-            value: m.role ?? m.specialization ?? '',
-            description: m.phone ?? m.email ?? '',
-            badge: m.specialization ? 'спец' : 'команда',
-            caption: m.specialization ?? 'роль не указана',
-            eyebrow: 'бригада',
-            tone: 'default' as const,
-          }))
-        : [{ label: 'Сотрудники', value: 'нет сотрудников', span: 2 as const }],
-      },
-    ]
-    const W2_SECTION: Record<string, string> = {
-      tasks: 'Активные задачи', contacts: 'Контакты', passport: 'Паспортные данные',
-      requisites: 'Реквизиты', documents: 'Документы', specialization: 'Специализация',
-      finances: 'Финансы', portfolio: 'Портфолио', settings: 'Настройки', staff: 'Бригада',
-    }
-    const sectionTitle = W2_SECTION[section.value]
-    return {
-      entityTitle: c.name,
-      entitySubtitle: form.companyName || (c.contractorType === 'company' ? 'организация' : 'мастер'),
-      entityStatus: c.contractorType === 'company' ? 'организация' : 'мастер',
-      entityStatusColor: c.contractorType === 'company' ? 'blue' as const : 'amber' as const,
-      sections: sectionTitle ? allSections.filter(s => s.title === sectionTitle) : allSections,
-    }
+const {
+  profileSaveState,
+  queueProfileAutosave,
+  toggleProfileArray,
+  addCertification,
+  removeCertification,
+} = useContractorCabinetProfileState({
+  saveProfile,
+  saveMsg,
+  toggleArr,
+  newCert,
+  addCert,
+  removeCert,
+})
+
+const {
+  wipe2CabinetData,
+} = useContractorCabinetWipe2View({
+  contractor,
+  workItems,
+  contractorDocs,
+  staff,
+  linkedProjects,
+  profilePct,
+  portfolioStats,
+  dashStats,
+  notifSettings,
+  section,
+  form,
+  formatDocDate,
+  getDocCategoryLabel,
+})
+
+const {
+  isWipe2Mode,
+  showAll,
+  onNavClick,
+} = useCabinetSectionRibbonNav({
+  contentViewMode,
+  section,
+  viewportRef,
 })
 registerWipe2Data(wipe2CabinetData)
 </script>
@@ -1283,12 +934,6 @@ registerWipe2Data(wipe2CabinetData)
 .tag-shift-move, .tag-shift-enter-active, .tag-shift-leave-active { transition: all .22s ease; }
 .tag-shift-enter-from, .tag-shift-leave-to { opacity: 0; transform: translateY(8px) scale(.97); }
 
-.cab-add-task-row--brutalist {
-  padding-bottom: 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  margin-bottom: 14px;
-}
-
 .cab-form--brutalist {
   gap: 18px;
 }
@@ -1300,35 +945,10 @@ registerWipe2Data(wipe2CabinetData)
   background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 
-.u-modal--brutalist-task {
-  border-radius: 0;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
-}
-
 .cab-docs-panel--brutalist {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.cab-filters--brutalist {
-  padding: 10px 0 2px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  margin-bottom: 14px;
-}
-
-.cab-project-group--brutalist {
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
-  padding: 14px;
-}
-
-.cab-task--brutalist,
-.cab-stages-inline--brutalist {
-  border-radius: 0;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
 }
 
 .cab-doc-card--brutalist,

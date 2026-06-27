@@ -245,7 +245,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { registerWipe2Data } from '~/composables/useWipe2'
 
 const props = defineProps<{ managerId: number; showSidebar?: boolean }>()
@@ -323,9 +322,6 @@ const profilePct = computed(() => {
 const form = reactive({ name: '', role: '', phone: '', email: '', telegram: '', city: '', notes: '' })
 const saving = ref(false)
 const saveMsg = ref('')
-type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
-const profileSaveState = ref<InlineAutosaveState>('')
-let profileSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 watch(manager, (m) => {
   if (!m) return
@@ -350,40 +346,12 @@ async function saveProfile() {
   } finally { saving.value = false }
 }
 
-function clearProfileSaveTimer() {
-  if (!profileSaveTimer) return
-  clearTimeout(profileSaveTimer)
-  profileSaveTimer = null
-}
-
-function setAutosaveSettled(expected: InlineAutosaveState) {
-  setTimeout(() => {
-    if (profileSaveState.value === expected) profileSaveState.value = ''
-  }, 1400)
-}
-
-async function autoSaveProfile() {
-  clearProfileSaveTimer()
-  profileSaveState.value = 'saving'
-  try {
-    await saveProfile()
-    profileSaveState.value = 'saved'
-    setAutosaveSettled('saved')
-  } catch {
-    profileSaveState.value = 'error'
-  }
-}
-
-function queueProfileAutosave() {
-  clearProfileSaveTimer()
-  saveMsg.value = ''
-  profileSaveTimer = setTimeout(() => {
-    autoSaveProfile()
-  }, 420)
-}
-
-onBeforeUnmount(() => {
-  clearProfileSaveTimer()
+const {
+  profileSaveState,
+  queueProfileAutosave,
+} = useManagerCabinetProfileState({
+  saveProfile,
+  saveMsg,
 })
 
 const router = useRouter()
@@ -397,110 +365,25 @@ function fmtDate(d: string) {
 }
 
 // ── Wipe2 card view ──
-const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
-const showAll = computed(() => !isWipe2Mode.value)
+const {
+  isWipe2Mode,
+  showAll,
+  onNavClick,
+} = useCabinetSectionRibbonNav({
+  contentViewMode,
+  section,
+  viewportRef,
+})
 
-// ── Ribbon nav: scroll to section on click ──
-function scrollToSection(key: string) {
-  const vp = viewportRef.value
-  const root = vp ?? document.body
-  const el = root.querySelector<HTMLElement>(`.cab-section[data-section="${key}"]`)
-  if (!el) return
-  // scroll-margin-top handles sticky header offset (set in CSS)
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
-function onNavClick(key: string) {
-  section.value = key
-  if (showAll.value) requestAnimationFrame(() => scrollToSection(key))
-}
-watch(section, (key) => {
-  if (!showAll.value) return
-  requestAnimationFrame(() => scrollToSection(key))
-}, { flush: 'post' })
-
-const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
-  const m = manager.value
-  if (!m) return null
-  const projs = linkedProjects.value || []
-  const pending = projs.filter((p: any) => p.status === 'pending' || p.status === 'revision')
-  const done = projs.filter((p: any) => p.status === 'done' || p.status === 'completed').length
-    const allSections = [
-      { title: 'Обзор', fields: [
-        { label: 'Всего проектов', value: String(projs.length) },
-        { label: 'Как лид', value: String(activeProjectsCount.value) },
-        { label: 'Профиль заполнен', value: `${profilePct.value}%` },
-        { label: 'Заметки', value: form.notes ? 'есть' : '—' },
-      ]},
-      { title: 'Проекты', fields: projs.length
-        ? projs.slice(0, 6).map((p: any) => ({
-            label: p.projectName ?? p.title ?? 'Проект',
-            value: p.status ?? '',
-            type: 'status' as const,
-            span: 2 as const,
-            description: p.address ?? '',
-            badge: p.role || 'manager',
-            caption: p.projectSlug || 'без slug',
-            eyebrow: 'проект',
-            tone: p.role === 'lead' ? 'accent' as const : 'default' as const,
-          }))
-        : [{ label: '', value: 'нет проектов', span: 2 as const }],
-      },
-      { title: 'Лента событий', fields: projs.slice(0, 5).length
-        ? projs.slice(0, 5).map((p: any) => ({
-            label: p.projectName ?? p.title ?? 'Событие',
-            value: p.status ?? '',
-            type: 'status' as const,
-            span: 2 as const,
-            description: p.address ?? 'операционный апдейт проекта',
-            badge: p.role || 'update',
-            caption: p.projectSlug || 'карточка проекта',
-            eyebrow: 'лента',
-            tone: 'default' as const,
-          }))
-        : [{ label: '', value: 'нет событий', span: 2 as const }],
-      },
-      { title: 'Согласования', fields: pending.length
-        ? pending.slice(0, 6).map((p: any) => ({
-            label: p.projectName ?? p.title ?? 'Согласование',
-            value: p.status ?? '',
-            type: 'status' as const,
-            span: 2 as const,
-            description: p.address ?? 'требует решения менеджера',
-            badge: 'pending',
-            caption: p.role || 'координация',
-            eyebrow: 'approval',
-            tone: 'accent' as const,
-          }))
-        : [{ label: '', value: 'нет ожидающих согласований', span: 2 as const }],
-      },
-      { title: 'Отчёты', fields: [
-        { label: 'Всего проектов', value: String(projs.length) },
-        { label: 'Завершено', value: String(done) },
-        { label: 'В работе', value: String(projs.length - done) },
-      ]},
-      { title: 'Профиль', fields: [
-        { label: 'Роль', value: form.role },
-        { label: 'Телефон', value: form.phone },
-        { label: 'Email', value: form.email },
-        { label: 'Telegram', value: form.telegram },
-        { label: 'Город', value: form.city },
-        { label: 'Проектов', value: String(projs.length) },
-        { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
-      ]},
-    ]
-    const W2_SECTION: Record<string, string> = {
-      projects: 'Проекты', feed: 'Лента событий', approvals: 'Согласования',
-      reports: 'Отчёты', profile: 'Профиль',
-    }
-    const sectionTitle = W2_SECTION[section.value]
-    return {
-      entityTitle: m.name,
-      entitySubtitle: form.role || undefined,
-      entityStatus: form.role ?? 'менеджер',
-      entityStatusColor: 'blue' as const,
-      sections: sectionTitle ? allSections.filter(s => s.title === sectionTitle) : allSections,
-    }
+const {
+  wipe2CabinetData,
+} = useManagerCabinetWipe2View({
+  manager,
+  linkedProjects,
+  activeProjectsCount,
+  profilePct,
+  section,
+  form,
 })
 registerWipe2Data(wipe2CabinetData)
 </script>

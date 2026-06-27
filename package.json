@@ -4,14 +4,15 @@
   "type": "module",
   "scripts": {
     "dev": "nuxt dev --port 3000",
-    "build": "nuxt build",
+    "build": "nuxt build && node scripts/repair-nitro-vue-runtime.mjs",
     "preview": "nuxt preview",
-    "start": "node .output/server/index.mjs",
+    "start": "node scripts/repair-nitro-vue-runtime.mjs && node .output/server/index.mjs",
     "messenger:web:dev": "pnpm -C messenger/web dev",
     "messenger:web:build": "NUXT_APP_BASE_URL=/messenger/ pnpm -C messenger/web build",
     "messenger:web:preview": "pnpm -C messenger/web preview",
     "messenger:core:dev": "pnpm -C messenger/core dev",
     "messenger:core:build": "pnpm -C messenger/core build",
+    "messenger:core:smoke:router": "pnpm -C messenger/core smoke:router",
     "messenger:core:start": "pnpm -C messenger/core start",
     "messenger:export:standalone": "bash scripts/export-messenger-standalone.sh",
     "comm:dev": "cd services/communications-service && node --watch --experimental-strip-types src/index.ts",
@@ -42,11 +43,10 @@
     "h3": "latest",
     "ioredis": "^5.4.2",
     "livekit-client": "^2.18.0",
-    "nuxt": "^4.3.1",
+    "nuxt": "^4.4.2",
     "pinia": "^3.0.4",
     "postgres": "^3.4.5",
     "tailwindcss": "^4.2.1",
-    "werift": "^0.22.9",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -56,16 +56,5 @@
     "drizzle-kit": "^0.30.4",
     "typescript": "^5.8.2",
     "vue-tsc": "^2.2.12"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "esbuild",
-      "vue-demi"
-    ],
-    "overrides": {
-      "serialize-javascript": ">=7.0.3",
-      "esbuild": "0.27.3"
-    }
   }
 }

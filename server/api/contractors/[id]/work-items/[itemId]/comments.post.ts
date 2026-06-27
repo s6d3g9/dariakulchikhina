@@ -2,14 +2,15 @@ import { useDb } from '~/server/db/index'
 import { workStatusItemComments, workStatusItems, contractors } from '~/server/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { requireIntParam } from '~/server/utils/query'
 
 const Body = z.object({
   text: z.string().min(1).max(2000),
 })
 
 export default defineEventHandler(async (event) => {
-  const contractorId = Number(getRouterParam(event, 'id'))
-  const itemId = Number(getRouterParam(event, 'itemId'))
+  const contractorId = requireIntParam(event, 'id')
+  const itemId = requireIntParam(event, 'itemId')
   // Auth: admin or the contractor themselves
   requireAdminOrContractor(event, contractorId)
   const { text } = await readValidatedNodeBody(event, Body)

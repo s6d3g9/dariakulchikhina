@@ -55,7 +55,7 @@
  */
 
 // 1. Описание типов (Типизация для ИИ)
-export type NodeType = 'system_root' | 'registry' | 'cabinet' | 'project_root';
+export type NodeType = 'system_root' | 'os_root' | 'registry' | 'cabinet' | 'project_root';
 export type PayloadItemType = 'node' | 'leaf';
 
 export interface FilterParams {
@@ -81,4 +81,3 @@ export interface NavigationNode {
   filter: FilterParams;  // Параметры локального поиска
   payload: PayloadItem[]; // Содержимое узла (дочерние узлы или листы)
 }
-

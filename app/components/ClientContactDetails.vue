@@ -150,12 +150,11 @@ import {
   OBJECT_TYPE_OPTIONS,
   BALCONY_OPTIONS,
   PARKING_OPTIONS,
-} from '~~/shared/constants/profile-fields'
+} from '~~/shared/constants/profile/profile-fields'
 
 const props = defineProps<{ slug: string }>()
 
-const reqHeaders = useRequestHeaders(['cookie'])
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
+const { data: profileEnvelope, pending } = await useClientProjectProfile(() => props.slug)
 
 const form = reactive<Record<string, any>>({
   fio: '',
@@ -175,24 +174,24 @@ const form = reactive<Record<string, any>>({
   parking: '',
 })
 
-watch(project, (p) => {
-  if (p?.profile) {
+watch(() => profileEnvelope.value?.data.profile, (p) => {
+  if (p) {
     Object.assign(form, {
-      fio: p.profile.fio || '',
-      phone: p.profile.phone || '',
-      email: p.profile.email || '',
-      messenger: p.profile.messenger || '',
-      messengerNick: p.profile.messengerNick || '',
-      preferredContact: p.profile.preferredContact || '',
-      address: p.profile.address || '',
-      objectAddress: p.profile.objectAddress || '',
-      objectType: p.profile.objectType || '',
-      objectArea: p.profile.objectArea || '',
-      roomCount: p.profile.roomCount || '',
-      floor: p.profile.floor || '',
-      ceilingHeight: p.profile.ceilingHeight || '',
-      hasBalcony: p.profile.hasBalcony || '',
-      parking: p.profile.parking || '',
+      fio: p.fio || '',
+      phone: p.phone || '',
+      email: p.email || '',
+      messenger: p.messenger || '',
+      messengerNick: p.messengerNick || '',
+      preferredContact: p.preferredContact || '',
+      address: p.address || '',
+      objectAddress: p.objectAddress || '',
+      objectType: p.objectType || '',
+      objectArea: p.objectArea || '',
+      roomCount: p.roomCount || '',
+      floor: p.floor || '',
+      ceilingHeight: p.ceilingHeight || '',
+      hasBalcony: p.hasBalcony || '',
+      parking: p.parking || '',
     })
   }
 }, { immediate: true })
@@ -209,12 +208,9 @@ async function save() {
   if (pending.value) return
   saving.value = true
   try {
-    await $fetch(`/api/projects/${props.slug}/client-profile`, {
-      method: 'PUT',
-      body: { ...form },
-    })
-    if (project.value?.profile) {
-      Object.assign(project.value.profile, { ...form })
+    const response = await updateClientProjectProfile(props.slug, { ...form })
+    if (profileEnvelope.value?.data.profile) {
+      Object.assign(profileEnvelope.value.data.profile, response.data.profile)
     }
     markSaved()
   } finally {

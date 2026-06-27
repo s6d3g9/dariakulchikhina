@@ -4,54 +4,32 @@
     <template v-else>
 
       <!-- Section: Team -->
-      <section class="ctl-section" v-if="contractors?.length">
+      <section class="ctl-section" v-if="teamMembers.length">
         <div class="ctl-section-header">
           <span class="ctl-section-title">Команда проекта</span>
-          <span class="ctl-team-count">{{ contractors.length }} {{ noun(contractors.length, 'специалист', 'специалиста', 'специалистов') }}</span>
+          <span class="ctl-team-count">{{ teamMembers.length }} {{ noun(teamMembers.length, 'участник', 'участника', 'участников') }}</span>
         </div>
 
         <div class="ctl-team-grid">
-          <div v-for="c in contractors" :key="c.id" class="ctl-team-card">
+          <div v-for="c in teamMembers" :key="c.id" class="ctl-team-card">
             <div class="ctl-avatar">
-              <span class="ctl-avatar-letter">{{ c.name?.[0] || '?' }}</span>
+              <span class="ctl-avatar-letter">{{ c.avatarInitial || '?' }}</span>
             </div>
             <div class="ctl-team-info">
-              <div class="ctl-team-name">{{ c.name }}</div>
-              <div v-if="c.companyName" class="ctl-team-company">{{ c.companyName }}</div>
-              <div v-if="c.workTypes?.length" class="ctl-work-types">
-                <span v-for="wt in c.workTypes.slice(0, 3)" :key="wt" class="ctl-wt-chip">
-                  {{ workTypeLabel(wt) }}
-                </span>
-                <span v-if="c.workTypes.length > 3" class="ctl-wt-chip ctl-wt-more">
-                  +{{ c.workTypes.length - 3 }}
+              <div class="ctl-team-name">{{ c.displayName }}</div>
+              <div v-if="c.secondaryName" class="ctl-team-company">{{ c.secondaryName }}</div>
+              <div v-if="c.roleLabels.length" class="ctl-work-types">
+                <span v-for="role in c.roleLabels.slice(0, 2)" :key="role" class="ctl-wt-chip ctl-wt-chip--role">
+                  {{ role }}
                 </span>
               </div>
-              <div class="ctl-contacts">
-                <a v-if="c.phone" :href="`tel:${c.phone}`" class="ctl-contact-btn ctl-contact-btn--phone">
-                  📞 {{ c.phone }}
-                </a>
-                <a
-                  v-if="c.messenger === 'WhatsApp' && c.phone"
-                  :href="`https://wa.me/${c.phone.replace(/\D/g,'')}`"
-                  target="_blank"
-                  class="ctl-contact-btn ctl-contact-btn--wa"
-                >
-                  WhatsApp
-                </a>
-                <a
-                  v-else-if="c.messenger === 'Telegram' && c.messengerNick"
-                  :href="`https://t.me/${c.messengerNick.replace('@','')}`"
-                  target="_blank"
-                  class="ctl-contact-btn ctl-contact-btn--tg"
-                >
-                  Telegram
-                </a>
-                <a
-                  v-else-if="c.messenger && c.messengerNick"
-                  class="ctl-contact-btn ctl-contact-btn--msg"
-                >
-                  {{ c.messenger }}: {{ c.messengerNick }}
-                </a>
+              <div v-if="c.workTypeLabels.length" class="ctl-work-types">
+                <span v-for="wt in c.workTypeLabels.slice(0, 3)" :key="wt" class="ctl-wt-chip">
+                  {{ wt }}
+                </span>
+                <span v-if="c.workTypeLabels.length > 3" class="ctl-wt-chip ctl-wt-more">
+                  +{{ c.workTypeLabels.length - 3 }}
+                </span>
               </div>
             </div>
           </div>
@@ -67,15 +45,17 @@
 </template>
 
 <script setup lang="ts">
-import { workTypeLabel } from '~~/shared/utils/work-status'
+import type { ApiV1ClientProjectTeam, ApiV1Envelope } from '~~/shared/types/api-v1'
 
 const props = defineProps<{ slug: string }>()
 
 const reqHeaders = useRequestHeaders(['cookie'])
-const { data: contractors, pending: teamPending } = await useFetch<any[]>(
-  () => `/api/projects/${props.slug}/contractors`,
+const { data: teamEnvelope, pending: teamPending } = await useFetch<ApiV1Envelope<ApiV1ClientProjectTeam>>(
+  () => `/api/v1/client/projects/${props.slug}/team`,
   { headers: reqHeaders }
 )
+
+const teamMembers = computed(() => teamEnvelope.value?.data.members || [])
 
 function noun(n: number, one: string, few: string, many: string) {
   const mod = n % 100 > 10 && n % 100 < 20 ? many : { 1: one, 2: few, 3: few, 4: few }[n % 10] || many
@@ -165,22 +145,8 @@ function noun(n: number, one: string, few: string, many: string) {
   font-size: .62rem; padding: 2px 8px; border: 1px solid var(--c-border, #e8e8e4);
   color: var(--c-muted, color-mix(in srgb, var(--glass-text) 55%, transparent));
 }
+.ctl-wt-chip--role { color: var(--c-text, color-mix(in srgb, var(--glass-text) 20%, transparent)); }
 .ctl-wt-more { background: var(--c-bg2, #f8f8f7); }
-
-/* Contacts */
-.ctl-contacts { display: flex; flex-wrap: wrap; gap: 6px; }
-.ctl-contact-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: .74rem; padding: 5px 12px; text-decoration: none;
-  border: 1px solid var(--c-border, #e8e8e4); cursor: pointer;
-  color: var(--c-text, color-mix(in srgb, var(--glass-text) 20%, transparent)); transition: border-color .15s;
-}
-.ctl-contact-btn:hover { border-color: var(--c-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); }
-.ctl-contact-btn--wa  { border-color: #25d366; color: #25d366; }
-.ctl-contact-btn--wa:hover  { background: rgba(37,211,102,.09); }
-.ctl-contact-btn--tg  { border-color: #229ed9; color: #229ed9; }
-.ctl-contact-btn--tg:hover  { background: rgba(34,158,217,.09); }
-.ctl-contact-btn--phone { }
 
 .ctl-empty, .ctl-no-team { font-size: .82rem; color: var(--c-muted, color-mix(in srgb, var(--glass-text) 65%, transparent)); padding: 24px 0; }
 

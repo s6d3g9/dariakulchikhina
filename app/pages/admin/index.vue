@@ -1,12 +1,12 @@
 <template>
   <div>
-    <div class="ent-empty-detail">
-      <span class="ent-empty-icon">📁</span>
-      <span v-if="projects?.length">Выберите проект из списка</span>
-      <span v-else-if="pending || isBootstrapping">[ LOADING... ]</span>
-      <span v-else>Нет проектов — создайте первый</span>
-      <GlassButton variant="secondary" density="compact" v-if="!projects?.length && !pending && !isBootstrapping"  style="margin-top:6px" @click="openCreate">+ создать проект</GlassButton>
-    </div>
+    <AdminLauncherWorkspace
+      :project-count="projects?.length || 0"
+      :projects="launcherProjects"
+      :studio-shell="studioShell"
+      :loading="pending || isBootstrapping || shellPending"
+      @create-project="openCreate"
+    />
     <Teleport to="body">
       <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
         <div class="pj-modal glass-surface">
@@ -138,35 +138,75 @@
 <script setup lang="ts">
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 import { PROJECT_PRESETS, getPresetsByCategory, findPreset } from '~~/shared/constants/presets'
+import type { ApiV1Envelope, ApiV1StudioShell } from '~~/shared/types/api-v1'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
 const adminCatalogs = useAdminCatalogs()
+const route = useRoute()
 
 const projects = adminCatalogs.getCatalog('projects')
 const pending = adminCatalogs.isCatalogLoading('projects')
 const isBootstrapping = ref(true)
+const shellPending = ref(false)
+const studioShell = ref<ApiV1StudioShell | null>(null)
+const launcherProjects = computed(() => (projects.value || []).map((project: any) => ({
+  slug: String(project.slug || project.id || ''),
+  title: String(project.title || project.name || project.slug || project.id || 'Проект'),
+  status: project.status ? String(project.status) : '',
+  projectType: project.projectType ? String(project.projectType) : '',
+})).filter(project => project.slug))
 
 async function reloadProjects() {
   try {
     await adminCatalogs.ensureCatalog('projects', true)
   } catch {
     // silent: empty state already covers unavailable data
+  }
+}
+
+async function reloadStudioShell() {
+  shellPending.value = true
+  try {
+    const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
+    const envelope = await $fetch<ApiV1Envelope<ApiV1StudioShell>>('/api/v1/studio/shell', { headers })
+    studioShell.value = envelope.data
+  } catch {
+    studioShell.value = null
+  } finally {
+    shellPending.value = false
+  }
+}
+
+async function reloadWorkspace() {
+  try {
+    await Promise.all([
+      reloadProjects(),
+      reloadStudioShell(),
+    ])
   } finally {
     isBootstrapping.value = false
   }
 }
 
+function shouldKeepLauncherOsContext() {
+  return typeof route.query.os === 'string' && route.query.os.trim().length > 0
+}
+
 onMounted(async () => {
   isBootstrapping.value = true
-  await adminNav.ensureSection('projects')
-  await reloadProjects()
+  if (!shouldKeepLauncherOsContext()) {
+    await adminNav.ensureSection('projects')
+  }
+  await reloadWorkspace()
 })
 onActivated(async () => {
   isBootstrapping.value = true
-  await adminNav.ensureSection('projects')
-  await reloadProjects()
+  if (!shouldKeepLauncherOsContext()) {
+    await adminNav.ensureSection('projects')
+  }
+  await reloadWorkspace()
 })
 
 // ── Пресеты ──────────────────────────────────────────
@@ -248,7 +288,7 @@ async function createProject() {
       },
     })
     closeCreate()
-    await reloadProjects()
+    await reloadWorkspace()
   } catch (e: any) {
     createError.value = e.data?.message || e.data?.statusMessage || e.statusMessage || e.message || 'Ошибка создания проекта'
     wizardStep.value = 2

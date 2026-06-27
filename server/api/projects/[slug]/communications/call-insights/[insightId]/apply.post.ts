@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 
 import { useDb } from '~/server/db'
 import { projects } from '~/server/db/schema'
-import { ensureHybridControl, applyHybridCallInsightToSprint, buildHybridControlSummary } from '~/shared/utils/project-control'
+import { ensureHybridControl, applyHybridCallInsightToSprint, buildHybridControlSummary } from '~/shared/utils/project/project-control'
 
 const BodySchema = z.object({
   targetSprintId: z.string().trim().min(1).optional(),

@@ -3,7 +3,8 @@
 // Создаёт таблицу documents если её нет
 import postgres from 'postgres'
 
-const DB_URL = process.env.DATABASE_URL || 'postgresql://daria:daria_secret_2026@localhost:5433/daria_admin'
+const DB_URL = process.env.DATABASE_URL
+if (!DB_URL) { console.error('DATABASE_URL is required'); process.exit(1) }
 const sql = postgres(DB_URL, { max: 1 })
 
 async function main() {

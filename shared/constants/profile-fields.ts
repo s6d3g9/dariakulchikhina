@@ -84,6 +84,47 @@ export const CLIENT_PROFILE_EDITABLE_KEYS = [...CLIENT_PROFILE_BASE_KEYS, ...CLI
 
 export type ClientProfileEditableKey = (typeof CLIENT_PROFILE_EDITABLE_KEYS)[number]
 
+export const CLIENT_PROFILE_READONLY_KEYS = [
+  'lead_step_done',
+  'brief_completed',
+  'brief_pdf_url',
+  'survey_status',
+  'survey_date',
+  'survey_engineer',
+  'survey_address',
+  'survey_area',
+  'survey_ceiling',
+  'survey_mep_notes',
+  'survey_issues',
+  'survey_recommendations',
+  'survey_files',
+  'contract_number',
+  'contract_date',
+  'contract_status',
+  'contract_parties',
+  'contract_file',
+  'contract_filename',
+  'contract_notes',
+  'invoice_amount',
+  'invoice_advance_pct',
+  'invoice_date',
+  'invoice_file',
+  'invoice_filename',
+  'invoice_payment_details',
+  'invoice_payment_status',
+  'payment_status',
+  'tor_scope',
+  'tor_exclusions',
+  'tor_timeline',
+  'tor_deliverables',
+  'service_tariff',
+  'album_files',
+] as const
+
+export const CLIENT_PROFILE_READABLE_KEYS = [...CLIENT_PROFILE_EDITABLE_KEYS, ...CLIENT_PROFILE_READONLY_KEYS] as const
+
+export type ClientProfileReadableKey = (typeof CLIENT_PROFILE_READABLE_KEYS)[number]
+
 export const BRIEF_COMPLETION_KEYS = ['fio', 'phone', 'brief_style_prefer', 'brief_home_mood', 'brief_adults_count', 'brief_hobbies'] as const
 
 export function createEmptyClientProfileDraft() {

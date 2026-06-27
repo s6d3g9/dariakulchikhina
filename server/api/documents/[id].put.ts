@@ -2,6 +2,7 @@ import { useDb } from '~/server/db/index'
 import { documents, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { requireIntParam } from '~/server/utils/query'
 
 const UpdateDocumentSchema = z.object({
   title: z.string().min(1).max(500).transform(s => s.trim()).optional(),
@@ -16,14 +17,13 @@ const UpdateDocumentSchema = z.object({
   url: z.string().max(1000).nullable().optional(),
   projectSlug: z.string().max(200).nullable().optional(),
   notes: z.string().max(5000).nullable().optional(),
-  content: z.string().nullable().optional(),
+  content: z.string().max(500_000).nullable().optional(),
   templateKey: z.string().max(100).nullable().optional(),
 })
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id) throw createError({ statusCode: 400 })
+  const id = requireIntParam(event, 'id')
 
   const body = await readValidatedNodeBody(event, UpdateDocumentSchema)
   const db = useDb()

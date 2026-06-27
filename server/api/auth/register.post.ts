@@ -1,7 +1,7 @@
 import { useDb } from '~/server/db'
 import { users } from '~/server/db/schema'
 import { eq, or } from 'drizzle-orm'
-import { RegisterSchema } from '~/shared/types/auth'
+import { RegisterSchema } from '~/shared/types/auth/auth'
 import { generateRecoveryPhrase } from '~/server/utils/recovery-phrase'
 
 export default defineEventHandler(async (event) => {
@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (existing) {
-    throw createError({ statusCode: 409, statusMessage: 'Пользователь с таким логином уже существует' })
+    throw createError({ statusCode: 409, statusMessage: 'Регистрация невозможна. Попробуйте другой логин' })
   }
 
   const recoveryPhrase = generateRecoveryPhrase()

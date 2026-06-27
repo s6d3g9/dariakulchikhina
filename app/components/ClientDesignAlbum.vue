@@ -72,38 +72,50 @@
 <script setup lang="ts">
 const props = defineProps<{ slug: string }>()
 
-const reqHeaders = useRequestHeaders(['cookie'])
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
+const { data: documentsEnvelope, pending } = await useClientProjectDocuments(() => props.slug)
 
-// All files from various profile sources + dedicated album_files field
 const allFiles = computed<any[]>(() => {
-  const pf = project.value?.profile || {}
-  const base: any[] = []
-
-  // album_files — dedicated gallery uploads
-  if (Array.isArray(pf.album_files)) base.push(...pf.album_files)
-
-  // survey_files (shown if category includes 'survey')
-  if (Array.isArray(pf.survey_files)) {
-    base.push(...pf.survey_files.map((f: any) => ({ ...f, category: f.category || 'survey' })))
-  }
-
-  return base
+  const documents = documentsEnvelope.value?.data.items || []
+  return documents
+    .filter(document => document.isDownloadable && ['album', 'survey', 'report'].includes(document.kind))
+    .map(document => ({
+      url: document.url,
+      filename: document.filename,
+      label: document.title,
+      category: normalizeAlbumCategory(document.category || document.kind),
+      mimeType: document.mimeType,
+      sizeBytes: document.sizeBytes,
+    }))
 })
 
 // Categories
 const CAT_MAP: Record<string, string> = {
   all:       'Все',
   concept:   'Концепция',
+  album:     'Альбом',
   render:    'Визуализации',
   plan:      'Планировки',
   detail:    'Детали',
   material:  'Материалы',
   survey:    'Обмеры',
+  report:    'Отчёты',
   other:     'Прочее',
 }
 
 const activeCat = ref('all')
+
+function normalizeAlbumCategory(value: string) {
+  const category = value.trim().toLowerCase()
+  if (category.includes('survey') || category.includes('обмер')) return 'survey'
+  if (category.includes('report') || category.includes('отч')) return 'report'
+  if (category.includes('concept') || category.includes('концеп')) return 'concept'
+  if (category.includes('render') || category.includes('виз')) return 'render'
+  if (category.includes('plan') || category.includes('план')) return 'plan'
+  if (category.includes('detail') || category.includes('детал')) return 'detail'
+  if (category.includes('material') || category.includes('материал')) return 'material'
+  if (category.includes('album') || category.includes('gallery')) return 'album'
+  return category || 'other'
+}
 
 const categories = computed(() => {
   const counts: Record<string, number> = { all: allFiles.value.length }

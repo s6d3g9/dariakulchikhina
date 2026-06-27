@@ -1,22 +1,24 @@
 import { useDb } from '~/server/db/index'
 import { designers } from '~/server/db/schema'
 import { z } from 'zod'
-import { getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer-catalogs'
+import { getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer/designer-catalogs'
+
+const zCatalogItem = z.record(z.string().max(200), z.union([z.string().max(1000), z.number(), z.boolean(), z.null(), z.array(z.string().max(200)).max(50)]))
 
 const CreateDesignerSchema = z.object({
-  name: z.string().min(1),
-  companyName: z.string().optional().default(''),
-  phone: z.string().optional().default(''),
-  email: z.string().optional().default(''),
-  telegram: z.string().optional().default(''),
-  website: z.string().optional().default(''),
-  city: z.string().optional().default(''),
-  experience: z.string().optional().default(''),
-  about: z.string().optional().default(''),
-  specializations: z.array(z.string()).optional().default([]),
-  services: z.array(z.any()).optional().default([]),
-  packages: z.array(z.any()).optional().default([]),
-  subscriptions: z.array(z.any()).optional().default([]),
+  name: z.string().min(1).max(200),
+  companyName: z.string().max(200).optional().default(''),
+  phone: z.string().max(50).optional().default(''),
+  email: z.string().max(200).optional().default(''),
+  telegram: z.string().max(100).optional().default(''),
+  website: z.string().max(500).optional().default(''),
+  city: z.string().max(200).optional().default(''),
+  experience: z.string().max(200).optional().default(''),
+  about: z.string().max(5000).optional().default(''),
+  specializations: z.array(z.string().max(200)).max(50).optional().default([]),
+  services: z.array(zCatalogItem).max(100).optional().default([]),
+  packages: z.array(zCatalogItem).max(100).optional().default([]),
+  subscriptions: z.array(zCatalogItem).max(100).optional().default([]),
 })
 
 export default defineEventHandler(async (event) => {

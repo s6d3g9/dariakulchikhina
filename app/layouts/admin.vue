@@ -4,7 +4,7 @@
     :class="{ 'admin-bg--brutalist': isBrutalistShell, 'admin-bg--glass': isLiquidGlassShell }"
     :style="sidebarLayoutStyle"
   >
-    <UIDesignPanel v-if="adminLayoutModules.designPanel" />
+    <LazyUIDesignPanel v-if="adminLayoutModules.designPanel" />
     <header v-if="adminLayoutModules.header && !isBrutalistShell" class="admin-header glass-surface">
       <span class="admin-brand">админ-панель</span>
       <div class="admin-header-links">
@@ -225,6 +225,8 @@
             </div>
           </div>
 
+          <AdminSidebarProjectChooser :collapsed="isSidebarCollapsed" />
+
           <ClientOnly>
             <AdminNestedNav
               v-if="adminLayoutModules.nestedNav"
@@ -279,6 +281,7 @@
 </template>
 
 <script setup lang="ts">
+import { GALLERY_TABS, nameInitials } from '~/composables/useAdminData'
 import { ADMIN_SECTION_ROUTES } from '~~/shared/constants/admin-navigation'
 
 const router = useRouter()
@@ -289,6 +292,25 @@ const { adminLayout, restoreModules } = useDesignModules()
 const blueprintRuntime = useAppBlueprintRuntime()
 useElementVisibility()
 const adminLayoutModules = computed(() => adminLayout.value)
+
+// ── Centralised data & entity management ──
+const adminData = useAdminData()
+const {
+  activeProjectSlug, withCtx,
+  isProjectsTab, isContractorsTab, isClientsTab, isGalleryTab,
+  isDocumentsTab, isDesignersTab, isSellersTab,
+  contractorsTabTo, clientsTabTo, designersTabTo, sellersTabTo,
+  galleryActiveTabTo, galleryCurrentChip,
+  notifData, notifTotal, refreshNotif,
+  projectData, refreshProjectData,
+  quickProjects, currentProjectTitle, currentProjectInitials,
+  quickContractors, quickClients, quickDesigners, quickSellers,
+  linkedSellersData, linkedDesignersData, linkedContractorsData,
+  isClientLinked, isContractorLinked, isDesignerLinked, isSellerLinked,
+  clientActionLoading, clientActionMessage,
+  toggleClientLink, toggleContractorLink, toggleDesignerLink, toggleSellerLink,
+  logout,
+} = adminData
 
 const isBrutalistShell = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 
@@ -390,389 +412,36 @@ const hasMobileContentPriority = computed(() => {
   )
 })
 
-// ── Notifications ─────────────────────────────────────────────
-const { data: notifData, refresh: refreshNotif } = useFetch<any>('/api/admin/notifications', {
-  server: false,
-  default: () => ({ total: 0, extra: { count: 0 }, overdue: { count: 0 } }),
-})
-const notifTotal = computed(() => notifData.value?.total || 0)
-// Обновляем каждые 2 минуты
+// Обновляем уведомления каждые 2 минуты
 let _notifInterval: ReturnType<typeof setInterval> | null = null
-
-// ── Route helpers (must be before useFetch that references them) ──
-const activeProjectSlug = computed(() => {
-  const normalize = (value: unknown) => {
-    if (typeof value !== 'string') return ''
-    const trimmed = value.trim()
-    if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return ''
-    return trimmed
-  }
-
-  if (route.path.startsWith('/admin/projects/')) {
-    return normalize(route.params.slug)
-  }
-  return normalize(route.query.projectSlug)
-})
 
 if (activeProjectSlug.value) {
   adminNav.ensureProject(activeProjectSlug.value, activeProjectSlug.value)
 }
 
-// Current project info for linking/unlinking
-const projectDataAsyncKey = computed(() => `admin-layout-project-data:${activeProjectSlug.value || 'none'}`)
-const { data: projectData, refresh: refreshProjectData } = ((useAsyncData as any)(
-  projectDataAsyncKey,
-  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}`) : Promise.resolve(null),
-  { watch: [activeProjectSlug], default: () => null, server: false },
-)) as { data: Ref<any>, refresh: () => Promise<void> }
-
-// ── Gallery tabs config ─────────────────────────────────────────
-const GALLERY_TABS = [
-  { slug: 'interiors',  label: 'интерьеры',    icon: 'ин' },
-  { slug: 'furniture',  label: 'мебель',        icon: 'мб' },
-  { slug: 'materials',  label: 'материалы',     icon: 'мт' },
-  { slug: 'art',        label: 'арт-объекты',   icon: 'ар' },
-  { slug: 'moodboards', label: 'мудборды',      icon: 'мд' },
-]
-
-function withCtx(path: string) {
-  return activeProjectSlug.value
-    ? { path, query: { projectSlug: activeProjectSlug.value } }
-    : path
-}
-
-const isProjectsTab    = computed(() => route.path === ADMIN_SECTION_ROUTES.projects || route.path.startsWith('/admin/projects'))
-const isContractorsTab = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.contractors))
-const isClientsTab     = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.clients))
-const isGalleryTab     = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.gallery))
-const isDocumentsTab   = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.docs))
-const isDesignersTab   = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.designers))
-const isSellersTab     = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.sellers))
-
-const contractorsTabTo    = computed(() => withCtx(ADMIN_SECTION_ROUTES.contractors))
-const clientsTabTo        = computed(() => withCtx(ADMIN_SECTION_ROUTES.clients))
-const designersTabTo      = computed(() => withCtx(ADMIN_SECTION_ROUTES.designers))
-const sellersTabTo        = computed(() => withCtx(ADMIN_SECTION_ROUTES.sellers))
-const galleryActiveTabTo  = computed(() => {
-  const match = GALLERY_TABS.find(g => route.path === `/admin/gallery/${g.slug}`)
-  return withCtx(`/admin/gallery/${match?.slug ?? 'interiors'}`)
-})
-
-const galleryCurrentChip = computed(() => {
-  const match = GALLERY_TABS.find(g => route.path === `/admin/gallery/${g.slug}`)
-  return match?.icon ?? ''
-})
-
-// ── Projects data ───────────────────────────────────────────────
-const { data: quickProjectsData } = useFetch<any[]>('/api/projects', { server: false, default: () => [] })
-const quickProjects = computed(() =>
-  (quickProjectsData.value || []).map((p: any) => ({ slug: String(p.slug), title: String(p.title || p.slug) }))
-)
-const currentProjectTitle    = computed(() => quickProjects.value.find(p => p.slug === activeProjectSlug.value)?.title || activeProjectSlug.value)
-const currentProjectInitials = computed(() => projectInitials(currentProjectTitle.value))
-
 const mobileContentLabel = computed(() => {
   const activeLeafId = adminNav.activeLeafId.value
-
   if (activeLeafId) {
     const activeLeaf = adminNav.currentNode.value.payload.find(item => item.id === activeLeafId)
-    if (activeLeaf?.name) {
-      return activeLeaf.name
-    }
+    if (activeLeaf?.name) return activeLeaf.name
   }
-
-  if (route.path.startsWith('/admin/projects/')) {
-    return currentProjectTitle.value || 'Проект'
+  if (route.path.startsWith('/admin/projects/')) return currentProjectTitle.value || 'Проект'
+  const labels: Record<string, string> = {
+    [ADMIN_SECTION_ROUTES.projects]: 'Проекты',
+    [ADMIN_SECTION_ROUTES.clients]: 'Клиенты',
+    [ADMIN_SECTION_ROUTES.contractors]: 'Подрядчики',
+    [ADMIN_SECTION_ROUTES.designers]: 'Дизайнеры',
+    [ADMIN_SECTION_ROUTES.sellers]: 'Поставщики',
+    [ADMIN_SECTION_ROUTES.managers]: 'Менеджеры',
+    [ADMIN_SECTION_ROUTES.docs]: 'Документы',
+    [ADMIN_SECTION_ROUTES.gallery]: 'Галерея',
   }
-
-  if (route.path === ADMIN_SECTION_ROUTES.projects) {
-    return 'Проекты'
+  for (const [prefix, label] of Object.entries(labels)) {
+    if (route.path === prefix || route.path.startsWith(prefix + '/')) return label
   }
-
-  if (route.path.startsWith(ADMIN_SECTION_ROUTES.clients)) {
-    return 'Клиенты'
-  }
-
-  if (route.path.startsWith(ADMIN_SECTION_ROUTES.contractors)) {
-    return 'Подрядчики'
-  }
-
-  if (route.path.startsWith(ADMIN_SECTION_ROUTES.designers)) {
-    return 'Дизайнеры'
-  }
-
-  if (route.path.startsWith(ADMIN_SECTION_ROUTES.sellers)) {
-    return 'Поставщики'
-  }
-
-  if (route.path.startsWith(ADMIN_SECTION_ROUTES.managers)) {
-    return 'Менеджеры'
-  }
-
-  if (route.path.startsWith(ADMIN_SECTION_ROUTES.docs)) {
-    return 'Документы'
-  }
-
-  if (route.path.startsWith(ADMIN_SECTION_ROUTES.gallery)) {
-    return 'Галерея'
-  }
-
   const breadcrumbs = adminNav.currentNode.value.context?.breadcrumbs || []
   return breadcrumbs[breadcrumbs.length - 1] || adminNav.currentNode.value.context?.title || 'Рабочий экран'
 })
-
-// ── Contractors data ────────────────────────────────────────────
-const { data: contractorsData } = useFetch<any[]>('/api/contractors', { server: false, default: () => [] })
-const quickContractors = computed(() => (contractorsData.value || []).slice(0, 12))
-
-// ── Clients data ────────────────────────────────────────────────
-const { data: clientsData } = useFetch<any[]>('/api/clients', { server: false, default: () => [] })
-const quickClients = computed(() => (clientsData.value || []).slice(0, 12))
-
-// ── Designers data ──────────────────────────────────────────────
-const { data: designersData } = useFetch<any[]>('/api/designers', { server: false, default: () => [] })
-const quickDesigners = computed(() => (designersData.value || []).slice(0, 12))
-
-// ── Sellers data ────────────────────────────────────────────────
-const { data: sellersData } = useFetch<any[]>('/api/sellers', { server: false, default: () => [] })
-const quickSellers = computed(() => (sellersData.value || []).slice(0, 12))
-const linkedSellersAsyncKey = computed(() => `admin-layout-linked-sellers:${activeProjectSlug.value || 'none'}`)
-const { data: linkedSellersData, refresh: refreshLinkedSellers } = useAsyncData<any[]>(
-  linkedSellersAsyncKey,
-  () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/sellers`) : Promise.resolve<any[]>([]),
-  { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
-)
-
-const linkedDesignersAsyncKey = computed(() => `admin-layout-linked-designers:${activeProjectSlug.value || 'none'}`)
-const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = useAsyncData<any[]>(
-  linkedDesignersAsyncKey,
-  () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/designers`) : Promise.resolve<any[]>([]),
-  { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
-)
-const linkedContractorsAsyncKey = computed(() => `admin-layout-linked-contractors:${activeProjectSlug.value || 'none'}`)
-const { data: linkedContractorsData, refresh: refreshLinkedContractors } = useAsyncData<any[]>(
-  linkedContractorsAsyncKey,
-  () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/contractors`) : Promise.resolve<any[]>([]),
-  { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
-)
-
-const clientActionLoading = ref(false)
-const clientActionMessage = ref('')
-
-// Get linked clients and contractors for current project
-const linkedClientIds = computed(() => {
-  if (!projectData.value?.profile) return new Set()
-  const profile = projectData.value.profile
-  const ids = new Set<string>()
-  if (Array.isArray(profile.client_ids)) {
-    profile.client_ids.forEach((id: any) => {
-      if (id) ids.add(String(id))
-    })
-  }
-  if (profile.client_id) {
-    ids.add(String(profile.client_id))
-  }
-  return ids
-})
-
-// Use existing contractor data fetching
-const linkedContractorIds = computed(() => {
-  return new Set((linkedContractorsData.value || []).map((c: any) => String(c.id)))
-})
-
-const linkedDesignerIds = computed(() => {
-  return new Set((linkedDesignersData.value || []).map((d: any) => String(d.id)))
-})
-
-const linkedSellerIds = computed(() => {
-  return new Set((linkedSellersData.value || []).map((s: any) => String(s.id)))
-})
-
-// Check if client/contractor is linked to current project
-function isClientLinked(clientId: string): boolean {
-  return linkedClientIds.value.has(String(clientId))
-}
-
-function isContractorLinked(contractorId: string): boolean {
-  return linkedContractorIds.value.has(String(contractorId))
-}
-
-function isDesignerLinked(designerId: string): boolean {
-  return linkedDesignerIds.value.has(String(designerId))
-}
-
-function isSellerLinked(sellerId: string): boolean {
-  return linkedSellerIds.value.has(String(sellerId))
-}
-
-// Toggle client link to current project
-async function toggleClientLink(clientId: string, clientName: string) {
-  if (!activeProjectSlug.value) {
-    clientActionMessage.value = 'Нет активного проекта'
-    return
-  }
-  
-  clientActionLoading.value = true
-  clientActionMessage.value = ''
-  
-  const isLinked = isClientLinked(clientId)
-  
-  try {
-    if (isLinked) {
-      await $fetch(`/api/clients/${clientId}/unlink-project`, {
-        method: 'POST',
-        body: { projectSlug: activeProjectSlug.value }
-      })
-      clientActionMessage.value = `Клиент "${clientName}" отвязан от проекта`
-    } else {
-      await $fetch(`/api/clients/${clientId}/link-project`, {
-        method: 'POST',
-        body: { projectSlug: activeProjectSlug.value }
-      })
-      clientActionMessage.value = `Клиент "${clientName}" привязан к проекту`
-    }
-    
-    // Refresh project data
-    await refreshProjectData()
-    
-    setTimeout(() => {
-      clientActionMessage.value = ''
-    }, 2000)
-    
-  } catch (error: any) {
-    clientActionMessage.value = error?.data?.message || 'Ошибка при изменении связи клиента'
-  } finally {
-    clientActionLoading.value = false
-  }
-}
-
-// Toggle contractor link to current project  
-async function toggleContractorLink(contractorId: string, contractorName: string) {
-  if (!activeProjectSlug.value) {
-    clientActionMessage.value = 'Нет активного проекта'
-    return
-  }
-  
-  clientActionLoading.value = true
-  clientActionMessage.value = ''
-  
-  const isLinked = isContractorLinked(contractorId)
-  
-  try {
-    if (isLinked) {
-      await $fetch(`/api/projects/${activeProjectSlug.value}/contractors`, {
-        method: 'DELETE',
-        body: { contractorId: Number(contractorId) }
-      })
-      clientActionMessage.value = `Подрядчик "${contractorName}" отвязан от проекта`
-    } else {
-      await $fetch(`/api/projects/${activeProjectSlug.value}/contractors`, {
-        method: 'POST',
-        body: { contractorId: Number(contractorId) }
-      })
-      clientActionMessage.value = `Подрядчик "${contractorName}" привязан к проекту`
-    }
-    
-    await refreshLinkedContractors()
-    await refreshProjectData()
-    
-    setTimeout(() => {
-      clientActionMessage.value = ''
-    }, 2000)
-    
-  } catch (error: any) {
-    clientActionMessage.value = error?.data?.message || 'Ошибка при изменении связи подрядчика'
-  } finally {
-    clientActionLoading.value = false
-  }
-}
-
-async function toggleDesignerLink(designerId: string, designerName: string) {
-  if (!activeProjectSlug.value) {
-    clientActionMessage.value = 'Нет активного проекта'
-    return
-  }
-
-  clientActionLoading.value = true
-  clientActionMessage.value = ''
-
-  const isLinked = isDesignerLinked(designerId)
-
-  try {
-    if (isLinked) {
-      await $fetch(`/api/projects/${activeProjectSlug.value}/designers`, {
-        method: 'DELETE',
-        body: { designerId: Number(designerId) },
-      })
-      clientActionMessage.value = `Дизайнер "${designerName}" отвязан от проекта`
-    } else {
-      await $fetch(`/api/projects/${activeProjectSlug.value}/designers`, {
-        method: 'POST',
-        body: { designerId: Number(designerId) },
-      })
-      clientActionMessage.value = `Дизайнер "${designerName}" привязан к проекту`
-    }
-
-    await refreshLinkedDesigners()
-
-    setTimeout(() => {
-      clientActionMessage.value = ''
-    }, 2000)
-  } catch (error: any) {
-    clientActionMessage.value = error?.data?.message || 'Ошибка при изменении связи дизайнера'
-  } finally {
-    clientActionLoading.value = false
-  }
-}
-
-async function toggleSellerLink(sellerId: string, sellerName: string) {
-  if (!activeProjectSlug.value) {
-    clientActionMessage.value = 'Нет активного проекта'
-    return
-  }
-
-  clientActionLoading.value = true
-  clientActionMessage.value = ''
-
-  const isLinked = isSellerLinked(sellerId)
-
-  try {
-    if (isLinked) {
-      await $fetch(`/api/projects/${activeProjectSlug.value}/sellers`, {
-        method: 'DELETE',
-        body: { sellerId: Number(sellerId) },
-      })
-      clientActionMessage.value = `Поставщик "${sellerName}" отвязан от проекта`
-    } else {
-      await $fetch(`/api/projects/${activeProjectSlug.value}/sellers`, {
-        method: 'POST',
-        body: { sellerId: Number(sellerId) },
-      })
-      clientActionMessage.value = `Поставщик "${sellerName}" привязан к проекту`
-    }
-
-    await refreshLinkedSellers()
-
-    setTimeout(() => {
-      clientActionMessage.value = ''
-    }, 2000)
-  } catch (error: any) {
-    clientActionMessage.value = error?.data?.message || 'Ошибка при изменении связи поставщика'
-  } finally {
-    clientActionLoading.value = false
-  }
-}
-
-// ── Initials helpers ────────────────────────────────────────────
-function projectInitials(title: string) {
-  const s = String(title || '').trim()
-  return s ? s.slice(0, 2).toUpperCase() : 'PR'
-}
-function nameInitials(name: string) {
-  const parts = String(name || '').trim().split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return String(name || '').slice(0, 2).toUpperCase() || '??'
-}
 
 // ── Dropdowns state ─────────────────────────────────────────────
 const projectsOpen    = ref(false)
@@ -1094,12 +763,6 @@ function goToAllSellers() {
   } else {
     navigateTo(sellersTabTo.value)
   }
-}
-
-// ── Auth ─────────────────────────────────────────────────────────
-async function logout() {
-  await $fetch('/api/auth/logout', { method: 'POST' })
-  router.push('/login?role=admin')
 }
 </script>
 

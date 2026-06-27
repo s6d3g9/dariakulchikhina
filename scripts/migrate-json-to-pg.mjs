@@ -12,7 +12,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = '/opt/daria-admin/data'
 
 // Подключение к PostgreSQL напрямую (без Drizzle)
-const sql = postgres('postgresql://daria:daria_secret_2026@localhost:5433/daria_admin', {
+if (!process.env.DATABASE_URL) { console.error('DATABASE_URL is required'); process.exit(1) }
+const sql = postgres(process.env.DATABASE_URL, {
   max: 1
 })
 
@@ -47,7 +48,9 @@ async function main() {
 
   // 2. Создаём admin пользователя
   console.log('2. Создаём admin пользователя...')
-  const passwordHash = bcrypt.hashSync('dashadashaadmin', 12)
+  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD
+  if (!adminPassword) { console.error('ADMIN_INITIAL_PASSWORD env is required'); process.exit(1) }
+  const passwordHash = bcrypt.hashSync(adminPassword, 12)
   const [adminUser] = await sql`
     INSERT INTO users (email, password_hash, name)
     VALUES ('admin@dariakulchikhina.com', ${passwordHash}, 'Дарья К.')

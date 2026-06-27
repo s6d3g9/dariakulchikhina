@@ -1,7 +1,7 @@
 import { useDb } from '~/server/db'
 import { projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { ClientRecoverSchema } from '~/shared/types/auth'
+import { ClientRecoverSchema } from '~/shared/types/auth/auth'
 
 export default defineEventHandler(async (event) => {
   const body = await readValidatedNodeBody(event, ClientRecoverSchema)
@@ -16,13 +16,11 @@ export default defineEventHandler(async (event) => {
     .where(eq(projects.clientLogin, body.login))
     .limit(1)
 
-  if (!project || !project.clientRecoveryPhraseHash) {
-    throw createError({ statusCode: 404, statusMessage: 'Клиент не найден или recovery phrase не настроена' })
-  }
+  const DUMMY_HASH = '$2a$12$000000000000000000000uGBPRnpKe7P6TBGgKOjHR0INdZOhHIi'
+  const ok = await verifyPassword(body.recoveryPhrase, project?.clientRecoveryPhraseHash || DUMMY_HASH)
 
-  const ok = await verifyPassword(body.recoveryPhrase, project.clientRecoveryPhraseHash)
-  if (!ok) {
-    throw createError({ statusCode: 401, statusMessage: 'Неверная recovery phrase' })
+  if (!project || !project.clientRecoveryPhraseHash || !ok) {
+    throw createError({ statusCode: 401, statusMessage: 'Неверный логин или recovery phrase' })
   }
 
   const clientPasswordHash = await hashPassword(body.newPassword)

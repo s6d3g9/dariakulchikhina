@@ -60,6 +60,9 @@ export const PROJECT_PAGES: ProjectPageDef[] = [
   { slug: 'client_passport',     title: 'паспортные данные',      icon: '🔒', phase: undefined },
   { slug: 'client_tz',           title: 'техническое задание',    icon: '◧', phase: undefined },
   { slug: 'contracts',           title: 'документы',              icon: '◻', phase: undefined },
+  { slug: 'approvals',           title: 'согласования',           icon: '◑', phase: undefined },
+  { slug: 'activity',            title: 'журнал проекта',         icon: '◇', phase: undefined },
+  { slug: 'roadmap',             title: 'roadmap проекта',         icon: '◫', phase: undefined },
   { slug: 'work_progress',       title: 'ход работ',              icon: '◈', phase: undefined },
   { slug: 'project_control',     title: 'контроль проекта',       icon: '◬', phase: undefined },
   { slug: 'design_timeline',     title: 'таймлайн',               icon: '◷', phase: undefined },
@@ -141,5 +144,8 @@ export const CORE_PAGES = [
   'client_brief',
   'client_tz',
   'contracts',
+  'approvals',
+  'activity',
+  'roadmap',
   'work_progress',
 ] as const

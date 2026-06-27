@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node --watch --experimental-strip-types src/index.ts",
     "build": "tsc -p tsconfig.json --noEmit",
-    "start": "node --experimental-strip-types src/index.ts"
+    "start": "node --experimental-strip-types src/index.ts",
+    "smoke:router": "node --experimental-strip-types scripts/smoke-agent-router.ts"
   },
   "engines": {
     "node": ">=22"

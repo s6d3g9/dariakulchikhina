@@ -24,7 +24,12 @@
           :class="{ active: i === activeIdx }"
           @mousedown.prevent="pick(item)"
         >
-          <span v-html="highlight(item)"></span>
+          <span>
+            <template v-for="(part, pi) in highlightParts(item)" :key="pi">
+              <b v-if="part.bold">{{ part.text }}</b>
+              <template v-else>{{ part.text }}</template>
+            </template>
+          </span>
         </div>
       </div>
     </Transition>
@@ -81,11 +86,20 @@ const filtered = computed(() => {
   return res
 })
 
-function highlight(text: string): string {
+function highlightParts(text: string): { text: string; bold: boolean }[] {
   const q = query.value.trim()
-  if (!q) return text
+  if (!q) return [{ text, bold: false }]
   const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-  return text.replace(regex, '<b>$1</b>')
+  const parts: { text: string; bold: boolean }[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push({ text: text.slice(lastIndex, match.index), bold: false })
+    parts.push({ text: match[1], bold: true })
+    lastIndex = regex.lastIndex
+  }
+  if (lastIndex < text.length) parts.push({ text: text.slice(lastIndex), bold: false })
+  return parts.length ? parts : [{ text, bold: false }]
 }
 
 function onInput(e: Event) {

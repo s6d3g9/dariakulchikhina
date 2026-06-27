@@ -14,8 +14,8 @@ export const DESIGN_CONCEPT_SLUGS = [
   'grand',
 ] as const satisfies readonly DesignConceptSlug[]
 
-export const DEFAULT_DESIGN_MODE: DesignMode = 'brutalist'
-export const DEFAULT_DESIGN_CONCEPT: DesignConceptSlug = 'minale'
+export const DEFAULT_DESIGN_MODE: DesignMode = 'material3'
+export const DEFAULT_DESIGN_CONCEPT: DesignConceptSlug = 'm3'
 export const DESIGN_MODE_DATA_ATTRIBUTE = 'data-design-mode'
 export const UI_THEME_STORAGE_KEY = 'ui-theme'
 

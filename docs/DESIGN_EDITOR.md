@@ -11,13 +11,13 @@
 ```
 UIDesignPanel.vue
   └─ useDesignSystem()          composable, tokens → CSS custom props
-       ├─ DESIGN_PRESETS (36)   быстрые образы
-       ├─ DESIGN_CONCEPTS (9)   целостные концепции
+  ├─ DESIGN_PRESETS (10)   Material 3 structural образы
+  ├─ DESIGN_CONCEPTS (10)   целостные концепции
        ├─ FONT_OPTIONS (10)     шрифты
        ├─ TYPE_SCALE_OPTIONS (8) модулярные шкалы
        ├─ BTN_SIZE_MAP           XS / S / M / L
        └─ EASING_OPTIONS (6)    функции плавности
-  └─ useUITheme()               5 палитровых тем
+  └─ useUITheme()               family-aware palette pools
   └─ useThemeToggle()           light ↔ dark
 ```
 
@@ -35,6 +35,8 @@ UIDesignPanel.vue
 
 **Undo / Redo:** история до 50 состояний, кнопки `⟲` / `⟳` в хедере панели.
 
+**Поиск панели:** верхний поиск теперь не только переводит в ближайший tab, но и фильтрует содержимое вкладок `образы`, `концепция` и `палитра`. Для этих секций редактор показывает счётчик совпадений и текстовый empty-state без декоративных блоков.
+
 ---
 
 ## 2. Три режима (Mode Bar)
@@ -48,52 +50,38 @@ UIDesignPanel.vue
 
 В UI переключение по-прежнему вызывается через `switchMode('concept-glass')`, `switchMode('concept-minale')`, `switchMode('concept-m3')`, но в DOM и storage пишутся канонические short slug: `glass`, `minale`, `m3`.
 
-Обычные recipe-presets не должны самовольно писать произвольный `data-concept`: если preset не является явно concept-bound, он сохраняет текущий concept family и меняет только токены.
+Mode Bar теперь привязан к family, а не к конкретному concept-slug: M3 family ведёт себя как отдельный structural layer, а palette живёт поверх него через `useUITheme()`.
+
+Текущие recipe-presets несут `recommendedThemeId`, поэтому preview меняет не только токены, но и подходящий palette-swatch. Во вкладках `образы` и `палитра` эта связка теперь показана явно: на карточке образа, на рекомендованном swatch и в отдельном M3 live-preview блоке.
+
+Во вкладке `образы` Liquid Glass и Material 3 теперь разведены и по shell-уровню: у каждого family свой header, свой collection rail и свой surface-contract. M3-карточки не используют glass chrome, а glass-каталог не живёт на tonal M3 surface.
 
 ---
 
-## 3. Образы — DESIGN_PRESETS (36 шт.)
+## 3. Образы — DESIGN_PRESETS (10 шт.)
 
-Кнопки-рецепты на вкладке **«образы»**. Каждый пресет меняет 20-50 токенов разом.
+Кнопки-рецепты на вкладке **«образы»**. Активный каталог полностью пересобран под Material 3: это structural recipes, которые задают shape, elevation, density и nav-ритм, а не самостоятельные palette-наборы.
+
+Каталог виден только в активном режиме `Material 3`. Если сейчас открыт `brutalist` или `liquid-glass`, вкладка `образы` не должна показывать M3-карточки поверх чужого family; вместо этого редактор даёт только прямой control для перехода в `Material 3`.
 
 | ID              | Стиль                              |
 |-----------------|------------------------------------|
-| `minimal`       | Минимализм, лёгкие тени            |
-| `soft`          | Мягкий, скруглённый                |
-| `brutalist`     | Брутализм, жёсткие углы            |
-| `corporate`     | Корпоративный, деловой             |
-| `editorial`     | Журнальный, типографика            |
-| `neomorphism`   | Нео-морфизм, вдавленные карточки   |
-| `glassmorphism` | Стеклянный эффект                  |
-| `luxury`        | Премиальный, тёмные акценты        |
-| `playful`       | Яркий, игривый                     |
-| `swiss`         | Швейцарская типографика            |
-| `monochrome`    | Чёрно-белый                        |
-| `scandinavian`  | Сканди, натуральные тона           |
-| `dashboard`     | Дэшборд, плотный                   |
-| `material3`     | Material Design 3                  |
-| `apple`         | Apple Human Interface              |
-| `retro`         | Ретро, тёплые тона                 |
-| `glow`          | Неоновое свечение                  |
-| `ink`           | Чернильный, контрастный            |
-| `bubblegum`     | Bubble-gum, розово-голубой         |
-| `blueprint`     | Чертёжный, сетка                   |
-| `minale`        | Minale+Mann                        |
-| `bauhaus`       | Баухаус                            |
-| `artdeco`       | Ар-деко                            |
-| `cyberpunk`     | Киберпанк                          |
-| `zen`           | Дзен, спокойный                    |
-| `y2k`           | Y2K, глянцевый                     |
-| `newspaper`     | Газетная вёрстка                   |
-| `pastel`        | Пастельные тона                    |
-| `tokyonoir`     | Tokyo Noir, тёмный урбан           |
-| `terracotta`    | Терракота, землистые тона          |
-| `arctic`        | Арктика, холодные тона             |
-| `snohetta`      | Snøhetta (арх. бюро)              |
-| `olsonkundig`   | Olson Kundig (арх. бюро)          |
-| `mvrdv`         | MVRDV (арх. бюро)                 |
-| `som`           | SOM (арх. бюро)                   |
-| `mad`           | MAD Architects                     |
+| `material-baseline` | Базовый neutral M3 recipe                |
+| `material-air`      | Больше воздуха, мягче плотность           |
+| `material-outline`  | Более выраженные outline и separators     |
+| `material-workbench`| Рабочая компактная сцена                  |
+| `material-compact`  | Плотный pragmatic M3                      |
+| `material-studio`   | Спокойная студийная сцена                 |
+| `material-flow`     | Более текучий navigation rhythm           |
+| `material-architect`| Архитектурный строгий M3                  |
+| `material-soft`     | Смягчённые tonal surfaces                 |
+| `material-tonal`    | Усиленный акцент на tonal containers      |
+
+Каждый образ несёт рекомендованную palette-тему. Preview рецепта временно переключает palette вместе со structural recipe, а отмена preview возвращает предыдущую тему.
+
+Во вкладке `образы` карточка теперь показывает только связанную palette-тему и активна ли эта тема прямо сейчас.
+
+Во вкладке `палитра` рекомендованный swatch помечается как связанный с текущим образом, а сверху рендерится компактная M3-сцена с tonal surface, filled field, pill-navigation и dialog surface.
 
 **Порядок:** клик → `previewPreset()` → live-preview → «Применить стиль» / «отмена».
 
@@ -128,6 +116,10 @@ UIDesignPanel.vue
 
 Палитра теперь **family-aware**: набор свотчей зависит от активной концепции.
 
+Для Material 3 вкладка дополнительно показывает:
+- рекомендованный swatch для текущего structural recipe
+- компактную M3-сцену, где одновременно видно surface/container роли, filled field, pill-navigation и dialog actions
+
 **Liquid Glass family** — для `glass`, `craft`, `future` (5 свотчей):
 
 | ID         | Цвет основы |
@@ -159,6 +151,8 @@ UIDesignPanel.vue
 Примечание:
 - При смене концепт-family редактор автоматически нормализует сохранённую тему к первой валидной теме нового семейства.
 - Theme-vars очищаются перед применением новой темы, чтобы `material3`, `brutalist` и `liquid-glass` не оставляли друг другу хвосты в DOM.
+- Для `material3` swatch-переключение работает как palette-layer: меняет system colors и semantic accent/status tokens, но не должно сбрасывать активный structural recipe.
+- Во вкладке `палитра` рекомендованный swatch визуально отмечается как связанный с текущим M3-образом.
 
 **Акцент (HSL):**
 

@@ -1,9 +1,9 @@
 import { requireAdminOrClient } from '~/server/utils/auth'
 import { readValidatedNodeBody } from '~/server/utils/body'
 import { applyMessengerCors } from '~/server/utils/messenger-cors'
-import { updateProjectGovernanceScopeSettings } from '~/server/utils/project-governance'
-import { ProjectScopeTypeSchema, UpdateProjectScopeSettingsSchema } from '~/shared/types/project-governance'
-import { filterProjectScopeSettingsForEditor, getProjectScopeEditableSettingKeys } from '~/shared/utils/project-governance'
+import { updateProjectGovernanceScopeSettings } from '~/server/modules/projects/project-governance.service'
+import { ProjectScopeTypeSchema, UpdateProjectScopeSettingsSchema } from '~/shared/types/project/project-governance'
+import { filterProjectScopeSettingsForEditor, getProjectScopeEditableSettingKeys } from '~/shared/utils/project/project-governance'
 
 export default defineEventHandler(async (event) => {
   applyMessengerCors(event, { methods: ['PATCH', 'OPTIONS'] })

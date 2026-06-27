@@ -1,15 +1,15 @@
 import { useDb } from '~/server/db/index'
 import { projects, projectContractors } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
+  const id = requireIntParam(event, 'id')
   const adminSession = getAdminSession(event)
   const contractorSession = getContractorSession(event)
-  const id = Number(getRouterParam(event, 'id'))
   if (!adminSession && contractorSession !== id) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
-  if (!id) throw createError({ statusCode: 400 })
 
   const db = useDb()
   const rows = await db

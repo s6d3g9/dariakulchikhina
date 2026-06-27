@@ -162,7 +162,7 @@ import {
   CONTRACT_TYPE_OPTIONS,
   DESIGNER_SERVICE_TYPE_OPTIONS,
   CONTRACTOR_WORK_TYPE_OPTIONS,
-} from '~~/shared/types/catalogs'
+} from '~~/shared/types/project/catalogs'
 
 interface FieldDef {
   key: string

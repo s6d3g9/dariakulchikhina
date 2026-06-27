@@ -158,10 +158,11 @@ export function useMessengerRealtime() {
     connecting.value = true
 
     const wsUrl = buildMessengerWsUrl(config.public.messengerCoreBaseUrl, '/ws')
-    wsUrl.searchParams.set('token', auth.token.value)
     wsUrl.searchParams.set('clientId', clientId.value)
 
-    const socket = new WebSocket(wsUrl.toString())
+    // Send token via Sec-WebSocket-Protocol header instead of URL query string
+    // This avoids token leakage in server logs, proxy logs, and browser history
+    const socket = new WebSocket(wsUrl.toString(), [`bearer.${auth.token.value}`])
     messengerSocket = socket
 
     socket.addEventListener('open', () => {

@@ -3,16 +3,16 @@ import { sellers } from '~/server/db/schema'
 import { z } from 'zod'
 
 const CreateSellerSchema = z.object({
-  name: z.string().min(1),
-  companyName: z.string().optional().default(''),
-  contactPerson: z.string().optional().default(''),
-  phone: z.string().optional().default(''),
-  email: z.string().optional().default(''),
-  telegram: z.string().optional().default(''),
-  website: z.string().optional().default(''),
-  city: z.string().optional().default(''),
-  categories: z.array(z.string()).optional().default([]),
-  notes: z.string().optional().default(''),
+  name: z.string().min(1).max(200),
+  companyName: z.string().max(200).optional().default(''),
+  contactPerson: z.string().max(200).optional().default(''),
+  phone: z.string().max(50).optional().default(''),
+  email: z.string().max(200).optional().default(''),
+  telegram: z.string().max(100).optional().default(''),
+  website: z.string().max(500).optional().default(''),
+  city: z.string().max(200).optional().default(''),
+  categories: z.array(z.string().max(200)).max(50).optional().default([]),
+  notes: z.string().max(5000).optional().default(''),
 })
 
 export default defineEventHandler(async (event) => {

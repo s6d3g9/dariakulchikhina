@@ -19,9 +19,14 @@ const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 function _getSessionSecret(): string {
   const secret = process.env.NUXT_SESSION_SECRET || process.env.SESSION_SECRET
   if (!secret) {
-    console.error('[SECURITY] NUXT_SESSION_SECRET is not set! Sessions will not work.')
-    // Use a random per-process secret so the app still starts but sessions don't persist across restarts
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[SECURITY] NUXT_SESSION_SECRET is required in production. Server cannot start without it.')
+    }
+    console.error('[SECURITY] NUXT_SESSION_SECRET is not set! Sessions will not persist across restarts.')
     return _fallbackSecret
+  }
+  if (process.env.NODE_ENV === 'production' && secret.length < 32) {
+    throw new Error('[SECURITY] NUXT_SESSION_SECRET must be at least 32 characters. Generate with: openssl rand -base64 32')
   }
   return secret
 }
@@ -92,7 +97,11 @@ function _writeCookie(event: H3Event, name: string, value: string, opts: {
 }
 
 function _deleteCookie(event: H3Event, name: string) {
-  _writeCookie(event, name, '', { path: '/', maxAge: 0 })
+  _writeCookie(event, name, '', {
+    path: '/', maxAge: 0,
+    httpOnly: true, sameSite: 'lax',
+    secure: _isSecure(event),
+  })
 }
 
 // --- Admin session (designer) ---
@@ -134,7 +143,8 @@ export function requireAdmin(event: H3Event) {
 // --- Client session ---
 
 export function setClientSession(event: H3Event, projectSlug: string) {
-  const signed = _sign(projectSlug)
+  const payload = Buffer.from(JSON.stringify({ slug: projectSlug, ts: Date.now() })).toString('base64url')
+  const signed = _sign(payload)
   _writeCookie(event, CLIENT_COOKIE, signed, {
     httpOnly: true, sameSite: 'lax',
     secure: _isSecure(event),
@@ -145,9 +155,17 @@ export function setClientSession(event: H3Event, projectSlug: string) {
 export function getClientSession(event: H3Event): string | null {
   const raw = _readCookie(event, CLIENT_COOKIE)
   if (!raw) return null
-  // Only accept signed cookies
   const payload = _verifyAndParse(raw)
-  return payload || null
+  if (!payload) return null
+  // Try new format with TTL first
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString())
+    if (data && typeof data.slug === 'string') {
+      if (typeof data.ts === 'number' && Date.now() - data.ts > SESSION_MAX_AGE_MS) return null
+      return data.slug
+    }
+  } catch { /* fallback to legacy plain slug */ }
+  return payload
 }
 
 export function clearClientSession(event: H3Event) {
@@ -164,7 +182,8 @@ export function requireClient(event: H3Event, projectSlug?: string) {
 // --- Contractor session ---
 
 export function setContractorSession(event: H3Event, contractorId: number) {
-  const signed = _sign(String(contractorId))
+  const payload = Buffer.from(JSON.stringify({ cid: contractorId, ts: Date.now() })).toString('base64url')
+  const signed = _sign(payload)
   _writeCookie(event, CONTRACTOR_COOKIE, signed, {
     httpOnly: true, sameSite: 'lax',
     secure: _isSecure(event),
@@ -175,9 +194,16 @@ export function setContractorSession(event: H3Event, contractorId: number) {
 export function getContractorSession(event: H3Event): number | null {
   const raw = _readCookie(event, CONTRACTOR_COOKIE)
   if (!raw) return null
-  // Only accept signed cookies
   const payload = _verifyAndParse(raw)
   if (!payload) return null
+  // Try new format with TTL first
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString())
+    if (data && typeof data.cid === 'number') {
+      if (typeof data.ts === 'number' && Date.now() - data.ts > SESSION_MAX_AGE_MS) return null
+      return data.cid
+    }
+  } catch { /* fallback to legacy plain number */ }
   const n = Number(payload)
   return Number.isFinite(n) ? n : null
 }
@@ -190,6 +216,29 @@ export function requireContractor(event: H3Event) {
   const id = getContractorSession(event)
   if (!id) throw createError({ statusCode: 401, statusMessage: 'Contractor not authenticated' })
   return id
+}
+
+// --- Contractor quick-link token (HMAC-signed, time-limited) ---
+
+const CONTRACTOR_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+/** Generate HMAC-signed token for contractor quick login link */
+export function signContractorAccessToken(contractorId: number, slug: string): string {
+  const ts = Date.now()
+  const payload = Buffer.from(JSON.stringify({ cid: contractorId, slug, ts })).toString('base64url')
+  return _sign(payload)
+}
+
+/** Verify and decode contractor quick login token. Returns null if invalid or expired. */
+export function verifyContractorAccessToken(token: string): { cid: number; slug: string } | null {
+  const payload = _verifyAndParse(token)
+  if (!payload) return null
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString())
+    if (!data || typeof data.cid !== 'number' || typeof data.slug !== 'string') return null
+    if (typeof data.ts === 'number' && Date.now() - data.ts > CONTRACTOR_TOKEN_MAX_AGE_MS) return null
+    return { cid: data.cid, slug: data.slug }
+  } catch { return null }
 }
 
 /** Require admin OR an authenticated contractor with the given id */

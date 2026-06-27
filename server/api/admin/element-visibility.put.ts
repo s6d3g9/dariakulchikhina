@@ -1,4 +1,4 @@
-import { ElementVisibilityConfigSchema, normalizeElementVisibilityConfig } from '~/shared/types/element-visibility'
+import { ElementVisibilityConfigSchema, normalizeElementVisibilityConfig } from '~/shared/types/design-system/element-visibility'
 import { setAdminSetting } from '~/server/utils/admin-settings'
 
 const ELEMENT_VISIBILITY_SETTING_KEY = 'element-visibility'

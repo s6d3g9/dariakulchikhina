@@ -3,10 +3,10 @@ import {
   normalizeDesignModulesConfig,
   type DesignModulesConfig,
   type DesignPanelTabId,
-} from '~~/shared/types/design-modules'
-import type { AppBlueprintModulesOverride } from '~~/shared/types/app-catalog'
+} from '~~/shared/types/design-system/design-modules'
+import type { AppBlueprintModulesOverride } from '~~/shared/types/navigation/app-catalog'
 
-export type { DesignModulesConfig, DesignPanelTabId } from '~~/shared/types/design-modules'
+export type { DesignModulesConfig, DesignPanelTabId } from '~~/shared/types/design-system/design-modules'
 
 export const DESIGN_MODULES_STORAGE_KEY = 'design-modules-config'
 const DESIGN_MODULES_API = '/api/admin/design-modules'

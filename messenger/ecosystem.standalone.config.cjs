@@ -85,7 +85,7 @@ module.exports = {
         MESSENGER_CORE_HOST: '0.0.0.0',
         MESSENGER_CORE_PORT: runtimeEnv.MESSENGER_CORE_PORT || '4300',
         MESSENGER_CORE_LOG_LEVEL: runtimeEnv.MESSENGER_CORE_LOG_LEVEL || 'info',
-        MESSENGER_CORE_AUTH_SECRET: runtimeEnv.MESSENGER_CORE_AUTH_SECRET || 'change-me-before-production',
+        MESSENGER_CORE_AUTH_SECRET: runtimeEnv.MESSENGER_CORE_AUTH_SECRET || (() => { console.error('[FATAL] MESSENGER_CORE_AUTH_SECRET not set'); process.exit(1) })(),
         MESSENGER_CORE_CORS_ORIGIN: runtimeEnv.MESSENGER_CORE_CORS_ORIGIN || messengerPublicOrigin,
         MESSENGER_CORE_DATA_DIR: messengerDataRoot,
         MESSENGER_ENABLE_AGENTS: runtimeEnv.MESSENGER_ENABLE_AGENTS || 'true',

@@ -3,14 +3,13 @@ import { documents } from '~/server/db/schema'
 import { and, eq, like, isNull } from 'drizzle-orm'
 import { unlink } from 'node:fs/promises'
 import { join } from 'node:path'
+import { getUploadDir } from '~/server/utils/storage'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const designerId = Number(getRouterParam(event, 'id'))
-  const docId = Number(getRouterParam(event, 'docId'))
-  if (!designerId || !Number.isFinite(designerId) || !docId || !Number.isFinite(docId)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid params' })
-  }
+  const designerId = requireIntParam(event, 'id')
+  const docId = requireIntParam(event, 'docId')
 
   const db = useDb()
   const [doc] = await db
@@ -27,7 +26,7 @@ export default defineEventHandler(async (event) => {
 
   if (doc.filename) {
     try {
-      await unlink(join(process.cwd(), 'public', 'uploads', 'designer-docs', doc.filename))
+      await unlink(join(getUploadDir(), 'designer-docs', doc.filename))
     } catch {
       // ignore fs errors
     }

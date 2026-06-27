@@ -263,7 +263,7 @@ import {
   type ExtraServiceCategory,
   type ExtraServiceStatus,
   type ExtraServiceCatalogItem,
-} from '~~/shared/types/catalogs'
+} from '~~/shared/types/project/catalogs'
 
 const props = defineProps<{
   slug: string

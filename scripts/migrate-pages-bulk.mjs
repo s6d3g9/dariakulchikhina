@@ -3,7 +3,8 @@
 // Одноразовая миграция: выставить всем проектам полный набор страниц фаз 0–5
 import postgres from 'postgres'
 
-const DB_URL = process.env.DATABASE_URL || 'postgresql://daria:daria_secret_2026@localhost:5433/daria_admin'
+const DB_URL = process.env.DATABASE_URL
+if (!DB_URL) { console.error('DATABASE_URL is required'); process.exit(1) }
 
 const TARGET_PAGES = [
   'first_contact',

@@ -21,6 +21,6 @@ export default defineEventHandler(async (event) => {
     return rows.map(r => r.seller)
   }
 
-  const rows = await db.select().from(sellers).orderBy(asc(sellers.createdAt))
+  const rows = await db.select().from(sellers).orderBy(asc(sellers.createdAt)).limit(1000)
   return rows
 })

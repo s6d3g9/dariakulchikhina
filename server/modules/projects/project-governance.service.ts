@@ -1,1 +1,1 @@
-export * from '../../utils/project-governance'
+export * from './project-governance.impl'

@@ -2,13 +2,14 @@ import { useDb } from '~/server/db/index'
 import { workStatusItemComments, workStatusItems, projects, users } from '~/server/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
+import { requireIntParam } from '~/server/utils/query'
 
 const Body = z.object({ text: z.string().min(1).max(2000) })
 
 export default defineEventHandler(async (event) => {
   const session = requireAdmin(event)
   const slug = getRouterParam(event, 'slug')!
-  const itemId = Number(getRouterParam(event, 'itemId'))
+  const itemId = requireIntParam(event, 'itemId')
   const { text } = await readValidatedNodeBody(event, Body)
   const db = useDb()
 

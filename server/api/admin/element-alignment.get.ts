@@ -1,4 +1,4 @@
-import { createDefaultElementAlignmentConfig, normalizeElementAlignmentConfig } from '~/shared/types/element-alignment'
+import { createDefaultElementAlignmentConfig, normalizeElementAlignmentConfig } from '~/shared/types/design-system/element-alignment'
 import { getAdminSetting } from '~/server/utils/admin-settings'
 
 const ELEMENT_ALIGNMENT_SETTING_KEY = 'element-alignment'

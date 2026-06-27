@@ -3,14 +3,14 @@ import { managers } from '~/server/db/schema'
 import { z } from 'zod'
 
 const CreateManagerSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().optional(),
-  role: z.string().optional().default(''),
-  phone: z.string().optional().default(''),
-  email: z.string().optional().default(''),
-  telegram: z.string().optional().default(''),
-  city: z.string().optional().default(''),
-  notes: z.string().optional().default(''),
+  name: z.string().min(1).max(200),
+  slug: z.string().max(200).optional(),
+  role: z.string().max(200).optional().default(''),
+  phone: z.string().max(50).optional().default(''),
+  email: z.string().max(200).optional().default(''),
+  telegram: z.string().max(100).optional().default(''),
+  city: z.string().max(200).optional().default(''),
+  notes: z.string().max(5000).optional().default(''),
 })
 
 export default defineEventHandler(async (event) => {

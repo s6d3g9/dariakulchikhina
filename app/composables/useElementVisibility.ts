@@ -4,13 +4,13 @@ import {
   type ElementVisibilityConfig,
   type ElementVisibilityRule,
   type ElementVisibilityScope,
-} from '~~/shared/types/element-visibility'
+} from '~~/shared/types/design-system/element-visibility'
 
 export type {
   ElementVisibilityConfig,
   ElementVisibilityRule,
   ElementVisibilityScope,
-} from '~~/shared/types/element-visibility'
+} from '~~/shared/types/design-system/element-visibility'
 
 const ELEMENT_VISIBILITY_STORAGE_KEY = 'element-visibility-config'
 const ELEMENT_VISIBILITY_API = '/api/admin/element-visibility'

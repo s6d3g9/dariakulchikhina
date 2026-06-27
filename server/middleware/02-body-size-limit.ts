@@ -4,49 +4,47 @@
  * - JSON: 1 MB
  * - Multipart (file uploads): 25 MB
  */
-export default defineEventHandler((event) => {
-  const req = (event as any).node?.req ?? (event as any).req
-  if (!req) return
+import { eventHandler } from 'h3'
 
-  const contentType = req.headers?.['content-type'] || ''
-  const contentLength = parseInt(req.headers?.['content-length'] || '0', 10)
+import { markEventHandler } from '~/server/utils/mark-event-handler'
 
-  // Determine limit based on content type
-  const isMultipart = contentType.includes('multipart/')
-  const maxBytes = isMultipart
-    ? 25 * 1024 * 1024   // 25 MB for file uploads
-    : 1 * 1024 * 1024    // 1 MB for JSON/form data
+export default markEventHandler(eventHandler({
+  handler(event) {
+    const req = (event as any).node?.req ?? (event as any).req
+    if (!req) return
 
-  // Early reject if Content-Length header exceeds limit
-  if (contentLength > maxBytes) {
-    throw createError({
-      statusCode: 413,
-      statusMessage: `Payload Too Large — лимит ${Math.round(maxBytes / 1024 / 1024)} MB`,
-    })
-  }
+    const contentType = req.headers?.['content-type'] || ''
+    const contentLength = parseInt(req.headers?.['content-length'] || '0', 10)
+    const isMultipart = contentType.includes('multipart/')
+    const maxBytes = isMultipart ? 25 * 1024 * 1024 : 1 * 1024 * 1024
 
-  // Stream-level check: count bytes as they arrive
-  let received = 0
-  const originalOnData = req.on?.bind(req)
-  if (typeof originalOnData === 'function') {
-    const origListeners = req.listeners?.('data') || []
+    if (contentLength > maxBytes) {
+      throw createError({
+        statusCode: 413,
+        statusMessage: `Payload Too Large — лимит ${Math.round(maxBytes / 1024 / 1024)} MB`,
+      })
+    }
 
-    // Only add byte-counter if this is an API route with a body
-    const url = req.url || ''
-    if (url.startsWith('/api/') && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
-      const onData = (chunk: Buffer | string) => {
-        received += Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(String(chunk))
-        if (received > maxBytes) {
-          req.destroy()
-          // Send 413 directly — throw inside event listener won't propagate to H3
-          const res = event.node?.res ?? (event as any).res
-          if (res && !res.headersSent) {
-            res.writeHead(413, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ statusCode: 413, statusMessage: `Payload Too Large — лимит ${Math.round(maxBytes / 1024 / 1024)} MB` }))
+    let received = 0
+    const originalOnData = req.on?.bind(req)
+    if (typeof originalOnData === 'function') {
+      req.listeners?.('data') || []
+
+      const url = req.url || ''
+      if (url.startsWith('/api/') && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+        const onData = (chunk: Buffer | string) => {
+          received += Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(String(chunk))
+          if (received > maxBytes) {
+            req.destroy()
+            const res = event.node?.res ?? (event as any).res
+            if (res && !res.headersSent) {
+              res.writeHead(413, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ statusCode: 413, statusMessage: `Payload Too Large — лимит ${Math.round(maxBytes / 1024 / 1024)} MB` }))
+            }
           }
         }
+        req.prependListener?.('data', onData)
       }
-      req.prependListener?.('data', onData)
     }
-  }
-})
+  },
+}))

@@ -70,6 +70,8 @@ export function readAccessToken(request: IncomingMessage, url: URL) {
     return authorization.slice('Bearer '.length).trim()
   }
 
+  // Fallback for SSE (EventSource cannot set Authorization header)
+  // Tokens from query string are more exposed (logs, referer) — prefer short-lived tokens here
   const queryToken = url.searchParams.get('token')
   if (queryToken) {
     return queryToken

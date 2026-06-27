@@ -19,5 +19,5 @@ export default defineEventHandler(async (event) => {
     return content || { projectId: project.id, pageSlug: page, content: {} }
   }
 
-  return db.select().from(pageContent).where(eq(pageContent.projectId, project.id))
+  return db.select().from(pageContent).where(eq(pageContent.projectId, project.id)).limit(200)
 })

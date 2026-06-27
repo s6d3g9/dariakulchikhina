@@ -31,6 +31,12 @@
 - `data-design-mode` — family boundary для shared primitive-layer, bootstrap, theme recovery и общих shell overrides.
 - `data-concept` — concept-specific override, preset accent и точечные исключения внутри одного family.
 
+Для liquid-glass это теперь означает ещё и ownership фона:
+
+- family-layer на `html[data-design-mode="liquid-glass"]` рендерит page atmosphere;
+- concept-layer `glass` / `craft` / `future` только поставляет переменные `--liquid-family-page-*`;
+- точечные `.glass-page::before` override на уровне concept не должны больше использоваться как основной механизм фона.
+
 ### Shared auth-shell
 
 - [app/pages/login.vue](app/pages/login.vue), [app/pages/recover.vue](app/pages/recover.vue) и [app/pages/register.vue](app/pages/register.vue) используют один shell-контракт: `.auth-root`, `.auth-stage`, `.auth-panel`, `.auth-card`, `.auth-role-grid`.
@@ -42,6 +48,8 @@
 - brutalist family → `minale`, `brutal`, `silence`, `function`, `editorial`, `grand`
 - liquid-glass family → `glass`, `craft`, `future`
 - material3 family → `m3`
+
+В design editor вкладка «образы» сейчас тоже синхронизирована с этим контрактом: visible recipe-layer ограничен curated liquid-glass набором (`glass-*`, `craft-*`, `future-*`), а не смешанным legacy-каталогом.
 
 Это означает, что переход на brutalist можно делать поэтапно: сначала через режим и токены, затем через перестройку архитектуры конкретных экранов.
 

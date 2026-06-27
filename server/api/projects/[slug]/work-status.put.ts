@@ -7,13 +7,13 @@ const Body = z.object({
   items: z.array(z.object({
     id: z.number().optional(),
     contractorId: z.number().optional().nullable(),
-    title: z.string(),
-    workType: z.string().optional().nullable(),
-    status: z.string().default('pending'),
-    dateStart: z.string().optional().nullable(),
-    dateEnd: z.string().optional().nullable(),
-    budget: z.string().optional().nullable(),
-    notes: z.string().optional().nullable(),
+    title: z.string().max(500),
+    workType: z.string().max(200).optional().nullable(),
+    status: z.string().max(50).default('pending'),
+    dateStart: z.string().max(50).optional().nullable(),
+    dateEnd: z.string().max(50).optional().nullable(),
+    budget: z.string().max(100).optional().nullable(),
+    notes: z.string().max(5000).optional().nullable(),
     sortOrder: z.number().optional(),
   })).max(500)
 })

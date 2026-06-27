@@ -39,7 +39,7 @@ export default defineEventHandler(async (event): Promise<SearchResults> => {
   requireAdmin(event)
   const q = safeGetQuery(event).q?.trim()
 
-  if (!q || q.length < 2) {
+  if (!q || q.length < 2 || q.length > 200) {
     return { projects: [], clients: [], contractors: [], total: 0 }
   }
 

@@ -4,13 +4,12 @@ import { writeFile, mkdir } from 'node:fs/promises'
 import { join, extname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { validateUploadedFile } from '~/server/utils/upload-validation'
+import { getUploadDir } from '~/server/utils/storage'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const designerId = Number(getRouterParam(event, 'id'))
-  if (!designerId || !Number.isFinite(designerId)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
-  }
+  const designerId = requireIntParam(event, 'id')
 
   const form = await readMultipartFormData(event)
   if (!form) throw createError({ statusCode: 400, message: 'No multipart data' })
@@ -26,12 +25,12 @@ export default defineEventHandler(async (event) => {
   if (!validation.valid) throw createError({ statusCode: 400, message: validation.error })
 
   const ext = extname(fileField.filename || '.pdf')
-  const filename = `designer_${designerId}_${randomUUID()}${ext}`
-  const uploadDir = join(process.cwd(), 'public', 'uploads', 'designer-docs')
+  const filename = `${randomUUID()}${ext}`
+  const uploadDir = join(getUploadDir(), 'designer-docs')
   await mkdir(uploadDir, { recursive: true })
   await writeFile(join(uploadDir, filename), fileField.data)
 
-  const url = `/uploads/designer-docs/${filename}`
+  const url = `/api/files/designer-docs/${filename}`
   const db = useDb()
   const [doc] = await db.insert(documents).values({
     projectId: null,

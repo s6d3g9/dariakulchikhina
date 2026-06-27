@@ -69,11 +69,17 @@ export interface MessengerAgentGraphNodeInput {
 
 export function useMessengerAgents() {
   const auth = useMessengerAuth()
+  const { agentsEnabled, disableAgents } = useMessengerFeatures()
   const agents = useState<MessengerAgentItem[]>('messenger-agents-list', () => [])
   const pending = useState<boolean>('messenger-agents-pending', () => false)
   const settingsPending = useState<boolean>('messenger-agents-settings-pending', () => false)
 
   async function refresh() {
+    if (!agentsEnabled.value) {
+      agents.value = []
+      return
+    }
+
     pending.value = true
 
     try {
@@ -81,12 +87,24 @@ export function useMessengerAgents() {
         method: 'GET',
       })
       agents.value = response.agents
+    } catch (error) {
+      if (isMessengerAgentsApiDisabledError(error)) {
+        agents.value = []
+        disableAgents()
+        return
+      }
+
+      throw error
     } finally {
       pending.value = false
     }
   }
 
   async function saveSettings(agentId: string, payload: Pick<MessengerAgentSettings, 'model' | 'apiKey' | 'ssh' | 'knowledge' | 'connections' | 'graphPosition'>) {
+    if (!agentsEnabled.value) {
+      throw new Error('AGENTS_DISABLED')
+    }
+
     settingsPending.value = true
 
     try {
@@ -103,12 +121,23 @@ export function useMessengerAgents() {
         : agent)
 
       return response.settings
+    } catch (error) {
+      if (isMessengerAgentsApiDisabledError(error)) {
+        agents.value = []
+        disableAgents()
+      }
+
+      throw error
     } finally {
       settingsPending.value = false
     }
   }
 
   async function saveGraph(graph: Record<string, MessengerAgentGraphNodeInput>) {
+    if (!agentsEnabled.value) {
+      throw new Error('AGENTS_DISABLED')
+    }
+
     settingsPending.value = true
 
     try {
@@ -130,6 +159,14 @@ export function useMessengerAgents() {
             }
           : agent
       })
+    } catch (error) {
+      if (isMessengerAgentsApiDisabledError(error)) {
+        agents.value = []
+        disableAgents()
+        return
+      }
+
+      throw error
     } finally {
       settingsPending.value = false
     }

@@ -28,11 +28,18 @@ export interface MessengerAgentRun {
 
 export function useMessengerAgentRuns() {
   const auth = useMessengerAuth()
+  const { agentsEnabled, disableAgents } = useMessengerFeatures()
   const runs = useState<MessengerAgentRun[]>('messenger-agent-runs', () => [])
   const selectedRun = useState<MessengerAgentRun | null>('messenger-agent-selected-run', () => null)
   const pending = useState<boolean>('messenger-agent-runs-pending', () => false)
 
   async function refresh(agentId?: string, limit = 10) {
+    if (!agentsEnabled.value) {
+      runs.value = []
+      selectedRun.value = null
+      return
+    }
+
     pending.value = true
 
     try {
@@ -48,6 +55,15 @@ export function useMessengerAgentRuns() {
       if (selectedRun.value) {
         selectedRun.value = response.runs.find(item => item.runId === selectedRun.value?.runId) || selectedRun.value
       }
+    } catch (error) {
+      if (isMessengerAgentsApiDisabledError(error)) {
+        runs.value = []
+        selectedRun.value = null
+        disableAgents()
+        return
+      }
+
+      throw error
     } finally {
       pending.value = false
     }

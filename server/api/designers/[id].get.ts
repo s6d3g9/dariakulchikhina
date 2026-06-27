@@ -8,12 +8,12 @@ import {
   normalizeDesignerPackages,
   normalizeDesignerServices,
   normalizeDesignerSubscriptions,
-} from '~/shared/utils/designer-catalogs'
+} from '~/shared/utils/designer/designer-catalogs'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id || !Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
+  const id = requireIntParam(event, 'id')
 
   const db = useDb()
   const [designer] = await db.select().from(designers).where(eq(designers.id, id)).limit(1)

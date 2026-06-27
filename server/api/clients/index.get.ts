@@ -23,6 +23,7 @@ export default defineEventHandler(async (event) => {
     })
     .from(clients)
     .orderBy(asc(clients.createdAt))
+    .limit(1000)
 
   const allProjectsRaw = await db
     .select({
@@ -33,6 +34,7 @@ export default defineEventHandler(async (event) => {
       profile: projects.profile,
     })
     .from(projects)
+    .limit(2000)
 
   const allClients: any[] = Array.isArray(allClientsRaw)
     ? allClientsRaw

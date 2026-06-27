@@ -63,8 +63,8 @@
       <div class="co-section-title">Контроль проекта</div>
       <div class="co-team-card glass-surface co-team-card--summary">
         <div>
-          <div class="co-team-name">{{ controlSummary.health.label }}</div>
-          <div class="co-team-meta">{{ controlSummary.activePhase?.title || 'Фаза не определена' }}</div>
+          <div class="co-team-name">{{ controlSummary.healthLabel }}</div>
+          <div class="co-team-meta">{{ controlSummary.activePhaseTitle }}</div>
         </div>
         <div>
           <div class="co-team-name">{{ controlSummary.doneTasks }} / {{ controlSummary.totalTasks }}</div>
@@ -77,16 +77,17 @@
       </div>
     </div>
 
-    <!-- Contractors on project -->
-    <div v-if="contractors.length" class="co-section">
+    <!-- Team on project -->
+    <div v-if="teamMembers.length" class="co-section">
       <div class="co-section-title">Команда проекта</div>
       <div class="co-team">
-        <div v-for="c in contractors" :key="c.id" class="co-team-card glass-surface">
-          <span class="co-team-avatar">{{ c.name?.charAt(0)?.toUpperCase() || '?' }}</span>
+        <div v-for="member in teamMembers" :key="member.id" class="co-team-card glass-surface">
+          <span class="co-team-avatar">{{ member.avatarInitial || '?' }}</span>
           <div>
-            <div class="co-team-name">{{ c.name }}</div>
-            <div v-if="c.companyName" class="co-team-meta">{{ c.companyName }}</div>
-            <div v-if="c.phone" class="co-team-meta">{{ c.phone }}</div>
+            <div class="co-team-name">{{ member.displayName }}</div>
+            <div v-if="member.secondaryName" class="co-team-meta">{{ member.secondaryName }}</div>
+            <div v-if="member.roleLabels.length" class="co-team-meta">{{ member.roleLabels.join(', ') }}</div>
+            <div v-if="member.workTypeLabels.length" class="co-team-meta">{{ member.workTypeLabels.join(', ') }}</div>
           </div>
         </div>
       </div>
@@ -95,15 +96,21 @@
 </template>
 
 <script setup lang="ts">
-import { PHASE_LABELS, getAdminNavGroups } from '~~/shared/constants/pages'
-import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/project-control'
+import { PHASE_LABELS } from '~~/shared/constants/navigation/pages'
+import type {
+  ApiV1ClientProjectShellOverview,
+  ApiV1ClientProjectShellProject,
+  ApiV1ClientProjectTeamMember,
+} from '~~/shared/types/api-v1'
 
 const props = withDefaults(defineProps<{
   slug: string
-  project: any
-  contractors: any[]
+  project: ApiV1ClientProjectShellProject | null
+  overview: ApiV1ClientProjectShellOverview | null
+  teamMembers: ApiV1ClientProjectTeamMember[]
   rmMap?: Record<string, string>
 }>(), {
+  teamMembers: () => [],
   rmMap: () => ({}),
 })
 
@@ -115,24 +122,40 @@ function phaseLabel(s: string | undefined): string {
 }
 
 const phases = computed(() => {
-  const groups = getAdminNavGroups()
-  return groups.map(g => {
-    const total = g.pages.length
-    const done = g.pages.filter(p => props.rmMap?.[p.slug] === 'done').length
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0
-    return { key: g.label, label: g.label, pct, done, total }
-  })
+  return (props.overview?.phases || []).map(phase => ({
+    key: phase.id,
+    label: phase.title,
+    pct: phase.percent,
+    done: phase.percent >= 100 ? 1 : 0,
+    total: 1,
+  }))
 })
 
 const progressPct = computed(() => {
-  const total = phases.value.reduce((s, p) => s + p.total, 0)
-  const done = phases.value.reduce((s, p) => s + p.done, 0)
-  return total > 0 ? Math.round((done / total) * 100) : 0
+  if (typeof props.overview?.controlSummary.taskPercent === 'number') {
+    return props.overview.controlSummary.taskPercent
+  }
+
+  if (typeof props.overview?.controlSummary.phasePercent === 'number') {
+    return props.overview.controlSummary.phasePercent
+  }
+
+  return 0
 })
 
-const controlSummary = computed(() => buildHybridControlSummary(
-  ensureHybridControl(props.project?.profile?.hybridControl, props.project || {}),
-))
+const controlSummary = computed(() => props.overview?.controlSummary || {
+  healthStatus: 'stable',
+  healthLabel: 'Стабильно',
+  activePhaseTitle: 'Фаза не определена',
+  activeSprintTitle: 'Активного спринта нет',
+  blockerCount: 0,
+  overdueSprints: 0,
+  totalTasks: 0,
+  doneTasks: 0,
+  phasePercent: 0,
+  taskPercent: 0,
+  nextReviewDate: '',
+})
 </script>
 
 <style scoped>

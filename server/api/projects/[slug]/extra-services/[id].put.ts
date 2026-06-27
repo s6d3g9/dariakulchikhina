@@ -2,6 +2,7 @@ import { useDb } from '~/server/db/index'
 import { projectExtraServices, projects } from '~/server/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
+import { requireIntParam } from '~/server/utils/query'
 
 /**
  * PUT /api/projects/[slug]/extra-services/[id]
@@ -15,7 +16,7 @@ const CLIENT_ALLOWED_STATUSES = ['approved', 'cancelled']
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
-  const serviceId = Number(getRouterParam(event, 'id'))
+  const serviceId = requireIntParam(event, 'id')
   const auth = requireAdminOrClient(event, slug)
 
   if (!Number.isFinite(serviceId)) {

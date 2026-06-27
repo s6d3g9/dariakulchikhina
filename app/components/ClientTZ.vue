@@ -78,10 +78,24 @@
 <script setup lang="ts">
 const props = defineProps<{ slug: string }>()
 
-const reqHeaders = useRequestHeaders(['cookie'])
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
+const { data: documentsEnvelope, pending } = await useClientProjectDocuments(() => props.slug)
 
-const profile = computed(() => (project.value?.profile || {}) as Record<string, any>)
+const documentFacts = computed(() => documentsEnvelope.value?.data.facts)
+const documentItems = computed(() => documentsEnvelope.value?.data.items || [])
+const profile = computed(() => {
+  const facts = documentFacts.value
+  return {
+    tor_scope: facts?.torScope || '',
+    tor_exclusions: facts?.torExclusions || '',
+    tor_timeline: facts?.torTimeline || '',
+    tor_deliverables: facts?.torDeliverables || '',
+    contract_number: facts?.contractNumber || '',
+    contract_date: facts?.contractDate || '',
+    contract_status: facts?.contractStatus || '',
+    contract_parties: facts?.contractParties || '',
+    contract_file: documentItems.value.find(document => document.kind === 'contract' && document.isDownloadable)?.url || '',
+  }
+})
 
 type ClientTzSectionKey = 'tz' | 'contract'
 
@@ -97,16 +111,15 @@ function toggleSection(sectionKey: ClientTzSectionKey) {
 
 const hasTZ = computed(() =>
   !!(profile.value.tor_scope || profile.value.tor_exclusions || profile.value.tor_timeline || profile.value.tor_deliverables
-    || profile.value.contract_number || profile.value.contract_file),
+    || profile.value.contract_number || profile.value.contract_file || documentItems.value.some(document => document.kind === 'tor')),
 )
 
 const hasContract = computed(() =>
-  !!(profile.value.contract_number || profile.value.contract_date || profile.value.contract_file),
+  !!(profile.value.contract_number || profile.value.contract_date || profile.value.contract_file || documentItems.value.some(document => document.kind === 'contract')),
 )
 
 const contractStatusLabel = computed(() => {
-  const map: Record<string, string> = { draft: 'черновик', sent: 'отправлен', signed: 'подписан', rejected: 'отклонён' }
-  return map[profile.value.contract_status] || profile.value.contract_status || ''
+  return documentFacts.value?.contractStatusLabel || profile.value.contract_status || ''
 })
 
 function fmtDate(val: string | null | undefined): string {

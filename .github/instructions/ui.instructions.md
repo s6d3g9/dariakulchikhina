@@ -39,6 +39,7 @@ applyTo: "app/**/*.vue,app/**/*.ts,app/assets/**/*.css"
 - Для admin-разделов использовать `ent-layout`, `ent-sidebar`, `ent-main`.
 - Для cabinet-разделов использовать `cab-body`, `cab-sidebar`, `cab-main`.
 - В `app/layouts/admin.vue` sidebar должен оставаться совместимым с Teleport в `#admin-sidebar-portal`.
+- Если в admin открыт субъектный cabinet, первым control в левом sidebar должен быть project chooser этого субъекта; он размещается выше nested-nav поиска и раскрывает закреплённые проекты, а при пустом наборе показывает плюс.
 - На desktop main не должен визуально или технически перекрывать sidebar.
 - Если в репозитории уже есть рабочее архитектурное решение для section или cabinet того же класса, новые экраны обязаны повторять его, а не изобретать параллельную схему.
 

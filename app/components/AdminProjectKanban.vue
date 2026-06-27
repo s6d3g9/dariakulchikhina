@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import type { HybridControl, HybridControlSprint, HybridControlTask, HybridControlTaskStatus } from '~/shared/types/project'
+import type { HybridControl, HybridControlSprint, HybridControlTask, HybridControlTaskStatus } from '~/shared/types/project/project'
 
 const props = defineProps<{
   control: HybridControl | undefined

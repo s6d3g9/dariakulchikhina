@@ -1,10 +1,10 @@
 import { useDb } from '~/server/db/index'
 import { contractors } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
-  const idParam = getRouterParam(event, 'id')!
-  const id = Number(idParam)
+  const id = requireIntParam(event, 'id')
   // Allow admin or the contractor themselves
   requireAdminOrContractor(event, id)
   const db = useDb()

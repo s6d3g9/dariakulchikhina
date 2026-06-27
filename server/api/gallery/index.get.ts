@@ -28,4 +28,5 @@ export default defineEventHandler(async (event) => {
   return db.select().from(galleryItems)
     .where(where)
     .orderBy(asc(galleryItems.sortOrder), asc(galleryItems.createdAt))
+    .limit(1000)
 })

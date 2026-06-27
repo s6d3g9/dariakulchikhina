@@ -4,11 +4,12 @@ import { useDb } from '~/server/db/index'
 import { workStatusItemPhotos, workStatusItems, contractors } from '~/server/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import { getUploadDir } from '~/server/utils/storage'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
-  const contractorId = Number(getRouterParam(event, 'id'))
-  const itemId = Number(getRouterParam(event, 'itemId'))
-  const photoId = Number(getRouterParam(event, 'photoId'))
+  const contractorId = requireIntParam(event, 'id')
+  const itemId = requireIntParam(event, 'itemId')
+  const photoId = requireIntParam(event, 'photoId')
 
   // Auth: admin or authenticated contractor
   requireAdminOrContractor(event, contractorId)

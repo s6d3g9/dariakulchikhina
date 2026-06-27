@@ -3,7 +3,7 @@ const activeLiveKitRooms = new Set<string>()
 import { joinLiveKitRoomAsBot } from './livekit-stt-bot.ts'
 import { randomUUID } from 'node:crypto'
 
-import Fastify, { type FastifyRequest } from 'fastify'
+import Fastify, { type FastifyRequest, type FastifyReply, type FastifyError } from 'fastify'
 import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
 import fastifyStatic from '@fastify/static'
@@ -13,21 +13,46 @@ import { z } from 'zod'
 import { getMessengerAgentSettings, resolveMessengerAgentWorkspacePath, updateMessengerAgentGraph, updateMessengerAgentSettings } from './agent-settings-store.ts'
 import { getMessengerAgentKnowledgeStatus, reindexMessengerAgentKnowledge } from './agent-knowledge-store.ts'
 import { getMessengerAgentKnowledgePreset } from './agent-knowledge-presets.ts'
-import { isMessengerAgentLlmConfigured } from './agent-llm.ts'
-import { buildMessengerCallAnalysis, type MessengerCallAnalysisToolId } from './call-analysis-service.ts'
+import { getMessengerAgentRoutableModels, isMessengerAgentLlmConfigured } from './agent-llm.ts'
+import {
+  MESSENGER_AGENT_ROUTER_ACTIONS,
+  MESSENGER_AGENT_ROUTER_DATA_CLASSES,
+  MESSENGER_AGENT_ROUTER_ENVIRONMENTS,
+  MESSENGER_AGENT_ROUTER_GATE_IDS,
+  MESSENGER_AGENT_ROUTER_PROFILE_IDS,
+  MESSENGER_AGENT_ROUTER_RUN_ACTIONS,
+  ROUTER_POLICY_VERSION,
+  ROUTER_PROFILE_VERSION,
+  listMessengerAgentRouterGates,
+  listMessengerAgentRouterProfiles,
+} from './agent-router-policy.ts'
+import { executeMessengerAgentRouterSafeRun } from './agent-router-executor.ts'
+import {
+  approveMessengerAgentRouterRun,
+  cancelMessengerAgentRouterRun,
+  completeMessengerAgentRouterRun,
+  createMessengerAgentRouterPlanRecord,
+  createMessengerAgentRouterRun,
+  getMessengerAgentRouterPlanById,
+  getMessengerAgentRouterRunById,
+  listMessengerAgentRouterRuns,
+  markMessengerAgentRouterRunStarted,
+} from './agent-router-run-store.ts'
+import { buildMessengerCallAnalysisWithRoute, type MessengerCallAnalysisToolId } from './call-analysis-service.ts'
 import { listMessengerAgentWorkspace, readMessengerAgentWorkspaceFile } from './agent-workspace-store.ts'
 import { appendMessengerAgentRunEvent, getMessengerAgentRunById, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from './agent-run-store.ts'
 import { buildMessengerAgentReply, findMessengerAgentById, listMessengerAgents } from './agent-store.ts'
-import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
+import { authenticateMessengerUser, findMessengerUserById, isMessengerAdmin, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from './auth.ts'
 import { addAgentMessageToConversation, addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateAgentConversation, findOrCreateDirectConversation, findOrCreateSecretConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages, toggleReactionInConversation } from './conversation-store.ts'
 import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from './contact-store.ts'
 import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } from './crypto-store.ts'
 import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, buildMessengerProjectSyncBrief, deleteMessengerProject, deleteMessengerProjectAgreement, deleteMessengerProjectCabinetLink, deleteMessengerProjectSubject, getMessengerProject, listMessengerProjectTemplates, listMessengerProjects, upsertMessengerProject, upsertMessengerProjectAgreement, upsertMessengerProjectCabinetLink, upsertMessengerProjectSubject } from './project-engine-store.ts'
 import { readMessengerConfig } from './config.ts'
-import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
+import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia, checkUploadQuota, rollbackUploadUsage } from './media-store.ts'
 import { hasMessengerTranscriptionHttpBackend, isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from './transcription-service.ts'
 import { getMessengerUserAiSettings, updateMessengerUserAiSettings } from './user-ai-settings-store.ts'
+import { getMessengerUserUiSettings, updateMessengerUserUiSettings } from './user-ui-settings-store.ts'
 
 function isMessengerCorsOriginAllowed(origin: string, allowedOrigins: string[]) {
   if (allowedOrigins.includes(origin)) {
@@ -55,11 +80,12 @@ function isMessengerCorsOriginAllowed(origin: string, allowedOrigins: string[]) 
       return false
     }
 
-    if (allowedUrl.port) {
-      return allowedUrl.port === requestUrl.port
-    }
+    // Strict port comparison: default to 443 for https, 80 for http
+    const defaultPort = allowedUrl.protocol === 'https:' ? '443' : '80'
+    const allowedPort = allowedUrl.port || defaultPort
+    const requestPort = requestUrl.port || defaultPort
 
-    return true
+    return allowedPort === requestPort
   })
 }
 
@@ -78,7 +104,9 @@ export async function createMessengerServer() {
   await app.register(cors, {
     origin(origin, callback) {
       if (!origin) {
-        callback(null, true)
+        // Deny requests without Origin header to prevent CSRF via form submissions
+        // Only WebSocket upgrades and same-origin requests are exempt (handled by browser)
+        callback(new Error('Origin header required'), false)
         return
       }
 
@@ -86,6 +114,18 @@ export async function createMessengerServer() {
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Authorization', 'Content-Type'],
+  })
+
+  // Security headers for all responses
+  app.addHook('onSend', (_request, reply, payload, done) => {
+    reply.header('X-Content-Type-Options', 'nosniff')
+    reply.header('X-Frame-Options', 'DENY')
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+    reply.header('X-XSS-Protection', '0')
+    reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
+    reply.removeHeader('X-Powered-By')
+    done(null, payload)
   })
   await app.register(multipart, {
     limits: {
@@ -96,11 +136,31 @@ export async function createMessengerServer() {
   await app.register(fastifyStatic, {
     root: MESSENGER_UPLOADS_ROOT,
     prefix: '/uploads/',
+    setHeaders(res) {
+      res.setHeader('X-Content-Type-Options', 'nosniff')
+      res.setHeader('Content-Disposition', 'attachment')
+      res.setHeader('Cache-Control', 'private, no-store')
+    },
   })
-  await app.register(websocket)
+
+  // Require authentication for all media downloads
+  app.addHook('onRequest', async (request, reply) => {
+    const url = request.url
+    if (!url.startsWith('/uploads/')) return
+
+    const session = await resolveSession(request)
+    if (!session) {
+      reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+  })
+  await app.register(websocket, {
+    options: {
+      maxPayload: 256 * 1024, // 256 KB per WebSocket message
+    },
+  })
 
   app.addHook('onRequest', async (request, reply) => {
-    if (!config.MESSENGER_ENABLE_AGENTS && request.raw.url?.startsWith('/agents')) {
+    if (!config.MESSENGER_ENABLE_AGENTS && (request.raw.url?.startsWith('/agents') || request.raw.url?.startsWith('/agent-router'))) {
       return reply.code(404).send({ error: 'NOT_FOUND' })
     }
   })
@@ -236,7 +296,10 @@ export async function createMessengerServer() {
 
   const authSchema = z.object({
     login: z.string().trim().toLowerCase().min(3).max(32).regex(/^[a-z0-9._-]+$/),
-    password: z.string().min(8).max(128),
+    password: z.string().min(8).max(128)
+      .regex(/[a-z]/, 'Пароль должен содержать строчную букву')
+      .regex(/[A-Z]/, 'Пароль должен содержать заглавную букву')
+      .regex(/\d/, 'Пароль должен содержать цифру'),
     displayName: z.string().trim().min(2).max(80).optional(),
   })
   const contactsQuerySchema = z.object({
@@ -255,7 +318,7 @@ export async function createMessengerServer() {
     peerUserId: z.string().uuid(),
   })
   const agentParamsSchema = z.object({
-    agentId: z.string().trim().min(1).max(120),
+    agentId: z.string().trim().min(1).max(120).regex(/^[\w-]+$/, 'INVALID_AGENT_ID'),
   })
   const agentSettingsSchema = z.object({
     model: z.string().trim().min(1).max(120),
@@ -265,11 +328,11 @@ export async function createMessengerServer() {
       login: z.string().trim().max(120).optional().default(''),
       port: z.coerce.number().int().min(1).max(65535).optional().default(22),
       privateKey: z.string().trim().max(32768).optional().default(''),
-      workspacePath: z.string().trim().max(2048).optional().default(''),
+      workspacePath: z.string().trim().max(2048).regex(/^$|^[\w\s\-/.@]+$/, 'INVALID_PATH_CHARACTERS').refine(v => !v.includes('..'), 'PATH_TRAVERSAL_DISALLOWED').optional().default(''),
       repositories: z.array(z.object({
         id: z.string().trim().min(1).max(120),
         label: z.string().trim().min(1).max(120),
-        path: z.string().trim().min(1).max(2048),
+        path: z.string().trim().min(1).max(2048).regex(/^[\w\s\-/.@]+$/, 'INVALID_PATH_CHARACTERS').refine(v => !v.includes('..'), 'PATH_TRAVERSAL_DISALLOWED'),
       })).max(12).optional().default([]),
       activeRepositoryId: z.string().trim().max(120).optional().default(''),
     }).optional().default({
@@ -286,7 +349,7 @@ export async function createMessengerServer() {
         id: z.string().trim().min(1).max(120),
         label: z.string().trim().min(1).max(160),
         repositoryId: z.string().trim().max(120).optional().default(''),
-        path: z.string().trim().min(1).max(2048),
+        path: z.string().trim().min(1).max(2048).regex(/^[\w\s\-/.@*]+$/, 'INVALID_PATH_CHARACTERS').refine(v => !v.includes('..'), 'PATH_TRAVERSAL_DISALLOWED'),
         type: z.enum(['rag', 'vector']).default('rag'),
         enabled: z.boolean().optional().default(true),
       })).max(32).default([]),
@@ -294,7 +357,7 @@ export async function createMessengerServer() {
       sources: [],
     }),
     connections: z.array(z.object({
-      targetAgentId: z.string().trim().min(1).max(120),
+      targetAgentId: z.string().trim().min(1).max(120).regex(/^[\w-]+$/, 'INVALID_AGENT_ID'),
       mode: z.enum(['review', 'enrich', 'validate', 'summarize', 'route']).default('review'),
     })).max(12).default([]),
     graphPosition: z.object({
@@ -305,7 +368,7 @@ export async function createMessengerServer() {
   const agentGraphSchema = z.object({
     graph: z.record(z.string().trim().min(1).max(120), z.object({
       connections: z.array(z.object({
-        targetAgentId: z.string().trim().min(1).max(120),
+        targetAgentId: z.string().trim().min(1).max(120).regex(/^[\w-]+$/, 'INVALID_AGENT_ID'),
         mode: z.enum(['review', 'enrich', 'validate', 'summarize', 'route']).default('review'),
       })).max(12).default([]),
       graphPosition: z.object({
@@ -315,14 +378,14 @@ export async function createMessengerServer() {
     })),
   })
   const agentRunsQuerySchema = z.object({
-    agentId: z.string().trim().min(1).max(120).optional(),
+    agentId: z.string().trim().min(1).max(120).regex(/^[\w-]+$/, 'INVALID_AGENT_ID').optional(),
     limit: z.coerce.number().int().min(1).max(30).default(10),
   })
   const agentRunParamsSchema = z.object({
     runId: z.string().trim().min(1).max(120),
   })
   const agentEdgePayloadsQuerySchema = z.object({
-    agentId: z.string().trim().min(1).max(120).optional(),
+    agentId: z.string().trim().min(1).max(120).regex(/^[\w-]+$/, 'INVALID_AGENT_ID').optional(),
     limit: z.coerce.number().int().min(1).max(80).default(24),
   })
   const agentWorkspaceQuerySchema = z.object({
@@ -375,11 +438,11 @@ export async function createMessengerServer() {
       notes: z.string().trim().max(1000).optional().default(''),
     })).max(16).default([]),
     syncContract: projectSyncContractSchema,
-    assignedAgentIds: z.array(z.string().trim().min(1).max(120)).max(16).default([]),
+    assignedAgentIds: z.array(z.string().trim().min(1).max(120).regex(/^[\w-]+$/, 'INVALID_AGENT_ID')).max(16).default([]),
   })
   const projectAgentBindingSchema = z.object({
     id: z.string().trim().min(1).max(160),
-    agentId: z.string().trim().min(1).max(120),
+    agentId: z.string().trim().min(1).max(120).regex(/^[\w-]+$/, 'INVALID_AGENT_ID'),
     contextId: z.string().trim().min(1).max(160),
     role: projectAgentRoleSchema.default('support'),
     responsibilities: z.array(projectCapabilitySchema).max(16).default([]),
@@ -452,8 +515,11 @@ export async function createMessengerServer() {
 
     return {
       ...settings,
+      // Mask sensitive fields — never expose raw secrets in API responses
+      apiKey: settings.apiKey ? '••••••••' : '',
       ssh: {
         ...settings.ssh,
+        privateKey: settings.ssh.privateKey ? '••••••••' : '',
         workspacePath,
       },
       apiKeyConfigured: Boolean(settings.apiKey),
@@ -470,19 +536,11 @@ export async function createMessengerServer() {
     const transcriptionApiConfigured = hasMessengerTranscriptionHttpBackend(config)
     const interpretation = Array.from(new Set([
       settings.interpretationModel,
-      config.MESSENGER_AGENT_MODEL,
-      'gemma3:27b',
-      'gpt-5.4',
-      'gpt-4.1-mini',
-      'gpt-4o-mini',
+      ...getMessengerAgentRoutableModels('call-analysis'),
     ].filter(Boolean)))
     const summary = Array.from(new Set([
       settings.summaryModel,
-      config.MESSENGER_AGENT_MODEL,
-      'gemma3:27b',
-      'gpt-5.4',
-      'gpt-4.1-mini',
-      'gpt-4o-mini',
+      ...getMessengerAgentRoutableModels('summary'),
     ].filter(Boolean)))
     const transcription = Array.from(new Set([
       settings.transcriptionModel,
@@ -506,6 +564,10 @@ export async function createMessengerServer() {
         transcriptionApi: transcriptionApiConfigured,
       },
     }
+  }
+
+  function buildUserUiSettingsResponse(settings: Awaited<ReturnType<typeof getMessengerUserUiSettings>>) {
+    return { settings }
   }
   const userParamsSchema = z.object({
     userId: z.string().uuid(),
@@ -629,7 +691,7 @@ export async function createMessengerServer() {
     timestamp: z.union([z.string(), z.number()]).optional(),
   })
   const messageReactionSchema = z.object({
-    emoji: z.string().trim().min(1).max(16),
+    emoji: z.string().trim().min(1).max(16).regex(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}\d#*]+$/u, 'INVALID_EMOJI'),
   })
   const callTranscriptionParamsSchema = z.object({
     conversationId: z.string().uuid(),
@@ -648,6 +710,43 @@ export async function createMessengerServer() {
     interpretationModel: z.string().trim().max(160).optional().default(''),
     summaryModel: z.string().trim().max(160).optional().default(''),
     transcriptionModel: z.string().trim().max(160).optional().default(''),
+  })
+  const agentRouterProviderHintSchema = z.enum(['openai-compatible', 'ollama-native', 'cli', 'local'])
+  const agentRouterPlanSchema = z.object({
+    profile: z.enum(MESSENGER_AGENT_ROUTER_PROFILE_IDS).optional(),
+    scope: z.string().trim().max(4000).optional().default(''),
+    tenantKey: z.string().trim().max(120).optional().default(''),
+    projectId: z.string().trim().max(160).optional().default(''),
+    changedFiles: z.array(z.string().trim().min(1).max(300)).max(80).optional().default([]),
+    riskTier: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    costTier: z.enum(['local', 'cheap', 'balanced', 'premium', 'max']).optional(),
+    providerHints: z.array(agentRouterProviderHintSchema).max(4).optional().default([]),
+    environment: z.enum(MESSENGER_AGENT_ROUTER_ENVIRONMENTS).optional().default('local'),
+    dataClasses: z.array(z.enum(MESSENGER_AGENT_ROUTER_DATA_CLASSES)).max(8).optional().default(['internal']),
+    requestedActions: z.array(z.enum(MESSENGER_AGENT_ROUTER_ACTIONS)).max(9).optional().default(['inspect-files', 'draft-plan']),
+    idempotencyKey: z.string().trim().min(8).max(160).optional(),
+    correlationId: z.string().trim().min(8).max(160).optional(),
+  })
+  const agentRouterRunActionSchema = z.enum(MESSENGER_AGENT_ROUTER_RUN_ACTIONS)
+  const agentRouterRunSchema = agentRouterPlanSchema.extend({
+    idempotencyKey: z.string().trim().min(8).max(160),
+    runActions: z.array(agentRouterRunActionSchema).max(8).optional().default([]),
+  })
+  const agentRouterRunParamsSchema = z.object({
+    runId: z.string().trim().min(1).max(120),
+  })
+  const agentRouterRunsQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(80).default(20),
+  })
+  const agentRouterApprovalSchema = z.object({
+    gateIds: z.array(z.enum(MESSENGER_AGENT_ROUTER_GATE_IDS)).min(1).max(16),
+    note: z.string().trim().max(1000).optional().default(''),
+  })
+  const agentRouterCancelSchema = z.object({
+    reason: z.string().trim().max(1000).optional().default(''),
+  })
+  const userUiSettingsSchema = z.object({
+    projectActionsRailOrder: z.array(z.string().trim().regex(/^[a-z0-9:-]{1,64}$/u)).max(32).default([]),
   })
   const callAnalysisToolSchema = z.enum(['psychology', 'business', 'intent', 'objections', 'speech-risks', 'next-steps'])
   const callAnalysisRequestSchema = z.object({
@@ -792,9 +891,34 @@ export async function createMessengerServer() {
     }
   }
 
+  // --- Token revocation set (in-memory, survives until restart) ---
+  const revokedTokens = new Set<string>()
+  const REVOKED_TOKENS_MAX_SIZE = 50_000
+
+  // Cleanup expired entries periodically (every 30 min)
+  setInterval(() => {
+    // Safety cap — if set grows too large (DoS via mass logout), clear it entirely.
+    // Worst case: some recently-revoked tokens become usable until their 2h TTL expires.
+    if (revokedTokens.size > REVOKED_TOKENS_MAX_SIZE) {
+      revokedTokens.clear()
+      return
+    }
+
+    for (const token of revokedTokens) {
+      const payload = verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET)
+      if (!payload) {
+        revokedTokens.delete(token) // expired or invalid — remove
+      }
+    }
+  }, 30 * 60 * 1000)
+
   async function resolveSession(request: FastifyRequest) {
     const token = readBearerToken(request.headers.authorization)
     if (!token) {
+      return null
+    }
+
+    if (revokedTokens.has(token)) {
       return null
     }
 
@@ -811,6 +935,7 @@ export async function createMessengerServer() {
     return {
       user,
       payload,
+      token,
     }
   }
 
@@ -848,6 +973,10 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
     const parsedBody = projectUpsertSchema.safeParse(request.body)
     if (!parsedBody.success) {
       return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
@@ -861,6 +990,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedBody = projectBootstrapSchema.safeParse(request.body)
@@ -909,6 +1042,10 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
     const parsedParams = projectParamsSchema.safeParse(request.params)
     const parsedBody = projectUpsertSchema.safeParse(request.body)
     if (!parsedParams.success || !parsedBody.success) {
@@ -932,6 +1069,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = projectParamsSchema.safeParse(request.params)
@@ -1011,6 +1152,10 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
     const parsedParams = projectParamsSchema.safeParse(request.params)
     const parsedBody = projectSubjectSchema.safeParse(request.body)
     if (!parsedParams.success || !parsedBody.success) {
@@ -1029,6 +1174,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = projectEntityParamsSchema.safeParse(request.params)
@@ -1052,6 +1201,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = projectEntityParamsSchema.safeParse(request.params)
@@ -1092,6 +1245,10 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
     const parsedParams = projectParamsSchema.safeParse(request.params)
     const parsedBody = projectAgreementSchema.safeParse(request.body)
     if (!parsedParams.success || !parsedBody.success) {
@@ -1110,6 +1267,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = projectEntityParamsSchema.safeParse(request.params)
@@ -1133,6 +1294,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = projectEntityParamsSchema.safeParse(request.params)
@@ -1173,6 +1338,10 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
     const parsedParams = projectParamsSchema.safeParse(request.params)
     const parsedBody = projectCabinetLinkSchema.safeParse(request.body)
     if (!parsedParams.success || !parsedBody.success) {
@@ -1191,6 +1360,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = projectEntityParamsSchema.safeParse(request.params)
@@ -1214,6 +1387,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = projectEntityParamsSchema.safeParse(request.params)
@@ -1324,17 +1501,86 @@ export async function createMessengerServer() {
 
     const arrayBuffer = await upstreamResponse.arrayBuffer()
     const mimeType = upstreamResponse.headers.get('content-type') || inferMimeTypeFromUrl(parsedQuery.data.url)
+
+    // Only allow safe image/video MIME types — block HTML/SVG/script to prevent XSS
+    const SAFE_KLIPY_MIME_PREFIXES = ['image/gif', 'image/png', 'image/jpeg', 'image/webp', 'video/mp4', 'video/webm']
+    const normalizedMime = mimeType.split(';')[0]?.trim().toLowerCase() || ''
+    if (!SAFE_KLIPY_MIME_PREFIXES.some(prefix => normalizedMime === prefix)) {
+      return reply.code(415).send({ error: 'UNSUPPORTED_MEDIA_TYPE' })
+    }
+
     const fileName = parsedQuery.data.url.split('/').pop()?.split('?')[0] || `klipy-${randomUUID()}`
 
-    reply.header('Content-Type', mimeType)
+    reply.header('Content-Type', normalizedMime)
     reply.header('Content-Length', String(arrayBuffer.byteLength))
     reply.header('Cache-Control', 'private, max-age=3600')
-    reply.header('Content-Disposition', `inline; filename="${fileName.replace(/[^a-zA-Z0-9._-]+/g, '-') || `klipy-${randomUUID()}`}"`)
-
+    reply.header('Content-Disposition', `attachment; filename="${fileName.replace(/[^a-zA-Z0-9._-]+/g, '-') || `klipy-${randomUUID()}`}"`)
+    reply.header('X-Content-Type-Options', 'nosniff')
     return reply.send(Buffer.from(arrayBuffer))
   })
 
+  // --- Rate limiting for auth endpoints ---
+  const authRateLimit = new Map<string, { count: number; resetAt: number }>()
+
+  function checkAuthRateLimit(request: FastifyRequest, reply: FastifyReply, limit: number, windowMs: number) {
+    const ip = request.ip || 'unknown'
+    const now = Date.now()
+    const bucket = authRateLimit.get(ip)
+
+    if (bucket && now < bucket.resetAt) {
+      if (bucket.count >= limit) {
+        reply.code(429).send({ error: 'TOO_MANY_REQUESTS' })
+        return false
+      }
+      bucket.count++
+    } else {
+      authRateLimit.set(ip, { count: 1, resetAt: now + windowMs })
+    }
+
+    return true
+  }
+
+  // Cleanup auth rate-limit every 10 min
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, bucket] of authRateLimit.entries()) {
+      if (now >= bucket.resetAt) authRateLimit.delete(key)
+    }
+  }, 10 * 60 * 1000)
+
+  // --- Per-user action rate limiting (for authenticated endpoints) ---
+  const userActionRateLimit = new Map<string, { count: number; resetAt: number }>()
+
+  function checkUserActionRate(userId: string, action: string, reply: FastifyReply, limit: number, windowMs: number): boolean {
+    const key = `${userId}:${action}`
+    const now = Date.now()
+    const bucket = userActionRateLimit.get(key)
+
+    if (bucket && now < bucket.resetAt) {
+      if (bucket.count >= limit) {
+        reply.code(429).send({ error: 'TOO_MANY_REQUESTS' })
+        return false
+      }
+      bucket.count++
+    } else {
+      userActionRateLimit.set(key, { count: 1, resetAt: now + windowMs })
+    }
+
+    return true
+  }
+
+  // Cleanup user action rate-limit every 5 min
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, bucket] of userActionRateLimit.entries()) {
+      if (now >= bucket.resetAt) userActionRateLimit.delete(key)
+    }
+  }, 5 * 60 * 1000)
+
   app.post('/auth/register', async (request, reply) => {
+    // 3 registrations per IP per hour
+    if (!checkAuthRateLimit(request, reply, 3, 60 * 60 * 1000)) return
+
     const parsed = authSchema.safeParse(request.body)
     if (!parsed.success) {
       return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
@@ -1358,7 +1604,8 @@ export async function createMessengerServer() {
       }
     } catch (error) {
       if (error instanceof Error && error.message === 'USER_EXISTS') {
-        return reply.code(409).send({ error: 'USER_EXISTS' })
+        // Return generic error to prevent username enumeration
+        return reply.code(400).send({ error: 'REGISTRATION_FAILED' })
       }
 
       throw error
@@ -1366,6 +1613,8 @@ export async function createMessengerServer() {
   })
 
   app.post('/auth/login', async (request, reply) => {
+    // 10 login attempts per IP per 5 minutes
+    if (!checkAuthRateLimit(request, reply, 10, 5 * 60 * 1000)) return
     const parsed = authSchema.pick({ login: true, password: true }).safeParse(request.body)
     if (!parsed.success) {
       return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
@@ -1403,6 +1652,44 @@ export async function createMessengerServer() {
     }
   })
 
+  // --- Logout: revoke current token ---
+  app.post('/auth/logout', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (session.token) {
+      revokedTokens.add(session.token)
+    }
+
+    return { ok: true }
+  })
+
+  // --- Refresh: issue new token and revoke old ---
+  app.post('/auth/refresh', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    // Revoke old token
+    if (session.token) {
+      revokedTokens.add(session.token)
+    }
+
+    // Issue new token
+    const token = createMessengerToken(session.user, config.MESSENGER_CORE_AUTH_SECRET)
+    return {
+      token,
+      user: {
+        id: session.user.id,
+        login: session.user.login,
+        displayName: session.user.displayName,
+      },
+    }
+  })
+
   app.get('/settings/ai', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -1411,6 +1698,270 @@ export async function createMessengerServer() {
 
     const settings = await getMessengerUserAiSettings(session.user.id)
     return buildUserAiSettingsResponse(settings)
+  })
+
+  app.get('/agent-router/profiles', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    return {
+      mode: 'plan-only',
+      profileVersion: ROUTER_PROFILE_VERSION,
+      policyVersion: ROUTER_POLICY_VERSION,
+      profiles: listMessengerAgentRouterProfiles(),
+      gates: listMessengerAgentRouterGates(),
+      runActions: MESSENGER_AGENT_ROUTER_RUN_ACTIONS,
+    }
+  })
+
+  app.post('/agent-router/plan', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    const parsedBody = agentRouterPlanSchema.safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const { idempotencyKey, correlationId, ...planInput } = parsedBody.data
+    const planRecord = await createMessengerAgentRouterPlanRecord({
+      actorUserId: session.user.id,
+      input: planInput,
+      idempotencyKey,
+      correlationId,
+    })
+    request.log.info({
+      userId: session.user.id,
+      planId: planRecord.planId,
+      correlationId: planRecord.correlationId,
+      profile: planRecord.profile,
+      riskTier: planRecord.riskTier,
+      costTier: planRecord.costTier,
+      taskClass: planRecord.taskClass,
+      requiresHumanApproval: planRecord.plan.policy.requiresHumanApproval,
+      requiresExternalReview: planRecord.plan.policy.requiresExternalReview,
+      candidates: planRecord.modelCandidates.map(candidate => candidate.model),
+      blockedActions: planRecord.blockedActions,
+    }, 'messenger agent router plan requested')
+
+    return {
+      plan: planRecord.plan,
+      audit: {
+        planId: planRecord.planId,
+        correlationId: planRecord.correlationId,
+        idempotencyKey: planRecord.idempotencyKey,
+        requestHash: planRecord.requestHash,
+        planHash: planRecord.planHash,
+        gates: planRecord.gates,
+        selectedRoute: planRecord.selectedRoute,
+      },
+    }
+  })
+
+  app.post('/agent-router/runs', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    const parsedBody = agentRouterRunSchema.safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const { idempotencyKey, correlationId, runActions, ...planInput } = parsedBody.data
+    const created = await createMessengerAgentRouterRun({
+      actorUserId: session.user.id,
+      input: planInput,
+      idempotencyKey,
+      correlationId,
+      requestedActions: runActions,
+    })
+
+    if (created.reused) {
+      return {
+        reused: true,
+        run: created.run,
+        plan: created.plan?.plan || null,
+      }
+    }
+
+    if (!created.plan) {
+      return reply.code(500).send({ error: 'ROUTER_PLAN_MISSING' })
+    }
+
+    if (created.run.status === 'blocked' || created.run.status === 'awaiting_approval') {
+      return reply.code(409).send({
+        error: 'BLOCKED_BY_GATE',
+        run: created.run,
+        plan: created.plan.plan,
+      })
+    }
+
+    const startedRun = await markMessengerAgentRouterRunStarted(created.run.runId)
+    if (!startedRun) {
+      return reply.code(404).send({ error: 'RUN_NOT_FOUND' })
+    }
+
+    const execution = await executeMessengerAgentRouterSafeRun({
+      run: startedRun,
+      planRecord: created.plan,
+      projectRoot: config.MESSENGER_PROJECT_ROOT,
+    })
+    const completedRun = await completeMessengerAgentRouterRun({
+      runId: startedRun.runId,
+      status: execution.status,
+      verificationResults: execution.verificationResults,
+      outputs: execution.outputs,
+      gateResults: execution.gateResults,
+      summary: execution.summary,
+    })
+
+    if (!completedRun) {
+      return reply.code(404).send({ error: 'RUN_NOT_FOUND' })
+    }
+
+    if (completedRun.status === 'blocked') {
+      return reply.code(409).send({
+        error: 'BLOCKED_BY_GATE',
+        run: completedRun,
+        plan: created.plan.plan,
+      })
+    }
+
+    if (completedRun.status === 'failed') {
+      return reply.code(409).send({
+        error: 'RUN_FAILED',
+        run: completedRun,
+        plan: created.plan.plan,
+      })
+    }
+
+    return {
+      reused: false,
+      run: completedRun,
+      plan: created.plan.plan,
+    }
+  })
+
+  app.get('/agent-router/runs', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    const parsedQuery = agentRouterRunsQuerySchema.safeParse(request.query)
+    if (!parsedQuery.success) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    return {
+      runs: await listMessengerAgentRouterRuns({ limit: parsedQuery.data.limit }),
+    }
+  })
+
+  app.get('/agent-router/runs/:runId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    const parsedParams = agentRouterRunParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const run = await getMessengerAgentRouterRunById(parsedParams.data.runId)
+    if (!run) {
+      return reply.code(404).send({ error: 'RUN_NOT_FOUND' })
+    }
+
+    const plan = await getMessengerAgentRouterPlanById(run.planId)
+    return {
+      run,
+      plan: plan?.plan || null,
+    }
+  })
+
+  app.post('/agent-router/runs/:runId/approve', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    const parsedParams = agentRouterRunParamsSchema.safeParse(request.params)
+    const parsedBody = agentRouterApprovalSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const run = await approveMessengerAgentRouterRun({
+      runId: parsedParams.data.runId,
+      actorUserId: session.user.id,
+      gateIds: parsedBody.data.gateIds,
+      note: parsedBody.data.note,
+    })
+    if (!run) {
+      return reply.code(404).send({ error: 'RUN_NOT_FOUND' })
+    }
+
+    return { run }
+  })
+
+  app.post('/agent-router/runs/:runId/cancel', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    const parsedParams = agentRouterRunParamsSchema.safeParse(request.params)
+    const parsedBody = agentRouterCancelSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const run = await cancelMessengerAgentRouterRun({
+      runId: parsedParams.data.runId,
+      actorUserId: session.user.id,
+      reason: parsedBody.data.reason,
+    })
+    if (!run) {
+      return reply.code(404).send({ error: 'RUN_NOT_FOUND' })
+    }
+
+    return { run }
   })
 
   app.put('/settings/ai', async (request, reply) => {
@@ -1428,10 +1979,49 @@ export async function createMessengerServer() {
     return buildUserAiSettingsResponse(settings)
   })
 
+  app.get('/settings/ui', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const settings = await getMessengerUserUiSettings(session.user.id)
+    return buildUserUiSettingsResponse(settings)
+  })
+
+  app.put('/settings/ui', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedBody = userUiSettingsSchema.safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const settings = await updateMessengerUserUiSettings(session.user.id, parsedBody.data)
+    return buildUserUiSettingsResponse(settings)
+  })
+
+  // Rate limit device key registration: max 5 per hour per user
+  const deviceKeyRateLimit = new Map<string, { count: number; resetAt: number }>()
+
   app.put('/crypto/device-key', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const now = Date.now()
+    const bucket = deviceKeyRateLimit.get(session.user.id)
+    if (bucket && bucket.resetAt > now && bucket.count >= 5) {
+      return reply.code(429).send({ error: 'DEVICE_KEY_RATE_LIMITED' })
+    }
+    if (!bucket || bucket.resetAt <= now) {
+      deviceKeyRateLimit.set(session.user.id, { count: 1, resetAt: now + 3600_000 })
+    } else {
+      bucket.count++
     }
 
     const parsedBody = z.object({ publicKey: publicKeySchema }).safeParse(request.body)
@@ -1504,6 +2094,10 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
     const parsedParams = agentParamsSchema.safeParse(request.params)
     if (!parsedParams.success) {
       return reply.code(400).send({ error: 'INVALID_PARAMS' })
@@ -1524,6 +2118,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = agentParamsSchema.safeParse(request.params)
@@ -1558,6 +2156,10 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
     const parsedBody = agentGraphSchema.safeParse(request.body)
     if (!parsedBody.success) {
       return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
@@ -1590,6 +2192,10 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
     const parsedParams = agentParamsSchema.safeParse(request.params)
     if (!parsedParams.success) {
       return reply.code(400).send({ error: 'INVALID_PARAMS' })
@@ -1610,6 +2216,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = agentParamsSchema.safeParse(request.params)
@@ -1634,6 +2244,13 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    // 2 reindex calls per user per 5 minutes — reindexing is CPU/IO-intensive
+    if (!checkUserActionRate(session.user.id, 'reindex', reply, 2, 5 * 60 * 1000)) return
+
     const parsedParams = agentParamsSchema.safeParse(request.params)
     if (!parsedParams.success) {
       return reply.code(400).send({ error: 'INVALID_PARAMS' })
@@ -1651,7 +2268,8 @@ export async function createMessengerServer() {
         knowledge: await reindexMessengerAgentKnowledge(agent.id, settings),
       }
     } catch (error) {
-      return reply.code(409).send({ error: error instanceof Error ? error.message : 'AGENT_KNOWLEDGE_INDEX_FAILED' })
+      request.log.error(error, 'Agent knowledge reindex failed')
+      return reply.code(409).send({ error: 'AGENT_KNOWLEDGE_INDEX_FAILED' })
     }
   })
 
@@ -1660,6 +2278,12 @@ export async function createMessengerServer() {
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    if (!checkUserActionRate(session.user.id, 'workspace_ssh', reply, 10, 60 * 1000)) return
 
     const parsedParams = agentParamsSchema.safeParse(request.params)
     const parsedQuery = agentWorkspaceQuerySchema.safeParse(request.query)
@@ -1679,7 +2303,8 @@ export async function createMessengerServer() {
         workspace: await listMessengerAgentWorkspace(settings, parsedQuery.data.path),
       }
     } catch (error) {
-      return reply.code(409).send({ error: error instanceof Error ? error.message : 'AGENT_WORKSPACE_UNAVAILABLE' })
+      request.log.error(error, 'Agent workspace list failed')
+      return reply.code(409).send({ error: 'AGENT_WORKSPACE_UNAVAILABLE' })
     }
   })
 
@@ -1688,6 +2313,12 @@ export async function createMessengerServer() {
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
+    }
+
+    if (!checkUserActionRate(session.user.id, 'workspace_ssh', reply, 10, 60 * 1000)) return
 
     const parsedParams = agentParamsSchema.safeParse(request.params)
     const parsedQuery = agentWorkspaceQuerySchema.safeParse(request.query)
@@ -1707,7 +2338,8 @@ export async function createMessengerServer() {
         file: await readMessengerAgentWorkspaceFile(settings, parsedQuery.data.path),
       }
     } catch (error) {
-      return reply.code(409).send({ error: error instanceof Error ? error.message : 'AGENT_WORKSPACE_UNAVAILABLE' })
+      request.log.error(error, 'Agent workspace file read failed')
+      return reply.code(409).send({ error: 'AGENT_WORKSPACE_UNAVAILABLE' })
     }
   })
 
@@ -1715,6 +2347,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedQuery = agentRunsQuerySchema.safeParse(request.query)
@@ -1731,6 +2367,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedParams = agentRunParamsSchema.safeParse(request.params)
@@ -1750,6 +2390,10 @@ export async function createMessengerServer() {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    if (!(await isMessengerAdmin(session.user.id))) {
+      return reply.code(403).send({ error: 'ADMIN_REQUIRED' })
     }
 
     const parsedQuery = agentEdgePayloadsQuerySchema.safeParse(request.query)
@@ -1934,6 +2578,9 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    // 10 conversation creations per user per minute
+    if (!checkUserActionRate(session.user.id, 'create_conversation', reply, 10, 60 * 1000)) return
+
     const parsedBody = directConversationSchema.safeParse(request.body)
     if (!parsedBody.success) {
       return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
@@ -1964,6 +2611,9 @@ export async function createMessengerServer() {
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
+
+    // 5 secret conversations per user per minute
+    if (!checkUserActionRate(session.user.id, 'create_secret', reply, 5, 60 * 1000)) return
 
     const parsedBody = directConversationSchema.safeParse(request.body)
     if (!parsedBody.success) {
@@ -2123,6 +2773,10 @@ export async function createMessengerServer() {
         if (error.message === 'CONVERSATION_FORBIDDEN') {
           return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
         }
+
+        if (error.message === 'KEY_PACKAGE_ALREADY_EXISTS') {
+          return reply.code(409).send({ error: 'KEY_PACKAGE_ALREADY_EXISTS' })
+        }
       }
 
       throw error
@@ -2174,6 +2828,9 @@ export async function createMessengerServer() {
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
+
+    // 30 messages per user per minute — anti-spam / anti-DoS
+    if (!checkUserActionRate(session.user.id, 'send_message', reply, 30, 60 * 1000)) return
 
     const parsedParams = conversationParamsSchema.safeParse(request.params)
     const parsedBody = messageSchema.safeParse(request.body)
@@ -2284,7 +2941,7 @@ export async function createMessengerServer() {
                 phase: 'failed',
                 status: 'failed',
                 summary: 'Сборка ответа остановилась с ошибкой.',
-                focus: error instanceof Error ? error.message : 'UNKNOWN_ERROR',
+                focus: 'Произошла внутренняя ошибка агента.',
               })
               throw error
             }
@@ -2335,6 +2992,9 @@ export async function createMessengerServer() {
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
+
+    // 30 edits per user per minute
+    if (!checkUserActionRate(session.user.id, 'edit_message', reply, 30, 60 * 1000)) return
 
     const parsedParams = messageParamsSchema.safeParse(request.params)
     const parsedBody = editMessageSchema.safeParse(request.body)
@@ -2393,6 +3053,9 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    // 60 reactions per user per minute
+    if (!checkUserActionRate(session.user.id, 'reaction', reply, 60, 60 * 1000)) return
+
     const parsedParams = messageParamsSchema.safeParse(request.params)
     const parsedBody = messageReactionSchema.safeParse(request.body)
     if (!parsedParams.success || !parsedBody.success) {
@@ -2426,7 +3089,7 @@ export async function createMessengerServer() {
           return reply.code(403).send({ error: 'MESSAGE_FORBIDDEN' })
         }
 
-        if (error.message === 'MESSAGE_NOT_REACTABLE' || error.message === 'REACTION_EMOJI_REQUIRED') {
+        if (error.message === 'MESSAGE_NOT_REACTABLE' || error.message === 'REACTION_EMOJI_REQUIRED' || error.message === 'MESSAGE_REACTION_LIMIT_REACHED') {
           return reply.code(409).send({ error: error.message })
         }
       }
@@ -2440,6 +3103,9 @@ export async function createMessengerServer() {
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
+
+    // 20 deletes per user per minute
+    if (!checkUserActionRate(session.user.id, 'delete_message', reply, 20, 60 * 1000)) return
 
     const parsedParams = messageParamsSchema.safeParse(request.params)
     if (!parsedParams.success) {
@@ -2483,6 +3149,9 @@ export async function createMessengerServer() {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
+    // 20 file uploads per user per minute
+    if (!checkUserActionRate(session.user.id, 'upload_attachment', reply, 20, 60 * 1000)) return
+
     const parsedParams = conversationParamsSchema.safeParse(request.params)
     if (!parsedParams.success) {
       return reply.code(400).send({ error: 'INVALID_PARAMS' })
@@ -2524,12 +3193,24 @@ export async function createMessengerServer() {
     }
 
     try {
-      const stored = await storeUploadedMedia({
-        filename: originalName || file.filename,
-        mimeType: originalMimeType || file.mimetype,
-        buffer: Buffer.concat(chunks),
-        directory: klipy?.kind === 'sticker' ? 'stickers' : undefined,
-      })
+      const fileBuffer = Buffer.concat(chunks)
+
+      // Per-user upload quota check (100 MB/day, 200 files/day)
+      // Atomic: checkUploadQuota increments immediately; rollback on failure
+      checkUploadQuota(session.user.id, fileBuffer.length)
+
+      let stored
+      try {
+        stored = await storeUploadedMedia({
+          filename: originalName || file.filename,
+          mimeType: originalMimeType || file.mimetype,
+          buffer: fileBuffer,
+          directory: klipy?.kind === 'sticker' ? 'stickers' : undefined,
+        })
+      } catch (storeError) {
+        rollbackUploadUsage(session.user.id, fileBuffer.length)
+        throw storeError
+      }
 
       const message = await addAttachmentMessageToConversation(parsedParams.data.conversationId, session.user, {
         ...stored,
@@ -2559,6 +3240,14 @@ export async function createMessengerServer() {
 
         if (error.message === 'CONVERSATION_FORBIDDEN') {
           return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+        }
+
+        if (error.message === 'FILE_TYPE_BLOCKED' || error.message === 'FILE_TYPE_NOT_ALLOWED' || error.message === 'FILE_TYPE_MISMATCH') {
+          return reply.code(400).send({ error: error.message })
+        }
+
+        if (error.message === 'UPLOAD_QUOTA_EXCEEDED') {
+          return reply.code(429).send({ error: 'UPLOAD_QUOTA_EXCEEDED' })
         }
       }
 
@@ -2591,12 +3280,19 @@ export async function createMessengerServer() {
         return reply.status(404).send({ error: 'User not found' })
       }
 
+      // Validate user is a participant in this conversation
+      const conversation = await findConversationById(conversationId)
+      if (!conversation || (conversation.userAId !== user.id && conversation.userBId !== user.id)) {
+        return reply.status(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+      }
+
       const LIVEKIT_URL = process.env.LIVEKIT_API_URL || 'wss://dariakulchikhina.com/livekit'
       const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY
       const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET
 
       if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
-        return reply.status(500).send({ error: 'LIVEKIT_API_KEY and LIVEKIT_API_SECRET env vars are required' })
+        request.log.error('LIVEKIT_API_KEY and LIVEKIT_API_SECRET env vars are required')
+        return reply.status(500).send({ error: 'Видеозвонки временно недоступны' })
       }
 
       const { AccessToken } = await import('livekit-server-sdk')
@@ -2606,9 +3302,11 @@ export async function createMessengerServer() {
       const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
         identity: user.id,
         name: participantName,
+        ttl: '1h',
       })
 
-      at.addGrant({ roomJoin: true, room: roomName })
+      // Restrict grants: allow join + publish audio/video, but not arbitrary data publish
+      at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true, canPublishData: false })
       const lkToken = await at.toJwt()
 
       // Start bot if not already in the room
@@ -2652,7 +3350,7 @@ export async function createMessengerServer() {
       })
     } catch (err: any) {
       request.log.error(err)
-      return reply.status(500).send({ error: err.message })
+      return reply.status(500).send({ error: 'LIVEKIT_TOKEN_FAILED' })
     }
   })
 
@@ -2797,7 +3495,7 @@ export async function createMessengerServer() {
       }
 
       const toolId = parsedBody.data.toolId as MessengerCallAnalysisToolId
-      const interpretation = await buildMessengerCallAnalysis({
+      const analysis = await buildMessengerCallAnalysisWithRoute({
         apiKey: config.MESSENGER_AGENT_API_KEY,
         model: aiSettings.interpretationModel || config.MESSENGER_AGENT_MODEL,
         toolId,
@@ -2809,8 +3507,9 @@ export async function createMessengerServer() {
         ok: true,
         callId: parsedParams.data.callId,
         toolId,
-        interpretation,
-        modelUsed: aiSettings.interpretationModel || config.MESSENGER_AGENT_MODEL,
+        interpretation: analysis.content,
+        modelUsed: analysis.route.modelUsed,
+        routing: analysis.route,
       }
     } catch {
       return reply.code(502).send({ error: 'ANALYSIS_FAILED' })
@@ -2819,7 +3518,14 @@ export async function createMessengerServer() {
 
   app.get('/ws', { websocket: true }, async (socket, request) => {
     const requestUrl = new URL(request.url || '/ws', `http://${request.headers.host || 'localhost'}`)
-    const token = requestUrl.searchParams.get('token')
+
+    // Prefer token from Sec-WebSocket-Protocol header (avoids URL query string leakage)
+    // Format: "bearer.<base64url-token>" as subprotocol
+    const protocols = (request.headers['sec-websocket-protocol'] || '').split(',').map(p => p.trim())
+    const bearerProtocol = protocols.find(p => p.startsWith('bearer.'))
+    const headerToken = bearerProtocol ? bearerProtocol.slice('bearer.'.length) : null
+    // Fallback to query param for backward compat (deprecate in future)
+    const token = headerToken || requestUrl.searchParams.get('token')
     const payload = token ? verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET) : null
     const user = payload ? await findMessengerUserById(payload.sub) : null
 
@@ -2914,15 +3620,24 @@ export async function createMessengerServer() {
         }
       } catch (e) {}
 
-      socket.send(JSON.stringify({
-        type: 'echo',
-        payload: value.toString(),
-      }))
+      // Unrecognized messages are silently dropped (no echo/reflection)
     })
 
     socket.on('close', () => {
       clients.delete(connectionId)
     })
+  })
+
+  // --- Global error handler: sanitize unhandled errors ---
+  app.setErrorHandler((error: FastifyError, request, reply) => {
+    request.log.error(error)
+    const statusCode = error.statusCode && error.statusCode >= 400 && error.statusCode < 600
+      ? error.statusCode
+      : 500
+    if (statusCode >= 500) {
+      return reply.code(statusCode).send({ error: 'INTERNAL_SERVER_ERROR' })
+    }
+    return reply.code(statusCode).send({ error: error.message || 'BAD_REQUEST' })
   })
 
   return app

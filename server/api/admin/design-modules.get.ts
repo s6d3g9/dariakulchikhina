@@ -1,4 +1,4 @@
-import { createDefaultDesignModules, normalizeDesignModulesConfig } from '~/shared/types/design-modules'
+import { createDefaultDesignModules, normalizeDesignModulesConfig } from '~/shared/types/design-system/design-modules'
 import { getAdminSetting } from '~/server/utils/admin-settings'
 
 const DESIGN_MODULES_SETTING_KEY = 'design-modules'

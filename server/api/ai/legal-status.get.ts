@@ -34,8 +34,9 @@ export default defineEventHandler(async (event) => {
   } catch (err: any) {
     // Таблица ещё не создана
     if (err?.message?.includes('does not exist') || err?.message?.includes('relation')) {
-      return { ready: false, totalChunks: 0, sources: [], error: 'Таблица legal_chunks не создана. Запустите migrate-legal-chunks.mjs' }
+      return { ready: false, totalChunks: 0, sources: [], error: 'Таблица legal_chunks не создана' }
     }
-    throw err
+    console.error('[AI] legal-status error:', err?.message)
+    throw createError({ statusCode: 500, statusMessage: 'Внутренняя ошибка сервера' })
   }
 })

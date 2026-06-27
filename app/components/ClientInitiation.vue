@@ -1,7 +1,7 @@
 <template>
   <div class="ci-root">
     <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
-    <template v-else-if="project">
+    <template v-else-if="hasProfile">
 
       <!-- Phase header -->
       <div class="ci-phase-header">
@@ -112,15 +112,28 @@
 </template>
 
 <script setup lang="ts">
-import { BRIEF_COMPLETION_KEYS } from '~~/shared/constants/profile-fields'
+import { BRIEF_COMPLETION_KEYS } from '~~/shared/constants/profile/profile-fields'
 
 const props = defineProps<{ slug: string }>()
 const route = useRoute()
 
-const reqHeaders = useRequestHeaders(['cookie'])
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
+const { data: profileEnvelope, pending: profilePending } = await useClientProjectProfile(() => props.slug)
+const { data: documentsEnvelope, pending: documentsPending } = await useClientProjectDocuments(() => props.slug)
 
-const pf = computed<any>(() => project.value?.profile || {})
+const pending = computed(() => profilePending.value || documentsPending.value)
+const hasProfile = computed(() => Boolean(profileEnvelope.value?.data))
+const pf = computed<any>(() => profileEnvelope.value?.data.profile || {})
+const documentItems = computed(() => documentsEnvelope.value?.data.items || [])
+
+function firstDocumentUrl(kind: string, hintText = '') {
+  const hint = hintText.toLowerCase()
+  const document = documentItems.value.find((item) => {
+    if (item.kind !== kind || !item.isDownloadable) return false
+    if (!hint) return true
+    return [item.category, item.title, item.filename].join(' ').toLowerCase().includes(hint)
+  })
+  return document?.url || ''
+}
 
 // ── Step completion logic ──────────────────────────────────────────────────
 
@@ -174,7 +187,7 @@ const steps = computed(() => [
     bizText:   'Клиент заполняет Smart Brief Form — детальную анкету о составе семьи, режиме дня, хобби и требованиях к пространству.',
     sysText:   '«Анкета клиента» формируется в системе. Генерируются теги проекта (#smart_home, #kids_room и др.).',
     artifacts: [
-      { label: 'Anket_Brief.pdf', url: pf.value.brief_pdf_url || '' },
+      { label: 'Anket_Brief.pdf', url: firstDocumentUrl('brief') || pf.value.brief_pdf_url || '' },
     ],
     actions: step02Done.value
       ? [{ label: 'Редактировать анкету →', to: `/client/${props.slug}/self_profile`, primary: false }]
@@ -198,9 +211,9 @@ const steps = computed(() => [
     bizText:   'Выезд инженера на объект. Лазерное 3D-сканирование всего пространства, аудит инженерных сетей (электрика, сантехника, вентиляция).',
     sysText:   'Загрузка облака точек (​.e57/.rcp), фотофиксации «как есть» и Акта технического обследования.',
     artifacts: [
-      { label: 'SurveyReport.pdf', url: pf.value.survey_report_url || '' },
-      { label: 'Pointcloud.e57',   url: pf.value.survey_pointcloud_url || '' },
-      { label: 'Photo_As-Is.zip',  url: pf.value.survey_photo_url || '' },
+      { label: 'SurveyReport.pdf', url: firstDocumentUrl('report', 'survey') || pf.value.survey_report_url || '' },
+      { label: 'Pointcloud.e57',   url: firstDocumentUrl('survey', 'pointcloud') || pf.value.survey_pointcloud_url || '' },
+      { label: 'Photo_As-Is.zip',  url: firstDocumentUrl('survey', 'photo') || pf.value.survey_photo_url || '' },
     ],
     actions: [] as any[],
   },
@@ -223,10 +236,10 @@ const steps = computed(() => [
     bizText:   'Формирование Технического задания, согласование графика работ и стоимости. Выставление инвойса за первый этап.',
     sysText:   'Генерация Contract_ToR.pdf. Подписание документов клиентом. После получения аванса — переход в фазу «Эскиз».',
     artifacts: [
-      { label: 'Contract_ToR.pdf',    url: pf.value.contract_file || '' },
-      { label: 'Invoice_Advance.pdf', url: pf.value.invoice_file  || '' },
+      { label: 'Contract_ToR.pdf',    url: firstDocumentUrl('contract') || pf.value.contract_file || '' },
+      { label: 'Invoice_Advance.pdf', url: firstDocumentUrl('invoice') || pf.value.invoice_file  || '' },
     ],
-    actions: pf.value.contract_file
+    actions: firstDocumentUrl('contract') || pf.value.contract_file
       ? [{ label: 'Открыть документы →', to: `/client/${props.slug}/contracts`, primary: false }]
       : [] as any[],
   },

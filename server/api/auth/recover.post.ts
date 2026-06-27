@@ -1,7 +1,7 @@
 import { useDb } from '~/server/db'
 import { users } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { RecoverSchema } from '~/shared/types/auth'
+import { RecoverSchema } from '~/shared/types/auth/auth'
 
 export default defineEventHandler(async (event) => {
   const body = await readValidatedNodeBody(event, RecoverSchema)
@@ -13,13 +13,11 @@ export default defineEventHandler(async (event) => {
     .where(eq(users.login, body.login))
     .limit(1)
 
-  if (!user || !user.recoveryPhraseHash) {
-    throw createError({ statusCode: 404, statusMessage: 'Пользователь не найден или recovery phrase не настроена' })
-  }
-
-  const ok = await verifyPassword(body.recoveryPhrase, user.recoveryPhraseHash)
-  if (!ok) {
-    throw createError({ statusCode: 401, statusMessage: 'Неверная recovery phrase' })
+  // Timing-safe: always run bcrypt to prevent user enumeration
+  const DUMMY_HASH = '$2a$12$000000000000000000000uGBPRnpKe7P6TBGgKOjHR0INdZOhHIi'
+  const ok = await verifyPassword(body.recoveryPhrase, user?.recoveryPhraseHash || DUMMY_HASH)
+  if (!user || !user.recoveryPhraseHash || !ok) {
+    throw createError({ statusCode: 401, statusMessage: 'Неверный логин или recovery phrase' })
   }
 
   const passwordHash = await hashPassword(body.newPassword)

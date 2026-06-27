@@ -91,7 +91,8 @@
             v-if="activePage === 'overview'"
             :slug="slug"
             :project="project"
-            :contractors="linkedContractors || []"
+            :overview="projectOverview"
+            :team-members="teamMembers"
             :rm-map="rmMap"
             @navigate="setPage"
           />
@@ -121,6 +122,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import { getClientPages } from '~~/shared/constants/navigation/pages'
+import type { ApiV1ClientProjectShell, ApiV1Envelope } from '~~/shared/types/api-v1'
 
 // Client-facing components
 import ClientInitiation    from '~/components/ClientInitiation.vue'
@@ -130,6 +132,9 @@ import ClientPassport      from '~/components/ClientPassport.vue'
 import ClientBrief         from '~/components/ClientBrief.vue'
 import ClientTZ            from '~/components/ClientTZ.vue'
 import ClientContracts     from '~/components/ClientContracts.vue'
+import ClientApprovals     from '~/components/ClientApprovals.vue'
+import ClientActivityFeed  from '~/components/ClientActivityFeed.vue'
+import ClientRoadmap       from '~/components/ClientRoadmap.vue'
 import ClientExtraServices  from '~/components/ClientExtraServices.vue'
 import ClientWorkProgress  from '~/components/ClientWorkProgress.vue'
 import ClientTimeline      from '~/components/ClientTimeline.vue'
@@ -289,20 +294,18 @@ function openClientContent() {
 // Forward cookies to SSR fetch so requireAdminOrClient can read the session
 const reqHeaders = useRequestHeaders(['cookie'])
 
-// ── Fetch project ────────────────────────────────────────────────────────
-const { data: project, pending, error, refresh } = await useFetch<any>(
-  () => `/api/projects/${slug.value}`,
+// ── Fetch client-safe shell ──────────────────────────────────────────────
+const { data: shellEnvelope, pending, error, refresh } = await useFetch<ApiV1Envelope<ApiV1ClientProjectShell>>(
+  () => `/api/v1/client/projects/${slug.value}/shell`,
   {
     watch: [slug],
     headers: reqHeaders,
   }
 )
 
-// ── Fetch linked contractors ─────────────────────────────────────────────
-const { data: linkedContractors } = await useFetch<any[]>(
-  () => `/api/projects/${slug.value}/contractors`,
-  { default: () => [], headers: reqHeaders }
-)
+const project = computed(() => shellEnvelope.value?.data.project || null)
+const projectOverview = computed(() => shellEnvelope.value?.data.overview || null)
+const teamMembers = computed(() => shellEnvelope.value?.data.team.members || [])
 
 // ── Page component map ───────────────────────────────────────────────────
 const PAGE_COMPONENT_MAP: Record<string, Component> = {
@@ -314,6 +317,9 @@ const PAGE_COMPONENT_MAP: Record<string, Component> = {
   client_brief:    ClientBrief,
   client_tz:       ClientTZ,
   contracts:       ClientContracts,
+  approvals:       ClientApprovals,
+  activity:        ClientActivityFeed,
+  roadmap:         ClientRoadmap,
   extra_services:  ClientExtraServices,
   work_progress:   ClientWorkProgress,
   project_control: ClientProjectControl,
@@ -506,7 +512,7 @@ const activeComponent = computed<Component>(() =>
 const activeProps = computed(() => {
   const base = { slug: slug.value }
   if (activeComponent.value === ProjectCommunicationsPanel) {
-    return { projectSlug: slug.value }
+    return { projectSlug: slug.value, apiScope: 'client' as const }
   }
   if (activeComponent.value === ClientPageContent) {
     return { ...base, page: normalizedPage.value }

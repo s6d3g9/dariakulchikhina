@@ -1,10 +1,10 @@
 export function useMessengerConversationState() {
   const { agentsEnabled } = useMessengerFeatures()
   const activeConversationId = useState<string | null>('messenger-active-conversation-id', () => null)
-  const activeSection = useState<'chat' | 'chats' | 'contacts' | 'agents' | 'settings'>('messenger-active-section', () => 'chats')
+  const activeSection = useState<'chat' | 'chats' | 'contacts' | 'agents' | 'router' | 'settings'>('messenger-active-section', () => 'chats')
   const mediaSheetOpen = useState<boolean>('messenger-media-sheet-open', () => false)
 
-  if (activeSection.value === 'agents' && !agentsEnabled.value) {
+  if ((activeSection.value === 'agents' || activeSection.value === 'router') && !agentsEnabled.value) {
     activeSection.value = 'chats'
   }
 
@@ -13,8 +13,8 @@ export function useMessengerConversationState() {
     activeSection.value = 'chat'
   }
 
-  function openSection(section: 'chat' | 'chats' | 'contacts' | 'agents' | 'settings') {
-    activeSection.value = !agentsEnabled.value && section === 'agents' ? 'chats' : section
+  function openSection(section: 'chat' | 'chats' | 'contacts' | 'agents' | 'router' | 'settings') {
+    activeSection.value = !agentsEnabled.value && (section === 'agents' || section === 'router') ? 'chats' : section
   }
 
   return {

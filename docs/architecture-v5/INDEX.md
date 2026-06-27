@@ -19,4 +19,5 @@
 12. [Messenger + Services: матрица realtime-контуров](./12-messenger-services-refactor-map.md)
 13. [Волны рефакторинга](./13-refactor-waves.md)
 14. [Roadmap исполнения рефакторинга](./14-refactor-roadmap.md)
-15. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)
+15. [Refactor deploy и домен fork-контура](./15-refactor-deploy-domain.md)
+16. [План рефакторинга (мастер-документ)](./REFACTORING_PLAN.md)

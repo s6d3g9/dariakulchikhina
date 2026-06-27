@@ -195,7 +195,7 @@ import type {
   LayoutBlockConfig,
   LayoutBlockPresetKey,
   LayoutBlockTemplateDef,
-} from '~~/shared/types/app-catalog'
+} from '~~/shared/types/navigation/app-catalog'
 
 const props = defineProps<{ slug: string }>()
 

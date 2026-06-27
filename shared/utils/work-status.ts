@@ -8,18 +8,37 @@ import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
 
 // ── Канонические статусы задач ─────────────────────────────────
 
-export type CanonicalWorkStatus = 'pending' | 'in_progress' | 'done' | 'skipped' | 'paused' | 'cancelled' | 'planned'
+export type CanonicalWorkStatus =
+  | 'pending'
+  | 'planned'
+  | 'assigned'
+  | 'accepted'
+  | 'in_progress'
+  | 'ready_for_review'
+  | 'blocked'
+  | 'needs_fix'
+  | 'done'
+  | 'skipped'
+  | 'paused'
+  | 'cancelled'
 
 const WORK_STATUS_ALIASES: Record<string, CanonicalWorkStatus> = {
   pending: 'pending',
+  assigned: 'assigned',
   wait: 'pending',
   waiting: 'pending',
   ожидание: 'pending',
   ожидает: 'pending',
+  назначено: 'assigned',
+  назначена: 'assigned',
 
   planned: 'planned',
   запланировано: 'planned',
   plan: 'planned',
+
+  accepted: 'accepted',
+  принято: 'accepted',
+  принята: 'accepted',
 
   in_progress: 'in_progress',
   'in-progress': 'in_progress',
@@ -28,6 +47,25 @@ const WORK_STATUS_ALIASES: Record<string, CanonicalWorkStatus> = {
   working: 'in_progress',
   'в работе': 'in_progress',
   'в_работе': 'in_progress',
+
+  ready_for_review: 'ready_for_review',
+  ready: 'ready_for_review',
+  review: 'ready_for_review',
+  checking: 'ready_for_review',
+  'на проверке': 'ready_for_review',
+  'на_проверке': 'ready_for_review',
+
+  blocked: 'blocked',
+  block: 'blocked',
+  заблокировано: 'blocked',
+  блокер: 'blocked',
+
+  needs_fix: 'needs_fix',
+  needsfix: 'needs_fix',
+  fix: 'needs_fix',
+  'нужны правки': 'needs_fix',
+  'нужны_правки': 'needs_fix',
+  доработать: 'needs_fix',
 
   done: 'done',
   completed: 'done',
@@ -56,7 +94,12 @@ export function normalizeWorkStatus(status?: string | null): CanonicalWorkStatus
 const STATUS_LABELS: Record<CanonicalWorkStatus, string> = {
   pending: 'ожидание',
   planned: 'запланировано',
+  assigned: 'назначено',
+  accepted: 'принято',
   in_progress: 'в работе',
+  ready_for_review: 'на проверке',
+  blocked: 'заблокировано',
+  needs_fix: 'нужны правки',
   done: 'выполнено',
   paused: 'на паузе',
   cancelled: 'отменено',
@@ -72,7 +115,12 @@ export function workStatusLabel(status?: string | null): string {
 const STATUS_ICONS: Record<CanonicalWorkStatus, string> = {
   pending: '○',
   planned: '◎',
+  assigned: '○',
+  accepted: '◐',
   in_progress: '◉',
+  ready_for_review: '◌',
+  blocked: '!',
+  needs_fix: '↻',
   done: '✓',
   paused: '⏸',
   cancelled: '✕',
@@ -88,7 +136,12 @@ export function workStatusIcon(status?: string | null): string {
 const STATUS_CSS: Record<CanonicalWorkStatus, string> = {
   pending: 'ws-status--pending',
   planned: 'ws-status--planned',
+  assigned: 'ws-status--assigned',
+  accepted: 'ws-status--accepted',
   in_progress: 'ws-status--progress',
+  ready_for_review: 'ws-status--review',
+  blocked: 'ws-status--blocked',
+  needs_fix: 'ws-status--fix',
   done: 'ws-status--done',
   paused: 'ws-status--paused',
   cancelled: 'ws-status--cancelled',

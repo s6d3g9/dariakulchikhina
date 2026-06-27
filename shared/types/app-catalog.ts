@@ -14,6 +14,11 @@ export type MenuBlockCategory =
 
 export const appScopeValues = [
   'admin',
+  'crm',
+  'studio',
+  'design-os',
+  'construction-os',
+  'messenger',
   'designer-cabinet',
   'client-cabinet',
   'contractor-cabinet',

@@ -38,15 +38,21 @@ export interface MessengerConversationSecuritySummary {
   conversationKeyReady: boolean
   conversationKeyMeta: string
   keyPackageCreatedAt?: string
+  ownFingerprint?: string
+  peerFingerprint?: string
+  peerKeyChanged?: boolean
 }
 
 interface MessengerStoredDeviceKeyPair {
   publicKey: MessengerDevicePublicKey
   privateKey: JsonWebKey
+  signingPublicKey?: JsonWebKey
+  signingPrivateKey?: JsonWebKey
 }
 
 const DEVICE_KEY_PREFIX = 'daria-messenger-device-key:'
 const CONVERSATION_KEY_PREFIX = 'daria-messenger-conversation-key:'
+const PEER_KEY_PIN_PREFIX = 'daria-messenger-peer-key-pin:'
 
 function encodeBase64(buffer: ArrayBuffer | Uint8Array) {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer)
@@ -106,6 +112,41 @@ async function deriveWrappingKey(privateKey: JsonWebKey, publicKey: MessengerDev
   return await crypto.subtle.importKey('raw', bits, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
 }
 
+async function computeKeyFingerprint(publicKey: MessengerDevicePublicKey): Promise<string> {
+  const canonical = JSON.stringify({ crv: publicKey.crv, kty: publicKey.kty, x: publicKey.x, y: publicKey.y })
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical))
+  const bytes = new Uint8Array(hash)
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+  return hex.match(/.{1,4}/g)!.join(' ').toUpperCase()
+}
+
+async function generateSigningKeyPair() {
+  const keyPair = await crypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    true,
+    ['sign', 'verify'],
+  )
+  return {
+    signingPublicKey: await crypto.subtle.exportKey('jwk', keyPair.publicKey),
+    signingPrivateKey: await crypto.subtle.exportKey('jwk', keyPair.privateKey),
+  }
+}
+
+async function signData(signingPrivateKey: JsonWebKey, data: Uint8Array): Promise<string> {
+  const key = await crypto.subtle.importKey('jwk', signingPrivateKey, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign'])
+  const signature = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, data)
+  return encodeBase64(signature)
+}
+
+async function verifySignature(signingPublicKey: JsonWebKey, signature: string, data: Uint8Array): Promise<boolean> {
+  try {
+    const key = await crypto.subtle.importKey('jwk', signingPublicKey, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])
+    return await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, decodeBase64(signature), data)
+  } catch {
+    return false
+  }
+}
+
 export function useMessengerCrypto() {
   const deviceKeys = useState<Record<string, MessengerStoredDeviceKeyPair>>('messenger-device-keys', () => ({}))
   const conversationKeys = useState<Record<string, string>>('messenger-conversation-keys', () => ({}))
@@ -160,6 +201,28 @@ export function useMessengerCrypto() {
     window.localStorage.setItem(conversationStorageKey(userId, conversationId), value)
   }
 
+  function peerKeyPinStorageKey(userId: string, peerUserId: string) {
+    return `${PEER_KEY_PIN_PREFIX}${userId}:${peerUserId}`
+  }
+
+  function readPinnedPeerKey(userId: string, peerUserId: string): MessengerDevicePublicKey | null {
+    if (!import.meta.client) return null
+    const raw = window.localStorage.getItem(peerKeyPinStorageKey(userId, peerUserId))
+    if (!raw) return null
+    try { return JSON.parse(raw) as MessengerDevicePublicKey } catch { return null }
+  }
+
+  function writePinnedPeerKey(userId: string, peerUserId: string, key: MessengerDevicePublicKey) {
+    if (!import.meta.client) return
+    window.localStorage.setItem(peerKeyPinStorageKey(userId, peerUserId), JSON.stringify(key))
+  }
+
+  function isPeerKeyChanged(userId: string, peerUserId: string, currentKey: MessengerDevicePublicKey): boolean {
+    const pinned = readPinnedPeerKey(userId, peerUserId)
+    if (!pinned) return false
+    return pinned.x !== currentKey.x || pinned.y !== currentKey.y
+  }
+
   async function generateDeviceKeyPair() {
     const keyPair = await crypto.subtle.generateKey(
       { name: 'ECDH', namedCurve: 'P-256' },
@@ -167,9 +230,13 @@ export function useMessengerCrypto() {
       ['deriveBits'],
     )
 
+    const signing = await generateSigningKeyPair()
+
     return {
       publicKey: await crypto.subtle.exportKey('jwk', keyPair.publicKey) as MessengerDevicePublicKey,
       privateKey: await crypto.subtle.exportKey('jwk', keyPair.privateKey),
+      signingPublicKey: signing.signingPublicKey,
+      signingPrivateKey: signing.signingPrivateKey,
     }
   }
 
@@ -205,6 +272,7 @@ export function useMessengerCrypto() {
     ownPublicKey: MessengerDevicePublicKey,
     peerPublicKey: MessengerDevicePublicKey,
     peerUserId: string,
+    signingPrivateKey?: JsonWebKey,
   ) {
     const wrappingKey = await deriveWrappingKey(ownPrivateKey, peerPublicKey)
     const iv = crypto.getRandomValues(new Uint8Array(12))
@@ -214,11 +282,21 @@ export function useMessengerCrypto() {
       rawConversationKey as unknown as ArrayBuffer,
     )
 
+    const wrappedKeyB64 = encodeBase64(wrapped)
+    const ivB64 = encodeBase64(iv)
+
+    let signature: string | undefined
+    if (signingPrivateKey) {
+      const signPayload = new TextEncoder().encode(`${peerUserId}:${wrappedKeyB64}:${ivB64}`)
+      signature = await signData(signingPrivateKey, signPayload)
+    }
+
     return {
       recipientUserId: peerUserId,
-      wrappedKey: encodeBase64(wrapped),
-      iv: encodeBase64(iv),
+      wrappedKey: wrappedKeyB64,
+      iv: ivB64,
       senderPublicKey: ownPublicKey,
+      ...(signature ? { signature } : {}),
     }
   }
 
@@ -256,6 +334,13 @@ export function useMessengerCrypto() {
     })
 
     if (encryptionState.keyPackage) {
+      // TOFU: verify sender public key hasn't been substituted
+      const senderKey = encryptionState.keyPackage.senderPublicKey
+      if (isPeerKeyChanged(userId, peerUserId, senderKey)) {
+        throw new Error('PEER_KEY_CHANGED_MITM_WARNING')
+      }
+      writePinnedPeerKey(userId, peerUserId, senderKey)
+
       const rawConversationKey = await unwrapConversationKey(encryptionState.keyPackage, deviceIdentity.privateKey)
       const encodedRawConversationKey = encodeBase64(rawConversationKey)
       conversationKeys.value[cacheKey] = encodedRawConversationKey
@@ -271,6 +356,12 @@ export function useMessengerCrypto() {
       throw new Error('PEER_DEVICE_KEY_MISSING')
     }
 
+    // TOFU: check if peer key was substituted since last known
+    if (isPeerKeyChanged(userId, peerUserId, peerKeyResponse.publicKey)) {
+      throw new Error('PEER_KEY_CHANGED_MITM_WARNING')
+    }
+    writePinnedPeerKey(userId, peerUserId, peerKeyResponse.publicKey)
+
     const conversationKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt'])
     const rawConversationKey = new Uint8Array(await crypto.subtle.exportKey('raw', conversationKey))
     const encodedRawConversationKey = encodeBase64(rawConversationKey)
@@ -278,19 +369,29 @@ export function useMessengerCrypto() {
     conversationKeys.value[cacheKey] = encodedRawConversationKey
     writeStoredConversationKey(userId, conversationId, encodedRawConversationKey)
 
+    // Wrap for peer + wrap for self (backup for multi-device / session loss)
+    const packages = [
+      await wrapConversationKeyForPeer(
+        rawConversationKey,
+        deviceIdentity.privateKey,
+        deviceIdentity.publicKey,
+        peerKeyResponse.publicKey,
+        peerUserId,
+        deviceIdentity.signingPrivateKey,
+      ),
+      await wrapConversationKeyForPeer(
+        rawConversationKey,
+        deviceIdentity.privateKey,
+        deviceIdentity.publicKey,
+        deviceIdentity.publicKey,
+        userId,
+        deviceIdentity.signingPrivateKey,
+      ),
+    ]
+
     await request(`/conversations/${conversationId}/encryption`, {
       method: 'POST',
-      body: {
-        packages: [
-          await wrapConversationKeyForPeer(
-            rawConversationKey,
-            deviceIdentity.privateKey,
-            deviceIdentity.publicKey,
-            peerKeyResponse.publicKey,
-            peerUserId,
-          ),
-        ],
-      },
+      body: { packages },
     })
 
     return conversationKey
@@ -385,17 +486,23 @@ export function useMessengerCrypto() {
       method: 'GET',
     })
 
+    const ownFingerprint = storedDeviceKey ? await computeKeyFingerprint(storedDeviceKey.publicKey) : undefined
+    const peerFingerprint = peerKeyResponse.publicKey ? await computeKeyFingerprint(peerKeyResponse.publicKey) : undefined
+    const peerKeyChanged = peerKeyResponse.publicKey ? isPeerKeyChanged(userId, peerUserId, peerKeyResponse.publicKey) : false
+
     return {
       protocolLabel: 'E2EE активно',
-      protocolMeta: 'Для текста используется AES-GCM 256, а обмен ключом чата идёт через ECDH P-256.',
+      protocolMeta: 'Для текста используется AES-GCM 256, а обмен ключом чата идёт через ECDH P-256. Оберните ключевой пакет подписью ECDSA.',
       deviceKeyReady: Boolean(storedDeviceKey),
       deviceKeyMeta: storedDeviceKey
         ? 'Ключ устройства хранится только в браузере на этом устройстве и не показывается в интерфейсе.'
         : 'Ключ устройства ещё не подготовлен.',
       peerDeviceKeyReady: Boolean(peerKeyResponse.publicKey),
-      peerDeviceKeyMeta: peerKeyResponse.publicKey
-        ? 'Публичный ключ собеседника зарегистрирован и используется только для обмена ключом чата.'
-        : 'Публичный ключ собеседника пока недоступен.',
+      peerDeviceKeyMeta: peerKeyChanged
+        ? '⚠ Публичный ключ собеседника ИЗМЕНИЛСЯ с момента последнего обмена. Возможна атака подмены ключа. Сверьте отпечатки.'
+        : peerKeyResponse.publicKey
+          ? 'Публичный ключ собеседника зарегистрирован и закреплён (TOFU). Используется только для обмена ключом чата.'
+          : 'Публичный ключ собеседника пока недоступен.',
       conversationKeyReady: Boolean(storedConversationKey || keyPackageResponse.keyPackage),
       conversationKeyMeta: storedConversationKey
         ? 'Ключ этого чата уже сохранён локально на устройстве.'
@@ -403,6 +510,9 @@ export function useMessengerCrypto() {
           ? 'Для этого чата есть зашифрованный пакет ключа. Он будет расшифрован только на устройстве.'
           : 'Ключ чата появится после первого защищённого сообщения.',
       keyPackageCreatedAt: keyPackageResponse.keyPackage?.createdAt,
+      ownFingerprint,
+      peerFingerprint,
+      peerKeyChanged,
     }
   }
 
@@ -414,5 +524,9 @@ export function useMessengerCrypto() {
     encryptBinary,
     decryptBinary,
     getConversationSecuritySummary,
+    computeKeyFingerprint,
+    isPeerKeyChanged,
+    readPinnedPeerKey,
+    writePinnedPeerKey,
   }
 }

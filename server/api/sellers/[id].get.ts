@@ -1,11 +1,11 @@
 import { useDb } from '~/server/db/index'
 import { sellers } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { requireIntParam } from '~/server/utils/query'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
-  if (!id || !Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid seller id' })
+  const id = requireIntParam(event, 'id')
 
   const db = useDb()
   const [seller] = await db.select().from(sellers).where(eq(sellers.id, id)).limit(1)

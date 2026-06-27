@@ -17,8 +17,8 @@
             :class="`ces-my-card--${svc.status}`"
           >
             <div class="ces-my-card-head">
-              <span class="ces-status-badge" :style="`background:${statusMap[svc.status as ExtraServiceStatus]?.color || 'var(--glass-text)'}`">
-                {{ statusMap[svc.status as ExtraServiceStatus]?.label || svc.status }}
+              <span class="ces-status-badge" :style="`background:${svc.statusColor || 'var(--glass-text)'}`">
+                {{ svc.statusLabel || svc.status }}
               </span>
               <span class="ces-my-date">{{ formatDate(svc.createdAt) }}</span>
             </div>
@@ -40,10 +40,10 @@
             </div>
 
             <!-- Документы для скачивания -->
-            <div v-if="svc.contractDocId || svc.invoiceDocId" class="ces-my-docs">
-              <a v-if="svc.contractDocId" @click.prevent="openDoc(svc.contractDocId)"
+            <div v-if="svc.documents.contract.available || svc.documents.invoice.available" class="ces-my-docs">
+              <a v-if="svc.documents.contract.available" @click.prevent="openDoc(svc, 'contract')"
                  href="#" class="ces-doc-btn">📄 Доп. соглашение</a>
-              <a v-if="svc.invoiceDocId"  @click.prevent="openDoc(svc.invoiceDocId)"
+              <a v-if="svc.documents.invoice.available"  @click.prevent="openDoc(svc, 'invoice')"
                  href="#" class="ces-doc-btn">🧾 Счёт на оплату</a>
             </div>
 
@@ -193,23 +193,28 @@
 
 <script setup lang="ts">
 import {
-  EXTRA_SERVICE_STATUS_MAP,
   EXTRA_SERVICE_CATALOG,
   EXTRA_SERVICE_CATEGORY_LABELS,
   type ExtraServiceCategory,
   type ExtraServiceCatalogItem,
-  type ExtraServiceStatus,
-} from '~~/shared/types/catalogs'
+} from '~~/shared/types/project/catalogs'
+import type {
+  ApiV1ClientExtraService,
+  ApiV1ClientExtraServiceDocument,
+  ApiV1ClientProjectExtraServices,
+  ApiV1Envelope,
+} from '~~/shared/types/api-v1'
 
 const props = defineProps<{ slug: string }>()
-
-const statusMap = EXTRA_SERVICE_STATUS_MAP
+const reqHeaders = useRequestHeaders(['cookie'])
 
 // ── Fetch services ──────────────────────────────────────────────
-const { data: services, pending, refresh } = await useFetch<any[]>(
-  () => `/api/projects/${props.slug}/extra-services`,
-  { default: () => [] },
+const { data: servicesEnvelope, pending, refresh } = await useFetch<ApiV1Envelope<ApiV1ClientProjectExtraServices>>(
+  () => `/api/v1/client/projects/${props.slug}/extra-services`,
+  { headers: reqHeaders },
 )
+
+const services = computed(() => servicesEnvelope.value?.data.items || [])
 
 // ── Catalog ─────────────────────────────────────────────────────
 const catalogCategories = computed(() => {
@@ -270,7 +275,7 @@ async function submitRequest() {
   if (!form.title.trim()) return
   submitting.value = true
   try {
-    await $fetch(`/api/projects/${props.slug}/extra-services`, {
+    await $fetch<ApiV1Envelope<ApiV1ClientExtraService>>(`/api/v1/client/projects/${props.slug}/extra-services`, {
       method: 'POST',
       body: {
         serviceKey:  form.serviceKey || undefined,
@@ -293,12 +298,12 @@ async function submitRequest() {
 // ── Actions ──────────────────────────────────────────────────────
 const acting = ref<number | null>(null)
 
-async function approve(svc: any) {
+async function approve(svc: ApiV1ClientExtraService) {
   acting.value = svc.id
   try {
-    await $fetch(`/api/projects/${props.slug}/extra-services/${svc.id}`, {
-      method: 'PUT',
-      body: { status: 'approved' },
+    await $fetch<ApiV1Envelope<ApiV1ClientExtraService>>(`/api/v1/client/projects/${props.slug}/extra-services/${svc.id}/action`, {
+      method: 'POST',
+      body: { action: 'approve' },
     })
     await refresh()
   } catch (e: any) {
@@ -308,13 +313,13 @@ async function approve(svc: any) {
   }
 }
 
-async function cancel(svc: any) {
+async function cancel(svc: ApiV1ClientExtraService) {
   if (!confirm(`Отменить запрос «${svc.title}»?`)) return
   acting.value = svc.id
   try {
-    await $fetch(`/api/projects/${props.slug}/extra-services/${svc.id}`, {
-      method: 'PUT',
-      body: { status: 'cancelled' },
+    await $fetch<ApiV1Envelope<ApiV1ClientExtraService>>(`/api/v1/client/projects/${props.slug}/extra-services/${svc.id}/action`, {
+      method: 'POST',
+      body: { action: 'cancel' },
     })
     await refresh()
   } catch (e: any) {
@@ -327,10 +332,12 @@ async function cancel(svc: any) {
 // ── Doc viewer ────────────────────────────────────────────────────
 const docModal = ref<{ title: string; content: string } | null>(null)
 
-async function openDoc(docId: number) {
+async function openDoc(svc: ApiV1ClientExtraService, kind: 'contract' | 'invoice') {
   try {
-    const doc = await $fetch<any>(`/api/documents/${docId}`)
-    docModal.value = { title: doc.title, content: doc.content || '' }
+    const doc = await $fetch<ApiV1Envelope<ApiV1ClientExtraServiceDocument>>(
+      `/api/v1/client/projects/${props.slug}/extra-services/${svc.id}/documents/${kind}`,
+    )
+    docModal.value = { title: doc.data.title, content: doc.data.content || '' }
   } catch {
     alert('Не удалось загрузить документ')
   }
