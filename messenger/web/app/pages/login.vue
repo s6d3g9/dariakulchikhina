@@ -2,8 +2,6 @@
 const auth = useMessengerAuth()
 const install = useMessengerInstall()
 const route = useRoute()
-const loginField = ref<{ focus: () => void } | null>(null)
-const passwordField = ref<{ focus: () => void } | null>(null)
 const form = reactive({
   login: '',
   password: '',
@@ -122,7 +120,7 @@ function queueFocus(action: () => void) {
 
 function focusPasswordField() {
   queueFocus(() => {
-    passwordField.value?.focus()
+    document.querySelector<HTMLInputElement>('input[autocomplete="current-password"]')?.focus()
   })
 }
 
@@ -143,7 +141,6 @@ function markTouched(field: keyof typeof touched) {
 
         <form class="auth-form auth-form--native" @submit.prevent="submit">
           <MessengerAuthField
-            ref="loginField"
             v-model="form.login"
             label="Логин"
             autocomplete="username"
@@ -156,7 +153,6 @@ function markTouched(field: keyof typeof touched) {
           />
 
           <MessengerAuthField
-            ref="passwordField"
             v-model="form.password"
             label="Пароль"
             type="password"

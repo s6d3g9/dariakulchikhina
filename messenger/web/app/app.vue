@@ -138,7 +138,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <VApp :theme="settingsModel.vuetifyThemeName.value" class="messenger-v-app">
+  <div
+    class="messenger-v-app"
+    :data-vuetify-theme="settingsModel.vuetifyThemeName.value"
+  >
     <NuxtPage />
-  </VApp>
+  </div>
 </template>

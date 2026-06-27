@@ -529,12 +529,12 @@ const sizeStyle = computed(() => ({
 <template>
   <span class="messenger-icon" :class="`messenger-icon--${iconStyle}`" :style="sizeStyle" aria-hidden="true">
     <svg class="messenger-icon__svg" :viewBox="icon.viewBox || '0 0 24 24'" focusable="false">
-      <component
-        :is="shape.tag"
-        v-for="(shape, index) in icon.shapes"
-        :key="`${name}-${index}`"
-        v-bind="shape.attrs"
-      />
+      <template v-for="(shape, index) in icon.shapes" :key="`${name}-${index}`">
+        <path v-if="shape.tag === 'path'" v-bind="shape.attrs" />
+        <rect v-else-if="shape.tag === 'rect'" v-bind="shape.attrs" />
+        <circle v-else-if="shape.tag === 'circle'" v-bind="shape.attrs" />
+        <polyline v-else-if="shape.tag === 'polyline'" v-bind="shape.attrs" />
+      </template>
     </svg>
   </span>
 </template>

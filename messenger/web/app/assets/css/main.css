@@ -157,8 +157,8 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 
 /* ── Messenger Shell Layout ──────────────────────────────── */
 
-/* VMain Vuetify может добавлять padding-bottom из layout системы — убираем */
-.messenger-v-app .v-main {
+.messenger-main {
+  display: block;
   padding: 0 !important;
   min-height: var(--messenger-root-effective-height, 0px) !important;
   height: var(--messenger-root-effective-height, auto) !important;

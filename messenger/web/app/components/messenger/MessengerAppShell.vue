@@ -160,7 +160,7 @@ async function logout() {
 </script>
 
 <template>
-  <VMain>
+  <main class="messenger-main">
     <div
       class="messenger-shell"
       :data-messenger-keyboard="viewport.keyboardOpen.value ? 'open' : 'closed'"
@@ -280,5 +280,5 @@ async function logout() {
         </button>
       </nav>
     </div>
-  </VMain>
+  </main>
 </template>
