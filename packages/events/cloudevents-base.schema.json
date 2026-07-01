@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://daria.app/schemas/cloudevents-base.schema.json",
+  "title": "Daria CloudEvent Base",
+  "description": "Базовый формат для всех событий в NATS JetStream. Доменные события наследуют эту схему и добавляют свой `data`. См. docs/architecture-v6/09-invariants.md I4 (event-first).",
+  "type": "object",
+  "required": ["specversion", "type", "source", "id", "time", "datacontenttype", "data"],
+  "additionalProperties": false,
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "CloudEvents spec version"
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^app\\.daria\\.[a-z0-9-]+\\.[a-z0-9-]+\\.v[0-9]+$",
+      "description": "Формат: app.daria.<domain>.<event-name>.v<N>. Пример: app.daria.booking.slot-reserved.v1"
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^/services/[a-z0-9-]+$",
+      "description": "URI сервиса-производителя события. Пример: /services/booking"
+    },
+    "id": {
+      "type": "string",
+      "description": "Уникальный UUID v7 (time-ordered) события. Для idempotent consumer'ов."
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC3339 timestamp возникновения события на источнике."
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Опционально — ID сущности, к которой относится событие (user_id, booking_id, …)."
+    },
+    "traceparent": {
+      "type": "string",
+      "description": "W3C Trace Context header для связывания с OpenTelemetry spans."
+    },
+    "data": {
+      "type": "object",
+      "description": "Доменные данные события. Схема специфична для каждого `type`."
+    }
+  }
+}

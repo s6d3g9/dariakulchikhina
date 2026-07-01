@@ -1,0 +1,33 @@
+{
+  "$id": "https://daria.app/events/messenger/message-sent.v1.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MessengerMessageSent v1",
+  "description": "Emitted when a message is successfully sent в conversation.",
+  "version": "1.0.0",
+  "deprecated": false,
+  "type": "object",
+  "required": ["conversationId", "messageId", "senderId", "sentAt", "conversationKind"],
+  "additionalProperties": false,
+  "properties": {
+    "conversationId": { "type": "string" },
+    "conversationKind": {
+      "type": "string",
+      "enum": ["dm", "group", "entity-thread", "community"]
+    },
+    "contextEntity": {
+      "type": "object",
+      "description": "If entity-thread или community — ref на entity в focus-контексте.",
+      "properties": {
+        "kind": { "type": "string" },
+        "id": { "type": "string" }
+      }
+    },
+    "messageId": { "type": "string" },
+    "senderId": { "type": "string" },
+    "sentAt": { "type": "string", "format": "date-time" },
+    "contentType": { "type": "string", "enum": ["text", "media", "pattern-card-ref", "system"] },
+    "hasAttachments": { "type": "boolean" },
+    "isEncrypted": { "type": "boolean", "description": "true для DM / private group E2EE" },
+    "replyToMessageId": { "type": "string" }
+  }
+}

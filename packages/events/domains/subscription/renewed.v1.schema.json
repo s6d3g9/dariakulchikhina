@@ -1,0 +1,29 @@
+{
+  "$id": "https://daria.app/events/subscription/renewed.v1.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SubscriptionRenewed v1",
+  "description": "Emitted when subscription-engine successfully renews subscription (charge processed).",
+  "version": "1.0.0",
+  "deprecated": false,
+  "type": "object",
+  "required": ["subscriptionId", "holderId", "renewedAt", "newActiveUntil", "amountCents", "currency"],
+  "additionalProperties": false,
+  "properties": {
+    "subscriptionId": { "type": "string" },
+    "holderId": { "type": "string" },
+    "targetRef": {
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string", "enum": ["person", "template", "community", "bundle"] },
+        "id": { "type": "string" }
+      }
+    },
+    "renewedAt": { "type": "string", "format": "date-time" },
+    "newActiveUntil": { "type": "string", "format": "date-time" },
+    "period": { "type": "string", "enum": ["monthly", "quarterly", "yearly", "one-time"] },
+    "amountCents": { "type": "integer", "minimum": 0 },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "paymentId": { "type": "string" },
+    "royaltyDistributed": { "type": "boolean" }
+  }
+}

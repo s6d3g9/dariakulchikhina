@@ -1,0 +1,62 @@
+{
+  "$id": "https://daria.app/events/booking/slot-reserved.v1.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BookingSlotReserved v1",
+  "description": "Emitted when booking.confirm successfully reserves a slot atomically.",
+  "version": "1.0.0",
+  "deprecated": false,
+  "type": "object",
+  "required": ["bookingId", "slotId", "userId", "reservedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "bookingId": {
+      "type": "string",
+      "description": "UUID v7 of the new booking record."
+    },
+    "slotId": {
+      "type": "string",
+      "description": "Target inventory slot."
+    },
+    "resourceRef": {
+      "type": "object",
+      "description": "Reference to the resource being booked (hotel-room, flight, vehicle, etc.)",
+      "properties": {
+        "kind": { "type": "string" },
+        "id": { "type": "string" }
+      }
+    },
+    "userId": {
+      "type": "string"
+    },
+    "amountCents": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total booking amount in native-currency minor units."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "startAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reservedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "OCC version."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Opaque additional fields per card-type."
+    }
+  }
+}

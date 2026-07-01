@@ -680,3 +680,28 @@ Commit `48e10f0` нужно позднее либо:
 
 ### [done] 2026-04-17 — Wave 5 / sellers → modules/sellers
 Перенос 6 endpoints. Delta: −12 (99 → 87). Файлы: server/modules/sellers/sellers.service.ts, 6 thin handlers. Проверки: vue-tsc ok, lint-ratchet ok.
+
+### [draft] 2026-04-18 — v6 architecture draft (consolidated)
+Создан развёрнутый черновик архитектуры v6 в `docs/architecture-v6/` (28 файлов, ~5200 строк). Содержит:
+
+**Стратегия и стек** — 00-rationale, 01-stack, 02-phases, 03-verticals, 04-open-questions.
+
+**UX и сущности** — 05-shell-entity-model (инверсия instance⇄type, ключевой UX-принцип), 06-card-types-matrix (60+ card-types), 16-search-and-navigation (profile-switch без unmount), 17-fractal-ux (структурный закон: 5 уровней × 7 ролей × 6 жестов × 2 переключателя).
+
+**Платформа** — 07-layered-architecture (6 слоёв, 38 горизонтальных сервисов; инвариант: **vertical-сервисов нет**), 08-repository-structure, 09-invariants (23 инварианта), 14-data-architecture, 15-integration-patterns.
+
+**Движки** — 10-timeline-engine (универсальный Temporal-backed), 11-creator-economy (authorship + recursive royalty + licenses), 12-pattern-composition (atomic/compound/template).
+
+**Governance и ops** — 13-governance-policy (runtime allow/distill/deny), 18-observability-ops (SigNoz, SLOs, runbooks), 19-security-model (STRIDE, encryption, PII).
+
+**Клиент и коммуникации** — 20-mobile-offline-first, 22-messaging-model (fractal comms: чат per-entity), 25-internationalization.
+
+**AI** — 23-ai-assistance (Generate/Rank/Moderate/Explain как horizontal primitive).
+
+**Dev и валидация** — 21-acid-tests (16 phase-gate сценариев), 24-dev-experience (scaffolding, golden path, onboarding).
+
+**Справочник** — 99-glossary.
+
+Скелет монорепо создан: `apps/`, `packages/` (card-types/_registry.ts, shell-panels/types.ts, events/cloudevents-base, testing/fractal-harness), `platform/docker-compose/` с рабочим docker-compose.yml (Postgres, Redis, NATS JetStream, Temporal, MinIO, Meilisearch, Zitadel, Mailhog). Скелеты services/: identity, wallet, timeline-engine, pattern-engine, authorship-registry, policy-engine.
+
+v5.3 остаётся действующей архитектурой до Фазы 2 v6. v6 — DRAFT, не руководство к действию.

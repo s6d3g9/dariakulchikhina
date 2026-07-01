@@ -1,0 +1,41 @@
+{
+  "$id": "https://daria.app/events/authorship/royalty-distributed.v1.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuthorshipRoyaltyDistributed v1",
+  "description": "Emitted по итогу distribution royalty от purchase/subscription template'а. См. 32-authorship-algorithms.md.",
+  "version": "1.0.0",
+  "deprecated": false,
+  "type": "object",
+  "required": ["purchaseId", "templateId", "amountDistributedCents", "currencyDistributed", "distribution", "policyVersion", "distributedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "purchaseId": { "type": "string" },
+    "templateId": { "type": "string" },
+    "buyerId":    { "type": "string" },
+    "amountPaidCents":        { "type": "integer", "minimum": 0 },
+    "currencyPaid":           { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "amountDistributedCents": { "type": "integer", "minimum": 0 },
+    "currencyDistributed":    { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "fxRate":          { "type": "number" },
+    "fxTimestamp":     { "type": "string", "format": "date-time" },
+    "policyHash":      { "type": "string" },
+    "policyVersion":   { "type": "integer", "minimum": 1 },
+    "forksLineageRule": { "type": "string", "enum": ["equal", "geometric", "linear", "none"] },
+    "distribution": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["recipient", "amountCents", "role"],
+        "additionalProperties": false,
+        "properties": {
+          "recipient":   { "type": "string" },
+          "amountCents": { "type": "integer", "minimum": 0 },
+          "role":        { "type": "string", "enum": ["author", "direct", "ancestor", "dust", "platform"] },
+          "generation":  { "type": "integer", "minimum": 0 },
+          "weight":      { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "distributedAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -1,0 +1,424 @@
+openapi: 3.1.0
+info:
+  title: Daria Authorship Registry API
+  version: 1.0.0
+  description: |
+    Register templates, manage split-policies, distribute royalty recursively
+    через lineage graph.
+
+    Publishes events to `app.daria.authorship.*`.
+
+servers:
+  - url: http://authorship.internal/v1
+
+security:
+  - bearerAuth: []
+
+paths:
+  /templates:
+    post:
+      summary: Publish template (register authorship)
+      operationId: publishTemplate
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishTemplateRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /templates/{id}:
+    get:
+      summary: Template metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /templates/{id}/fork:
+    post:
+      summary: Fork template (create new с lineage link)
+      operationId: forkTemplate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                forkerId: { type: string }
+                forkTitle: { type: string }
+              required: [forkerId]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /templates/{id}/lineage:
+    get:
+      summary: Get full ancestor chain
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ancestors:
+                    type: array
+                    description: Direct parent first, root last
+                    items:
+                      type: object
+                      properties:
+                        templateId: { type: string, format: uuid }
+                        authorId: { type: string }
+                        depth: { type: integer }
+                        title: { type: string }
+
+  /purchases/{purchaseId}/distribute:
+    post:
+      summary: Compute and execute royalty distribution
+      operationId: distributeRoyalty
+      description: |
+        Invoked when payment is confirmed. Idempotent on purchaseId.
+        Calls wallet.transfer for each recipient atomically.
+      parameters:
+        - name: purchaseId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DistributeRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Distribution'
+
+  /purchases/{purchaseId}/reverse:
+    post:
+      summary: Reverse distribution (refund scenario)
+      operationId: reverseDistribution
+      description: |
+        Called when subscription is refunded или template is retracted.
+        Compensating transfers in reverse order.
+      parameters:
+        - name: purchaseId
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+              required: [reason]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Distribution'
+
+  /authors/{authorId}/royalty-stream:
+    get:
+      summary: SSE stream of incoming royalty events
+      operationId: authorRoyaltyStream
+      parameters:
+        - name: authorId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /authors/{authorId}/earnings:
+    get:
+      summary: Author earnings summary
+      parameters:
+        - name: authorId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: currency
+          in: query
+          schema: { type: string, pattern: '^[A-Z]{3}$' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCents: { type: string }
+                  byRole:
+                    type: object
+                    properties:
+                      author: { type: string }
+                      ancestor: { type: string }
+                      other: { type: string }
+                  byTemplate:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        templateId: { type: string, format: uuid }
+                        templateTitle: { type: string }
+                        totalCents: { type: string }
+
+  /disputes:
+    post:
+      summary: Open authorship dispute
+      operationId: openDispute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenDisputeRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+
+  /disputes/{id}:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+
+  /disputes/{id}/rule:
+    post:
+      summary: Apply ruling (admin only)
+      security:
+        - bearerAuth: [governance:compliance]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                outcome:
+                  type: string
+                  enum: [upheld, rejected]
+                rationale: { type: string }
+              required: [outcome, rationale]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Template:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        patternId: { type: string, format: uuid }
+        authorId: { type: string }
+        licenseKind:
+          type: string
+          enum: [CC0, CC-BY, CC-BY-SA, CC-BY-NC, MIT, GPL, Commercial-1x, Commercial-Subscription, Royalty-Fork, Private]
+        splitPolicy:
+          $ref: '#/components/schemas/SplitPolicy'
+        priceCents: { type: string }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        publishedAt: { type: string, format: date-time }
+        contentHash: { type: string }
+        onchainMintTx: { type: string }
+        onchainNetwork: { type: string }
+
+    PublishTemplateRequest:
+      type: object
+      required: [patternId, authorId, licenseKind, splitPolicy]
+      properties:
+        patternId: { type: string, format: uuid }
+        authorId: { type: string }
+        licenseKind: { $ref: '#/components/schemas/Template/properties/licenseKind' }
+        splitPolicy: { $ref: '#/components/schemas/SplitPolicy' }
+        priceCents: { type: string, pattern: '^[0-9]+$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        contentHash: { type: string }
+
+    SplitPolicy:
+      type: object
+      required: [splits, forksLineageRule, minDistributionCents, dustPolicy, currency]
+      properties:
+        splits:
+          type: array
+          items:
+            type: object
+            required: [party, share]
+            properties:
+              party:
+                type: string
+                description: "'author' | 'platform' | 'tag:<id>' | 'user:<id>' | 'forks-lineage'"
+              share:
+                type: number
+                minimum: 0
+                maximum: 1
+        forksLineageRule:
+          type: string
+          enum: [equal, geometric, linear, none]
+        minDistributionCents: { type: integer, minimum: 0 }
+        dustPolicy:
+          type: string
+          enum: [accumulate, platform-fee]
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+
+    DistributeRequest:
+      type: object
+      required: [templateId, buyerId, amountCents, currency]
+      properties:
+        templateId: { type: string, format: uuid }
+        buyerId: { type: string }
+        amountCents: { type: string, pattern: '^[0-9]+$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        fxRateAtPurchase: { type: number }
+        metadata: { type: object }
+
+    Distribution:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        purchaseId: { type: string }
+        templateId: { type: string, format: uuid }
+        buyerId: { type: string }
+        amountPaidCents: { type: string }
+        currencyPaid: { type: string }
+        amountDistributedCents: { type: string }
+        currencyDistributed: { type: string }
+        fxRate: { type: number }
+        forksLineageRule: { type: string }
+        recipients:
+          type: array
+          items:
+            type: object
+            properties:
+              recipient: { type: string }
+              amountCents: { type: string }
+              role:
+                type: string
+                enum: [author, direct, ancestor, dust, platform]
+              generation: { type: integer }
+              weight: { type: number }
+        status:
+          type: string
+          enum: [completed, reversed]
+        distributedAt: { type: string, format: date-time }
+
+    OpenDisputeRequest:
+      type: object
+      required: [claimantId, respondentId, templateInQuestionId, claimKind, description]
+      properties:
+        claimantId: { type: string }
+        respondentId: { type: string }
+        templateInQuestionId: { type: string, format: uuid }
+        claimedOriginalId: { type: string, format: uuid }
+        claimKind:
+          type: string
+          enum: [stolen-content, fork-without-credit, similar-by-scheme-fraud]
+        description: { type: string }
+        evidence:
+          type: array
+          items:
+            type: object
+            properties:
+              kind:
+                type: string
+                enum: [fingerprint-match, timeline-proof, manual-review, user-statement]
+              data: { type: object }
+
+    Dispute:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        claimantId: { type: string }
+        respondentId: { type: string }
+        templateInQuestionId: { type: string, format: uuid }
+        claimKind: { type: string }
+        status:
+          type: string
+          enum: [open, investigating, ruled-upheld, ruled-rejected, closed]
+        ruling: { type: string }
+        rulingBy: { type: string }
+        ruledAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }

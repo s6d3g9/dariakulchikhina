@@ -1,0 +1,169 @@
+# platform/docker-compose/docker-compose.yml
+# Локальный dev-стек v6 — вся инфра одним `docker compose up`.
+# См. README.md для портов и troubleshooting.
+
+name: daria-v6-dev
+
+services:
+  # ─── Postgres 16 — OLTP для всех сервисов ─────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: daria-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-daria}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-daria}
+      POSTGRES_MULTIPLE_DATABASES: identity_db,platform_db,domain_db,audit_db
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-postgres.sh:/docker-entrypoint-initdb.d/init-postgres.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-daria}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── Redis 7 — cache, presence, rate-limit ────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: daria-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ─── NATS JetStream — event backbone ──────────────────────────
+  nats:
+    image: nats:2.10-alpine
+    container_name: daria-nats
+    command:
+      - "-js"
+      - "-m"
+      - "8222"
+      - "--store_dir"
+      - "/data"
+    ports:
+      - "${NATS_PORT:-4222}:4222"
+      - "${NATS_MONITOR_PORT:-8222}:8222"
+    volumes:
+      - nats-data:/data
+
+  # ─── Temporal — durable workflows ─────────────────────────────
+  temporal:
+    image: temporalio/auto-setup:1.25
+    container_name: daria-temporal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-daria}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:-daria}
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development.yaml
+    ports:
+      - "${TEMPORAL_PORT:-7233}:7233"
+
+  temporal-ui:
+    image: temporalio/ui:2.30.0
+    container_name: daria-temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "${TEMPORAL_UI_PORT:-8080}:8080"
+
+  # ─── MinIO — S3-compat хранилище для медиа ─────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: daria-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-daria}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-daria-minio}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+
+  # ─── Meilisearch — поиск ──────────────────────────────────────
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    container_name: daria-meilisearch
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-daria-dev-key-change-me}
+      MEILI_ENV: development
+    ports:
+      - "${MEILI_PORT:-7700}:7700"
+    volumes:
+      - meili-data:/meili_data
+
+  # ─── Zitadel — identity ───────────────────────────────────────
+  # Упрощённая однокомпонентная конфигурация для dev.
+  # Production-конфиг будет в platform/k8s (Фаза 6).
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:latest
+    container_name: daria-zitadel
+    command: "start-from-init --masterkey MasterkeyNeedsToHave32Characters --tlsMode disabled"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ZITADEL_DATABASE_POSTGRES_HOST: postgres
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: identity_db
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: ${POSTGRES_USER:-daria}
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${POSTGRES_PASSWORD:-daria}
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: ${POSTGRES_USER:-daria}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:-daria}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      ZITADEL_EXTERNALSECURE: "false"
+      ZITADEL_EXTERNALDOMAIN: localhost
+      ZITADEL_EXTERNALPORT: ${ZITADEL_PORT:-8081}
+    ports:
+      - "${ZITADEL_PORT:-8081}:8080"
+
+  # ─── Mailhog — dev SMTP ───────────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: daria-mailhog
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+
+  # ─── SigNoz отдельно (profile=observability, тяжёлый) ─────────
+  # Подъём: docker compose --profile observability up -d
+  # Для SigNoz рекомендуется отдельный compose (слишком много сервисов),
+  # но на этапе Фазы 0 включаем минимум:
+  clickhouse:
+    profiles: ["observability"]
+    image: clickhouse/clickhouse-server:24.1.2-alpine
+    container_name: daria-clickhouse
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9100}:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+volumes:
+  postgres-data:
+  redis-data:
+  nats-data:
+  minio-data:
+  meili-data:
+  clickhouse-data:

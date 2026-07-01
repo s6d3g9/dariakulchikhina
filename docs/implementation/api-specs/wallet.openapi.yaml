@@ -1,0 +1,447 @@
+openapi: 3.1.0
+info:
+  title: Daria Wallet Service API
+  version: 1.0.0
+  description: |
+    Internal wallet API. Double-entry ledger для всех money flows.
+    Publishes events to `app.daria.wallet.*` JetStream stream.
+
+    Public API (через gateway) — subset этого (см. 46-public-api.md).
+
+servers:
+  - url: http://wallet.internal/v1
+    description: Internal cluster network
+
+security:
+  - bearerAuth: []
+
+paths:
+  /accounts:
+    get:
+      summary: List user accounts
+      parameters:
+        - $ref: '#/components/parameters/UserIdQuery'
+      responses:
+        '200':
+          description: Array of accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Account'
+
+    post:
+      summary: Create account
+      operationId: createAccount
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+
+  /accounts/{accountId}:
+    get:
+      summary: Get account detail
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /transfers:
+    post:
+      summary: Create transfer (atomic double-entry)
+      operationId: createTransfer
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransferRequest'
+      responses:
+        '201':
+          description: Transfer committed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (insufficient funds / currency mismatch / idempotency match with different body)
+        '422':
+          description: Business rule violation
+
+  /transfers/{transferId}:
+    get:
+      summary: Get transfer detail
+      parameters:
+        - name: transferId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+
+  /transfers/{transferId}/reverse:
+    post:
+      summary: Reverse transfer (compensating)
+      operationId: reverseTransfer
+      parameters:
+        - name: transferId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 256 }
+              required: [reason]
+      responses:
+        '201':
+          description: Reversal transfer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+
+  /holds:
+    post:
+      summary: Create hold
+      operationId: createHold
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHoldRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hold'
+
+  /holds/{holdId}/release:
+    post:
+      summary: Release hold (back to available balance)
+      parameters:
+        - name: holdId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hold'
+
+  /holds/{holdId}/capture:
+    post:
+      summary: Capture hold (convert to transfer)
+      operationId: captureHold
+      parameters:
+        - name: holdId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                toAccountId: { type: string, format: uuid }
+                amountCents:
+                  type: string
+                  pattern: '^[0-9]+$'
+                  description: May be less than hold amount (partial capture); remainder released
+              required: [toAccountId]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+
+  /users/{userId}/statement:
+    get:
+      summary: User account statement
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: currency
+          in: query
+          schema: { type: string, pattern: '^[A-Z]{3}$' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Account'
+                  transfers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transfer'
+                  summary:
+                    type: object
+                    properties:
+                      incomingCents: { type: string }
+                      outgoingCents: { type: string }
+                      netCents: { type: string }
+
+  /reconciliation/{date}:
+    get:
+      summary: Daily reconciliation report (admin-only)
+      security:
+        - bearerAuth: [admin]
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationReport'
+
+components:
+  parameters:
+    UserIdQuery:
+      name: userId
+      in: query
+      required: true
+      schema: { type: string }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-f0-9-]{36}$'
+        description: UUID v7
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Account:
+      type: object
+      required: [id, accountType, ownerType, ownerId, currency, balanceCents, holdCents, version, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        accountType:
+          type: string
+          enum: [user.primary, user.escrow, platform.revenue, author.royalty, treasury.fund, liquidity.pool]
+        ownerType:
+          type: string
+          enum: [user, platform, tag, author]
+        ownerId: { type: string }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        balanceCents:
+          type: string
+          pattern: '^-?[0-9]+$'
+          description: bigint as string для JSON-safe
+        holdCents:
+          type: string
+          pattern: '^[0-9]+$'
+        availableCents:
+          type: string
+          description: derived = balance - hold
+        version: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CreateAccountRequest:
+      type: object
+      required: [accountType, ownerType, ownerId, currency]
+      properties:
+        accountType: { $ref: '#/components/schemas/Account/properties/accountType' }
+        ownerType: { $ref: '#/components/schemas/Account/properties/ownerType' }
+        ownerId: { type: string }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+
+    Transfer:
+      type: object
+      required: [id, fromAccountId, toAccountId, amountCents, currency, idempotencyKey, kind, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        fromAccountId: { type: string, format: uuid }
+        toAccountId: { type: string, format: uuid }
+        amountCents: { type: string, pattern: '^[0-9]+$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        idempotencyKey: { type: string }
+        kind:
+          type: string
+          enum: [charge, refund, royalty, platform-fee, internal, reversal]
+        referenceType: { type: string }
+        referenceId: { type: string }
+        description: { type: string }
+        metadata: { type: object }
+        status:
+          type: string
+          enum: [pending, committed, reversed]
+        reversesTransferId: { type: string, format: uuid }
+        traceId: { type: string }
+        createdAt: { type: string, format: date-time }
+        committedAt: { type: string, format: date-time }
+
+    CreateTransferRequest:
+      type: object
+      required: [fromAccountId, toAccountId, amountCents, currency, kind]
+      properties:
+        fromAccountId: { type: string, format: uuid }
+        toAccountId: { type: string, format: uuid }
+        amountCents:
+          type: string
+          pattern: '^[1-9][0-9]*$'
+          description: Must be positive
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        kind: { $ref: '#/components/schemas/Transfer/properties/kind' }
+        referenceType: { type: string }
+        referenceId: { type: string }
+        description: { type: string, maxLength: 256 }
+        metadata: { type: object }
+
+    Hold:
+      type: object
+      required: [id, accountId, amountCents, currency, purpose, status, expiresAt, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        amountCents: { type: string, pattern: '^[0-9]+$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        purpose:
+          type: string
+          enum: [escrow-purchase, escrow-rental-deposit, subscription-prepayment, booking-hold]
+        referenceType: { type: string }
+        referenceId: { type: string }
+        expiresAt: { type: string, format: date-time }
+        status:
+          type: string
+          enum: [active, released, captured, expired]
+        capturedByTransferId: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time }
+
+    CreateHoldRequest:
+      type: object
+      required: [accountId, amountCents, currency, purpose, expiresAt]
+      properties:
+        accountId: { type: string, format: uuid }
+        amountCents: { type: string, pattern: '^[1-9][0-9]*$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        purpose: { $ref: '#/components/schemas/Hold/properties/purpose' }
+        referenceType: { type: string }
+        referenceId: { type: string }
+        expiresAt: { type: string, format: date-time }
+
+    ReconciliationReport:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        totalAccountsCount: { type: integer }
+        mismatchesCount: { type: integer }
+        mismatches:
+          type: array
+          items:
+            type: object
+            properties:
+              accountId: { type: string, format: uuid }
+              expectedBalance: { type: string }
+              actualBalance: { type: string }
+              diff: { type: string }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - ACCOUNT_NOT_FOUND
+                - INSUFFICIENT_FUNDS
+                - CURRENCY_MISMATCH
+                - SELF_TRANSFER
+                - HOLD_EXPIRED
+                - VERSION_CONFLICT
+                - IDEMPOTENCY_MISMATCH
+                - PERMISSION_DENIED
+                - RATE_LIMITED
+                - INTERNAL_ERROR
+            message: { type: string }
+            traceId: { type: string }
+            details: { type: object }

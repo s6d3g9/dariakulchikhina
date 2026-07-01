@@ -1,0 +1,431 @@
+openapi: 3.1.0
+info:
+  title: Daria Pattern-Engine API
+  version: 1.0.0
+  description: |
+    Pattern-Card CRUD, composition, fork, publish-as-template, materialize.
+    Core primitive для all card-types.
+
+servers:
+  - url: http://pattern-engine.internal/v1
+
+security:
+  - bearerAuth: []
+
+paths:
+  /patterns:
+    post:
+      summary: Create Pattern-Card (atomic или compound)
+      operationId: createPattern
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePatternRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pattern'
+
+  /patterns/{id}:
+    get:
+      summary: Get Pattern-Card detail (includes children если compound)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: include-lineage
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pattern'
+    patch:
+      summary: Update Pattern-Card (OCC)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version: { type: integer, minimum: 1 }
+                title: { type: string }
+                summary: { type: string }
+                params: { type: object }
+                visibility:
+                  type: string
+                  enum: [public, unlisted, private]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pattern'
+        '409':
+          description: Version conflict (OCC)
+    delete:
+      summary: Soft-delete Pattern-Card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  /patterns/{id}/children:
+    post:
+      summary: Add child to compound pattern
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [childId, slot, binding]
+              properties:
+                childId: { type: string, format: uuid }
+                slot: { type: string }
+                binding: { $ref: '#/components/schemas/Binding' }
+                position: { type: integer }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  childRef:
+                    $ref: '#/components/schemas/PatternChild'
+
+  /patterns/{id}/fork:
+    post:
+      summary: Fork pattern (creates new Pattern-Card with lineage link)
+      operationId: forkPattern
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                forkerId: { type: string }
+                title: { type: string }
+                copyChildren:
+                  type: boolean
+                  default: true
+              required: [forkerId]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pattern'
+
+  /patterns/{id}/publish-as-template:
+    post:
+      summary: Publish Pattern-Card as a template (register authorship)
+      operationId: publishAsTemplate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [licenseKind, splitPolicy]
+              properties:
+                licenseKind:
+                  type: string
+                  enum: [CC0, CC-BY, CC-BY-SA, CC-BY-NC, MIT, GPL, Commercial-1x, Commercial-Subscription, Royalty-Fork, Private]
+                splitPolicy:
+                  $ref: '#/components/schemas/SplitPolicy'
+                priceCents: { type: string, pattern: '^[0-9]+$' }
+                currency: { type: string, pattern: '^[A-Z]{3}$' }
+                visibility:
+                  type: string
+                  enum: [public, unlisted]
+                  default: public
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /patterns/{id}/materialize:
+    post:
+      summary: Materialize a template (create instance с user params)
+      operationId: materializeTemplate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string }
+                params: { type: object }
+                startTimeline:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pattern'
+
+  /patterns/{id}/lineage:
+    get:
+      summary: Get ancestor chain
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ancestors:
+                    type: array
+                    items: { $ref: '#/components/schemas/LineageAncestor' }
+                  descendants:
+                    type: array
+                    items: { $ref: '#/components/schemas/LineageAncestor' }
+
+  /templates:
+    get:
+      summary: Marketplace listing
+      parameters:
+        - name: kind
+          in: query
+          schema: { type: string }
+        - name: author
+          in: query
+          schema: { type: string }
+        - name: license
+          in: query
+          schema: { type: string }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Template' }
+                  nextCursor: { type: string }
+
+  /users/{userId}/patterns:
+    get:
+      summary: User's Pattern-Cards
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: kind
+          in: query
+          schema:
+            type: string
+            enum: [atomic, compound, template]
+        - name: card-type
+          in: query
+          schema: { type: string }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Pattern' }
+                  nextCursor: { type: string }
+
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Pattern:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        kind:
+          type: string
+          enum: [atomic, compound, template]
+        cardType: { type: string }
+        ownerId: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        params: { type: object }
+        timelineId: { type: string, format: uuid }
+        parentId: { type: string, format: uuid }
+        lineageRelation:
+          type: string
+          enum: [fork, materialized-from]
+        licenseKind: { type: string }
+        publishedAt: { type: string, format: date-time }
+        visibility: { type: string }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/PatternChild' }
+        version: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Template:
+      allOf:
+        - $ref: '#/components/schemas/Pattern'
+        - type: object
+          properties:
+            splitPolicy: { $ref: '#/components/schemas/SplitPolicy' }
+            priceCents: { type: string }
+            currency: { type: string }
+            forkCount: { type: integer }
+            purchaseCount: { type: integer }
+
+    PatternChild:
+      type: object
+      properties:
+        childId: { type: string, format: uuid }
+        child: { $ref: '#/components/schemas/Pattern' }
+        slot: { type: string }
+        binding: { $ref: '#/components/schemas/Binding' }
+        position: { type: integer }
+        enabled: { type: boolean }
+
+    Binding:
+      oneOf:
+        - type: object
+          properties:
+            type: { type: string, enum: [sequential] }
+            after:
+              type: array
+              items: { type: string }
+        - type: object
+          properties:
+            type: { type: string, enum: [parallel] }
+        - type: object
+          properties:
+            type: { type: string, enum: [conditional] }
+            when: { type: string, description: 'policy-engine expression' }
+        - type: object
+          properties:
+            type: { type: string, enum: [optional] }
+        - type: object
+          properties:
+            type: { type: string, enum: [replicated] }
+            count: { type: integer, minimum: 1 }
+
+    CreatePatternRequest:
+      type: object
+      required: [kind, cardType, title, ownerId]
+      properties:
+        kind:
+          type: string
+          enum: [atomic, compound]
+        cardType: { type: string }
+        ownerId: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        params: { type: object }
+        visibility:
+          type: string
+          default: private
+
+    SplitPolicy:
+      type: object
+      required: [splits, forksLineageRule, minDistributionCents, dustPolicy, currency]
+      properties:
+        splits:
+          type: array
+          items:
+            type: object
+            properties:
+              party: { type: string }
+              share: { type: number, minimum: 0, maximum: 1 }
+        forksLineageRule:
+          type: string
+          enum: [equal, geometric, linear, none]
+        minDistributionCents: { type: integer }
+        dustPolicy:
+          type: string
+          enum: [accumulate, platform-fee]
+        currency: { type: string }
+
+    LineageAncestor:
+      type: object
+      properties:
+        templateId: { type: string, format: uuid }
+        authorId: { type: string }
+        title: { type: string }
+        depth: { type: integer }
+        licenseKind: { type: string }

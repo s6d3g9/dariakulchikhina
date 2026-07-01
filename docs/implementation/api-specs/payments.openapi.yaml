@@ -1,0 +1,410 @@
+openapi: 3.1.0
+info:
+  title: Daria Payments Service API
+  version: 1.0.0
+  description: |
+    PSP aggregator. Charge / refund / webhook / reconciliation.
+    Publishes events to `app.daria.payments.*`.
+
+servers:
+  - url: http://payments.internal/v1
+
+security:
+  - bearerAuth: []
+
+paths:
+  /charges:
+    post:
+      summary: Create charge
+      operationId: createCharge
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChargeRequest'
+      responses:
+        '201':
+          description: Charge created (may be pending 3DS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Charge'
+        '402':
+          description: Payment failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentFailure'
+        '409':
+          description: Idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /charges/{id}:
+    get:
+      summary: Get charge detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Charge'
+
+  /charges/{id}/confirm:
+    post:
+      summary: Confirm charge после 3DS client challenge
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                threeDsResult: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Charge'
+
+  /refunds:
+    post:
+      summary: Create refund
+      operationId: createRefund
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chargeId, reason]
+              properties:
+                chargeId: { type: string, format: uuid }
+                amountCents:
+                  type: string
+                  pattern: '^[0-9]+$'
+                  description: If omitted, full refund
+                reason:
+                  type: string
+                  enum: [user-requested, dispute-ruling, fraud, duplicate, admin]
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+
+  /refunds/{id}:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+
+  /payment-methods:
+    get:
+      summary: List user's saved payment methods
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/PaymentMethod' }
+    post:
+      summary: Tokenize + save payment method
+      operationId: savePaymentMethod
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, kind, pspName, pspToken]
+              properties:
+                userId: { type: string }
+                kind: { $ref: '#/components/schemas/PaymentMethodKind' }
+                pspName: { $ref: '#/components/schemas/PspName' }
+                pspToken:
+                  type: string
+                  description: Token from PSP client-side tokenization
+                setAsDefault: { type: boolean, default: false }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+
+  /payment-methods/{id}:
+    delete:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+
+  /webhook/{psp}:
+    post:
+      summary: PSP webhook receiver
+      description: |
+        Called by PSP provider. NO JWT required — signature-based auth.
+      parameters:
+        - name: psp
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/PspName' }
+      requestBody:
+        content:
+          'application/json': {}
+      responses:
+        '200':
+          description: Webhook accepted
+        '400':
+          description: Invalid signature
+
+  /reconciliation/{date}:
+    get:
+      summary: Daily reconciliation report (admin only)
+      security:
+        - bearerAuth: [governance:admin]
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema: { type: string, format: date }
+        - name: psp
+          in: query
+          schema: { $ref: '#/components/schemas/PspName' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationReport'
+
+  /disputes/{id}/evidence:
+    post:
+      summary: Submit chargeback dispute evidence
+      security:
+        - bearerAuth: [governance:compliance]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerCommunication: { type: string }
+                receipt: { type: string, format: uri }
+                shippingInfo: { type: object }
+                accessLog: { type: array, items: { type: object } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PspName:
+      type: string
+      enum: [stripe, yookassa, cloudpayments, paypal, crypto-direct]
+
+    PaymentMethodKind:
+      type: string
+      enum: [card, sepa-dd, sbp, apple-pay, google-pay, paypal, crypto-usdt, crypto-usdc, bank-account]
+
+    Charge:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        idempotencyKey: { type: string }
+        userId: { type: string }
+        amountCents: { type: string, pattern: '^[0-9]+$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        kind:
+          type: string
+          enum: [template-purchase, subscription-renewal, gift-subscription, one-off, other]
+        referenceType: { type: string }
+        referenceId: { type: string }
+        paymentMethodId: { type: string, format: uuid }
+        paymentMethodKind: { $ref: '#/components/schemas/PaymentMethodKind' }
+        pspName: { $ref: '#/components/schemas/PspName' }
+        pspChargeId: { type: string }
+        status:
+          type: string
+          enum: [pending, requires_action, confirmed, failed, cancelled, refunded, partially_refunded]
+        failureCode: { type: string }
+        failureMessage: { type: string }
+        requires3ds: { type: boolean }
+        threeDsUrl: { type: string }
+        refundedCents: { type: string }
+        pspFeeCents: { type: string }
+        riskScore: { type: number }
+        createdAt: { type: string, format: date-time }
+        confirmedAt: { type: string, format: date-time }
+
+    CreateChargeRequest:
+      type: object
+      required: [userId, amountCents, currency, kind]
+      properties:
+        userId: { type: string }
+        amountCents: { type: string, pattern: '^[1-9][0-9]*$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        kind: { $ref: '#/components/schemas/Charge/properties/kind' }
+        referenceType: { type: string }
+        referenceId: { type: string }
+        paymentMethodId: { type: string, format: uuid }
+        description: { type: string, maxLength: 256 }
+        metadata: { type: object }
+
+    Refund:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        chargeId: { type: string, format: uuid }
+        amountCents: { type: string }
+        currency: { type: string }
+        reason:
+          type: string
+          enum: [user-requested, dispute-ruling, fraud, duplicate, admin]
+        pspRefundId: { type: string }
+        status:
+          type: string
+          enum: [pending, succeeded, failed]
+        failureMessage: { type: string }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+
+    PaymentMethod:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string }
+        kind: { $ref: '#/components/schemas/PaymentMethodKind' }
+        pspName: { $ref: '#/components/schemas/PspName' }
+        displayLast4: { type: string, minLength: 4, maxLength: 4 }
+        displayBrand: { type: string }
+        displayExpMonth: { type: integer }
+        displayExpYear: { type: integer }
+        billingCountry: { type: string, pattern: '^[A-Z]{2}$' }
+        isDefault: { type: boolean }
+        verifiedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    PaymentFailure:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum: [CARD_DECLINED, INSUFFICIENT_FUNDS, 3DS_REQUIRED, FRAUDULENT, EXPIRED_CARD, INVALID_METHOD, PSP_ERROR]
+            message: { type: string }
+            chargeId: { type: string, format: uuid }
+            requires3ds: { type: boolean }
+            threeDsUrl: { type: string }
+
+    ReconciliationReport:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        pspName: { $ref: '#/components/schemas/PspName' }
+        pspChargesCount: { type: integer }
+        ourChargesCount: { type: integer }
+        matchedCount: { type: integer }
+        missingCount: { type: integer }
+        extraCount: { type: integer }
+        pspTotalCents: { type: string }
+        ourTotalCents: { type: string }
+        diffCents: { type: string }
+        status:
+          type: string
+          enum: [matched, mismatch, resolved]
+
+    Dispute:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        chargeId: { type: string, format: uuid }
+        pspDisputeId: { type: string }
+        kind:
+          type: string
+          enum: [fraudulent, unrecognized, duplicate, product_not_received, product_unacceptable, credit_not_processed]
+        amountCents: { type: string }
+        currency: { type: string }
+        status:
+          type: string
+          enum: [needs_response, under_review, won, lost, charge_refunded]
+        evidenceDueBy: { type: string, format: date-time }
+        evidenceSubmitted: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        closedAt: { type: string, format: date-time }
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            traceId: { type: string }

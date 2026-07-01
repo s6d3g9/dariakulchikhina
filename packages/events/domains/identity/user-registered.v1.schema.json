@@ -1,0 +1,27 @@
+{
+  "$id": "https://daria.app/events/identity/user-registered.v1.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IdentityUserRegistered v1",
+  "description": "Emitted when a new user account is created (после email-verification).",
+  "version": "1.0.0",
+  "deprecated": false,
+  "type": "object",
+  "required": ["userId", "registeredAt", "source"],
+  "additionalProperties": false,
+  "properties": {
+    "userId": { "type": "string" },
+    "registeredAt": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "string",
+      "enum": ["signup", "sso-google", "sso-apple", "admin-created", "invitation"]
+    },
+    "region": { "type": "string" },
+    "language": { "type": "string" },
+    "declaredAge": { "type": "integer", "minimum": 0, "maximum": 150 },
+    "ageVerified": { "type": "boolean" },
+    "isMinor": { "type": "boolean" },
+    "parentId": { "type": "string", "description": "if minor with parent-link" },
+    "referralCode": { "type": "string" },
+    "deviceFingerprint": { "type": "string", "description": "hashed" }
+  }
+}

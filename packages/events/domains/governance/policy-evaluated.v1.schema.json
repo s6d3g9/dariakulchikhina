@@ -1,0 +1,39 @@
+{
+  "$id": "https://daria.app/events/governance/policy-evaluated.v1.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GovernancePolicyEvaluated v1",
+  "description": "Emitted policy-engine'ом на every evaluation. Пишется в financial-audit stream для WORM.",
+  "version": "1.0.0",
+  "deprecated": false,
+  "type": "object",
+  "required": ["userId", "action", "decision", "policyId", "policyVersion", "evaluatedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "userId": { "type": "string" },
+    "action": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "resource": { "type": "string" }
+      }
+    },
+    "region": { "type": "string" },
+    "decision": {
+      "type": "string",
+      "enum": ["allow", "distill", "deny"]
+    },
+    "reason": { "type": "string" },
+    "distillMask": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "policyId": { "type": "string" },
+    "policyVersion": { "type": "integer" },
+    "contextHash": {
+      "type": "string",
+      "description": "sha256 of full context at evaluation"
+    },
+    "latencyMs": { "type": "integer", "minimum": 0 },
+    "evaluatedAt": { "type": "string", "format": "date-time" }
+  }
+}
