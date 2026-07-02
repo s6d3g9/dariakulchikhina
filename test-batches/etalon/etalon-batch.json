@@ -621,8 +621,8 @@
   },
   {
    "key": "low_confidence_source",
-   "gate": "G4",
-   "reason": "All sources have low confidence"
+   "gate": "REVIEW",
+   "reason": "all sources low confidence -> review_required (not reject)"
   }
  ]
 }
