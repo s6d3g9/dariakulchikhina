@@ -22,7 +22,15 @@ def main():
     for group in regs:
         for b in group["brands"]:
             key = norm(b["brand"])
-            series = {norm(s) for s in b.get("verifiedSeries", [])}
+            # A registry series may be bilingual "Русское (English)" or "English (Русское)".
+            # Expand each into all its variants so a generator using either name matches.
+            series = set()
+            for s in b.get("verifiedSeries", []):
+                series.add(norm(s))
+                m = re.match(r'^(.*?)\s*\((.*?)\)\s*$', s)
+                if m:
+                    series.add(norm(m.group(1)))
+                    series.add(norm(m.group(2)))
             bmap[key] = {
                 "series": series,
                 "has_whitelist": len(series) > 0,
