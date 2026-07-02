@@ -1,1 +1,1 @@
-{"batchId": "a1a910b34d8f7f90c653a19a44f542601921161097686a4013a9b37d4199d435", "familyKey": "power_tools", "recordLevels": ["catalog_type"], "count": 31, "pendingRefs": ["power_tools"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "a5c26c87625716d23a8ca2db5a6c41b3701fba9244623bb899ed15b34cb3355e", "familyKey": "power_tools", "recordLevels": ["catalog_type"], "count": 31, "pendingRefs": ["power_tools"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}

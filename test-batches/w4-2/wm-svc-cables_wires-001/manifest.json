@@ -1,1 +1,1 @@
-{"batchId": "bd9c3c80dc6eb2732e735f8ca4df49e582a1e546e5f5d9ab3718cba5d0e875c7", "familyKey": "cables_wires", "recordLevels": ["catalog_type"], "count": 31, "pendingRefs": ["cables_wires"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "2d8f5fe97469778c542d67e431e83b983133cdb8d6fcf94fd40c33305313662a", "familyKey": "cables_wires", "recordLevels": ["catalog_type"], "count": 31, "pendingRefs": ["cables_wires"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}

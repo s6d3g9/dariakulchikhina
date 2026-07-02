@@ -1,1 +1,1 @@
-{"batchId": "fdf0d3fb6d8b26fa78f7ef75559059063470f8dc99ca58b4eef7609937079544", "familyKey": "hand_tools", "recordLevels": ["catalog_type"], "count": 26, "pendingRefs": ["hand_tools"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "ac0035526bc452380df661c91199b1452950312b4f85c0cb7a2ab5d03b3daa96", "familyKey": "hand_tools", "recordLevels": ["catalog_type"], "count": 26, "pendingRefs": ["hand_tools"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}

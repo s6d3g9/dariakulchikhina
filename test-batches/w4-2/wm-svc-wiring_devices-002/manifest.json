@@ -1,1 +1,1 @@
-{"batchId": "0026062ed5f9ef00491d7425b116c660a7dfa1fe44788c34a7e4a521c028501e", "familyKey": "wiring_devices", "recordLevels": ["catalog_type"], "count": 30, "pendingRefs": ["wiring_devices"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "bd6cb8a005a5417c7fcb29c8960c54f8fca67319852b5ce7c466804639d52223", "familyKey": "wiring_devices", "recordLevels": ["catalog_type"], "count": 30, "pendingRefs": ["wiring_devices"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}

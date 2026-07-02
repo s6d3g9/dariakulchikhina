@@ -1,1 +1,1 @@
-{"batchId": "e279b08b9bc6969561a1612ac3dc2e481029fdea2e878cbc2707e76ae48312eb", "familyKey": "kitchen_sinks", "recordLevels": ["catalog_type"], "count": 26, "pendingRefs": ["kitchen_sinks"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "b8b4e19fe8ffa897f57af20f5df884c6f072b9b1422383d101da6a773d374c21", "familyKey": "kitchen_sinks", "recordLevels": ["catalog_type"], "count": 25, "pendingRefs": ["kitchen_sinks"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}

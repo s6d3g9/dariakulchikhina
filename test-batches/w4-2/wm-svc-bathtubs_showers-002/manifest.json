@@ -1,1 +1,1 @@
-{"batchId": "952667c4fe99381eabcb83d7513456a65169d4f6fe83a5fb0bb81ce2830b0679", "familyKey": "bathtubs_showers", "recordLevels": ["catalog_type"], "count": 26, "pendingRefs": ["bathtubs_showers"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "ae77e0c53dd240c6964669a4761d7a804dcde45e300e46eb609da2786c2c97db", "familyKey": "bathtubs_showers", "recordLevels": ["catalog_type"], "count": 14, "pendingRefs": ["bathtubs_showers"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}
