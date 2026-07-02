@@ -1,1 +1,1 @@
-{"batchId": "aa63ce29c03517e848dafdced9e772fa2da4dfea689db8990fc0d0e1ad46d355", "familyKey": "kids_furniture", "recordLevels": ["catalog_type"], "count": 21, "pendingRefs": ["kids_furniture"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "90a23465def58f7e46951ab75ba5d07c9c274dafe46251c2609b15eb6f744841", "familyKey": "kids_furniture", "recordLevels": ["catalog_type"], "count": 20, "pendingRefs": ["kids_furniture"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

@@ -1,1 +1,1 @@
-{"batchId": "d6c31e347c944df6e5207a5024555afcb4b83bb10b4f834cfbf4c8c9256ce34b", "familyKey": "office_furniture", "recordLevels": ["catalog_type"], "count": 23, "pendingRefs": ["office_furniture"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "3dbe02db601f5a37e8b77ce7e40be90821eccf85ff3c5c8fb89d841c0be56d8a", "familyKey": "office_furniture", "recordLevels": ["catalog_type"], "count": 17, "pendingRefs": ["office_furniture"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

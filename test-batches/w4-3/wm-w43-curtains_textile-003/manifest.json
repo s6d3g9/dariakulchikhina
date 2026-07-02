@@ -1,1 +1,1 @@
-{"batchId": "ca82a5f67c1d7b9fa1f0a466b70d050bb9b653ba59e03a0843af498c28d34b5c", "familyKey": "curtains_textile", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["curtains_textile"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "56fa2888a1df22d432f875b45fedaab749b8d43b0ebb96378aee93e3259a08e1", "familyKey": "curtains_textile", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["curtains_textile"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

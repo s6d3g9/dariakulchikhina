@@ -1,1 +1,1 @@
-{"batchId": "3bdf3d811afd3396d54cf5a72857013169b33c72afcf53643886b7aeaa518609", "familyKey": "fasteners", "recordLevels": ["catalog_type"], "count": 27, "pendingRefs": ["fasteners"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "df5c3828120624a7bca1caa23c8d43b41fc7b8d663f89e155d6d383883c3d8c8", "familyKey": "fasteners", "recordLevels": ["catalog_type"], "count": 26, "pendingRefs": ["fasteners"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

@@ -1,1 +1,1 @@
-{"batchId": "f7aea3bba2d2b54392b311492a7792acaf4c183c5a7dd534358245f20ac0bf4e", "familyKey": "garden_outdoor", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["garden_outdoor"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "d3228f89442bae7f9e3b004aded08b0a08cac58ed9f66ba88b20b9a2e4ba4d6b", "familyKey": "garden_outdoor", "recordLevels": ["catalog_type"], "count": 25, "pendingRefs": ["garden_outdoor"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

@@ -1,1 +1,1 @@
-{"batchId": "784c6878c8aa73882eab72fcdcebd37ece1fa76ed2a0c50e3bfc91bf0430204c", "familyKey": "insulation", "recordLevels": ["catalog_type"], "count": 21, "pendingRefs": ["insulation"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "57a161005ec5bbfe48396409a9b92d9acb049aaba816a453baba7bc6a40896c1", "familyKey": "insulation", "recordLevels": ["catalog_type"], "count": 17, "pendingRefs": ["insulation"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

@@ -1,1 +1,1 @@
-{"batchId": "c745c6b2c50adb15ec33d6693a0b6c4b929fd67ef5a01a9f435d22db53d3fce6", "familyKey": "windows_glazing", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["windows_glazing"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "98ee42858876bfdedd75f80df73aaebeb68b1fed2e9c495ac985f1f7d2deba67", "familyKey": "windows_glazing", "recordLevels": ["catalog_type"], "count": 26, "pendingRefs": ["windows_glazing"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

@@ -1,1 +1,1 @@
-{"batchId": "721d1c927595e9c41fc3240732e50de2e01a190e6f1df6febc480d3fdb9d1266", "familyKey": "measuring_tools", "recordLevels": ["catalog_type"], "count": 18, "pendingRefs": ["measuring_tools"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "0b9d8d5382bdfee9d3ea107a158586f541815c1ad9e6abe0a70e01a4a74f8ca2", "familyKey": "measuring_tools", "recordLevels": ["catalog_type"], "count": 18, "pendingRefs": ["measuring_tools"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

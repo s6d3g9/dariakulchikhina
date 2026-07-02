@@ -1,1 +1,1 @@
-{"batchId": "8f35059b5f72e46aa9d6f03bae5460a288a0f797f9ed884321b21c2963e25b54", "familyKey": "waterproofing", "recordLevels": ["catalog_type"], "count": 15, "pendingRefs": ["waterproofing"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "e374569c3464e2f5896873b87c9099f495e5d3d8f6e10bdf5b2804d352a1cfe4", "familyKey": "waterproofing", "recordLevels": ["catalog_type"], "count": 6, "pendingRefs": ["waterproofing"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

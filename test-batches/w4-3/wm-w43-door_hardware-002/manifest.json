@@ -1,1 +1,1 @@
-{"batchId": "d4c53d4b498fbf6ba95b17618c32937f2ed8861a970672ebbe5d919e0931721a", "familyKey": "door_hardware", "recordLevels": ["catalog_type"], "count": 27, "pendingRefs": ["door_hardware"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "a07b67d9671ce1a0912af5a966ddff73297e9eb787c2a1203550bd93258d309d", "familyKey": "door_hardware", "recordLevels": ["catalog_type"], "count": 27, "pendingRefs": ["door_hardware"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

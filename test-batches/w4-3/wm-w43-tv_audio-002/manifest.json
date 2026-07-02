@@ -1,1 +1,1 @@
-{"batchId": "6c99742115e8fcf33381e884d0302d95fda41161eed7ec19afae4c6589451048", "familyKey": "tv_audio", "recordLevels": ["catalog_type"], "count": 22, "pendingRefs": ["tv_audio"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "325587b89bd61ceb5e392b333bedefb4424c7d144301e5f37f4d2cb09ece74eb", "familyKey": "tv_audio", "recordLevels": ["catalog_type"], "count": 21, "pendingRefs": ["tv_audio"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}
