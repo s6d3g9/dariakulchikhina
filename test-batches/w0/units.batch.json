@@ -1,9 +1,9 @@
 {
  "records": [
   {
-   "id": "wm:unit:global:mm_u",
+   "id": "wm:unit:global:mm",
    "level": "unit",
-   "key": "mm_u",
+   "key": "mm",
    "scope": "global",
    "labels": {
     "default": "mm",
@@ -34,9 +34,9 @@
    }
   },
   {
-   "id": "wm:unit:global:cm_u",
+   "id": "wm:unit:global:cm",
    "level": "unit",
-   "key": "cm_u",
+   "key": "cm",
    "scope": "global",
    "labels": {
     "default": "cm",
@@ -100,9 +100,9 @@
    }
   },
   {
-   "id": "wm:unit:global:km_u",
+   "id": "wm:unit:global:km",
    "level": "unit",
-   "key": "km_u",
+   "key": "km",
    "scope": "global",
    "labels": {
     "default": "km",
@@ -166,9 +166,9 @@
    }
   },
   {
-   "id": "wm:unit:global:m2_u",
+   "id": "wm:unit:global:m2",
    "level": "unit",
-   "key": "m2_u",
+   "key": "m2",
    "scope": "global",
    "labels": {
     "default": "m2",
@@ -199,9 +199,9 @@
    }
   },
   {
-   "id": "wm:unit:global:m3_u",
+   "id": "wm:unit:global:m3",
    "level": "unit",
-   "key": "m3_u",
+   "key": "m3",
    "scope": "global",
    "labels": {
     "default": "m3",
@@ -265,9 +265,9 @@
    }
   },
   {
-   "id": "wm:unit:global:ml_u",
+   "id": "wm:unit:global:ml",
    "level": "unit",
-   "key": "ml_u",
+   "key": "ml",
    "scope": "global",
    "labels": {
     "default": "ml",
@@ -298,9 +298,9 @@
    }
   },
   {
-   "id": "wm:unit:global:kilogram_ok",
+   "id": "wm:unit:global:kg",
    "level": "unit",
-   "key": "kilogram_ok",
+   "key": "kg",
    "scope": "global",
    "labels": {
     "default": "kg",
@@ -1021,9 +1021,9 @@
    }
   },
   {
-   "id": "wm:unit:global:lm_u",
+   "id": "wm:unit:global:lm",
    "level": "unit",
-   "key": "lm_u",
+   "key": "lm",
    "scope": "global",
    "labels": {
     "default": "lm",
@@ -1054,9 +1054,9 @@
    }
   },
   {
-   "id": "wm:unit:global:lx_u",
+   "id": "wm:unit:global:lx",
    "level": "unit",
-   "key": "lx_u",
+   "key": "lx",
    "scope": "global",
    "labels": {
     "default": "lx",
@@ -1087,9 +1087,9 @@
    }
   },
   {
-   "id": "wm:unit:global:db_u",
+   "id": "wm:unit:global:db",
    "level": "unit",
-   "key": "db_u",
+   "key": "db",
    "scope": "global",
    "labels": {
     "default": "dB",
