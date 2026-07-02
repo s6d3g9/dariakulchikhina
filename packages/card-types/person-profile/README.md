@@ -60,17 +60,17 @@
 
 ```
 primitives: [
-  'identity',
-  'feed',
+  'booking',
+  'reviews',
   'messenger',
-  'media-pipeline',
-  'subscription-engine',
-  'reviews-ratings',
-  'authorship-registry',
-  'credentials-vault',
-  'policy-engine',
 ]
 ```
+
+## Schema contract
+
+- `schema.data.json` — canonical JSON fixture для fractal-harness.
+- `schemas.ts` — тот же контракт как typed TS-константа `personProfileSchema`.
+- `index.ts` — `CardTypeDefinition`, где `view/top/left/right/bottom` лениво возвращают `{ schema, slot, view }`.
 
 ## Timeline
 
@@ -103,7 +103,7 @@ export const entityProvider: EntityProvider<'person-profile'> = {
 
 ## Status
 
-**Skeleton only** — реализация в Фазе 3. Будет первым card-type, который пройдёт fractal-harness и станет baseline'ом.
+Schema-driven baseline. Проверяется через `packages/testing/fractal-harness/harness.mjs`.
 
 ## Почему именно person-profile первый
 

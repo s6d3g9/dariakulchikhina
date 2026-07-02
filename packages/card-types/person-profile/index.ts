@@ -1,48 +1,41 @@
 /**
  * packages/card-types/person-profile/index.ts
  *
- * Эталонный card-type v6. Первая реализация — в Фазе 3.
- * Сейчас — декларация contract'а для fractal-harness.
+ * Reference card-type v6 definition backed by a declarative schema.
  */
 
-import type { CardTypeDefinition } from '../_registry'
+import type { CardTypeDefinition, CardTypeView } from '../_registry'
+import { personProfileSchema, type ViewMode } from './schemas'
+
+type SchemaSlot = 'view' | 'top' | 'left' | 'right' | 'bottom'
+
+function schemaLoader(view: ViewMode, slot: SchemaSlot) {
+  return async () => ({
+    schema: personProfileSchema,
+    slot,
+    view,
+  })
+}
+
+function cardTypeView(view: ViewMode): CardTypeView {
+  return {
+    view: schemaLoader(view, 'view'),
+    top: schemaLoader(view, 'top'),
+    left: schemaLoader(view, 'left'),
+    right: schemaLoader(view, 'right'),
+    bottom: schemaLoader(view, 'bottom'),
+  }
+}
 
 const personProfile: CardTypeDefinition = {
   kind: 'person-profile',
-  primitives: [
-    'identity',
-    'feed',
-    'messenger',
-    'media-pipeline',
-    'subscription-engine',
-    'reviews-ratings',
-    'authorship-registry',
-    'credentials-vault',
-    'policy-engine',
+  primitives: ['booking', 'reviews', 'messenger'],
+  instance: cardTypeView('instance'),
+  type: cardTypeView('type'),
+  modes: [
+    ...personProfileSchema.modes.instance,
+    ...personProfileSchema.modes.type,
   ],
-  instance: {
-    view: () => import('./instance.view'),
-    top: () => import('./panels/top.instance'),
-    left: () => import('./panels/left.instance'),
-    right: () => import('./panels/right.instance'),
-    bottom: () => import('./panels/bottom.instance'),
-  },
-  type: {
-    view: () => import('./type.view'),
-    top: () => import('./panels/top.type'),
-    left: () => import('./panels/left.type'),
-    right: () => import('./panels/right.type'),
-    bottom: () => import('./panels/bottom.type'),
-  },
-  modes: ['consumer', 'provider'],
-  link: {
-    instanceToType: async (instanceId: string) => {
-      // resolveInstance → user.primaryRoleId
-      // Placeholder: реализация в Фазе 3
-      void instanceId
-      return null
-    },
-  },
 }
 
 export default personProfile

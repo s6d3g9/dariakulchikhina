@@ -1,67 +1,28 @@
 # packages/testing/fractal-harness
 
-Структурный тест-прогон для card-types. Гарантирует инвариант I19 — фрактальную самоподобность UX.
-
-## Что делает
-
-1. Для каждого зарегистрированного card-type рендерит шесть сценариев:
-   - Instance-view × 4 panels (`top`, `left`, `right`, `bottom`)
-   - Type-view × 4 panels
-2. Сравнивает **структурные snapshot'ы** — не пиксели, а дерево компонентов, роли, порядок секций.
-3. Проверяет наличие всех 6 секций CardView в каноничном порядке.
-4. Проверяет наличие всех 3 секций PanelView в каждой панели.
-5. Проверяет, что жесты зарегистрированы только из списка 6 канонических.
-6. Проверяет, что переключатели — только `InversionButton` и `ModeToggle`.
-7. Проверяет, что `timeline` определён.
+Node-only CLI для структурной проверки `schema.data.json` card-type'ов. Не требует npm-зависимостей.
 
 ## Запуск
 
 ```bash
-pnpm -C packages/testing/fractal-harness test
-# или per-card-type:
-pnpm -C packages/card-types/car test:fractal
+node packages/testing/fractal-harness/harness.mjs packages/card-types/person-profile/schema.data.json
 ```
 
-CI запускает на каждый PR, который трогает `packages/card-types/*`, `packages/ui-react`, или `packages/shell-*`.
+Формат:
 
-## Формат snapshot
-
-```json
-{
-  "cardType": "car",
-  "view": "instance",
-  "panel": "left",
-  "tree": [
-    { "component": "PanelHeader",  "children": [{"component": "Title"}, {"component": "InversionButton"}] },
-    { "component": "PanelStream",  "children": [
-      { "component": "Section", "role": "shop" },
-      { "component": "Section", "role": "budget" },
-      { "component": "Section", "role": "service-history" }
-    ]},
-    { "component": "PanelFooter", "children": [{"component": "LoadMore"}] }
-  ],
-  "gestures": ["swipe-x", "swipe-y", "tap", "long-press", "pinch", "inversion"],
-  "toggles": ["InversionButton", "ModeToggle"]
-}
+```bash
+node harness.mjs <schema.json>
 ```
 
-## Что НЕ проверяется
+Каждое правило печатает отдельную строку `PASS ...` или `FAIL ...`. Если есть хотя бы один `FAIL`, процесс завершается с кодом `1`.
 
-- Конкретные тексты (локализация).
-- Конкретные картинки (data).
-- Точный порядок секций внутри SectionStack (card-type может варьировать).
-- Пиксельная идентичность (пусть card-type отличаются данными).
+## Проверки
 
-## Эталонный snapshot
-
-Первый card-type, проходящий fractal-harness, становится эталоном. Каждый новый card-type сверяется с эталоном по структуре (список требуемых компонентов и секций).
-
-Эталон — `packages/card-types/person-profile/` (создаётся в Фазе 3 первым).
-
-## Обновление эталона
-
-Изменение эталона — отдельный PR с ревью архитекторов + обновление `docs/architecture-v6/17-fractal-ux.md`. Не каждый card-type может «переопределить эталон».
-
-## Статус
-
-Placeholder-скелет. Реализация — Фаза 3 вместе с первым card-type.
+- `sectionsSchema.instance` и `sectionsSchema.type` содержат ровно 6 секций.
+- Ключи секций в `instance` и `type` совпадают и идут в одинаковом порядке.
+- `role` каждой секции входит в 7 допустимых ролей: `identity`, `status`, `timeline`, `stream`, `actions`, `evidence`, `inversion`.
+- `panels` содержит ровно `top`, `left`, `right`, `bottom`, а каждый slot содержит ровно `instance` и `type`.
+- У каждой панели есть непустые `title_ru` и `content_kind`.
+- `modes.instance` и `modes.type` непустые.
+- `fixtures` содержит минимум один fixture.
+- Каждый ключ в `fixture.values` существует среди `field.key` соответствующего view.
