@@ -1,1 +1,1 @@
-{"batchId": "08e11cb10907b7df31b765bb1fb246e3f04e6912d078fcda138725ffa83ff91d", "familyKey": "hvac_units", "recordLevels": ["catalog_type"], "count": 30, "pendingRefs": ["hvac_units"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "decc78396a8024de0b2b30527e12ffefbc44fa9e3fccd3f8964078990a19d7e7", "familyKey": "hvac_units", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["hvac_units"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}

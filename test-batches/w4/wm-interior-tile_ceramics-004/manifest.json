@@ -1,1 +1,1 @@
-{"batchId": "1e7a39ee73699e86720b49f6296e450657cefec7370b59559df08b3dec56585a", "familyKey": "tile_ceramics", "recordLevels": ["catalog_type"], "count": 29, "pendingRefs": ["tile_ceramics"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "7ba46441ea34d3a1ada85f111ec17c529800e26702036048224ebc44e6993ac7", "familyKey": "tile_ceramics", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["tile_ceramics"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}

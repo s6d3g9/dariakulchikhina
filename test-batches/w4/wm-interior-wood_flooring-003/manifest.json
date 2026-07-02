@@ -1,1 +1,1 @@
-{"batchId": "a243d2c0dfc68bad951a9b9ee4a03544a72c86a015fbb4c6dbdf8bc72031614f", "familyKey": "wood_flooring", "recordLevels": ["catalog_type"], "count": 30, "pendingRefs": ["wood_flooring"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "ecdf32958d4def1f8c347c4d8b91a27b8d2b4b4f13a043b7b62a380bb9830bec", "familyKey": "wood_flooring", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["wood_flooring"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}
