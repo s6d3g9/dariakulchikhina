@@ -1,0 +1,628 @@
+{
+ "valid": [
+  {
+   "id": "wm:unit:global:square_meter",
+   "level": "unit",
+   "scope": "global",
+   "key": "square_meter",
+   "labels": {
+    "default": "Square Meter",
+    "ru": "Квадратный метр",
+    "en": "Square Meter"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:running_meter",
+   "level": "unit",
+   "scope": "global",
+   "key": "running_meter",
+   "labels": {
+    "default": "Running Meter",
+    "ru": "Погонный метр",
+    "en": "Running Meter"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:work_phase_preliminary",
+   "level": "axis_value_extension",
+   "scope": "global",
+   "key": "work_phase_preliminary",
+   "labels": {
+    "default": "Preliminary",
+    "ru": "Предварительный",
+    "en": "Preliminary"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:lifecycle_state_obsolete",
+   "level": "axis_value_extension",
+   "scope": "global",
+   "key": "lifecycle_state_obsolete",
+   "labels": {
+    "default": "Obsolete",
+    "ru": "Устаревший",
+    "en": "Obsolete"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:materiality_virtual",
+   "level": "axis_value_extension",
+   "scope": "global",
+   "key": "materiality_virtual",
+   "labels": {
+    "default": "Virtual",
+    "ru": "Виртуальный",
+    "en": "Virtual"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:finish_materials",
+   "level": "category_family",
+   "scope": "global",
+   "key": "finish_materials",
+   "labels": {
+    "default": "Finish Materials",
+    "ru": "Отделочные материалы",
+    "en": "Finish Materials"
+   },
+   "parentKey": null,
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:paints_and_coatings",
+   "level": "category_family",
+   "scope": "global",
+   "key": "paints_and_coatings",
+   "labels": {
+    "default": "Paints",
+    "ru": "Краски",
+    "en": "Paints"
+   },
+   "parentKey": "finish_materials",
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:wallpaper",
+   "level": "category_family",
+   "scope": "global",
+   "key": "wallpaper",
+   "labels": {
+    "default": "Wallpaper",
+    "ru": "Обои",
+    "en": "Wallpaper"
+   },
+   "parentKey": "finish_materials",
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:construction_material",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "construction_material",
+   "labels": {
+    "default": "Construction Material",
+    "ru": "Строительный материал",
+    "en": "Construction Material"
+   },
+   "classId": null,
+   "familyKey": "finish_materials",
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:estimate_budget",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "estimate_budget",
+   "labels": {
+    "default": "Estimate Budget",
+    "ru": "Смета",
+    "en": "Estimate Budget"
+   },
+   "classId": null,
+   "familyKey": "finish_materials",
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  }
+ ],
+ "broken": [
+  {
+   "id": "wm:entity_class:global:Bad-Key",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "Bad-Key",
+   "labels": {
+    "default": "Bad Key",
+    "ru": "Плохой ключ",
+    "en": "Bad Key"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:empty_ru_label",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "empty_ru_label",
+   "labels": {
+    "default": "Empty RU",
+    "ru": "",
+    "en": "Empty RU"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:gadget:global:invalid_level_gadget",
+   "level": "gadget",
+   "scope": "global",
+   "key": "invalid_level_gadget",
+   "labels": {
+    "default": "Gadget",
+    "ru": "Гаджет",
+    "en": "Gadget"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:nonexistent_class_ref",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "nonexistent_class_ref",
+   "labels": {
+    "default": "Bad Class",
+    "ru": "Плохой класс",
+    "en": "Bad Class"
+   },
+   "classId": "nonexistent_class_xyz",
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:short_fingerprint",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "short_fingerprint",
+   "labels": {
+    "default": "Short FP",
+    "ru": "Короткий FP",
+    "en": "Short FP"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:unknown_axis_flavor",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "unknown_axis_flavor",
+   "labels": {
+    "default": "Bad Axis",
+    "ru": "Плохая ось",
+    "en": "Bad Axis"
+   },
+   "axisDefaults": {
+    "flavor": [
+     "sweet"
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:unknown_axis_value_quantum",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "unknown_axis_value_quantum",
+   "labels": {
+    "default": "Bad Axis Value",
+    "ru": "Плохое значение",
+    "en": "Bad Axis Value"
+   },
+   "axisDefaults": {
+    "lifecycle_state": [
+     "quantum"
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:bad_identifier_scheme",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "bad_identifier_scheme",
+   "labels": {
+    "default": "Bad Scheme",
+    "ru": "Плохая схема",
+    "en": "Bad Scheme"
+   },
+   "identifiers": [
+    {
+     "scheme": "upc",
+     "value": "123"
+    }
+   ],
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:bad_gtin_checksum",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "bad_gtin_checksum",
+   "labels": {
+    "default": "Bad GTIN",
+    "ru": "Плохой GTIN",
+    "en": "Bad GTIN"
+   },
+   "identifiers": [
+    {
+     "scheme": "gtin",
+     "value": "4006381333931"
+    }
+   ],
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  },
+  {
+   "id": "wm:entity_class:global:low_confidence_source",
+   "level": "entity_class",
+   "scope": "global",
+   "key": "low_confidence_source",
+   "labels": {
+    "default": "Low Conf",
+    "ru": "Низкая уверенность",
+    "en": "Low Conf"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "low"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:test"
+    }
+   }
+  }
+ ],
+ "expected": [
+  {
+   "key": "Bad-Key",
+   "gate": "G1",
+   "reason": "Invalid key characters (uppercase/hyphen)"
+  },
+  {
+   "key": "empty_ru_label",
+   "gate": "G1",
+   "reason": "Empty labels.ru for global scope"
+  },
+  {
+   "key": "invalid_level_gadget",
+   "gate": "G1",
+   "reason": "Invalid level enum"
+  },
+  {
+   "key": "nonexistent_class_ref",
+   "gate": "G1",
+   "reason": "Unknown classId without pendingRefs"
+  },
+  {
+   "key": "short_fingerprint",
+   "gate": "G1",
+   "reason": "Fingerprint less than 64 characters"
+  },
+  {
+   "key": "unknown_axis_flavor",
+   "gate": "G2",
+   "reason": "Unknown axis in axisDefaults"
+  },
+  {
+   "key": "unknown_axis_value_quantum",
+   "gate": "G2",
+   "reason": "Unknown value for lifecycle_state axis"
+  },
+  {
+   "key": "bad_identifier_scheme",
+   "gate": "G2",
+   "reason": "Invalid identifier scheme 'upc'"
+  },
+  {
+   "key": "bad_gtin_checksum",
+   "gate": "G2",
+   "reason": "Invalid GTIN checksum"
+  },
+  {
+   "key": "low_confidence_source",
+   "gate": "G4",
+   "reason": "All sources have low confidence"
+  }
+ ]
+}
