@@ -1,9 +1,9 @@
 {
  "records": [
   {
-   "id": "wm:unit:global:mm",
+   "id": "wm:unit:global:mm_u",
    "level": "unit",
-   "key": "mm",
+   "key": "mm_u",
    "scope": "global",
    "labels": {
     "default": "mm",
@@ -34,9 +34,9 @@
    }
   },
   {
-   "id": "wm:unit:global:cm",
+   "id": "wm:unit:global:cm_u",
    "level": "unit",
-   "key": "cm",
+   "key": "cm_u",
    "scope": "global",
    "labels": {
     "default": "cm",
@@ -67,9 +67,9 @@
    }
   },
   {
-   "id": "wm:unit:global:m",
+   "id": "wm:unit:global:meter",
    "level": "unit",
-   "key": "m",
+   "key": "meter",
    "scope": "global",
    "labels": {
     "default": "m",
@@ -100,9 +100,9 @@
    }
   },
   {
-   "id": "wm:unit:global:km",
+   "id": "wm:unit:global:km_u",
    "level": "unit",
-   "key": "km",
+   "key": "km_u",
    "scope": "global",
    "labels": {
     "default": "km",
@@ -166,9 +166,9 @@
    }
   },
   {
-   "id": "wm:unit:global:m2",
+   "id": "wm:unit:global:m2_u",
    "level": "unit",
-   "key": "m2",
+   "key": "m2_u",
    "scope": "global",
    "labels": {
     "default": "m2",
@@ -199,9 +199,9 @@
    }
   },
   {
-   "id": "wm:unit:global:m3",
+   "id": "wm:unit:global:m3_u",
    "level": "unit",
-   "key": "m3",
+   "key": "m3_u",
    "scope": "global",
    "labels": {
     "default": "m3",
@@ -232,9 +232,9 @@
    }
   },
   {
-   "id": "wm:unit:global:l",
+   "id": "wm:unit:global:liter",
    "level": "unit",
-   "key": "l",
+   "key": "liter",
    "scope": "global",
    "labels": {
     "default": "l",
@@ -265,9 +265,9 @@
    }
   },
   {
-   "id": "wm:unit:global:ml",
+   "id": "wm:unit:global:ml_u",
    "level": "unit",
-   "key": "ml",
+   "key": "ml_u",
    "scope": "global",
    "labels": {
     "default": "ml",
@@ -298,9 +298,9 @@
    }
   },
   {
-   "id": "wm:unit:global:kg",
+   "id": "wm:unit:global:kilogram_ok",
    "level": "unit",
-   "key": "kg",
+   "key": "kilogram_ok",
    "scope": "global",
    "labels": {
     "default": "kg",
@@ -331,9 +331,9 @@
    }
   },
   {
-   "id": "wm:unit:global:t",
+   "id": "wm:unit:global:tonne",
    "level": "unit",
-   "key": "t",
+   "key": "tonne",
    "scope": "global",
    "labels": {
     "default": "t",
@@ -364,9 +364,9 @@
    }
   },
   {
-   "id": "wm:unit:global:s",
+   "id": "wm:unit:global:second",
    "level": "unit",
-   "key": "s",
+   "key": "second",
    "scope": "global",
    "labels": {
     "default": "s",
@@ -430,9 +430,9 @@
    }
   },
   {
-   "id": "wm:unit:global:h",
+   "id": "wm:unit:global:hour",
    "level": "unit",
-   "key": "h",
+   "key": "hour",
    "scope": "global",
    "labels": {
     "default": "h",
@@ -727,9 +727,9 @@
    }
   },
   {
-   "id": "wm:unit:global:v",
+   "id": "wm:unit:global:volt",
    "level": "unit",
-   "key": "v",
+   "key": "volt",
    "scope": "global",
    "labels": {
     "default": "V",
@@ -760,9 +760,9 @@
    }
   },
   {
-   "id": "wm:unit:global:a",
+   "id": "wm:unit:global:ampere",
    "level": "unit",
-   "key": "a",
+   "key": "ampere",
    "scope": "global",
    "labels": {
     "default": "A",
@@ -793,9 +793,9 @@
    }
   },
   {
-   "id": "wm:unit:global:w",
+   "id": "wm:unit:global:watt",
    "level": "unit",
-   "key": "w",
+   "key": "watt",
    "scope": "global",
    "labels": {
     "default": "W",
@@ -1021,9 +1021,9 @@
    }
   },
   {
-   "id": "wm:unit:global:lm",
+   "id": "wm:unit:global:lm_u",
    "level": "unit",
-   "key": "lm",
+   "key": "lm_u",
    "scope": "global",
    "labels": {
     "default": "lm",
@@ -1054,9 +1054,9 @@
    }
   },
   {
-   "id": "wm:unit:global:lx",
+   "id": "wm:unit:global:lx_u",
    "level": "unit",
-   "key": "lx",
+   "key": "lx_u",
    "scope": "global",
    "labels": {
     "default": "lx",
@@ -1087,9 +1087,9 @@
    }
   },
   {
-   "id": "wm:unit:global:db",
+   "id": "wm:unit:global:db_u",
    "level": "unit",
-   "key": "db",
+   "key": "db_u",
    "scope": "global",
    "labels": {
     "default": "dB",
