@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { personProfileSchema } from '@daria/card-types/person-profile/schemas'
+import EntityCard from '../../components/EntityCard.vue'
 import ShellLayout from '../../components/ShellLayout.vue'
 import { useEntity } from '../../composables/useEntity'
 import { useShellMode } from '../../composables/useShellMode'
@@ -45,11 +46,6 @@ const payload = computed(() => {
   return JSON.stringify({ error: 'Missing id' }, null, 2)
 })
 
-const sectionSummary = computed(() => {
-  const sections = entity.value?.sections ?? []
-  return `${sections.length} секций: ${sections.map(section => section.key).join(', ')}`
-})
-
 watch(id, () => {
   void refresh()
 }, { immediate: true })
@@ -68,16 +64,7 @@ async function handleToggleView() {
     @toggle-view="handleToggleView"
     @set-mode="setMode"
   >
-    <article class="entity-preview">
-      <h1>{{ entity.title }}</h1>
-      <p v-if="entity.subtitle">
-        {{ entity.subtitle }}
-      </p>
-      <span class="view-badge">{{ view }}</span>
-      <ul>
-        <li>{{ sectionSummary }}</li>
-      </ul>
-    </article>
+    <EntityCard :entity="entity" @toggle-view="handleToggleView" />
   </ShellLayout>
   <main v-else>
     <pre>{{ payload }}</pre>
@@ -97,33 +84,4 @@ pre {
   white-space: pre-wrap;
 }
 
-.entity-preview {
-  display: grid;
-  gap: 12px;
-}
-
-.entity-preview h1 {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.2;
-}
-
-.entity-preview p {
-  margin: 0;
-  color: #59616d;
-  font-size: 14px;
-}
-
-.view-badge {
-  width: fit-content;
-  border: 1px solid #c8cfd8;
-  border-radius: 999px;
-  font-size: 12px;
-  padding: 4px 8px;
-}
-
-.entity-preview ul {
-  margin: 0;
-  padding-left: 18px;
-}
 </style>
