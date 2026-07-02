@@ -1,0 +1,1315 @@
+{
+ "records": [
+  {
+   "id": "wm:unit:global:mm",
+   "level": "unit",
+   "key": "mm",
+   "scope": "global",
+   "labels": {
+    "default": "mm",
+    "ru": "Миллиметр",
+    "en": "Millimeter"
+   },
+   "ucumCode": "mm",
+   "quantityKind": "length",
+   "system": "si",
+   "toBase": {
+    "factor": 0.001
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:cm",
+   "level": "unit",
+   "key": "cm",
+   "scope": "global",
+   "labels": {
+    "default": "cm",
+    "ru": "Сантиметр",
+    "en": "Centimeter"
+   },
+   "ucumCode": "cm",
+   "quantityKind": "length",
+   "system": "si",
+   "toBase": {
+    "factor": 0.01
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:m",
+   "level": "unit",
+   "key": "m",
+   "scope": "global",
+   "labels": {
+    "default": "m",
+    "ru": "Метр",
+    "en": "Meter"
+   },
+   "ucumCode": "m",
+   "quantityKind": "length",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b857",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:km",
+   "level": "unit",
+   "key": "km",
+   "scope": "global",
+   "labels": {
+    "default": "km",
+    "ru": "Километр",
+    "en": "Kilometer"
+   },
+   "ucumCode": "km",
+   "quantityKind": "length",
+   "system": "si",
+   "toBase": {
+    "factor": 1000
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b858",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:running_meter",
+   "level": "unit",
+   "key": "running_meter",
+   "scope": "global",
+   "labels": {
+    "default": "running meter",
+    "ru": "Погонный метр",
+    "en": "Running meter"
+   },
+   "ucumCode": "m",
+   "quantityKind": "length",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b859",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:m2",
+   "level": "unit",
+   "key": "m2",
+   "scope": "global",
+   "labels": {
+    "default": "m2",
+    "ru": "Квадратный метр",
+    "en": "Square meter"
+   },
+   "ucumCode": "m2",
+   "quantityKind": "area",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b860",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:m3",
+   "level": "unit",
+   "key": "m3",
+   "scope": "global",
+   "labels": {
+    "default": "m3",
+    "ru": "Кубический метр",
+    "en": "Cubic meter"
+   },
+   "ucumCode": "m3",
+   "quantityKind": "volume",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b861",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:l",
+   "level": "unit",
+   "key": "l",
+   "scope": "global",
+   "labels": {
+    "default": "l",
+    "ru": "Литр",
+    "en": "Liter"
+   },
+   "ucumCode": "L",
+   "quantityKind": "volume",
+   "system": "metric",
+   "toBase": {
+    "factor": 0.001
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b862",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:ml",
+   "level": "unit",
+   "key": "ml",
+   "scope": "global",
+   "labels": {
+    "default": "ml",
+    "ru": "Миллилитр",
+    "en": "Milliliter"
+   },
+   "ucumCode": "mL",
+   "quantityKind": "volume",
+   "system": "metric",
+   "toBase": {
+    "factor": 1e-06
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b863",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:kg",
+   "level": "unit",
+   "key": "kg",
+   "scope": "global",
+   "labels": {
+    "default": "kg",
+    "ru": "Килограмм",
+    "en": "Kilogram"
+   },
+   "ucumCode": "kg",
+   "quantityKind": "mass",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b864",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:t",
+   "level": "unit",
+   "key": "t",
+   "scope": "global",
+   "labels": {
+    "default": "t",
+    "ru": "Тонна",
+    "en": "Tonne"
+   },
+   "ucumCode": "t",
+   "quantityKind": "mass",
+   "system": "metric",
+   "toBase": {
+    "factor": 1000
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b865",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:s",
+   "level": "unit",
+   "key": "s",
+   "scope": "global",
+   "labels": {
+    "default": "s",
+    "ru": "Секунда",
+    "en": "Second"
+   },
+   "ucumCode": "s",
+   "quantityKind": "time",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b866",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:min",
+   "level": "unit",
+   "key": "min",
+   "scope": "global",
+   "labels": {
+    "default": "min",
+    "ru": "Минута",
+    "en": "Minute"
+   },
+   "ucumCode": "min",
+   "quantityKind": "time",
+   "system": "metric",
+   "toBase": {
+    "factor": 60
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b867",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:h",
+   "level": "unit",
+   "key": "h",
+   "scope": "global",
+   "labels": {
+    "default": "h",
+    "ru": "Час",
+    "en": "Hour"
+   },
+   "ucumCode": "h",
+   "quantityKind": "time",
+   "system": "metric",
+   "toBase": {
+    "factor": 3600
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b868",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:day",
+   "level": "unit",
+   "key": "day",
+   "scope": "global",
+   "labels": {
+    "default": "day",
+    "ru": "Сутки",
+    "en": "Day"
+   },
+   "ucumCode": "d",
+   "quantityKind": "time",
+   "system": "metric",
+   "toBase": {
+    "factor": 86400
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b869",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:month",
+   "level": "unit",
+   "key": "month",
+   "scope": "global",
+   "labels": {
+    "default": "month",
+    "ru": "Месяц",
+    "en": "Month"
+   },
+   "ucumCode": "mo",
+   "quantityKind": "time",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 2592000
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b870",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:piece",
+   "level": "unit",
+   "key": "piece",
+   "scope": "global",
+   "labels": {
+    "default": "pcs",
+    "ru": "Штука",
+    "en": "Piece"
+   },
+   "ucumCode": "1",
+   "quantityKind": "count",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b871",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:pack",
+   "level": "unit",
+   "key": "pack",
+   "scope": "global",
+   "labels": {
+    "default": "pack",
+    "ru": "Упаковка",
+    "en": "Pack"
+   },
+   "ucumCode": null,
+   "quantityKind": "count",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b872",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:set",
+   "level": "unit",
+   "key": "set",
+   "scope": "global",
+   "labels": {
+    "default": "set",
+    "ru": "Комплект",
+    "en": "Set"
+   },
+   "ucumCode": null,
+   "quantityKind": "count",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b873",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:pair",
+   "level": "unit",
+   "key": "pair",
+   "scope": "global",
+   "labels": {
+    "default": "pair",
+    "ru": "Пара",
+    "en": "Pair"
+   },
+   "ucumCode": null,
+   "quantityKind": "count",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 2
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b874",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:roll",
+   "level": "unit",
+   "key": "roll",
+   "scope": "global",
+   "labels": {
+    "default": "roll",
+    "ru": "Рулон",
+    "en": "Roll"
+   },
+   "ucumCode": null,
+   "quantityKind": "count",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b875",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:sheet",
+   "level": "unit",
+   "key": "sheet",
+   "scope": "global",
+   "labels": {
+    "default": "sheet",
+    "ru": "Лист",
+    "en": "Sheet"
+   },
+   "ucumCode": null,
+   "quantityKind": "count",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b876",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:v",
+   "level": "unit",
+   "key": "v",
+   "scope": "global",
+   "labels": {
+    "default": "V",
+    "ru": "Вольт",
+    "en": "Volt"
+   },
+   "ucumCode": "V",
+   "quantityKind": "electric",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b877",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:a",
+   "level": "unit",
+   "key": "a",
+   "scope": "global",
+   "labels": {
+    "default": "A",
+    "ru": "Ампер",
+    "en": "Ampere"
+   },
+   "ucumCode": "A",
+   "quantityKind": "electric",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b878",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:w",
+   "level": "unit",
+   "key": "w",
+   "scope": "global",
+   "labels": {
+    "default": "W",
+    "ru": "Ватт",
+    "en": "Watt"
+   },
+   "ucumCode": "W",
+   "quantityKind": "electric",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b879",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:kwh",
+   "level": "unit",
+   "key": "kwh",
+   "scope": "global",
+   "labels": {
+    "default": "kWh",
+    "ru": "Киловатт-час",
+    "en": "Kilowatt-hour"
+   },
+   "ucumCode": "kW.h",
+   "quantityKind": "work",
+   "system": "metric",
+   "toBase": {
+    "factor": 3600000
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b880",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:percent",
+   "level": "unit",
+   "key": "percent",
+   "scope": "global",
+   "labels": {
+    "default": "%",
+    "ru": "Процент",
+    "en": "Percent"
+   },
+   "ucumCode": "%",
+   "quantityKind": "count",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 0.01
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b881",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:point",
+   "level": "unit",
+   "key": "point",
+   "scope": "global",
+   "labels": {
+    "default": "pt",
+    "ru": "Балл",
+    "en": "Point"
+   },
+   "ucumCode": null,
+   "quantityKind": "count",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b882",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:m2_per_l",
+   "level": "unit",
+   "key": "m2_per_l",
+   "scope": "global",
+   "labels": {
+    "default": "m2/l",
+    "ru": "Кв.м на литр",
+    "en": "Sqm per liter"
+   },
+   "ucumCode": "m2/L",
+   "quantityKind": "rate",
+   "system": "metric",
+   "toBase": null,
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b883",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:kg_per_m2",
+   "level": "unit",
+   "key": "kg_per_m2",
+   "scope": "global",
+   "labels": {
+    "default": "kg/m2",
+    "ru": "Кг на кв.м",
+    "en": "Kg per sqm"
+   },
+   "ucumCode": "kg/m2",
+   "quantityKind": "rate",
+   "system": "metric",
+   "toBase": null,
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b884",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:deg_c",
+   "level": "unit",
+   "key": "deg_c",
+   "scope": "global",
+   "labels": {
+    "default": "°C",
+    "ru": "Градус Цельсия",
+    "en": "Degree Celsius"
+   },
+   "ucumCode": "Cel",
+   "quantityKind": "temperature",
+   "system": "si",
+   "toBase": {
+    "factor": 1,
+    "offset": 273.15
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b885",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:lm",
+   "level": "unit",
+   "key": "lm",
+   "scope": "global",
+   "labels": {
+    "default": "lm",
+    "ru": "Люмен",
+    "en": "Lumen"
+   },
+   "ucumCode": "lm",
+   "quantityKind": "light",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b886",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:lx",
+   "level": "unit",
+   "key": "lx",
+   "scope": "global",
+   "labels": {
+    "default": "lx",
+    "ru": "Люкс",
+    "en": "Lux"
+   },
+   "ucumCode": "lx",
+   "quantityKind": "light",
+   "system": "si",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b887",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:db",
+   "level": "unit",
+   "key": "db",
+   "scope": "global",
+   "labels": {
+    "default": "dB",
+    "ru": "Децибел",
+    "en": "Decibel"
+   },
+   "ucumCode": "dB",
+   "quantityKind": "sound",
+   "system": "nonsystem",
+   "toBase": null,
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b888",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:km_h",
+   "level": "unit",
+   "key": "km_h",
+   "scope": "global",
+   "labels": {
+    "default": "km/h",
+    "ru": "Км в час",
+    "en": "Km per hour"
+   },
+   "ucumCode": "km/h",
+   "quantityKind": "speed",
+   "system": "metric",
+   "toBase": {
+    "factor": 0.277777778
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b889",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "wikidata",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:rub",
+   "level": "unit",
+   "key": "rub",
+   "scope": "global",
+   "labels": {
+    "default": "RUB",
+    "ru": "Рубль",
+    "en": "Ruble"
+   },
+   "ucumCode": null,
+   "quantityKind": "money",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b890",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:rub_per_m2",
+   "level": "unit",
+   "key": "rub_per_m2",
+   "scope": "global",
+   "labels": {
+    "default": "RUB/m2",
+    "ru": "Руб за кв.м",
+    "en": "RUB per sqm"
+   },
+   "ucumCode": null,
+   "quantityKind": "money",
+   "system": "nonsystem",
+   "toBase": null,
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b891",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:rub_per_h",
+   "level": "unit",
+   "key": "rub_per_h",
+   "scope": "global",
+   "labels": {
+    "default": "RUB/h",
+    "ru": "Руб за час",
+    "en": "RUB per hour"
+   },
+   "ucumCode": null,
+   "quantityKind": "money",
+   "system": "nonsystem",
+   "toBase": null,
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b892",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:cycle",
+   "level": "unit",
+   "key": "cycle",
+   "scope": "global",
+   "labels": {
+    "default": "cyc",
+    "ru": "Цикл",
+    "en": "Cycle"
+   },
+   "ucumCode": null,
+   "quantityKind": "count",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 1
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b893",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:unit:global:motohour",
+   "level": "unit",
+   "key": "motohour",
+   "scope": "global",
+   "labels": {
+    "default": "moto-h",
+    "ru": "Моточас",
+    "en": "Motor hour"
+   },
+   "ucumCode": "h",
+   "quantityKind": "time",
+   "system": "nonsystem",
+   "toBase": {
+    "factor": 3600
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b894",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  }
+ ]
+}

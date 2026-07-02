@@ -1,0 +1,360 @@
+{
+ "sectionsSchema": {
+  "instance": [
+   {
+    "key": "header",
+    "title_ru": "Поездка",
+    "role": "identity",
+    "fields": [
+     {
+      "key": "route",
+      "label_ru": "Маршрут",
+      "type": "string"
+     },
+     {
+      "key": "status",
+      "label_ru": "Статус",
+      "type": "string"
+     },
+     {
+      "key": "driver",
+      "label_ru": "Водитель",
+      "type": "string"
+     }
+    ]
+   },
+   {
+    "key": "timeline",
+    "title_ru": "Хронология",
+    "role": "timeline",
+    "fields": [
+     {
+      "key": "search",
+      "label_ru": "Поиск",
+      "type": "date"
+     },
+     {
+      "key": "assigned",
+      "label_ru": "Назначен",
+      "type": "date"
+     },
+     {
+      "key": "arrival",
+      "label_ru": "Подача",
+      "type": "date"
+     },
+     {
+      "key": "enroute",
+      "label_ru": "В пути",
+      "type": "date"
+     },
+     {
+      "key": "completed",
+      "label_ru": "Завершена",
+      "type": "date"
+     }
+    ]
+   },
+   {
+    "key": "summary",
+    "title_ru": "Детали поездки",
+    "role": "status",
+    "fields": [
+     {
+      "key": "price",
+      "label_ru": "Цена",
+      "type": "number"
+     },
+     {
+      "key": "distance",
+      "label_ru": "Расстояние (км)",
+      "type": "number"
+     },
+     {
+      "key": "eta",
+      "label_ru": "Время в пути (мин)",
+      "type": "number"
+     }
+    ]
+   },
+   {
+    "key": "actions",
+    "title_ru": "Действия",
+    "role": "actions",
+    "fields": [
+     {
+      "key": "cancel",
+      "label_ru": "Отменить",
+      "type": "action"
+     },
+     {
+      "key": "call",
+      "label_ru": "Позвонить",
+      "type": "action"
+     },
+     {
+      "key": "chat",
+      "label_ru": "Чат",
+      "type": "action"
+     },
+     {
+      "key": "sos",
+      "label_ru": "SOS",
+      "type": "action"
+     }
+    ]
+   },
+   {
+    "key": "sections",
+    "title_ru": "Информация",
+    "role": "stream",
+    "fields": [
+     {
+      "key": "map",
+      "label_ru": "Маршрут на карте",
+      "type": "url"
+     },
+     {
+      "key": "fare_details",
+      "label_ru": "Детализация тарифа",
+      "type": "object"
+     },
+     {
+      "key": "receipt",
+      "label_ru": "Чек",
+      "type": "url"
+     }
+    ]
+   },
+   {
+    "key": "footer",
+    "title_ru": "Реквизиты",
+    "role": "evidence",
+    "fields": [
+     {
+      "key": "ride_id",
+      "label_ru": "ID поездки",
+      "type": "string"
+     },
+     {
+      "key": "car_class",
+      "label_ru": "Класс",
+      "type": "string"
+     }
+    ]
+   }
+  ],
+  "type": [
+   {
+    "key": "header",
+    "title_ru": "Тариф",
+    "role": "identity",
+    "fields": [
+     {
+      "key": "class_name",
+      "label_ru": "Класс авто",
+      "type": "string"
+     },
+     {
+      "key": "description",
+      "label_ru": "Описание",
+      "type": "string"
+     }
+    ]
+   },
+   {
+    "key": "timeline",
+    "title_ru": "Доступность",
+    "role": "timeline",
+    "fields": [
+     {
+      "key": "available_from",
+      "label_ru": "Доступен с",
+      "type": "date"
+     },
+     {
+      "key": "available_to",
+      "label_ru": "Доступен до",
+      "type": "date"
+     }
+    ]
+   },
+   {
+    "key": "summary",
+    "title_ru": "Цены",
+    "role": "status",
+    "fields": [
+     {
+      "key": "base_price",
+      "label_ru": "Базовая цена",
+      "type": "number"
+     },
+     {
+      "key": "price_per_km",
+      "label_ru": "₽ за км",
+      "type": "number"
+     },
+     {
+      "key": "price_per_min",
+      "label_ru": "₽ за мин",
+      "type": "number"
+     }
+    ]
+   },
+   {
+    "key": "actions",
+    "title_ru": "Действия",
+    "role": "actions",
+    "fields": [
+     {
+      "key": "order",
+      "label_ru": "Заказать",
+      "type": "action"
+     },
+     {
+      "key": "compare",
+      "label_ru": "Сравнить",
+      "type": "action"
+     }
+    ]
+   },
+   {
+    "key": "sections",
+    "title_ru": "Информация",
+    "role": "stream",
+    "fields": [
+     {
+      "key": "rules",
+      "label_ru": "Правила тарифа",
+      "type": "list"
+     },
+     {
+      "key": "zones",
+      "label_ru": "Зоны",
+      "type": "list"
+     }
+    ]
+   },
+   {
+    "key": "footer",
+    "title_ru": "Дополнительно",
+    "role": "evidence",
+    "fields": [
+     {
+      "key": "catalog_source",
+      "label_ru": "Источник каталога",
+      "type": "link"
+     }
+    ]
+   }
+  ]
+ },
+ "panels": {
+  "top": {
+   "instance": {
+    "title_ru": "Фото с поездки",
+    "content_kind": "media"
+   },
+   "type": {
+    "title_ru": "Фото класса авто",
+    "content_kind": "media"
+   }
+  },
+  "left": {
+   "instance": {
+    "title_ru": "Доп. услуги",
+    "content_kind": "shop"
+   },
+   "type": {
+    "title_ru": "Тарифные опции",
+    "content_kind": "shop"
+   }
+  },
+  "right": {
+   "instance": {
+    "title_ru": "Чат с водителем",
+    "content_kind": "chats"
+   },
+   "type": {
+    "title_ru": "Поддержка",
+    "content_kind": "chats"
+   }
+  },
+  "bottom": {
+   "instance": {
+    "title_ru": "Журнал поездки",
+    "content_kind": "feed"
+   },
+   "type": {
+    "title_ru": "Новости тарифа",
+    "content_kind": "feed"
+   }
+  }
+ },
+ "modes": {
+  "instance": [
+   "passenger",
+   "driver"
+  ],
+  "type": [
+   "explore",
+   "order"
+  ]
+ },
+ "fixtures": [
+  {
+   "id": "fx-ride-1",
+   "view": "instance",
+   "values": {
+    "route": "ул. Ленина 10 -> пр. Мира 15",
+    "status": "В пути",
+    "driver": "Иван Петров",
+    "search": "2023-10-24T12:00:00Z",
+    "assigned": "2023-10-24T12:01:30Z",
+    "arrival": "2023-10-24T12:05:00Z",
+    "enroute": "2023-10-24T12:06:00Z",
+    "completed": null,
+    "price": 450,
+    "distance": 5.2,
+    "eta": 14,
+    "cancel": "Отменить поездку",
+    "call": "Позвонить водителю",
+    "chat": "Написать водителю",
+    "sos": "Вызвать службу безопасности",
+    "map": "https://maps.example.com/route/12345",
+    "fare_details": {
+     "base": 150,
+     "distance_cost": 200,
+     "time_cost": 100
+    },
+    "receipt": "https://example.com/receipt/12345",
+    "ride_id": "TRIP-99887766",
+    "car_class": "Комфорт"
+   }
+  },
+  {
+   "id": "fx-ride-1-type",
+   "view": "type",
+   "values": {
+    "class_name": "Бизнес",
+    "description": "Премиальные авто (Mercedes E-class, BMW 5)",
+    "available_from": "2020-01-01T00:00:00Z",
+    "available_to": "2025-12-31T23:59:59Z",
+    "base_price": 299,
+    "price_per_km": 35,
+    "price_per_min": 12,
+    "order": "Оформить заказ",
+    "compare": "Сравнить с другими тарифами",
+    "rules": [
+     "Минимальная сумма заказа 500₽",
+     "Ожидание включено в стоимость 3 минуты"
+    ],
+    "zones": [
+     "Центр",
+     "Аэропорт"
+    ],
+    "catalog_source": "https://example.com/tariffs/business"
+   }
+  }
+ ]
+}

@@ -1,0 +1,1100 @@
+{
+ "records": [
+  {
+   "id": "wm:axis_value_extension:global:material_category_tile",
+   "level": "axis_value_extension",
+   "key": "material_category_tile",
+   "scope": "global",
+   "labels": {
+    "default": "Tile",
+    "ru": "Плитка",
+    "en": "Tile"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "tile",
+    "valueLabels": {
+     "ru": "Плитка",
+     "en": "Tile"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "a1b2c3d4e5f60718293a4b5c6d7e8f9011223344556677889900aabbccddeeff",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:material_category_wood_flooring",
+   "level": "axis_value_extension",
+   "key": "material_category_wood_flooring",
+   "scope": "global",
+   "labels": {
+    "default": "Wood flooring",
+    "ru": "Напольное дерево",
+    "en": "Wood flooring"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "wood_flooring",
+    "valueLabels": {
+     "ru": "Напольное дерево",
+     "en": "Wood flooring"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "b2c3d4e5f60718293a4b5c6d7e8f9011223344556677889900aabbccddeeff01",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:material_category_paint_coating",
+   "level": "axis_value_extension",
+   "key": "material_category_paint_coating",
+   "scope": "global",
+   "labels": {
+    "default": "Paint coating",
+    "ru": "Лакокраска",
+    "en": "Paint coating"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "paint_coating",
+    "valueLabels": {
+     "ru": "Лакокраска",
+     "en": "Paint coating"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "c3d4e5f60718293a4b5c6d7e8f9011223344556677889900aabbccddeeff0102",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:material_category_wallpaper",
+   "level": "axis_value_extension",
+   "key": "material_category_wallpaper",
+   "scope": "global",
+   "labels": {
+    "default": "Wallpaper",
+    "ru": "Обои",
+    "en": "Wallpaper"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "wallpaper",
+    "valueLabels": {
+     "ru": "Обои",
+     "en": "Wallpaper"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "d4e5f60718293a4b5c6d7e8f9011223344556677889900aabbccddeeff010203",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:material_category_stone",
+   "level": "axis_value_extension",
+   "key": "material_category_stone",
+   "scope": "global",
+   "labels": {
+    "default": "Stone",
+    "ru": "Камень",
+    "en": "Stone"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "stone",
+    "valueLabels": {
+     "ru": "Камень",
+     "en": "Stone"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "e5f60718293a4b5c6d7e8f9011223344556677889900aabbccddeeff01020304",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:material_category_plaster",
+   "level": "axis_value_extension",
+   "key": "material_category_plaster",
+   "scope": "global",
+   "labels": {
+    "default": "Plaster",
+    "ru": "Штукатурка",
+    "en": "Plaster"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "plaster",
+    "valueLabels": {
+     "ru": "Штукатурка",
+     "en": "Plaster"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "f60718293a4b5c6d7e8f9011223344556677889900aabbccddeeff0102030405",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:material_category_textile",
+   "level": "axis_value_extension",
+   "key": "material_category_textile",
+   "scope": "global",
+   "labels": {
+    "default": "Textile",
+    "ru": "Текстиль",
+    "en": "Textile"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "textile",
+    "valueLabels": {
+     "ru": "Текстиль",
+     "en": "Textile"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0718293a4b5c6d7e8f9011223344556677889900aabbccddeeff010203040506",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:material_category_metal",
+   "level": "axis_value_extension",
+   "key": "material_category_metal",
+   "scope": "global",
+   "labels": {
+    "default": "Metal",
+    "ru": "Металл",
+    "en": "Metal"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "metal",
+    "valueLabels": {
+     "ru": "Металл",
+     "en": "Metal"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "18293a4b5c6d7e8f9011223344556677889900aabbccddeeff01020304050607",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:material_category_glass",
+   "level": "axis_value_extension",
+   "key": "material_category_glass",
+   "scope": "global",
+   "labels": {
+    "default": "Glass",
+    "ru": "Стекло",
+    "en": "Glass"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "glass",
+    "valueLabels": {
+     "ru": "Стекло",
+     "en": "Glass"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "293a4b5c6d7e8f9011223344556677889900aabbccddeeff0102030405060708",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:material_category_concrete",
+   "level": "axis_value_extension",
+   "key": "material_category_concrete",
+   "scope": "global",
+   "labels": {
+    "default": "Concrete",
+    "ru": "Бетон",
+    "en": "Concrete"
+   },
+   "payload": {
+    "axisKey": "material_category",
+    "value": "concrete",
+    "valueLabels": {
+     "ru": "Бетон",
+     "en": "Concrete"
+    },
+    "newAxis": true,
+    "axisGroupKey": "product"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "3a4b5c6d7e8f9011223344556677889900aabbccddeeff010203040506070809",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:style_direction_modern",
+   "level": "axis_value_extension",
+   "key": "style_direction_modern",
+   "scope": "global",
+   "labels": {
+    "default": "Modern",
+    "ru": "Модерн",
+    "en": "Modern"
+   },
+   "payload": {
+    "axisKey": "style_direction",
+    "value": "modern",
+    "valueLabels": {
+     "ru": "Модерн",
+     "en": "Modern"
+    },
+    "newAxis": true,
+    "axisGroupKey": "domain"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "4b5c6d7e8f9011223344556677889900aabbccddeeff0102030405060708090a",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:style_direction_scandinavian",
+   "level": "axis_value_extension",
+   "key": "style_direction_scandinavian",
+   "scope": "global",
+   "labels": {
+    "default": "Scandinavian",
+    "ru": "Скандинавский",
+    "en": "Scandinavian"
+   },
+   "payload": {
+    "axisKey": "style_direction",
+    "value": "scandinavian",
+    "valueLabels": {
+     "ru": "Скандинавский",
+     "en": "Scandinavian"
+    },
+    "newAxis": true,
+    "axisGroupKey": "domain"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "5c6d7e8f9011223344556677889900aabbccddeeff0102030405060708090a0b",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:style_direction_classic",
+   "level": "axis_value_extension",
+   "key": "style_direction_classic",
+   "scope": "global",
+   "labels": {
+    "default": "Classic",
+    "ru": "Классика",
+    "en": "Classic"
+   },
+   "payload": {
+    "axisKey": "style_direction",
+    "value": "classic",
+    "valueLabels": {
+     "ru": "Классика",
+     "en": "Classic"
+    },
+    "newAxis": true,
+    "axisGroupKey": "domain"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "6d7e8f9011223344556677889900aabbccddeeff0102030405060708090a0b0c",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:style_direction_loft",
+   "level": "axis_value_extension",
+   "key": "style_direction_loft",
+   "scope": "global",
+   "labels": {
+    "default": "Loft",
+    "ru": "Лофт",
+    "en": "Loft"
+   },
+   "payload": {
+    "axisKey": "style_direction",
+    "value": "loft",
+    "valueLabels": {
+     "ru": "Лофт",
+     "en": "Loft"
+    },
+    "newAxis": true,
+    "axisGroupKey": "domain"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "7e8f9011223344556677889900aabbccddeeff0102030405060708090a0b0c0d",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:style_direction_minimalism",
+   "level": "axis_value_extension",
+   "key": "style_direction_minimalism",
+   "scope": "global",
+   "labels": {
+    "default": "Minimalism",
+    "ru": "Минимализм",
+    "en": "Minimalism"
+   },
+   "payload": {
+    "axisKey": "style_direction",
+    "value": "minimalism",
+    "valueLabels": {
+     "ru": "Минимализм",
+     "en": "Minimalism"
+    },
+    "newAxis": true,
+    "axisGroupKey": "domain"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "8f9011223344556677889900aabbccddeeff0102030405060708090a0b0c0d0e",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:style_direction_japandi",
+   "level": "axis_value_extension",
+   "key": "style_direction_japandi",
+   "scope": "global",
+   "labels": {
+    "default": "Japandi",
+    "ru": "Япанди",
+    "en": "Japandi"
+   },
+   "payload": {
+    "axisKey": "style_direction",
+    "value": "japandi",
+    "valueLabels": {
+     "ru": "Япанди",
+     "en": "Japandi"
+    },
+    "newAxis": true,
+    "axisGroupKey": "domain"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "9011223344556677889900aabbccddeeff0102030405060708090a0b0c0d0e0f",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:style_direction_art_deco",
+   "level": "axis_value_extension",
+   "key": "style_direction_art_deco",
+   "scope": "global",
+   "labels": {
+    "default": "Art Deco",
+    "ru": "Ар-деко",
+    "en": "Art Deco"
+   },
+   "payload": {
+    "axisKey": "style_direction",
+    "value": "art_deco",
+    "valueLabels": {
+     "ru": "Ар-деко",
+     "en": "Art Deco"
+    },
+    "newAxis": true,
+    "axisGroupKey": "domain"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "011223344556677889900aabbccddeeff0102030405060708090a0b0c0d0e0f1",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:hvac_kind_split",
+   "level": "axis_value_extension",
+   "key": "hvac_kind_split",
+   "scope": "global",
+   "labels": {
+    "default": "Split",
+    "ru": "Сплит",
+    "en": "Split"
+   },
+   "payload": {
+    "axisKey": "hvac_kind",
+    "value": "split",
+    "valueLabels": {
+     "ru": "Сплит",
+     "en": "Split"
+    },
+    "newAxis": true,
+    "axisGroupKey": "systems"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "1223344556677889900aabbccddeeff0102030405060708090a0b0c0d0e0f101",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:hvac_kind_vrf",
+   "level": "axis_value_extension",
+   "key": "hvac_kind_vrf",
+   "scope": "global",
+   "labels": {
+    "default": "VRF",
+    "ru": "VRF",
+    "en": "VRF"
+   },
+   "payload": {
+    "axisKey": "hvac_kind",
+    "value": "vrf",
+    "valueLabels": {
+     "ru": "VRF",
+     "en": "VRF"
+    },
+    "newAxis": true,
+    "axisGroupKey": "systems"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "23344556677889900aabbccddeeff0102030405060708090a0b0c0d0e0f10111",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:hvac_kind_ducted",
+   "level": "axis_value_extension",
+   "key": "hvac_kind_ducted",
+   "scope": "global",
+   "labels": {
+    "default": "Ducted",
+    "ru": "Канальная",
+    "en": "Ducted"
+   },
+   "payload": {
+    "axisKey": "hvac_kind",
+    "value": "ducted",
+    "valueLabels": {
+     "ru": "Канальная",
+     "en": "Ducted"
+    },
+    "newAxis": true,
+    "axisGroupKey": "systems"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "344556677889900aabbccddeeff0102030405060708090a0b0c0d0e0f1011121",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:hvac_kind_radiator",
+   "level": "axis_value_extension",
+   "key": "hvac_kind_radiator",
+   "scope": "global",
+   "labels": {
+    "default": "Radiator",
+    "ru": "Радиатор",
+    "en": "Radiator"
+   },
+   "payload": {
+    "axisKey": "hvac_kind",
+    "value": "radiator",
+    "valueLabels": {
+     "ru": "Радиатор",
+     "en": "Radiator"
+    },
+    "newAxis": true,
+    "axisGroupKey": "systems"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "4556677889900aabbccddeeff0102030405060708090a0b0c0d0e0f101112131",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:hvac_kind_underfloor",
+   "level": "axis_value_extension",
+   "key": "hvac_kind_underfloor",
+   "scope": "global",
+   "labels": {
+    "default": "Underfloor",
+    "ru": "Тёплый пол",
+    "en": "Underfloor"
+   },
+   "payload": {
+    "axisKey": "hvac_kind",
+    "value": "underfloor",
+    "valueLabels": {
+     "ru": "Тёплый пол",
+     "en": "Underfloor"
+    },
+    "newAxis": true,
+    "axisGroupKey": "systems"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "56677889900aabbccddeeff0102030405060708090a0b0c0d0e0f10111213141",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:hvac_kind_ventilation",
+   "level": "axis_value_extension",
+   "key": "hvac_kind_ventilation",
+   "scope": "global",
+   "labels": {
+    "default": "Ventilation",
+    "ru": "Вентиляция",
+    "en": "Ventilation"
+   },
+   "payload": {
+    "axisKey": "hvac_kind",
+    "value": "ventilation",
+    "valueLabels": {
+     "ru": "Вентиляция",
+     "en": "Ventilation"
+    },
+    "newAxis": true,
+    "axisGroupKey": "systems"
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "677889900aabbccddeeff0102030405060708090a0b0c0d0e0f1011121314151",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:work_phase_demolition",
+   "level": "axis_value_extension",
+   "key": "work_phase_demolition",
+   "scope": "global",
+   "labels": {
+    "default": "Demolition",
+    "ru": "Демонтаж",
+    "en": "Demolition"
+   },
+   "payload": {
+    "axisKey": "work_phase",
+    "value": "demolition",
+    "valueLabels": {
+     "ru": "Демонтаж",
+     "en": "Demolition"
+    }
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "7889900aabbccddeeff0102030405060708090a0b0c0d0e0f101112131415161",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:work_phase_wet_works",
+   "level": "axis_value_extension",
+   "key": "work_phase_wet_works",
+   "scope": "global",
+   "labels": {
+    "default": "Wet works",
+    "ru": "Мокрые процессы",
+    "en": "Wet works"
+   },
+   "payload": {
+    "axisKey": "work_phase",
+    "value": "wet_works",
+    "valueLabels": {
+     "ru": "Мокрые процессы",
+     "en": "Wet works"
+    }
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "89900aabbccddeeff0102030405060708090a0b0c0d0e0f10111213141516171",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:work_phase_dry_works",
+   "level": "axis_value_extension",
+   "key": "work_phase_dry_works",
+   "scope": "global",
+   "labels": {
+    "default": "Dry works",
+    "ru": "Сухие процессы",
+    "en": "Dry works"
+   },
+   "payload": {
+    "axisKey": "work_phase",
+    "value": "dry_works",
+    "valueLabels": {
+     "ru": "Сухие процессы",
+     "en": "Dry works"
+    }
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "900aabbccddeeff0102030405060708090a0b0c0d0e0f1011121314151617181",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:subject_role_tenant",
+   "level": "axis_value_extension",
+   "key": "subject_role_tenant",
+   "scope": "global",
+   "labels": {
+    "default": "Tenant",
+    "ru": "Арендатор",
+    "en": "Tenant"
+   },
+   "payload": {
+    "axisKey": "subject_role",
+    "value": "tenant",
+    "valueLabels": {
+     "ru": "Арендатор",
+     "en": "Tenant"
+    }
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0aabbccddeeff0102030405060708090a0b0c0d0e0f101112131415161718191",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:subject_role_inspector",
+   "level": "axis_value_extension",
+   "key": "subject_role_inspector",
+   "scope": "global",
+   "labels": {
+    "default": "Inspector",
+    "ru": "Инспектор",
+    "en": "Inspector"
+   },
+   "payload": {
+    "axisKey": "subject_role",
+    "value": "inspector",
+    "valueLabels": {
+     "ru": "Инспектор",
+     "en": "Inspector"
+    }
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "aabbccddeeff0102030405060708090a0b0c0d0e0f101112131415161718191a",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:subject_role_estimator",
+   "level": "axis_value_extension",
+   "key": "subject_role_estimator",
+   "scope": "global",
+   "labels": {
+    "default": "Estimator",
+    "ru": "Сметчик",
+    "en": "Estimator"
+   },
+   "payload": {
+    "axisKey": "subject_role",
+    "value": "estimator",
+    "valueLabels": {
+     "ru": "Сметчик",
+     "en": "Estimator"
+    }
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "bbccddeeff0102030405060708090a0b0c0d0e0f101112131415161718191a1b",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:axis_value_extension:global:subject_role_accountant",
+   "level": "axis_value_extension",
+   "key": "subject_role_accountant",
+   "scope": "global",
+   "labels": {
+    "default": "Accountant",
+    "ru": "Бухгалтер",
+    "en": "Accountant"
+   },
+   "payload": {
+    "axisKey": "subject_role",
+    "value": "accountant",
+    "valueLabels": {
+     "ru": "Бухгалтер",
+     "en": "Accountant"
+    }
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "ccddeeff0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  }
+ ]
+}
