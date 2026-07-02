@@ -1,0 +1,19 @@
+{
+  "name": "shell-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxi dev",
+    "generate": "nuxi generate",
+    "typecheck": "nuxi typecheck"
+  },
+  "dependencies": {
+    "nuxt": "^4.0.0",
+    "vue": "^3.5.0",
+    "vue-router": "^5.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "vue-tsc": "^3.3.0"
+  }
+}
