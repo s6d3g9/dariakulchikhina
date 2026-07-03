@@ -1,1 +1,1 @@
-{"batchId": "14e2967584b61468dc590781075ff30fda97eed2044c551e257d1a520ce8e428", "familyKey": "small_appliances", "recordLevels": ["catalog_type"], "count": 22, "pendingRefs": ["small_appliances"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "858dbbefc25f1ac0b024d16b0adcbd5788e353feb7db8b68770987d912f9ddc3", "familyKey": "small_appliances", "recordLevels": ["catalog_type"], "count": 16, "pendingRefs": ["small_appliances"], "generator": "glm", "schemaVersion": 1}
