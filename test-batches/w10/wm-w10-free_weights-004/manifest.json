@@ -1,1 +1,1 @@
-{"batchId": "2b769564de5bc22cf0bfc967cf55ab2bec8c7a77995e3891fff203628f056420", "familyKey": "free_weights", "recordLevels": ["catalog_type"], "count": 16, "pendingRefs": ["free_weights"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "830d5f23a1a8c9ffc6535faa58bb491bf34b1faf3622521e8a9602a1138f311b", "familyKey": "free_weights", "recordLevels": ["catalog_type"], "count": 12, "pendingRefs": ["free_weights"], "generator": "glm", "schemaVersion": 1}

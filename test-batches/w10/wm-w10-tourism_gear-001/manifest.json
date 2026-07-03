@@ -1,1 +1,1 @@
-{"batchId": "46450cc708e8e5d2f10b5f2820924cbef1070a6172dffaccc0504e9b4d8ff8f5", "familyKey": "tourism_gear", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["tourism_gear"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "b405ab2d1c975ca7a6f73d23146a01bc5530ca4a8abbaea7b13fc132e067dcb1", "familyKey": "tourism_gear", "recordLevels": ["catalog_type"], "count": 24, "pendingRefs": ["tourism_gear"], "generator": "glm", "schemaVersion": 1}
