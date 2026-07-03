@@ -1,0 +1,762 @@
+[
+ {
+  "group": "Видеонаблюдение",
+  "brands": [
+   {
+    "brand": "Hikvision",
+    "verifiedSeries": [
+     "ColorVu",
+     "AcuSense",
+     "DarkFighter",
+     "TandemVu",
+     "EasyIP",
+     "Pro Series"
+    ],
+    "allowedCategories": [
+     "IP-камеры",
+     "аналоговые камеры (HD-TVI/Turbo HD)",
+     "PTZ-камеры",
+     "сетевые видеорегистраторы (NVR)",
+     "видеорегистраторы (DVR/XVR)"
+    ],
+    "forbiddenNote": "Модельные коды (DS-2CD, DS-2CE, DS-2DE, DS-7600, DS-7700, DS-7200, iDS-7200) — это кодовая номенклатура, НЕ серии. Как серии допустимы только маркетинговые линейки/технологии (ColorVu, AcuSense, DarkFighter, TandemVu, EasyIP, Pro Series). Не путать с дочерним брендом Ezviz — это отдельный бренд.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Dahua",
+    "verifiedSeries": [
+     "WizSense",
+     "WizMind",
+     "Lite",
+     "Pro",
+     "Ultra",
+     "TiOC",
+     "WizColor"
+    ],
+    "allowedCategories": [
+     "IP-камеры",
+     "аналоговые камеры (HDCVI)",
+     "PTZ-камеры",
+     "сетевые видеорегистраторы (NVR)",
+     "видеорегистраторы (XVR/Penta-brid)",
+     "IVSS (интеллектуальные видеосерверы)"
+    ],
+    "forbiddenNote": "Полное имя — Dahua Technology (Zhejiang Dahua). Модельные коды (например IPC-HFW, DH-XVR, N98A5N8) — кодовая номенклатура, не серии. Как серии использовать именованные линейки (WizSense, WizMind, Lite, Pro, Ultra, TiOC, WizColor).",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Ezviz",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "Wi-Fi IP-камеры для дома",
+     "уличные Wi-Fi-камеры",
+     "PT (поворотные) камеры",
+     "аккумуляторные (battery) камеры",
+     "видеозвонки/дверные звонки"
+    ],
+    "forbiddenNote": "Ezviz — потребительский смарт-хоум бренд (принадлежит Hikvision), но это ОТДЕЛЬНЫЙ бренд, не смешивать с Hikvision. Номенклатура — кодовые семейства по буквенным префиксам (C-серия: C6/C8; H-серия: H6/H8; аккумуляторные: CB/BC/EB/HB), а не именованные маркетинговые серии типа Pro/Lite. Поэтому verifiedSeries оставлен пустым — это кодовая номенклатура.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "RVi",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "IP-камеры",
+     "аналоговые камеры (AHD/TVI/CVI)",
+     "PTZ-камеры",
+     "сетевые видеорегистраторы (NVR)",
+     "гибридные видеорегистраторы (DVR/HDVR)"
+    ],
+    "forbiddenNote": "Российский бренд (RVi Group). Номенклатура — строго буквенно-цифровые коды (например RVi-1NCD2024, RVi-1NR20180, серии-обозначения 2NC/1NR/IPN/T/TA/MA). Именованных маркетинговых серий (Pro/Lite и т.п.) нет — verifiedSeries пуст, это кодовая номенклатура.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Trassir",
+    "verifiedSeries": [
+     "Lanser",
+     "ECO",
+     "LITE",
+     "PRO",
+     "Ultra",
+     "TREND",
+     "Mini",
+     "Duo",
+     "MiniNVR",
+     "DuoStation",
+     "QuattroStation",
+     "NeuroStation",
+     "UltraStation",
+     "CT-1"
+    ],
+    "allowedCategories": [
+     "IP-камеры",
+     "аналоговые/мультиформатные камеры",
+     "PTZ-камеры",
+     "сетевые видеорегистраторы (NVR)",
+     "мультиформатные видеорегистраторы (XVR)",
+     "персональные видеорегистраторы (PVR)",
+     "ПО TRASSIR OS / видеосерверы"
+    ],
+    "forbiddenNote": "Российский бренд (правообладатель DSSL). Имеет РЕАЛЬНЫЕ именованные линейки: камеры (Lanser, ECO, LITE, PRO, Ultra, TREND, Mini, Duo) и регистраторы-«станции» (MiniNVR, DuoStation, QuattroStation, NeuroStation, UltraStation), а также обозначение CT-1. Не путать станции-регистраторы с камерными сериями. Trassir — это и аппаратура, и ПО.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Ростелеком",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "услуга облачного видеонаблюдения",
+     "видеонаблюдение для дома и бизнеса (сервис)",
+     "камеры под собственным брендом (OEM/rebadge)"
+    ],
+    "forbiddenNote": "Ростелеком — телеком-оператор, предоставляющий видеонаблюдение как СЕРВИС (облачное «Видеонаблюдение», «Умный дом»), а НЕ производитель камерных линеек. Камеры под маркой Ростелеком — OEM/rebadge от сторонних вендоров (в экосистеме, среди партнёров — Sputnik Systems). Собственной модельной/серийной номенклатуры камер не подтверждено — не выдумывать серии.",
+    "confidence": "unverified"
+   }
+  ],
+  "notes": "Веб-проверка выполнена (WebSearch + WebFetch по официальным каталогам rvigroup.ru, trassir.ru, dahuasecurity.com, ezviz.com, hikvision.com, camera.rt.ru). Ключевые выводы: (1) Hikvision и Dahua — камеры/регистраторы кодируются модельными кодами, но у обоих есть подтверждённые ИМЕНОВАННЫЕ маркетинговые линейки (Hikvision: ColorVu/AcuSense/DarkFighter/TandemVu/EasyIP/Pro; Dahua: WizSense/WizMind/Lite/Pro/Ultra/TiOC/WizColor). (2) Ezviz (принадлежит Hikvision, но отдельный бренд) и RVi — чисто КОДОВАЯ номенклатура (буквенные семейства C/H/CB/BC/EB/HB у Ezviz; RVi-1NCD…-коды у RVi), поэтому verifiedSeries пуст. (3) Trassir (DSSL) — единственный с полноценными именованными линейками камер и регистраторов-«станций». (4) Ростелеком — НЕ производитель, а оператор облачного видеонаблюдения (сервис) с OEM/rebadge-камерами; собственных серий нет, confidence=unverified. Все серии взяты из официальных источников, не выдуманы. Границы confidence: verified — где линейки подтверждены на офсайте/каталоге; unverified — Ростелеком, т.к. это сервис без собственной номенклатуры."
+ },
+ {
+  "group": "Домофоны и СКУД",
+  "brands": [
+   {
+    "brand": "Hikvision",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "видеодомофоны",
+     "вызывные панели",
+     "IP-домофония",
+     "модульные вызывные панели",
+     "мониторы (indoor station)",
+     "контроллеры доступа",
+     "СКУД / access control",
+     "терминалы распознавания лиц",
+     "электронные замки"
+    ],
+    "forbiddenNote": "Номенклатура кодовая (DS-KV*, DS-KD*, серии KV6/KV8/KD92/KD94 в линейке TalkVu; villa/apartment/modular door stations), поэтому verifiedSeries пуст. Не приписывать выдуманные названия линеек. Hikvision — крупный вендор видеонаблюдения; в реестре домофонов/СКУД не смешивать с их IP-камерами и NVR, если категория ограничена домофонией.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Dahua",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "видеодомофоны",
+     "вызывные панели (door station)",
+     "мониторы (indoor monitor)",
+     "IP-домофония",
+     "2-wire домофония",
+     "СКУД / access control",
+     "контроллеры доступа",
+     "терминалы распознавания лиц",
+     "электронные / электромагнитные замки"
+    ],
+    "forbiddenNote": "Номенклатура кодовая: вызывные панели VTO*, мониторы VTH*, СКУД ASI/ASA/DHI-*. Слова Pro / Lite / Ultra — это уровни (tiers), а не именованные серии; EACH — 2-wire линейка. verifiedSeries оставлен пустым, т.к. подтверждённых потребительских названий серий нет. Не путать с IP-камерами Dahua.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Slinex",
+    "verifiedSeries": [
+     "Sonik"
+    ],
+    "allowedCategories": [
+     "видеодомофоны",
+     "мониторы видеодомофона",
+     "вызывные панели",
+     "IP-домофония",
+     "Wi-Fi видеодомофоны / cloud",
+     "комплекты видеодомофонов",
+     "аксессуары домофонии"
+    ],
+    "forbiddenNote": "Подтверждена именованная линейка мониторов Sonik (Sonik 7 / Sonik 10 / Sonik 7 Cloud). Остальное — кодовые серии: мониторы SQ-*/SM-*/SL-*, вызывные панели ML-*/MA-*/IP-DV-*. Эти буквенно-цифровые обозначения — коды, а не именованные серии; не выдавать их за брендовые линейки. СКУД как отдельного направления у Slinex веб-проверкой не подтверждён — только домофония.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Tantos",
+    "verifiedSeries": [
+     "iPanel 2",
+     "Stich HD",
+     "iLexa HD",
+     "Walle",
+     "Walle HD",
+     "Triniti HD",
+     "Corban HD",
+     "Stuart"
+    ],
+    "allowedCategories": [
+     "видеодомофоны",
+     "мониторы видеодомофона",
+     "вызывные панели",
+     "многоабонентские вызывные панели",
+     "AHD-вызывные панели",
+     "комплекты видеодомофонов",
+     "аксессуары домофонии"
+    ],
+    "forbiddenNote": "Именованные серии вызывных панелей подтверждены на официальном tantos.pro (iPanel 2 и варианты Металл/+, Stich HD, iLexa HD, Walle / Walle HD, Triniti HD, Corban HD, Stuart). Модели вида iPanel 2 Металл 2/4 абонента — варианты внутри iPanel 2, отдельной серией не считать. Не путать линейки панелей с линейками мониторов.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "BAS-IP",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "IP-видеодомофоны",
+     "вызывные панели / entrance panels",
+     "многоабонентские (многокнопочные) панели",
+     "мониторы (indoor monitor / video door phone)",
+     "master station",
+     "СКУД / access control",
+     "контроллеры доступа",
+     "считыватели",
+     "лифтовые контроллеры",
+     "терминалы распознавания лиц"
+    ],
+    "forbiddenNote": "Номенклатура полностью кодовая, буквенно-цифровая: панели AV-*/AA-*/BI-*, мониторы AZ-*/AU-*/AT-*, СКУД CE-*/MR-*/CR-*/EVRC-IP. Именованных потребительских серий нет — verifiedSeries пуст. Не превращать коды моделей в названия серий.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Falcon Eye",
+    "verifiedSeries": [
+     "Vista",
+     "Vela",
+     "Cosmo",
+     "Lira",
+     "Atlas",
+     "Mirror HD",
+     "Mensa HD"
+    ],
+    "allowedCategories": [
+     "видеодомофоны",
+     "мониторы видеодомофона",
+     "вызывные панели",
+     "AHD-вызывные панели",
+     "Wi-Fi / cloud видеодомофоны",
+     "комплекты видеодомофонов",
+     "электрические замки (подключаемые к панели)"
+    ],
+    "forbiddenNote": "Именованные серии относятся к МОНИТОРАМ (Vista, Vela с вариантами VZ/XL, Cosmo / Cosmo HD / Cosmo HD Plus / Wi-Fi, Lira, Atlas Plus HD, Mirror HD, Mensa HD, а также Milano/Leo). Вызывные панели используют кодовые обозначения FE-* (FE-305HD, FE-321, FE-324, FE-Push HD, FE-ipanel 3 HD) — не заносить FE-коды в verifiedSeries. Полноценное направление СКУД (контроллеры/считыватели) веб-проверкой у Falcon Eye по домофонии не подтверждено отдельно от подключения замков к панели.",
+    "confidence": "verified"
+   }
+  ],
+  "notes": "Все шесть брендов проверены веб-поиском + фетчем официальных страниц (hikvision.com, dahuasecurity.com, slinex.ru, tantos.pro, bas-ip.com, falconeye.pro). Ключевой паттерн группы: азиатские вендоры и BAS-IP используют КОДОВУЮ номенклатуру (Hikvision DS-KV/DS-KD, Dahua VTO/VTH, BAS-IP AV-/AA-/AT-/CE-) без потребительских названий серий → verifiedSeries пуст. Российско-ориентированные бренды (Tantos, Falcon Eye, частично Slinex) имеют настоящие именованные линейки. ВАЖНАЯ развилка у Slinex и Falcon Eye: именованные серии есть только у МОНИТОРОВ (Slinex Sonik; Falcon Eye Vista/Vela/Cosmo/Lira/Atlas), а вызывные ПАНЕЛИ у обоих кодовые (Slinex ML-/MA-, Falcon Eye FE-). У Tantos, наоборот, подтверждённые серии — это именно линейки вызывных панелей. Слова Pro/Lite/Ultra (Dahua, Hikvision) — уровни исполнения, НЕ серии. Направление «замки/СКУД»: явно подтверждено как отдельный класс у Hikvision, Dahua, BAS-IP; у Slinex/Falcon Eye из домофонной части сайтов подтверждается лишь подключение электрозамков к панели, полноценные СКУД-контроллеры/считыватели не верифицированы — отражено в forbiddenNote. Ничего не выдумано: все серии взяты дословно с официальных источников."
+ },
+ {
+  "group": "Датчики и сигнализация",
+  "brands": [
+   {
+    "brand": "Ajax",
+    "verifiedSeries": [
+     "MotionProtect",
+     "MotionProtect Plus",
+     "MotionProtect Outdoor",
+     "CombiProtect",
+     "MotionCam",
+     "DoorProtect",
+     "DoorProtect Plus",
+     "FireProtect",
+     "FireProtect Plus",
+     "FireProtect 2",
+     "LeaksProtect",
+     "Hub",
+     "Hub 2",
+     "Hub 2 Plus"
+    ],
+    "allowedCategories": [
+     "датчик движения",
+     "датчик открытия",
+     "датчик дыма",
+     "датчик протечки",
+     "хаб/центр системы",
+     "охранная сигнализация"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "Ajax использует именные линейки (…Protect / …Cam / Hub). Не выдумывать номерные артикулы (типа DS-…, RS-…) — это чужая номенклатура. Не приписывать бренду видеонаблюдение как отдельные модели-серии сверх перечисленных детекторов без проверки. Радиопротокол — Jeweller/Wings; это протоколы, не серии устройств."
+   },
+   {
+    "brand": "Hikvision",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "датчик движения",
+     "датчик открытия",
+     "датчик дыма",
+     "датчик протечки",
+     "хаб/центр системы",
+     "охранно-пожарная сигнализация"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "Кодовая номенклатура (DS-PDxxx-WE), поэтому verifiedSeries пуст. Единственное маркетинговое имя линейки — AX PRO (и AX Hybrid PRO для гибрида); радиопротокол Tri-X. Не выдумывать русские именные серии. Артикулы вида DS-PDP15P-EG2-WE / DS-PDMCX-E-WE / DS-PDSMK-S-WE — примеры формата, конкретные суффиксы проверять по каталогу перед использованием."
+   },
+   {
+    "brand": "Rubetek",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "датчик движения",
+     "датчик открытия",
+     "датчик дыма",
+     "датчик протечки",
+     "хаб/центр системы",
+     "умный дом"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "Кодовая номенклатура (RS-32xx для радиодатчиков: движение RS-3201/3203/3205, открытие RS-3210/3215; дым KR-SD02; газ KR-GD13), поэтому verifiedSeries пуст. Не выдумывать именные линейки. Конкретный код модели сверять с каталогом rubetek.com — префиксы RS-/RE-/RM-/KR- относятся к разным типам устройств."
+   },
+   {
+    "brand": "Ростелеком",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "датчик движения",
+     "датчик открытия",
+     "датчик дыма",
+     "датчик протечки",
+     "хаб/центр системы",
+     "умный дом"
+    ],
+    "confidence": "partial",
+    "forbiddenNote": "«Умный дом Ростелеком» — это сервис/экосистема оператора, а не производитель датчиков; оборудование ребейджится у партнёров (в т.ч. совместимо с Rubetek). Собственных подтверждённых модельных серий датчиков нет — verifiedSeries пуст. Не приписывать конкретные артикулы Ростелекому как его собственные модели без проверки; корректно указывать как сервис/платформу, а не вендора сенсоров."
+   },
+   {
+    "brand": "Sapsan",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "датчик движения",
+     "датчик открытия",
+     "датчик дыма",
+     "GSM-сигнализация",
+     "охранная сигнализация"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "Номенклатура по комплектам/моделям контроллеров (Sapsan GSM Pro 5/6/8, GSM Pro, Termo-Box 3G/4G, GSM 4G CAM), а сами беспроводные детекторы описываются родовыми названиями (беспроводной датчик движения, датчик открытия) без именных серий — verifiedSeries пуст. Не выдумывать серии детекторов. Бренд ориентирован на GSM-сигнализации; конкретные названия комплектов сверять с каталогом производителя."
+   },
+   {
+    "brand": "Livi",
+    "verifiedSeries": [
+     "Livi MS",
+     "Livi MSW",
+     "Livi CS",
+     "Livi CSM",
+     "Livi FS",
+     "Livi LS",
+     "Livi US",
+     "Livi Smart Hub",
+     "Livi Smart Hub 2G"
+    ],
+    "allowedCategories": [
+     "датчик движения",
+     "датчик открытия",
+     "датчик дыма",
+     "датчик протечки",
+     "хаб/центр системы",
+     "охранная сигнализация",
+     "умный дом"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "Бренд Livi (система Livicom, производитель НПП «Стелс»). Именные короткие коды: MS/MSW — движение, CS/CSM — открытие, FS — дым, LS — протечка, US — универсальный, Smart Hub — центр. Не путать бренд Livi с Livicom (Livicom — экосистема/приложение). Не выдумывать номерные артикулы — номенклатура именно вида «Livi XX»."
+   }
+  ],
+  "notes": "Верифицировано веб-проверкой по официальным источникам (ajax.systems, поддержка Ajax, каталоги Hikvision AX PRO, rubetek.com/support.rubetek.com, livicom.ru/nppstels.ru, sapsanspb.ru и дистрибьюторы). Ключевые различия номенклатуры: Ajax и Livi используют ИМЕННЫЕ серии (…Protect/…Cam/Hub и Livi XX) — verifiedSeries заполнены. Hikvision (DS-PDxxx), Rubetek (RS-32xx/KR-xx), Sapsan (комплекты GSM Pro N) — КОДОВАЯ номенклатура, поэтому verifiedSeries оставлены пустыми согласно правилу. Ростелеком — не вендор датчиков, а сервис/экосистема оператора (ребейдж партнёрского железа, совместим с Rubetek), собственных подтверждённых серий нет → confidence=partial. Артикулы, приведённые в forbiddenNote как примеры формата, следует пересверять с актуальным каталогом перед публикацией — конкретные суффиксы моделей меняются."
+ },
+ {
+  "group": "Сетевое оборудование",
+  "brands": [
+   {
+    "brand": "Keenetic",
+    "verifiedSeries": [
+     "Titan",
+     "Hero",
+     "Hopper",
+     "Viva",
+     "Sprinter",
+     "Voyager Pro",
+     "Skipper",
+     "Runner",
+     "Buddy",
+     "Orbiter",
+     "Atlas"
+    ],
+    "allowedCategories": [
+     "роутеры",
+     "интернет-центры",
+     "mesh-системы",
+     "усилители/экстендеры Wi-Fi",
+     "точки доступа (в т.ч. PoE)",
+     "коммутаторы (PoE+)",
+     "4G/LTE/5G-роутеры",
+     "портативные 4G/5G-роутеры",
+     "DSL-роутеры (ADSL2+/VDSL2)",
+     "адаптеры"
+    ],
+    "forbiddenNote": "Линейки — маркетинговые имена моделей с кодом KN- (напр. Titan KN-1812, Hero KN-1011). Не приписывать бренду промышленные коммутаторы, серверное/датацентровое оборудование или продукты вне домашнего/SOHO Wi-Fi-сегмента. Не путать с материнским Zyxel: с 2016 Keenetic — самостоятельный бренд.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "TP-Link",
+    "verifiedSeries": [
+     "Archer",
+     "Deco",
+     "Omada",
+     "Omada Pro",
+     "EAP",
+     "Tapo",
+     "VIGI",
+     "Kasa",
+     "Aginet",
+     "Mercusys"
+    ],
+    "allowedCategories": [
+     "роутеры (Wi-Fi/all-in-one)",
+     "mesh-системы (Deco)",
+     "коммутаторы (управляемые/неуправляемые, Omada/TL-SG/TL-SX)",
+     "точки доступа (EAP)",
+     "Omada-контроллеры/шлюзы (ER)",
+     "range extenders/усилители",
+     "powerline-адаптеры",
+     "GPON/xPON ONU (Aginet)",
+     "IP-камеры/видеонаблюдение (VIGI, Tapo)",
+     "умный дом (Tapo, Kasa)"
+    ],
+    "forbiddenNote": "Archer — потребительские роутеры; Deco — mesh; Omada/EAP — бизнес-экосистема (коммутаторы/точки доступа/шлюзы); Tapo/Kasa — умный дом; VIGI — видеонаблюдение; Aginet — ISP/CPE. Mercusys — отдельный (дочерний) бренд, не смешивать модели. Три mesh-технологии (Deco / OneMesh-EasyMesh на Archer / Omada) не взаимозаменяемы.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "MikroTik",
+    "verifiedSeries": [
+     "RouterBOARD (RB)",
+     "Cloud Core Router (CCR)",
+     "Cloud Router Switch (CRS)",
+     "hAP",
+     "hEX",
+     "cAP",
+     "wAP",
+     "PowerBox",
+     "netPower",
+     "Audience",
+     "Chateau",
+     "LtAP"
+    ],
+    "allowedCategories": [
+     "роутеры (RB, CCR)",
+     "коммутаторы (CRS, netPower)",
+     "точки доступа / беспроводные системы (hAP, cAP, wAP, Audience)",
+     "LTE/5G-роутеры (Chateau, LtAP)",
+     "PoE-коммутаторы",
+     "антенны/направленные линки (радиорелейка)",
+     "SFP/оптические модули и аксессуары"
+    ],
+    "forbiddenNote": "Все устройства работают под RouterOS. CCR — маршрутизация (не access-коммутация), CRS — коммутация. Не приписывать умный дом, IP-камеры или потребительскую бытовую электронику — MikroTik ориентирован на ISP/сетевых инженеров/SMB. Серии — функциональные аббревиатуры, модели идут с кодом (напр. CCR2004-16G-2S+, hAP ax3).",
+    "confidence": "verified"
+   },
+   {
+    "brand": "D-Link",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "роутеры (DIR)",
+     "коммутаторы управляемые/smart (DGS, DXS)",
+     "коммутаторы неуправляемые (DGS/DES)",
+     "промышленные коммутаторы (DIS)",
+     "точки доступа (DAP, DWL)",
+     "беспроводные контроллеры",
+     "4G/LTE/M2M-шлюзы (DWM)",
+     "сетевые адаптеры/медиаконвертеры",
+     "IP-камеры/видеонаблюдение",
+     "умный дом"
+    ],
+    "forbiddenNote": "У D-Link нет маркетинговых имён-линеек — используется КОДОВАЯ номенклатура по префиксам: DIR-роутеры, DGS/DES/DXS-коммутаторы, DAP/DWL-точки доступа, DIS-промышленные, DWM-сотовые. Не выдумывать «серии» с именами; префикс кодирует класс устройства. verifiedSeries оставлен пустым намеренно.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Tenda",
+    "verifiedSeries": [
+     "Nova"
+    ],
+    "allowedCategories": [
+     "роутеры (домашние/бизнес)",
+     "mesh-системы (Nova)",
+     "коммутаторы управляемые/неуправляемые (TEG гигабитные, TEF fast-ethernet, в т.ч. PoE)",
+     "точки доступа (i-серия для бизнеса)",
+     "усилители/range extenders",
+     "powerline-адаптеры",
+     "4G/мобильный ШПД / CPE",
+     "IP-камеры"
+    ],
+    "forbiddenNote": "Единственная явно именованная линейка — Nova (mesh, модели MW3/MW5/MW6/MW12, MX3/MX12 для Wi-Fi 6, BE-модели для Wi-Fi 7). Коммутаторы (TEG/TEF) и точки доступа (i-серия: i24/i25/i27) — кодовая номенклатура, а не именные серии. Не приписывать имена-серии кодовым моделям.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Zyxel",
+    "verifiedSeries": [
+     "Nebula",
+     "Armor",
+     "Multy",
+     "USG FLEX",
+     "ATP"
+    ],
+    "allowedCategories": [
+     "роутеры Wi-Fi (Armor, домашние)",
+     "mesh-системы (Multy)",
+     "коммутаторы (XGS/GS/XS, в т.ч. Nebula-managed)",
+     "точки доступа (NWA, WAX, WAC)",
+     "межсетевые экраны/security-роутеры (USG FLEX, ATP)",
+     "облачное управление (Nebula Control Center)",
+     "5G/4G-роутеры и фиксированный беспроводной доступ",
+     "powerline",
+     "in-building coverage"
+    ],
+    "forbiddenNote": "Именованные линейки: Nebula (облачная платформа управления), Armor (домашние Wi-Fi-роутеры, напр. Armor G1/G5/Z2), Multy (домашний mesh), USG FLEX и ATP (файрволы). Коммутаторы (XGS/GS/XS) и точки доступа (NWA/WAX/WAC) — кодовая номенклатура. Armor G5 сам по себе mesh не поддерживает — mesh это Multy. Не путать с Keenetic (бывшее подразделение, ныне независимый бренд).",
+    "confidence": "verified"
+   }
+  ],
+  "notes": "Группа проверена веб-поиском по официальным сайтам (keenetic.com, mikrotik.com, tp-link.com/omadanetworks.com, dlink.com, tendacn.com, zyxel.com) 2026-07-03.\n\nКлючевое различие verifiedSeries vs кодовая номенклатура:\n- ИМЕНОВАННЫЕ линейки (verifiedSeries заполнен): Keenetic (Titan/Hero/Hopper/Viva/Sprinter/Voyager/Buddy/Orbiter/Skipper/Runner/Atlas), TP-Link (Archer/Deco/Omada/EAP/Tapo/VIGI/Kasa/Aginet/Mercusys), MikroTik (функц. аббревиатуры RB/CCR/CRS/hAP/hEX/cAP/wAP/PowerBox/netPower/Chateau), Zyxel (Nebula/Armor/Multy/USG FLEX/ATP), Tenda (только Nova).\n- ЧИСТО КОДОВАЯ номенклатура (verifiedSeries пуст): D-Link — префиксы DIR/DGS/DES/DXS/DAP/DWL/DIS/DWM кодируют класс устройства, маркетинговых имён-линеек нет.\n- Смешанные: Tenda и Zyxel имеют именные потребительские линейки (Nova; Armor/Multy), но коммутаторы и точки доступа у них — кодовые (Tenda TEG/TEF, i-серия; Zyxel XGS/GS/XS, NWA/WAX/WAC).\n\nВсе шесть брендов подтверждены как производители роутеров/коммутаторов/точек доступа (совпадает с запрошенной группой). У всех, кроме чисто-Wi-Fi Keenetic/Tenda-mesh, есть коммутаторы и PoE. Keenetic — независимый бренд с 2016 (ранее подразделение Zyxel), это отражено в forbiddenNote обоих.\n\nЗамечания по чистоте: не смешивать дочерние/самостоятельные бренды (TP-Link ↔ Mercusys; Zyxel ↔ Keenetic). MikroTik/D-Link/Tenda/Zyxel-бизнес используют кодовые артикулы — не выдумывать для них «имена серий»."
+ },
+ {
+  "group": "Корма для питомцев",
+  "brands": [
+   {
+    "brand": "Royal Canin",
+    "verifiedSeries": [
+     "Feline/Canine Health Nutrition",
+     "Breed Health Nutrition",
+     "Size Health Nutrition",
+     "Care Nutrition",
+     "Veterinary Diets"
+    ],
+    "allowedCategories": [
+     "Сухой корм для кошек",
+     "Влажный корм для кошек",
+     "Сухой корм для собак",
+     "Влажный корм для собак",
+     "Ветеринарные (лечебные) диеты для кошек",
+     "Ветеринарные (лечебные) диеты для собак"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "verifiedSeries — это КАТЕГОРИИ линеек (Health/Breed/Size/Care Nutrition, Veterinary Diets), а не отдельные диеты. Конкретные ветеринарные рационы идут под кодовой/буквенной номенклатурой (Gastrointestinal, Renal, Hepatic, Urinary S/O, Satiety, Hypoallergenic и т.п.) — их НЕ добавлять как отдельные бренды/серии. Не смешивать линейки кошек и собак."
+   },
+   {
+    "brand": "Purina",
+    "verifiedSeries": [
+     "Pro Plan",
+     "Pro Plan Veterinary Diets",
+     "Purina ONE",
+     "Gourmet",
+     "Friskies",
+     "Cat Chow",
+     "Felix",
+     "Darling"
+    ],
+    "allowedCategories": [
+     "Сухой корм для кошек",
+     "Влажный корм для кошек",
+     "Сухой корм для собак",
+     "Влажный корм для собак",
+     "Ветеринарные (лечебные) диеты для кошек",
+     "Ветеринарные (лечебные) диеты для собак"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "Purina — зонтичный бренд; verifiedSeries — это суб-бренды (Pro Plan, Purina ONE, Gourmet, Friskies и т.д.). Конкретные ветеринарные рационы Pro Plan Veterinary Diets идут под кодовой номенклатурой (EN Gastrointestinal, DM Diabetes Management, NF Renal, HA, OM, UR St/Ox и т.п.) — НЕ добавлять коды как отдельные серии. Felix/Darling/Cat Chow подтверждены как бренды Purina, но проверялись косвенно — при внесении сверить с официальным каталогом."
+   },
+   {
+    "brand": "Brit",
+    "verifiedSeries": [
+     "Brit Care",
+     "Brit Premium",
+     "Brit Fresh",
+     "Brit Sport"
+    ],
+    "allowedCategories": [
+     "Сухой корм для кошек",
+     "Влажный корм для кошек",
+     "Сухой корм для собак",
+     "Влажный корм для собак",
+     "Паучи/консервы/паштеты для кошек",
+     "Паучи/консервы/паштеты для собак"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "Brit Care (супер-премиум) и Brit Premium (премиум) — две основные подтверждённые линейки. Brit Fresh и Brit Sport присутствуют в навигации официального сайта, но с меньшей детализацией — подтверждены как названия серий, состав/охват сверять по каталогу. Производитель — Vafo/Brit (с 2021 часть производства в РФ). Не путать с профилями стерилизованных/котят — это подкатегории внутри линеек, а не отдельные серии."
+   },
+   {
+    "brand": "Grandorf",
+    "verifiedSeries": [
+     "Living Probiotics (низкозерновой холистик)",
+     "Grain Free (беззерновой холистик)",
+     "Veterinary (ветеринарный холистик)"
+    ],
+    "allowedCategories": [
+     "Сухой корм для кошек",
+     "Влажный корм для кошек",
+     "Сухой корм для собак",
+     "Влажный корм для собак",
+     "Ветеринарные (лечебные) рационы для кошек",
+     "Ветеринарные (лечебные) рационы для собак"
+    ],
+    "confidence": "partial",
+    "forbiddenNote": "Официальный сайт группирует ассортимент по трём категориям холистик-кормов (низкозерновой/беззерновой/ветеринарный). Конкретные рецепты идут под описательной кодовой номенклатурой '4 вида мяса / 4 Meat', 'Living Probiotics', по мясу (ягнёнок/индейка/кролик) и профилю (Sterilised, Indoor, Mini/Med&Maxi) — это НЕ отдельные серии, а варианты рецептов. Наличие влажных кормов упоминается косвенно ('Grandorf Fresh') — при внесении сверить с каталогом grandorf.ru."
+   },
+   {
+    "brand": "Acana",
+    "verifiedSeries": [
+     "Classics",
+     "Heritage",
+     "Regionals",
+     "Singles"
+    ],
+    "allowedCategories": [
+     "Сухой корм для собак",
+     "Сухой корм для кошек"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "Для собак четыре линейки (Classics, Heritage, Regionals, Singles); для кошек в РФ-каталоге подтверждена только линейка Regionals (Wild Prairie, Pacifica, Grasslands). ТОЛЬКО сухие корма — влажных/консервов у Acana в каталоге нет, НЕ добавлять влажные категории. ВНИМАНИЕ: канадская Acana (Champion Petfoods) запрещена к ввозу в РФ с июня 2021 — в реестр вносить с учётом статуса доступности; международные линейки Wholesome Grains / Highest Protein в РФ-каталоге не подтверждены."
+   },
+   {
+    "brand": "Мнямс",
+    "verifiedSeries": [],
+    "allowedCategories": [
+     "Сухой корм для кошек",
+     "Влажный корм для кошек",
+     "Паучи для кошек",
+     "Консервы для кошек",
+     "Сухой корм для собак",
+     "Влажный корм для собак",
+     "Паучи для собак",
+     "Консервы для собак",
+     "Лакомства для кошек",
+     "Лакомства для собак"
+    ],
+    "confidence": "verified",
+    "forbiddenNote": "Устойчивых фирменных названий серий у 'Мнямс' нет — ассортимент строится по типу корма (сухой/влажный/паучи/консервы/лакомства) и по кулинарным рецептам-названиям ('Оссобуко по-милански', 'Буйабес по-марсельски', 'Фрикасе по-парижски' и т.п.), которые являются названиями вкусов/рецептов, а НЕ линейками — поэтому verifiedSeries пустой. Бренд принадлежит 'Валта Пет Продактс' (РФ, с 2012). Ветеринарные лечебные диеты у 'Мнямс' не подтверждены — не добавлять категорию ветдиет."
+   }
+  ],
+  "notes": "Проверка по официальным сайтам брендов (royalcanin.ru, proplan.ru/shop.purina.ru, брит-рус.рф, grandorf.ru, acana.ru, mnyams.ru) на 2026-07-03.\n\nКлючевые выводы по номенклатуре:\n- Royal Canin и Purina Pro Plan: крупные серии верифицированы, но конкретные ветеринарные рационы идут под КОДОВОЙ буквенной номенклатурой (EN/DM/NF/HA/Renal/Hepatic/Urinary S/O и т.п.) — их нельзя заносить как отдельные бренды/серии.\n- Acana: только СУХИЕ корма, влажных нет; канадский оригинал запрещён к ввозу в РФ с 06.2021 (важно для статуса доступности в реестре). Международные линейки Wholesome Grains/Highest Protein в РФ-каталоге не подтверждены.\n- Grandorf (partial): каталог группирован по 3 категориям холистик (низкозерновой/беззерновой/ветеринарный); '4 Meat'/'Living Probiotics'/'Fresh' — это варианты рецептов и маркетинговые обозначения, а не самостоятельные серии. Наличие влажных кормов сверить.\n- Мнямс: фирменных серий нет (verifiedSeries пустой) — номенклатура по типу корма и по названиям вкусов-рецептов.\n\nКосвенно подтверждённые пункты, требующие финальной сверки по каталогу перед внесением в реестр: суб-бренды Purina (Felix/Darling/Cat Chow), Brit Fresh/Brit Sport, влажная линейка Grandorf. Ничего не выдумывалось — при отсутствии подтверждения серия/категория не добавлялась."
+ },
+ {
+  "group": "Аксессуары для питомцев",
+  "brands": [
+   {
+    "brand": "Ferplast",
+    "verifiedSeries": [
+     "Atlas",
+     "Atlas Deluxe",
+     "Atlas Trendy",
+     "Atlas Open",
+     "Swing",
+     "Siesta Deluxe",
+     "Bella",
+     "Dandy",
+     "Relax",
+     "Sofa",
+     "Jetset",
+     "Clipper",
+     "Magix",
+     "Cuddly",
+     "Koala",
+     "Prestige",
+     "Diva"
+    ],
+    "allowedCategories": [
+     "переноски",
+     "лежанки",
+     "лотки",
+     "когтеточки",
+     "аквариумы"
+    ],
+    "forbiddenNote": "Итальянский бренд с широким ассортиментом. Проверены реальные линейки на официальном сайте ferplast.com (фильтр 'Line'): переноски Atlas/Clipper/Jetset, лотки Magix, лежанки Siesta Deluxe/Bella/Sofa/Cuddly. Не выдумывать номера моделей внутри серий — они многочисленны и варьируются (Atlas 10/20/30, Swing 1-15). Аквариумы Ferplast (напр. Cayman, Dubai, Capri, Star) — проверять отдельно перед публикацией конкретной модели.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Trixie",
+    "verifiedSeries": [
+     "Traveller Capri",
+     "Skudo",
+     "BE NORDIC",
+     "be Eco",
+     "Junior",
+     "Cat Activity",
+     "XXL Cats",
+     "Safer Life"
+    ],
+    "allowedCategories": [
+     "переноски",
+     "лежанки",
+     "лотки",
+     "когтеточки"
+    ],
+    "forbiddenNote": "Немецкий бренд (Trixie Heimtierbedarf). Проверены линейки на trixie.ru и дилерах: переноски Traveller Capri (I/II/III/XS) и Skudo (3-7), концептуальные линейки BE NORDIC, be Eco, Junior, Cat Activity, XXL Cats, Safer Life. Аквариумы Trixie формально существуют как категория (аксессуары для аквариумов/рептилий), но как производитель стеклянных аквариумов Trixie не подтверждён на уровне именованной линейки — не включать в allowedCategories без доп. проверки. Большинство рядовых товаров идентифицируются по артикулам, а не по названию серии.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Triol",
+    "verifiedSeries": [
+     "TRAVEL",
+     "Спутник",
+     "Верона",
+     "Стандарт",
+     "Triol-Disney",
+     "Natural",
+     "Love The Planet"
+    ],
+    "allowedCategories": [
+     "переноски",
+     "лежанки",
+     "лотки",
+     "когтеточки",
+     "аквариумы"
+    ],
+    "forbiddenNote": "Российский бренд компании АММА. Ассортимент организован преимущественно по КОДОВОЙ номенклатуре (артикулы), а не по названным сериям — verifiedSeries содержит немногие подтверждённые именованные линейки: переноски TRAVEL/Спутник/Верона, когтеточки Стандарт, аквариумы Triol-Disney (лицензионные, напр. WD4001 Ariel), круглые стеклянные аквариумы (2/9/13 л) идут без серии. Тематические коллекции Natural, Love The Planet, New Year. Не приписывать серию PRIME (это другой бренд). Для конкретных лотков/лежанок использовать артикул, а не выдуманное название серии.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Savic",
+    "verifiedSeries": [
+     "Nestor",
+     "Aseo",
+     "Aseo Jumbo",
+     "Moona",
+     "Flex-a-loo",
+     "Iriz",
+     "Junior Toilet",
+     "Trotter",
+     "Andes",
+     "Sensa",
+     "Sift Buddy"
+    ],
+    "allowedCategories": [
+     "переноски",
+     "лежанки",
+     "лотки"
+    ],
+    "forbiddenNote": "Бельгийский бренд. Проверены линейки на savic.be: лотки/туалеты Nestor, Aseo/Aseo Jumbo, Moona (закрытый), Flex-a-loo, Iriz, Junior Toilet; переноски Trotter, Andes; аксессуары Sensa (поилка-фонтан), Sift Buddy (совок). Iriz и Trotter подтверждены через дилеров/зооплюс, но не были видны на конкретной странице каталога — считать partial внутри серии. Savic специализируется на пластиковых лотках/клетках/переносках, НЕ производит аквариумы и не позиционируется как производитель когтеточек — не добавлять эти категории.",
+    "confidence": "verified"
+   },
+   {
+    "brand": "PetSafe",
+    "verifiedSeries": [
+     "ScoopFree",
+     "Happy Ride",
+     "Drinkwell",
+     "Sensa"
+    ],
+    "allowedCategories": [
+     "переноски",
+     "лежанки",
+     "лотки"
+    ],
+    "forbiddenNote": "Американский бренд (Radio Systems). Специализация — умные/автоматические устройства, НЕ традиционные когтеточки/аквариумы. Проверено на petsafe.com: автоматические лотки ScoopFree (Clumping, Crystal Smart); линейка Happy Ride — переноски (Backpack Pet Carrier, Collapsible Travel Carrier) и авто-лежанки (Car Dog Bed Bench/Bucket Seat, Booster Seat). Не добавлять 'когтеточки' и 'аквариумы' — таких линеек у PetSafe нет. Лежанки — преимущественно автомобильные (Happy Ride), не домашние. Drinkwell — фонтаны-поилки (не входит в 4 целевые категории, для контекста).",
+    "confidence": "verified"
+   },
+   {
+    "brand": "Дарэлл",
+    "verifiedSeries": [
+     "ПУХ",
+     "ВИННИ ПУХ",
+     "ЭММА",
+     "Navy",
+     "Конфетти"
+    ],
+    "allowedCategories": [
+     "переноски",
+     "лежанки",
+     "лотки",
+     "когтеточки",
+     "аквариумы"
+    ],
+    "forbiddenNote": "Российский бренд ТМ компании 'Рэд Пластик' (>4500 наименований). Проверены именованные серии когтеточек/домиков: ПУХ, ВИННИ ПУХ, ЭММА, Navy, Конфетти. Много позиций идут по артикулам без названия серии (напр. джутовые полосы-когтеточки). Товары для аквариумистики подтверждены как категория ассортимента, но конкретные именованные линейки аквариумов не выявлены — при публикации модели аквариума использовать артикул, серию не выдумывать. Для переносок/лотков/лежанок именованные серии в основном отсутствуют — идентификация по артикулу.",
+    "confidence": "verified"
+   }
+  ],
+  "notes": "Все 6 брендов проверены веб-поиском + fetch официальных сайтов (ferplast.com, savic.be, trixie.ru, triol.pet, petsafe.com) и дилеров. Ключевые предостережения для реестра v4:\n\n1. КОДОВАЯ vs ИМЕНОВАННАЯ номенклатура: Triol и Дарэлл (российские) и рядовой ассортимент Trixie идентифицируются преимущественно по АРТИКУЛАМ, а не по названным сериям. verifiedSeries для них содержит лишь подтверждённые именованные линейки; для остальных позиций использовать артикул, серию НЕ выдумывать.\n\n2. ОГРАНИЧЕНИЯ КАТЕГОРИЙ по специализации бренда:\n   - Savic: НЕ производит аквариумы и не имеет линейки когтеточек — только переноски/лежанки/лотки.\n   - PetSafe: умные/авто-устройства; НЕТ когтеточек и аквариумов; лежанки — автомобильные (Happy Ride), лотки — авто-очистка (ScoopFree).\n   - Trixie: аквариумы — под вопросом (Trixie делает аксессуары для аквариумов, но не заявлен как производитель стеклянных аквариумов на уровне именованной линейки) — категория 'аквариумы' исключена из allowedCategories до доп. проверки.\n\n3. НЕ ПУТАТЬ бренды: серия PRIME — это отдельный производитель аквариумов, НЕ Triol (у Triol аквариумы Triol-Disney и безымянные круглые).\n\n4. Полнота серий: у Ferplast и Savic именованных линеек десятки; перечислены основные проверенные. Конкретные номера моделей внутри серий (Atlas 10/20, Swing 1-15, Skudo 3-7) многочисленны — проверять точный номер перед публикацией, не генерировать."
+ }
+]
