@@ -1,1 +1,1 @@
-{"batchId": "dbe93b7a1dd53fc772a9548a9022655e5f06dc4093f68313dea82889dca58a9f", "familyKey": "brick_block", "recordLevels": ["catalog_type"], "count": 20, "pendingRefs": ["brick_block", "construction_material"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "4942fef54a7b0dacd15e13cb10638d3a2d1d614927069a95e61b3a487348450d", "familyKey": "brick_block", "recordLevels": ["catalog_type"], "count": 20, "pendingRefs": ["brick_block", "construction_material"], "generator": "glm", "schemaVersion": 1}

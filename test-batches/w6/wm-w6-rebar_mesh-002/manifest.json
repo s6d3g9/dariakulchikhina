@@ -1,1 +1,1 @@
-{"batchId": "7c727970fa7a5f6a3929844601cf43b6e37d8109a00e3135088d0f36ad48fcf8", "familyKey": "rebar_mesh", "recordLevels": ["catalog_type"], "count": 21, "pendingRefs": ["rebar_mesh", "construction_material"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "7deeaaa7a23d53a212e35f4441c0800293b21e2b832e64bbc9c2b17c530ce0d5", "familyKey": "rebar_mesh", "recordLevels": ["catalog_type"], "count": 17, "pendingRefs": ["rebar_mesh", "construction_material"], "generator": "glm", "schemaVersion": 1}
