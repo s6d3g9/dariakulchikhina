@@ -1,1 +1,1 @@
-{"batchId": "41a80f04bd414dfb245d592addf0d8a9253517290a672a7a0387bf5eb0bb9095", "familyKey": "cctv", "recordLevels": ["catalog_type"], "count": 25, "pendingRefs": ["cctv"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "f60b7dd4031aab44d9b6bc2df41fedfd4465c760974343d60dfcdfe021c7f1b7", "familyKey": "cctv", "recordLevels": ["catalog_type"], "count": 24, "pendingRefs": ["cctv"], "generator": "glm", "schemaVersion": 1}
