@@ -31,12 +31,20 @@ def main():
                 if m:
                     series.add(norm(m.group(1)))
                     series.add(norm(m.group(2)))
-            bmap[key] = {
-                "series": series,
-                "has_whitelist": len(series) > 0,
-                "cats": {norm(c) for c in b.get("allowedCategories", [])},
-                "brand": b["brand"],
-            }
+            # A brand can appear in several registry groups (e.g. Electrolux in
+            # underfloor, ventilation, heaters). UNION its series/categories across
+            # all groups instead of letting the last group overwrite the first.
+            if key in bmap:
+                bmap[key]["series"] |= series
+                bmap[key]["cats"] |= {norm(c) for c in b.get("allowedCategories", [])}
+                bmap[key]["has_whitelist"] = len(bmap[key]["series"]) > 0
+            else:
+                bmap[key] = {
+                    "series": series,
+                    "has_whitelist": len(series) > 0,
+                    "cats": {norm(c) for c in b.get("allowedCategories", [])},
+                    "brand": b["brand"],
+                }
     checked = hard_series = hard_brand = soft_cat = 0
     findings = []
     for arg in inputs:
