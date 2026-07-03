@@ -1,1 +1,1 @@
-{"batchId": "db0bb03acce3be4cd2413fe217be7db4cb71d2f47bda44371314a697b57e8758", "familyKey": "warm_floor", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["warm_floor"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "f8bd8c1f42465acfd8087408f7859b8598a6761ed7dddc77e91eb7e5541e1801", "familyKey": "warm_floor", "recordLevels": ["catalog_type"], "count": 25, "pendingRefs": ["warm_floor"], "generator": "glm", "schemaVersion": 1}

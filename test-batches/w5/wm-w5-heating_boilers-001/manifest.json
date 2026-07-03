@@ -1,1 +1,1 @@
-{"batchId": "1c14bebe7134951eaf969afd1066d619cbc84ba05b3c20086244a8b804b4edca", "familyKey": "heating_boilers", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["heating_boilers"], "generator": "glm", "schemaVersion": 1}
+{"batchId": "8d48b0a68abe7abf3d0f27bf92743bb7a7f5ba6ba8f9e1b2c81e74932138246d", "familyKey": "heating_boilers", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["heating_boilers"], "generator": "glm", "schemaVersion": 1}
