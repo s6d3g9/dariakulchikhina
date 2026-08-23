@@ -1,0 +1,1139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.oxoxoxo.online/shell-v6/spatial-kernel/1.0.0",
+  "title": "Shell v6 spatial kernel contracts",
+  "description": "Public spatial contracts plus a separately addressed restricted audit record.",
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      }
+    },
+    "matrix4": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": {
+        "type": "number"
+      }
+    },
+    "aabb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "min",
+        "max"
+      ],
+      "properties": {
+        "min": {
+          "$ref": "#/$defs/vec3"
+        },
+        "max": {
+          "$ref": "#/$defs/vec3"
+        }
+      }
+    },
+    "localFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "right",
+        "front",
+        "up"
+      ],
+      "properties": {
+        "origin": {
+          "$ref": "#/$defs/vec3"
+        },
+        "right": {
+          "$ref": "#/$defs/vec3"
+        },
+        "front": {
+          "$ref": "#/$defs/vec3"
+        },
+        "up": {
+          "$ref": "#/$defs/vec3"
+        }
+      }
+    },
+    "toleranceProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "determinant",
+        "frame",
+        "geometryM",
+        "portM",
+        "angleRad"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "determinant": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "frame": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "geometryM": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "portM": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "angleRad": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "affectedScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bbox",
+        "predicateKeys",
+        "instanceIds"
+      ],
+      "properties": {
+        "bbox": {
+          "$ref": "#/$defs/aabb"
+        },
+        "predicateKeys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "instanceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "resolutionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "predicate",
+        "subjectId",
+        "winnerClaimId",
+        "loserClaimIds",
+        "ruleId"
+      ],
+      "properties": {
+        "predicate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "winnerClaimId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "loserClaimIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "ruleId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "compilationProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claimSetHash",
+        "resolutionRecords",
+        "effectivePolicyHash",
+        "affectedScope",
+        "stalenessBudgetClass"
+      ],
+      "properties": {
+        "claimSetHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "resolutionRecords": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/resolutionRecord"
+          }
+        },
+        "effectivePolicyHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "affectedScope": {
+          "$ref": "#/$defs/affectedScope"
+        },
+        "stalenessBudgetClass": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "restrictedCompilationAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "planId",
+        "deniedSetDigest",
+        "restrictedGateRevision"
+      ],
+      "properties": {
+        "planId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "deniedSetDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "restrictedGateRevision": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "mirrorPair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "leftId",
+        "rightId"
+      ],
+      "properties": {
+        "leftId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rightId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "semanticSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surfaceId",
+        "role",
+        "frame",
+        "activeInStates"
+      ],
+      "properties": {
+        "surfaceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "front",
+            "back",
+            "left",
+            "right",
+            "top",
+            "bottom",
+            "functional-front",
+            "user-facing",
+            "approach",
+            "operation",
+            "service",
+            "mount",
+            "support",
+            "display"
+          ]
+        },
+        "frame": {
+          "$ref": "#/$defs/localFrame"
+        },
+        "activeInStates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "spatialPort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "portId",
+        "portType",
+        "frame",
+        "directionConvention",
+        "roll",
+        "compatiblePortTypes",
+        "distanceRangeM",
+        "positionToleranceM",
+        "angleToleranceRad",
+        "activeInStates"
+      ],
+      "properties": {
+        "portId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "portType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "frame": {
+          "$ref": "#/$defs/localFrame"
+        },
+        "directionConvention": {
+          "const": "outward-normal"
+        },
+        "roll": {
+          "enum": [
+            "locked",
+            "free"
+          ]
+        },
+        "compatiblePortTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "distanceRangeM": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "positionToleranceM": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "angleToleranceRad": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "activeInStates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "functionalVolume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "volumeId",
+        "role",
+        "bounds",
+        "uncertaintyRadiusM",
+        "activeInStates",
+        "enforcement",
+        "compatibleOverlapRoles"
+      ],
+      "properties": {
+        "volumeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "body",
+            "approach",
+            "operation",
+            "service",
+            "safety",
+            "perception"
+          ]
+        },
+        "bounds": {
+          "$ref": "#/$defs/aabb"
+        },
+        "uncertaintyRadiusM": {
+          "type": "number",
+          "minimum": 0
+        },
+        "activeInStates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "enforcement": {
+          "enum": [
+            "hard",
+            "soft"
+          ]
+        },
+        "compatibleOverlapRoles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "body",
+              "approach",
+              "operation",
+              "service",
+              "safety",
+              "perception"
+            ]
+          }
+        }
+      }
+    },
+    "stateMachine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "states",
+        "transitions"
+      ],
+      "properties": {
+        "states": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "stateId",
+              "initial"
+            ],
+            "properties": {
+              "stateId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "initial": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "transitionId",
+              "fromStateId",
+              "toStateId",
+              "sweptVolumeIds"
+            ],
+            "properties": {
+              "transitionId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fromStateId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "toStateId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sweptVolumeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "mirrorMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mirrorId",
+        "reflectionInCanonical",
+        "surfacePairs",
+        "portPairs",
+        "chiralityMap",
+        "revitStrategy"
+      ],
+      "properties": {
+        "mirrorId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reflectionInCanonical": {
+          "$ref": "#/$defs/matrix4"
+        },
+        "surfacePairs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mirrorPair"
+          }
+        },
+        "portPairs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mirrorPair"
+          }
+        },
+        "chiralityMap": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "revitStrategy": {
+          "enum": [
+            "none",
+            "hand-flip",
+            "facing-flip",
+            "mirror-element"
+          ]
+        }
+      }
+    },
+    "symmetryProfile": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "none"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "rotationalOrder"
+          ],
+          "properties": {
+            "kind": {
+              "const": "cyclic"
+            },
+            "rotationalOrder": {
+              "type": "integer",
+              "minimum": 2
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "orientation-invariant"
+            }
+          }
+        }
+      ]
+    },
+    "spatialAssetProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "artifactType",
+        "profileRevisionId",
+        "digitalAssetRevisionId",
+        "worldSnapshotRevision",
+        "permissionRevision",
+        "resolutionProfileVersion",
+        "toleranceProfileVersion",
+        "inputProof",
+        "effectiveAudienceScope",
+        "unit",
+        "canonicalFrame",
+        "sourceToCanonical",
+        "symmetry",
+        "mirrors",
+        "placementKind",
+        "surfaces",
+        "ports",
+        "volumes",
+        "stateMachine",
+        "qualityLevel",
+        "status"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "artifactType": {
+          "const": "spatial-profile"
+        },
+        "profileRevisionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digitalAssetRevisionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "worldSnapshotRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "permissionRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resolutionProfileVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "toleranceProfileVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "inputProof": {
+          "$ref": "#/$defs/compilationProof"
+        },
+        "effectiveAudienceScope": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "unit": {
+          "const": "m"
+        },
+        "canonicalFrame": {
+          "$ref": "#/$defs/localFrame"
+        },
+        "sourceToCanonical": {
+          "$ref": "#/$defs/matrix4"
+        },
+        "symmetry": {
+          "$ref": "#/$defs/symmetryProfile"
+        },
+        "mirrors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mirrorMapping"
+          }
+        },
+        "placementKind": {
+          "enum": [
+            "free",
+            "level-based",
+            "wall-hosted",
+            "face-hosted",
+            "ceiling-hosted",
+            "work-plane-based",
+            "curve-driven",
+            "adaptive"
+          ]
+        },
+        "surfaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/semanticSurface"
+          }
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spatialPort"
+          }
+        },
+        "volumes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/functionalVolume"
+          }
+        },
+        "stateMachine": {
+          "$ref": "#/$defs/stateMachine"
+        },
+        "qualityLevel": {
+          "enum": [
+            "L0",
+            "L1",
+            "L2",
+            "L3",
+            "L4",
+            "L5"
+          ]
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "stale",
+            "invalid"
+          ]
+        }
+      }
+    },
+    "spatialSolveRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestId",
+        "sceneGraphRevision",
+        "worldSnapshotRevision",
+        "resolutionProfileVersion",
+        "toleranceProfileVersion",
+        "solverVersion",
+        "runtimeProfileVersion",
+        "seed",
+        "intent",
+        "lockedInstanceIds",
+        "requestedVariants"
+      ],
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sceneGraphRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "worldSnapshotRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resolutionProfileVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "toleranceProfileVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "solverVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "runtimeProfileVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "seed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requestedAudienceNarrowing": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "intent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "intentType",
+            "requestedInstanceIds",
+            "requiredRelationKeys"
+          ],
+          "properties": {
+            "intentType": {
+              "type": "string",
+              "minLength": 1
+            },
+            "requestedInstanceIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "requiredRelationKeys": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "lockedInstanceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "requestedVariants": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        }
+      }
+    },
+    "validationProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hardConstraintDigest",
+        "validatorVersion",
+        "globalChecks",
+        "scenarioDigest",
+        "geometryDigest"
+      ],
+      "properties": {
+        "hardConstraintDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "validatorVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "globalChecks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "checkId",
+              "status",
+              "minimumMargin",
+              "unit"
+            ],
+            "properties": {
+              "checkId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "const": "pass"
+              },
+              "minimumMargin": {
+                "type": "number",
+                "minimum": 0
+              },
+              "unit": {
+                "enum": [
+                  "m",
+                  "rad",
+                  "dimensionless"
+                ]
+              }
+            }
+          }
+        },
+        "scenarioDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "geometryDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "canonicalPlacement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instanceId",
+        "transformWorld",
+        "hostId",
+        "stateId",
+        "profileRevisionId"
+      ],
+      "properties": {
+        "instanceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transformWorld": {
+          "$ref": "#/$defs/matrix4"
+        },
+        "hostId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mirrorId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stateId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profileRevisionId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "placementPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "planId",
+        "planHash",
+        "status",
+        "inputProof",
+        "solverVersion",
+        "runtimeProfileVersion",
+        "seed",
+        "affectedScope",
+        "placements",
+        "validationProof",
+        "softScoreByTier",
+        "explanationRef"
+      ],
+      "properties": {
+        "planId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "status": {
+          "const": "ready"
+        },
+        "inputProof": {
+          "$ref": "#/$defs/compilationProof"
+        },
+        "solverVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "runtimeProfileVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "seed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "affectedScope": {
+          "$ref": "#/$defs/affectedScope"
+        },
+        "placements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/canonicalPlacement"
+          }
+        },
+        "validationProof": {
+          "$ref": "#/$defs/validationProof"
+        },
+        "softScoreByTier": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "tier",
+              "value"
+            ],
+            "properties": {
+              "tier": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "explanationRef": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "revitPlacementStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stepId",
+        "stepContractVersion",
+        "instanceId",
+        "placementKind",
+        "expectedTransformWorld",
+        "hardDependencyStepIds"
+      ],
+      "properties": {
+        "stepId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stepContractVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "instanceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "existingUniqueId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "placementKind": {
+          "enum": [
+            "free",
+            "level-based",
+            "wall-hosted",
+            "face-hosted",
+            "ceiling-hosted",
+            "work-plane-based",
+            "curve-driven",
+            "adaptive"
+          ]
+        },
+        "expectedTransformWorld": {
+          "$ref": "#/$defs/matrix4"
+        },
+        "expectedHostUniqueId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hardDependencyStepIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "spatialRevitApplyParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "planId",
+        "planHash",
+        "operationMode",
+        "worldSnapshotRevision",
+        "affectedScopeHash",
+        "capabilityDigest",
+        "requiredCapabilities",
+        "steps"
+      ],
+      "properties": {
+        "planId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "operationMode": {
+          "enum": [
+            "atomic",
+            "partial"
+          ]
+        },
+        "worldSnapshotRevision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "affectedScopeHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "capabilityDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "requiredCapabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/revitPlacementStep"
+          }
+        }
+      }
+    }
+  }
+}
