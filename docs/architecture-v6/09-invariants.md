@@ -131,6 +131,87 @@ CI-проверка `packages/testing/fractal-harness` прогоняет сце
 
 Без обоих — merge заблокирован.
 
+## I24. Permission before knowledge operations
+
+`PermissionFilter -> SourceValidity -> Aggregate -> Rank -> Project`. Скрытые claims не влияют даже на count, order и geometry.
+
+## I25. Claims, not flattened facts
+
+Каждое значение имеет claim type, source revision, authority, confidence class, valid/observed/recorded time, policy и provenance.
+
+## I26. Provenance is an acyclic dependency graph
+
+Циклы отклоняются; correlated copies не считаются независимыми sources; любой derived artifact объясним до root evidence.
+
+## I27. Derived policy is never broader
+
+Audience производного артефакта — intersection входных audiences, classification — most restrictive join.
+
+## I28. Erasure and policy changes cascade
+
+Summary, prediction, index, embedding, cache и SurfacePlan инвалидируются через reverse dependency closure.
+
+## I29. Identity links are reversible
+
+Identity resolution хранится как `IdentityLinkClaim`; merge не переносит permissions и не уничтожает исходные entity.
+
+## I30. UI is a projection
+
+Transient UI-state не хранится в World Model. Renderer не принимает business/policy решения.
+
+## I31. Mandatory safety is not a ranking preference
+
+Safety/legal/permission — hard constraints. Mandatory closure проверяется на feasibility до selection и не удаляется repair-алгоритмом.
+
+## I32. Projection is epoch-bound and deterministic
+
+Одинаковые authorized inputs и contract versions дают семантически эквивалентный SurfacePlan. Старый epoch не обновляет новый.
+
+## I33. Disclosure refines semantics
+
+Следующий depth сохраняет identity и unresolved critical state, а summary либо подтверждается, либо явно корректируется.
+
+## I34. Stable surfaces use hysteresis
+
+Обычные score fluctuations не вызывают flicker/reorder. Safety, legal, permission revoke, critical error и explicit intent обходят cooldown.
+
+## I35. One command boundary
+
+Любая mutation проходит `CommandEnvelope -> ActionContract -> domain operation -> DomainEvent`; UI не пишет напрямую.
+
+## I36. Confirmation binds risk context
+
+Confirmation token связан с actor, target, payload, revision, semantic context и отображённым risk summary. Изменение facts требует reconfirmation.
+
+## I37. Delivery is at-least-once safe
+
+Commands/events дедуплицируются; aggregate sequence gap останавливает projection и требует snapshot/resync.
+
+## I38. Incompatible clients fail closed
+
+Если client не понимает safety semantics, surface становится read-only/text/disabled, но не деградирует в опасную кнопку.
+
+## I39. Typography follows semantic role
+
+Score не выбирает шрифтовой стиль. Reflow, RTL/CJK, 200–400% zoom и screen-reader order являются contract tests.
+
+## I40. AI proposes; deterministic validators decide
+
+AI-generated claim/summary/plan хранит provenance и не обходит schema, policy, constraints, risk и conformance gates.
+
+## I41. Development intelligence работает только на NL
+
+Serena, Graphify, Entire, indexers, provider CLI, web/browser research tools и их dashboards исполняются только на каноническом NL-host. Coordinator работает под `claudecode` в `/srv/v6`; provider workers — только под изолированными service accounts из versioned routing manifest.
+
+Запрещены:
+
+- local workstation fallback при недоступности сервера;
+- запуск из копии `/Users/**`, macOS или другого hostname/user;
+- публичный bind dashboard и автоматическое открытие workstation browser;
+- прямой запуск в обход `scripts/nl-tooling-policy.mjs`.
+
+Host/platform/path/user проверяются до старта процесса. Несовпадение — fail-closed.
+
 ---
 
 Каждый инвариант должен получить ESLint-правило или CI-check до конца Фазы 2. Без этого инварианты — декларация, а не гарантия.
@@ -162,6 +243,11 @@ CI-проверка `packages/testing/fractal-harness` прогоняет сце
 | I21 | Timeline обязателен | CI |
 | I22 | Inversion обязательна | CI |
 | I23 | Dual-layer tests | CI |
+| I24–I29 | Policy-aware Claim Graph | Semantic validators + security tests |
+| I30–I34 | Deterministic stable projection | Property tests + parity suite |
+| I35–I38 | Safe commands/events/fallback | Contract + integration tests |
+| I39–I40 | Semantic rendering и bounded AI | A11y + policy/conformance tests |
+| I41 | NL-only development intelligence | Host guard + negative policy tests |
 
 ## Enforcement mechanisms — концретно
 

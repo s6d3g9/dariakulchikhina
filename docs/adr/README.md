@@ -58,6 +58,7 @@ ADR обязателен, если решение:
 
 1. Автор открывает PR с новым ADR в статусе `Proposed`.
 2. Architecture Office + релевантные команды ревьюят.
+| [0013](0013-qwen-review-routing.md) | Qwen 3.8 Max как независимый review-provider | Accepted |
 3. Slack / meeting для обсуждения.
 4. Статус меняется на `Accepted` или `Rejected`.
 5. Merge.
@@ -77,6 +78,8 @@ ADR обязателен, если решение:
 | [0008](0008-k8s-provider.md) | Managed k8s provider (Hetzner + Yandex dual) | Accepted |
 | [0009](0009-kms-choice.md) | KMS / secrets (Infisical + cloud-KMS) | Accepted |
 | [0010](0010-zod-openapi-pipeline.md) | Contract-first via Zod → OpenAPI | Accepted |
+| [0011](0011-policy-aware-claim-graph.md) | Policy-aware Claim Graph и projection kernel | Proposed |
+| [0012](0012-nl-only-development-runtime.md) | NL-only среда Development Intelligence | Accepted |
 
 ## Связь с другими docs
 

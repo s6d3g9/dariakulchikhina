@@ -2,6 +2,18 @@
 
 CRM/ERP for an interior design studio. Polyruntime pnpm monorepo.
 
+## NL-only development runtime
+
+- Run all development work from NL host `v2202602335514431700` as `claudecode` in `/srv/v6`.
+- Provider execution may use only isolated NL service accounts declared in `docs/architecture-v6/schemas/development-provider-routing.json`; never use root or an undeclared account.
+- Serena, Graphify, Entire, indexers, provider CLIs, web research/browser tools, and dashboards are server-only. Never launch or install a local fallback on macOS or a developer workstation.
+- Before using development-intelligence tooling, run `pnpm tooling:nl:verify`. A denial or missing SSH session is a hard stop, not permission to work locally.
+- Before an AI route, run `pnpm tooling:nl:providers:verify`. Active development routes are Z.AI-only; Anthropic, OpenAI, Ollama, and local-model fallback are forbidden.
+- Start Serena only through `pnpm tooling:nl:serena:claude` or `pnpm tooling:nl:serena:codex`; direct `serena`, `uvx serena`, or copied MCP commands are outside policy.
+- Dashboard loopback addresses refer to the NL host. Keep browser auto-open disabled and do not expose the dashboard publicly or create a workstation tunnel without explicit user authorization.
+- Use only server-side browsing tools. Never use a workstation browser as fallback.
+- Canonical policy and runbook: `docs/architecture-v6/62-nl-only-development-runtime.md` and `scripts/nl-tooling-policy.mjs`.
+
 ## Runtimes and top-level layout
 
 - `app/` + `server/` + `shared/` — main Nuxt 4 app (SSR + REST + SSE in one Nitro process). Frontend follows FSD, backend follows DDD-lite.

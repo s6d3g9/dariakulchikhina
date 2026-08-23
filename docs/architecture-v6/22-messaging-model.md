@@ -215,3 +215,13 @@ Messenger публикует события в JetStream, `services/notification
 - ❌ Скрытые чаты (не видны в resolver'е) для бизнес-логики — используй events + messaging правильно.
 - ❌ Уникальный UI для «чата про машину» vs «чата про квартиру».
 - ❌ Прямой доступ messenger к чужим БД (booking, wallet) — только через events или API.
+
+## 16. Интерактивные генеративные surfaces внутри сообщений
+
+Сообщение может быть не только текстом или ссылкой на Pattern-Card, но и versioned `InteractiveMessageContent` из `58-command-safety-runtime.md`. Оно ссылается на entity/intent и рендерится общим `SurfacePlan` из `56-generative-surface-engine.md`.
+
+Источники: человек, человек через vertical, бот через vertical или automation. Все варианты проходят одинаковые actor/policy/action/audit contracts.
+
+Примеры: Coach exercise, checklist, timer/countdown, weather/location, invitation, announcement, poll, appointment, payment preview, delivery tracker. Это Instruments из общего registry, а не отдельные реализации messenger UI.
+
+Messenger отвечает за delivery, conversation permissions и interaction events. Доменная vertical отвечает за claims и commands. Renderer отвечает только за общий semantic plan. Голос, видео, calls и transcription продолжают использовать существующие общие primitives и не дублируются внутри карточки.
