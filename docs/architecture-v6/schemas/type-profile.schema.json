@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oxoxoxo.online/schemas/shell-v6/type-profile.schema.json",
+  "title": "Shell v6 Type Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "typeId", "version", "parentTypeIds", "fieldDefinitions",
+    "relationDefinitions", "lifecycleDefinition", "requiredClaimTypes",
+    "supportedInstrumentIds", "regionalProfiles", "migrationRefs"
+  ],
+  "properties": {
+    "typeId": { "type": "string", "pattern": "^[a-z][a-z0-9.-]*$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "parentTypeIds": { "$ref": "#/$defs/strings" },
+    "fieldDefinitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["fieldId", "valueType", "semanticRole", "claimPredicate", "cardinality"],
+        "properties": {
+          "fieldId": { "type": "string" },
+          "valueType": { "type": "string" },
+          "semanticRole": { "type": "string" },
+          "claimPredicate": { "type": "string" },
+          "cardinality": { "enum": ["one", "optional", "many"] },
+          "unitDimension": { "type": "string" },
+          "sensitivityClass": { "type": "string" }
+        }
+      }
+    },
+    "relationDefinitions": { "type": "array", "items": { "type": "object" } },
+    "lifecycleDefinition": { "type": "object" },
+    "requiredClaimTypes": { "$ref": "#/$defs/strings" },
+    "supportedInstrumentIds": { "$ref": "#/$defs/strings" },
+    "regionalProfiles": { "$ref": "#/$defs/strings" },
+    "migrationRefs": { "$ref": "#/$defs/strings" }
+  },
+  "$defs": {
+    "strings": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  }
+}

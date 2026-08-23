@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oxoxoxo.online/schemas/shell-v6/claim.schema.json",
+  "title": "Shell v6 Claim",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "claimId",
+    "subjectId",
+    "predicate",
+    "claimType",
+    "sourceId",
+    "sourceRevision",
+    "authority",
+    "confidenceClass",
+    "recordedAt",
+    "policyRef",
+    "provenanceRef",
+    "status"
+  ],
+  "oneOf": [
+    { "required": ["value"], "not": { "required": ["objectId"] } },
+    { "required": ["objectId"], "not": { "required": ["value"] } }
+  ],
+  "properties": {
+    "claimId": { "type": "string", "minLength": 1 },
+    "subjectId": { "type": "string", "minLength": 1 },
+    "predicate": { "type": "string", "pattern": "^[a-z][a-z0-9.-]*$" },
+    "value": true,
+    "objectId": { "type": "string", "minLength": 1 },
+    "claimType": {
+      "enum": ["observed", "declared", "derived", "predicted", "recommended", "desired", "hypothetical", "disputed", "unknown"]
+    },
+    "sourceId": { "type": "string", "minLength": 1 },
+    "sourceRevision": { "type": "string", "minLength": 1 },
+    "authority": { "enum": ["unknown", "self", "peer", "domain", "official"] },
+    "confidenceClass": { "enum": ["unknown", "low", "medium", "high", "verified"] },
+    "calibratedProbability": { "type": "number", "minimum": 0, "maximum": 1 },
+    "calibrationProfile": { "type": "string", "minLength": 1 },
+    "validTime": { "$ref": "#/$defs/timeRange" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "jurisdiction": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "policyRef": { "type": "string", "minLength": 1 },
+    "provenanceRef": { "type": "string", "minLength": 1 },
+    "correlationGroup": { "type": "string" },
+    "status": { "enum": ["active", "superseded", "retracted", "expired", "disputed"] }
+  },
+  "dependentRequired": {
+    "calibratedProbability": ["calibrationProfile"],
+    "calibrationProfile": ["calibratedProbability"]
+  },
+  "$defs": {
+    "timeRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": { "type": "string", "format": "date-time" },
+        "to": { "type": "string", "format": "date-time" }
+      },
+      "minProperties": 1
+    }
+  }
+}

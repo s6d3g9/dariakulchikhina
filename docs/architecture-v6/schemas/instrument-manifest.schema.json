@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oxoxoxo.online/schemas/shell-v6/instrument-manifest.schema.json",
+  "title": "Shell v6 Instrument Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrumentId", "version", "acceptedWorldTypes", "acceptedClaimTypes",
+    "requiredInputs", "optionalInputs", "outputEventTypes", "commandTypes",
+    "semanticRoles", "supportedDepths", "supportedSizeClasses", "dependencies",
+    "conflicts", "dataQualityRequirements", "freshnessRequirements",
+    "permissionRequirements", "riskClasses", "fallbackInstrumentId", "complexityCost"
+  ],
+  "properties": {
+    "instrumentId": { "type": "string", "pattern": "^[a-z][a-z0-9.-]*$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "acceptedWorldTypes": { "$ref": "#/$defs/nonEmptyStrings" },
+    "acceptedClaimTypes": { "$ref": "#/$defs/strings" },
+    "requiredInputs": { "$ref": "#/$defs/strings" },
+    "optionalInputs": { "$ref": "#/$defs/strings" },
+    "outputEventTypes": { "$ref": "#/$defs/strings" },
+    "commandTypes": { "$ref": "#/$defs/strings" },
+    "semanticRoles": { "$ref": "#/$defs/nonEmptyStrings" },
+    "supportedDepths": {
+      "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 5 }, "minItems": 1, "uniqueItems": true
+    },
+    "supportedSizeClasses": {
+      "type": "array", "items": { "enum": ["nano", "compact", "regular", "wide", "focus"] }, "minItems": 1, "uniqueItems": true
+    },
+    "dependencies": { "$ref": "#/$defs/strings" },
+    "conflicts": { "$ref": "#/$defs/strings" },
+    "exclusiveGroup": { "type": "string" },
+    "atomicGroup": { "type": "string" },
+    "dataQualityRequirements": { "$ref": "#/$defs/strings" },
+    "freshnessRequirements": {
+      "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "permissionRequirements": { "$ref": "#/$defs/strings" },
+    "riskClasses": {
+      "type": "array", "items": { "enum": ["safe", "reversible", "sensitive", "financial", "legal", "physical", "irreversible"] }, "uniqueItems": true
+    },
+    "fallbackInstrumentId": { "type": "string", "minLength": 1 },
+    "complexityCost": { "type": "number", "minimum": 0 }
+  },
+  "$defs": {
+    "strings": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "nonEmptyStrings": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+  }
+}
