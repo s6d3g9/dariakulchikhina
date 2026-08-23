@@ -1,0 +1,1108 @@
+{
+ "records": [
+  {
+   "id": "wm:category_family:global:finish_material_nomenclature",
+   "level": "category_family",
+   "key": "finish_material_nomenclature",
+   "scope": "global",
+   "labels": {
+    "default": "Отделочные материалы",
+    "ru": "Отделочные материалы",
+    "en": "Finish materials"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "31200000"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:tile_ceramics",
+   "level": "category_family",
+   "key": "tile_ceramics",
+   "scope": "global",
+   "labels": {
+    "default": "Плитка и керамика",
+    "ru": "Плитка и керамика",
+    "en": "Tile & ceramics"
+   },
+   "payload": {
+    "parentKey": "finish_material_nomenclature",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "30121600"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000002",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:wood_flooring",
+   "level": "category_family",
+   "key": "wood_flooring",
+   "scope": "global",
+   "labels": {
+    "default": "Напольные покрытия из дерева",
+    "ru": "Напольные покрытия из дерева",
+    "en": "Wood flooring"
+   },
+   "payload": {
+    "parentKey": "finish_material_nomenclature",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "30171700"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000003",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:paints_coatings",
+   "level": "category_family",
+   "key": "paints_coatings",
+   "scope": "global",
+   "labels": {
+    "default": "Краски и покрытия",
+    "ru": "Краски и покрытия",
+    "en": "Paints & coatings"
+   },
+   "payload": {
+    "parentKey": "finish_material_nomenclature",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "31400000"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000004",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:wallpaper_wallcover",
+   "level": "category_family",
+   "key": "wallpaper_wallcover",
+   "scope": "global",
+   "labels": {
+    "default": "Обои и настенные покрытия",
+    "ru": "Обои и настенные покрытия",
+    "en": "Wallpaper & wallcover"
+   },
+   "payload": {
+    "parentKey": "finish_material_nomenclature",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "30131700"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000005",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:engineering_system_types",
+   "level": "category_family",
+   "key": "engineering_system_types",
+   "scope": "global",
+   "labels": {
+    "default": "Инженерные системы",
+    "ru": "Инженерные системы",
+    "en": "Engineering systems"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "41000000"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000006",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:hvac_systems",
+   "level": "category_family",
+   "key": "hvac_systems",
+   "scope": "global",
+   "labels": {
+    "default": "ОВиК системы",
+    "ru": "ОВиК системы",
+    "en": "HVAC systems"
+   },
+   "payload": {
+    "parentKey": "engineering_system_types",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "40101700"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000007",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:electrical_power",
+   "level": "category_family",
+   "key": "electrical_power",
+   "scope": "global",
+   "labels": {
+    "default": "Электроснабжение",
+    "ru": "Электроснабжение",
+    "en": "Electrical power"
+   },
+   "payload": {
+    "parentKey": "engineering_system_types",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "39120000"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000008",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:low_voltage_systems",
+   "level": "category_family",
+   "key": "low_voltage_systems",
+   "scope": "global",
+   "labels": {
+    "default": "Слаботочные системы",
+    "ru": "Слаботочные системы",
+    "en": "Low voltage systems"
+   },
+   "payload": {
+    "parentKey": "engineering_system_types",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "32101500"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000009",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:water_supply_sewerage",
+   "level": "category_family",
+   "key": "water_supply_sewerage",
+   "scope": "global",
+   "labels": {
+    "default": "Водоснабжение и канализация",
+    "ru": "Водоснабжение и канализация",
+    "en": "Water supply & sewerage"
+   },
+   "payload": {
+    "parentKey": "engineering_system_types",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "40000000"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000000a",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:construction_work_types",
+   "level": "category_family",
+   "key": "construction_work_types",
+   "scope": "global",
+   "labels": {
+    "default": "Строительные работы",
+    "ru": "Строительные работы",
+    "en": "Construction works"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "72000000"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000000b",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:rough_works",
+   "level": "category_family",
+   "key": "rough_works",
+   "scope": "global",
+   "labels": {
+    "default": "Черновые работы",
+    "ru": "Черновые работы",
+    "en": "Rough works"
+   },
+   "payload": {
+    "parentKey": "construction_work_types",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "72101500"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000000c",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:finishing_works",
+   "level": "category_family",
+   "key": "finishing_works",
+   "scope": "global",
+   "labels": {
+    "default": "Чистовые работы",
+    "ru": "Чистовые работы",
+    "en": "Finishing works"
+   },
+   "payload": {
+    "parentKey": "construction_work_types",
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "72101600"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000000d",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:contract_types",
+   "level": "category_family",
+   "key": "contract_types",
+   "scope": "global",
+   "labels": {
+    "default": "Типы договоров",
+    "ru": "Типы договоров",
+    "en": "Contract types"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000000e",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:building_elements",
+   "level": "category_family",
+   "key": "building_elements",
+   "scope": "global",
+   "labels": {
+    "default": "Элементы зданий",
+    "ru": "Элементы зданий",
+    "en": "Building elements"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000000f",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:estimate_budget_items",
+   "level": "category_family",
+   "key": "estimate_budget_items",
+   "scope": "global",
+   "labels": {
+    "default": "Статьи сметы и бюджета",
+    "ru": "Статьи сметы и бюджета",
+    "en": "Estimate & budget items"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000010",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:procurement_docs",
+   "level": "category_family",
+   "key": "procurement_docs",
+   "scope": "global",
+   "labels": {
+    "default": "Закупочные документы",
+    "ru": "Закупочные документы",
+    "en": "Procurement docs"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000011",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:purchase_order",
+   "level": "category_family",
+   "key": "purchase_order",
+   "scope": "global",
+   "labels": {
+    "default": "Заказ на покупку",
+    "ru": "Заказ на покупку",
+    "en": "Purchase order"
+   },
+   "payload": {
+    "parentKey": "procurement_docs",
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000012",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:specification_bom",
+   "level": "category_family",
+   "key": "specification_bom",
+   "scope": "global",
+   "labels": {
+    "default": "Спецификации BOM",
+    "ru": "Спецификации BOM",
+    "en": "Specification BOM"
+   },
+   "payload": {
+    "parentKey": "procurement_docs",
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000013",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:decor_textile_items",
+   "level": "category_family",
+   "key": "decor_textile_items",
+   "scope": "global",
+   "labels": {
+    "default": "Декор и текстиль",
+    "ru": "Декор и текстиль",
+    "en": "Decor & textile"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "30000000"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000014",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:property_types",
+   "level": "category_family",
+   "key": "property_types",
+   "scope": "global",
+   "labels": {
+    "default": "Типы недвижимости",
+    "ru": "Типы недвижимости",
+    "en": "Property types"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "70101700"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000015",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:real_estate_deals",
+   "level": "category_family",
+   "key": "real_estate_deals",
+   "scope": "global",
+   "labels": {
+    "default": "Сделки с недвижимостью",
+    "ru": "Сделки с недвижимостью",
+    "en": "Real estate deals"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": [
+     {
+      "source": "unspsc",
+      "code": "70100000"
+     }
+    ]
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000016",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     },
+     {
+      "source": "unspsc",
+      "confidence": "medium"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:defect_snag_list",
+   "level": "category_family",
+   "key": "defect_snag_list",
+   "scope": "global",
+   "labels": {
+    "default": "Список дефектов",
+    "ru": "Список дефектов",
+    "en": "Defect snag list"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000017",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:inspection_checkpoints",
+   "level": "category_family",
+   "key": "inspection_checkpoints",
+   "scope": "global",
+   "labels": {
+    "default": "Контрольные точки осмотра",
+    "ru": "Контрольные точки осмотра",
+    "en": "Inspection checkpoints"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000018",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:crew_brigades",
+   "level": "category_family",
+   "key": "crew_brigades",
+   "scope": "global",
+   "labels": {
+    "default": "Бригады и звенья",
+    "ru": "Бригады и звенья",
+    "en": "Crew brigades"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "0000000000000000000000000000000000000000000000000000000000000019",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:supplier_profiles",
+   "level": "category_family",
+   "key": "supplier_profiles",
+   "scope": "global",
+   "labels": {
+    "default": "Профили поставщиков",
+    "ru": "Профили поставщиков",
+    "en": "Supplier profiles"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000001a",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:approval_routes",
+   "level": "category_family",
+   "key": "approval_routes",
+   "scope": "global",
+   "labels": {
+    "default": "Маршруты согласования",
+    "ru": "Маршруты согласования",
+    "en": "Approval routes"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000001b",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:skill_competences",
+   "level": "category_family",
+   "key": "skill_competences",
+   "scope": "global",
+   "labels": {
+    "default": "Навыки и компетенции",
+    "ru": "Навыки и компетенции",
+    "en": "Skill competences"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000001c",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:membership_subscriptions",
+   "level": "category_family",
+   "key": "membership_subscriptions",
+   "scope": "global",
+   "labels": {
+    "default": "Членства и подписки",
+    "ru": "Членства и подписки",
+    "en": "Membership subscriptions"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000001d",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  },
+  {
+   "id": "wm:category_family:global:booking_sessions",
+   "level": "category_family",
+   "key": "booking_sessions",
+   "scope": "global",
+   "labels": {
+    "default": "Бронирование сессий",
+    "ru": "Бронирование сессий",
+    "en": "Booking sessions"
+   },
+   "payload": {
+    "parentKey": null,
+    "classIds": [],
+    "externalRefs": []
+   },
+   "meta": {
+    "version": 1,
+    "fingerprint": "000000000000000000000000000000000000000000000000000000000000001e",
+    "batchId": "PLACEHOLDER",
+    "generator": "glm",
+    "sources": [
+     {
+      "source": "local_project",
+      "confidence": "high"
+     }
+    ],
+    "provenance": {
+     "method": "import",
+     "actor": "glm:w0"
+    }
+   }
+  }
+ ]
+}

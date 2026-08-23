@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oxoxoxo.online/schemas/shell-v6/surface-plan.schema.json",
+  "title": "Shell v6 Surface Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planId", "epoch", "focusEntityId", "intentId", "semanticDepth",
+    "sizeClass", "zones", "actionContracts", "editorialPlanRef",
+    "accessibilityOrder", "warnings"
+  ],
+  "properties": {
+    "planId": { "type": "string", "minLength": 1 },
+    "epoch": { "$ref": "#/$defs/epoch" },
+    "focusEntityId": { "type": "string", "minLength": 1 },
+    "intentId": { "type": "string", "minLength": 1 },
+    "semanticDepth": { "type": "integer", "minimum": 0, "maximum": 5 },
+    "sizeClass": { "enum": ["nano", "compact", "regular", "wide", "focus"] },
+    "zones": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/zone" },
+      "minItems": 1
+    },
+    "actionContracts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "editorialPlanRef": { "type": "string", "minLength": 1 },
+    "accessibilityOrder": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "fallbackMode": { "type": "string" },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "epoch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "epochId", "intentId", "worldSnapshotRevision", "permissionRevision",
+        "policyVersion", "typeProfileVersions", "instrumentVersions",
+        "rendererContractVersion", "preferenceVersion", "generatedAt"
+      ],
+      "properties": {
+        "epochId": { "type": "string" },
+        "intentId": { "type": "string" },
+        "worldSnapshotRevision": { "type": "string" },
+        "permissionRevision": { "type": "string" },
+        "policyVersion": { "type": "string" },
+        "typeProfileVersions": { "type": "array", "items": { "type": "string" } },
+        "instrumentVersions": { "type": "array", "items": { "type": "string" } },
+        "rendererContractVersion": { "type": "string" },
+        "preferenceVersion": { "type": "string" },
+        "generatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "zone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zoneId", "role", "items"],
+      "properties": {
+        "zoneId": { "type": "string", "minLength": 1 },
+        "role": { "enum": ["identity", "current-state", "primary-instrument", "supporting-context", "actions", "relations", "evidence"] },
+        "items": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

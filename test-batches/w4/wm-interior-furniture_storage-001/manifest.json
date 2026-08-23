@@ -1,0 +1,1 @@
+{"batchId": "1b0e7ae4072ae42558853a67697ff80d2e554fbec43aa2703f2accf62826a22c", "familyKey": "furniture_storage", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["furniture_storage"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}

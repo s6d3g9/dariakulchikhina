@@ -45,8 +45,8 @@ export interface PolicyDecision {
 export interface PanelProvider<TProps = unknown> {
   slot: PanelSlot
   view: ViewMode
-  /** Lazy-loaded компонент (React). */
-  component: () => Promise<{ default: React.ComponentType<PanelContext<TProps>> }>
+  /** Lazy-loaded renderer-specific component. */
+  component: () => Promise<{ default: unknown }>
   /** Какие данные/события предвыбрать перед рендером. */
   prefetch?: (ctx: PanelContext) => Promise<TProps>
 }
@@ -61,11 +61,4 @@ export function definePanels<T = unknown>(panels: {
   bottom: { instance: PanelProvider<T>; type: PanelProvider<T> }
 }): typeof panels {
   return panels
-}
-
-// React import shim — shell-panels не тащит React напрямую как dep,
-// конкретный shell (web/mobile/desktop) подключает его сам.
-// eslint-disable-next-line @typescript-eslint/no-namespace
-declare namespace React {
-  type ComponentType<P = unknown> = (props: P) => unknown
 }

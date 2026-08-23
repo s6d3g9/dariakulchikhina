@@ -1,0 +1,1 @@
+{"batchId": "ead7948fc9a78da3bb309f01efe4bd02fae71d776cbbd2c19c8d9534fecc87db", "familyKey": "laundry_appliances", "recordLevels": ["catalog_type"], "count": 21, "pendingRefs": ["laundry_appliances"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

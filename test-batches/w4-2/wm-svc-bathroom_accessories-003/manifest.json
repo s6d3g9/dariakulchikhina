@@ -1,0 +1,1 @@
+{"batchId": "99c669d349572da1cd8d05a726b3b539011d699c0a438db2f7030aacd54f3344", "familyKey": "bathroom_accessories", "recordLevels": ["catalog_type"], "count": 30, "pendingRefs": ["bathroom_accessories"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}

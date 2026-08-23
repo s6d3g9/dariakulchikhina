@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oxoxoxo.online/schemas/shell-v6/command-envelope.schema.json",
+  "title": "Shell v6 Command Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "commandId", "commandType", "actorId", "targetId", "expectedRevision",
+    "parameters", "idempotencyKey", "riskClass", "requestedAt",
+    "projectionEpochId", "contractVersion"
+  ],
+  "properties": {
+    "commandId": { "type": "string", "minLength": 1 },
+    "commandType": { "type": "string", "pattern": "^[a-z][a-z0-9.-]*$" },
+    "actorId": { "type": "string", "minLength": 1 },
+    "targetId": { "type": "string", "minLength": 1 },
+    "expectedRevision": { "type": "string", "minLength": 1 },
+    "parameters": true,
+    "idempotencyKey": { "type": "string", "minLength": 16 },
+    "riskClass": { "enum": ["safe", "reversible", "sensitive", "financial", "legal", "physical", "irreversible"] },
+    "requestedAt": { "type": "string", "format": "date-time" },
+    "projectionEpochId": { "type": "string", "minLength": 1 },
+    "contractVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+  }
+}

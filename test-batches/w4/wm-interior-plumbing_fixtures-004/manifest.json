@@ -1,0 +1,1 @@
+{"batchId": "db1e1d9610f0d6926a1a063ba2b531e2b833df4a0036404ab196babaa18e65f7", "familyKey": "plumbing_fixtures", "recordLevels": ["catalog_type"], "count": 29, "pendingRefs": ["plumbing_fixtures"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}

@@ -1,0 +1,1 @@
+{"batchId": "decc78396a8024de0b2b30527e12ffefbc44fa9e3fccd3f8964078990a19d7e7", "familyKey": "hvac_units", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["hvac_units"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}

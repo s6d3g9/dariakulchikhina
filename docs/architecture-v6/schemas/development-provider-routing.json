@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0.0",
+  "policyId": "shell-v6-zai-qwen-development-routing-v2",
+  "executionPolicy": "shell-v6-nl-development-runtime-v1",
+  "providers": [
+    {
+      "providerId": "zai",
+      "codingPlanEndpoint": "https://api.z.ai/api/coding/paas/v4",
+      "multimodalEndpoint": "https://api.z.ai/api/paas/v4"
+    },
+    {
+      "providerId": "alibaba-maas",
+      "codingPlanEndpoint": "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+    }
+  ],
+  "models": {
+    "text": {
+      "routeModelId": "zai-coding-plan/glm-5.3",
+      "upstreamModelId": "glm-5.3",
+      "modalities": ["text"],
+      "capabilities": ["code", "reasoning", "tool-use", "structured-output", "mcp"],
+      "contextProfile": "1m",
+      "availability": "available"
+    },
+    "qwenReview": {
+      "routeModelId": "alibaba-maas/qwen3.8-max",
+      "upstreamModelId": "qwen3.8-max",
+      "modalities": ["text"],
+      "capabilities": ["code", "reasoning", "structured-output"],
+      "contextProfile": "coding-plan",
+      "availability": "available",
+      "requestProfile": {
+        "parameterPlacement": "top-level",
+        "enable_thinking": false,
+        "temperature": 0.1,
+        "maxOutputTokens": 2000,
+        "timeoutSeconds": 120
+      }
+    },
+    "vision": {
+      "routeModelId": "zai/glm-5v-turbo",
+      "upstreamModelId": "glm-5v-turbo",
+      "modalities": ["text", "image", "video", "file"],
+      "capabilities": ["code", "reasoning", "vision", "image-input", "video-input", "tool-use"],
+      "contextProfile": "200k",
+      "availability": "blocked",
+      "blockedReason": "No eligible NL account has a GLM-5V-Turbo resource package; direct probe returned HTTP 429 on 2026-08-15."
+    }
+  },
+  "roleRoutes": [
+    {
+      "roleId": "fast-independent-critic",
+      "modelRef": "qwenReview",
+      "reasoningEffort": "high",
+      "requiredCapabilities": ["code", "reasoning"]
+    },
+    {
+      "roleId": "bounded-implementer",
+      "modelRef": "text",
+      "reasoningEffort": "max",
+      "requiredCapabilities": ["code", "reasoning", "tool-use"]
+    },
+    {
+      "roleId": "architecture-synthesizer",
+      "modelRef": "text",
+      "reasoningEffort": "max",
+      "requiredCapabilities": ["reasoning", "structured-output"]
+    },
+    {
+      "roleId": "adversarial-falsifier",
+      "modelRef": "qwenReview",
+      "reasoningEffort": "max",
+      "requiredCapabilities": ["code", "reasoning", "structured-output"]
+    },
+    {
+      "roleId": "multimodal-ui-critic",
+      "modelRef": "vision",
+      "reasoningEffort": "max",
+      "requiredCapabilities": ["vision", "image-input", "code"]
+    }
+  ],
+  "accounts": [
+    {
+      "accountId": "zai-coding-plan-worker-01",
+      "providerId": "zai",
+      "credentialRef": "secret://nl/glm-worker/zai-coding-plan",
+      "runtimeUser": "glm-worker",
+      "modelRefs": ["text"],
+      "concurrencyLimit": 1,
+      "allowedProjectScopes": ["shell-v6"],
+      "healthState": "healthy"
+    },
+    {
+      "accountId": "alibaba-maas-qwen-review-worker-01",
+      "providerId": "alibaba-maas",
+      "credentialRef": "secret://nl/qwen-worker/alibaba-maas-coding-plan",
+      "runtimeUser": "qwen-worker",
+      "modelRefs": ["qwenReview"],
+      "concurrencyLimit": 1,
+      "allowedProjectScopes": ["shell-v6"],
+      "healthState": "healthy"
+    }
+  ],
+  "fallbackPolicy": {
+    "mode": "deny",
+    "allowedProviderIds": ["zai", "alibaba-maas"],
+    "forbiddenProviderIds": ["anthropic", "openai", "ollama", "local"]
+  }
+}

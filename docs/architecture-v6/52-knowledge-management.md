@@ -177,3 +177,20 @@ Avoid:
 - ❌ Meetings без notes — decisions forgotten.
 - ❌ «Everyone knows» — silent assumption, new hires don't.
 - ❌ Stale docs — wrong info is worse than none.
+
+## 17. Product Knowledge Runtime
+
+Этот документ описывает организационное знание команды. Пользовательское и продуктовое знание Shell v6 хранится отдельно как policy-aware Claim Graph — см. `55-world-model-claim-graph.md`.
+
+Связь двух контуров:
+
+- docs/ADR/RFC определяют версии contracts и алгоритмов;
+- domain events порождают runtime claims;
+- schemas из `architecture-v6/schemas/` проверяют envelopes;
+- review records сохраняют findings и решения, но не становятся runtime truth;
+- индексы Graphify/lexical/vector помогают навигации, однако compiler/tests/production probes остаются authority correctness;
+- Messenger является универсальным interaction/delivery layer для комментариев, реакций и interactive surfaces, но не монополизирует domain source-of-truth.
+
+Любое архитектурное решение, меняющее Claim, TypeProfile, Instrument, SurfacePlan или Command contract, требует ADR/RFC, migration и conformance tests.
+
+Материнский/дочерний контур, гибридные индексы, pattern registry и provider balancing определены в `61-development-intelligence-and-provider-balancer.md`.

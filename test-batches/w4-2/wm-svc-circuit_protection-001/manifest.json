@@ -1,0 +1,1 @@
+{"batchId": "b526f4b0f4abe9d7286d6ff94ab04e19982e936d5761ec10bad8e448241c4699", "familyKey": "circuit_protection", "recordLevels": ["catalog_type"], "count": 30, "pendingRefs": ["circuit_protection"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}

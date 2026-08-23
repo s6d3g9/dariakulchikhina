@@ -1,151 +1,399 @@
 /**
  * packages/card-types/person-profile/schemas.ts
  *
- * Zod схемы для instance и type. Используются:
- * - UI для рендера view + panels
- * - Contract-harness (I23) для проверки data-shape
- * - SDK генерации (contracts-domain)
- *
- * NOTE: zod добавляется в workspace в Фазе 0. Сейчас — декларативный skeleton.
+ * Declarative data-shape contract consumed by shell views, panels, and the
+ * fractal harness. Keep this in sync with schema.data.json.
  */
 
-// Импорт zod будет активирован в Фазе 0.
-// import { z } from 'zod'
+export type ViewMode = 'instance' | 'type'
+export type PanelSlot = 'top' | 'left' | 'right' | 'bottom'
+export type SectionRole =
+  | 'identity'
+  | 'status'
+  | 'timeline'
+  | 'stream'
+  | 'actions'
+  | 'evidence'
+  | 'inversion'
 
-// ─── Instance (конкретный человек) ────────────────────────────
-export interface PersonInstance {
+export interface FieldDef {
+  key: string
+  label_ru: string
+  type: string
+}
+
+export interface SectionDef {
+  key: string
+  title_ru: string
+  role: SectionRole
+  fields: readonly FieldDef[]
+}
+
+export interface PanelDef {
+  title_ru: string
+  content_kind: string
+}
+
+export interface FixtureDef {
   id: string
-  kind: 'person-profile'
-  view: 'instance'
-  mode?: 'consumer' | 'provider'
-
-  // Identity
-  displayName: string
-  avatarUrl?: string
-  verified: boolean
-  badges: string[]
-
-  // Locality
-  region?: string          // country code
-  timezone?: string
-  languages?: string[]
-
-  // Role / provider
-  primaryRoleId?: string   // ссылка на type-view
-  isProvider?: boolean
-
-  // Privacy
-  visibility: 'public' | 'discoverable' | 'private'
-
-  // System
-  version: number
-  createdAt: string        // ISO UTC
-  updatedAt: string
-  deletedAt?: string
+  view: ViewMode
+  values: Record<string, unknown>
 }
 
-// ─── Type (публичная роль) ────────────────────────────────────
-export interface PersonType {
-  id: string
-  kind: 'person-profile'
-  view: 'type'
-
-  title: string            // "Musician", "Yoga teacher", "Company: Tesla"
-  description: string
-  avatarUrl?: string
-  brandSkin?: {
-    tokens: Record<string, string>   // overlay на design-tokens
-  }
-
-  categories: string[]     // каталог
-  languages?: string[]
-
-  // Кто представляет эту роль (один или multi)
-  representatives: string[]   // person-instance IDs
-
-  // System
-  version: number
-  createdAt: string
-  updatedAt: string
+export interface CardTypeSchema {
+  sectionsSchema: Record<ViewMode, readonly SectionDef[]>
+  panels: Record<PanelSlot, Record<ViewMode, PanelDef>>
+  modes: Record<ViewMode, readonly string[]>
+  fixtures: readonly FixtureDef[]
 }
 
-// ─── Panel payloads (типы для panel-provider'ов) ──────────────
-
-export interface PanelPayload_Top_Instance {
-  stories: Array<{
-    id: string
-    thumbnail: string
-    createdAt: string
-  }>
-  galleryCount: number
+export const personProfileSchema: CardTypeSchema = {
+  sectionsSchema: {
+    instance: [
+      {
+        key: 'header',
+        title_ru: 'Профиль агента',
+        role: 'identity',
+        fields: [
+          {
+            key: 'name',
+            label_ru: 'Имя',
+            type: 'string',
+          },
+          {
+            key: 'avatar',
+            label_ru: 'Аватар',
+            type: 'url',
+          },
+          {
+            key: 'status',
+            label_ru: 'Статус',
+            type: 'string',
+          },
+          {
+            key: 'rating',
+            label_ru: 'Рейтинг',
+            type: 'number',
+          },
+        ],
+      },
+      {
+        key: 'timeline',
+        title_ru: 'Хронология',
+        role: 'timeline',
+        fields: [
+          {
+            key: 'created',
+            label_ru: 'Создан',
+            type: 'date',
+          },
+          {
+            key: 'last_active',
+            label_ru: 'Последняя активность',
+            type: 'date',
+          },
+          {
+            key: 'updated',
+            label_ru: 'Обновлен',
+            type: 'date',
+          },
+        ],
+      },
+      {
+        key: 'summary',
+        title_ru: 'Статистика',
+        role: 'status',
+        fields: [
+          {
+            key: 'tasks_done',
+            label_ru: 'Задач выполнено',
+            type: 'number',
+          },
+          {
+            key: 'conversations',
+            label_ru: 'Диалогов проведено',
+            type: 'number',
+          },
+          {
+            key: 'tokens_used',
+            label_ru: 'Использовано токенов',
+            type: 'string',
+          },
+        ],
+      },
+      {
+        key: 'actions',
+        title_ru: 'Действия',
+        role: 'actions',
+        fields: [
+          {
+            key: 'start_chat',
+            label_ru: 'Начать диалог',
+            type: 'action',
+          },
+          {
+            key: 'assign_task',
+            label_ru: 'Поручить задачу',
+            type: 'action',
+          },
+          {
+            key: 'view_history',
+            label_ru: 'Открыть историю',
+            type: 'action',
+          },
+        ],
+      },
+      {
+        key: 'sections',
+        title_ru: 'Детали',
+        role: 'stream',
+        fields: [
+          {
+            key: 'skills',
+            label_ru: 'Навыки',
+            type: 'list',
+          },
+          {
+            key: 'pricing',
+            label_ru: 'Стоимость',
+            type: 'object',
+          },
+          {
+            key: 'portfolio',
+            label_ru: 'Портфолио',
+            type: 'list',
+          },
+        ],
+      },
+      {
+        key: 'footer',
+        title_ru: 'Дополнительно',
+        role: 'evidence',
+        fields: [
+          {
+            key: 'privacy_policy',
+            label_ru: 'Конфиденциальность',
+            type: 'link',
+          },
+          {
+            key: 'support',
+            label_ru: 'Поддержка',
+            type: 'link',
+          },
+        ],
+      },
+    ],
+    type: [
+      {
+        key: 'header',
+        title_ru: 'Роль',
+        role: 'identity',
+        fields: [
+          {
+            key: 'title',
+            label_ru: 'Название роли',
+            type: 'string',
+          },
+          {
+            key: 'logo',
+            label_ru: 'Логотип',
+            type: 'url',
+          },
+          {
+            key: 'category',
+            label_ru: 'Категория',
+            type: 'string',
+          },
+        ],
+      },
+      {
+        key: 'timeline',
+        title_ru: 'Жизненный цикл',
+        role: 'timeline',
+        fields: [
+          {
+            key: 'established',
+            label_ru: 'Основан',
+            type: 'date',
+          },
+          {
+            key: 'last_updated',
+            label_ru: 'Обновлен',
+            type: 'date',
+          },
+        ],
+      },
+      {
+        key: 'summary',
+        title_ru: 'Общая статистика',
+        role: 'status',
+        fields: [
+          {
+            key: 'active_instances',
+            label_ru: 'Активных агентов',
+            type: 'number',
+          },
+          {
+            key: 'total_tasks',
+            label_ru: 'Всего задач',
+            type: 'number',
+          },
+        ],
+      },
+      {
+        key: 'actions',
+        title_ru: 'Взаимодействие',
+        role: 'actions',
+        fields: [
+          {
+            key: 'join_ecosystem',
+            label_ru: 'Создать агента',
+            type: 'action',
+          },
+          {
+            key: 'view_docs',
+            label_ru: 'Документация',
+            type: 'action',
+          },
+          {
+            key: 'contact_sales',
+            label_ru: 'Связаться с продажами',
+            type: 'action',
+          },
+        ],
+      },
+      {
+        key: 'sections',
+        title_ru: 'Информация',
+        role: 'stream',
+        fields: [
+          {
+            key: 'catalog',
+            label_ru: 'Каталог агентов',
+            type: 'list',
+          },
+          {
+            key: 'capabilities',
+            label_ru: 'Возможности',
+            type: 'list',
+          },
+          {
+            key: 'case_studies',
+            label_ru: 'Кейсы',
+            type: 'list',
+          },
+        ],
+      },
+      {
+        key: 'footer',
+        title_ru: 'Реквизиты',
+        role: 'evidence',
+        fields: [
+          {
+            key: 'terms',
+            label_ru: 'Условия использования',
+            type: 'link',
+          },
+          {
+            key: 'certifications',
+            label_ru: 'Сертификаты',
+            type: 'link',
+          },
+        ],
+      },
+    ],
+  },
+  panels: {
+    top: {
+      instance: {
+        title_ru: 'Медиа и Аватары',
+        content_kind: 'media',
+      },
+      type: {
+        title_ru: 'Маркетинговые материалы',
+        content_kind: 'media',
+      },
+    },
+    left: {
+      instance: {
+        title_ru: 'Магазин навыков',
+        content_kind: 'shop',
+      },
+      type: {
+        title_ru: 'Корпоративные лицензии',
+        content_kind: 'shop',
+      },
+    },
+    right: {
+      instance: {
+        title_ru: 'Активные чаты',
+        content_kind: 'chats',
+      },
+      type: {
+        title_ru: 'Сообщество разработчиков',
+        content_kind: 'communities',
+      },
+    },
+    bottom: {
+      instance: {
+        title_ru: 'Лента событий',
+        content_kind: 'feed',
+      },
+      type: {
+        title_ru: 'Новости платформы',
+        content_kind: 'feed',
+      },
+    },
+  },
+  modes: {
+    instance: ['consumer', 'provider'],
+    type: ['explore', 'connect'],
+  },
+  fixtures: [
+    {
+      id: 'fx-agent-1',
+      view: 'instance',
+      values: {
+        name: 'Композитор AI',
+        avatar: 'https://example.com/avatars/composer.png',
+        status: 'Активен',
+        rating: 4.9,
+        created: '2023-01-15T10:00:00Z',
+        last_active: '2023-10-24T12:30:00Z',
+        updated: '2023-10-20T08:00:00Z',
+        tasks_done: 1520,
+        conversations: 340,
+        tokens_used: '2.5M',
+        skills: ['Сбор требований', 'Архитектура', 'TypeScript'],
+        pricing: {
+          currency: 'USD',
+          amount: 50,
+        },
+        portfolio: ['CRM система', 'Платформа курсов'],
+        privacy_policy: 'https://example.com/privacy',
+        support: 'support@example.com',
+      },
+    },
+    {
+      id: 'fx-agent-1-type',
+      view: 'type',
+      values: {
+        title: 'AI Архитектор',
+        logo: 'https://example.com/logos/ai-arch.png',
+        category: 'IT, Разработка',
+        established: '2022-05-10T00:00:00Z',
+        last_updated: '2023-09-01T00:00:00Z',
+        active_instances: 150,
+        total_tasks: 50000,
+        join_ecosystem: 'Создать своего агента',
+        view_docs: 'Как настроить агента',
+        contact_sales: 'Связаться с нами',
+        catalog: ['Junior Dev', 'Senior Dev', 'QA Engineer'],
+        capabilities: ['Code Review', 'Auto-coding', 'Bug fixing'],
+        case_studies: ['Ускорение релизов x2'],
+        terms: 'https://example.com/terms',
+        certifications: 'ISO 27001',
+      },
+    },
+  ],
 }
-
-export interface PanelPayload_Left_Instance {
-  shopItems: Array<{
-    id: string
-    kind: 'template' | 'subscription' | 'service'
-    title: string
-    priceCents: number
-    currency: string
-  }>
-}
-
-export interface PanelPayload_Right_Instance {
-  conversations: Array<{
-    id: string
-    kind: 'dm' | 'entity-thread'
-    title: string
-    unreadCount: number
-  }>
-}
-
-export interface PanelPayload_Bottom_Instance {
-  posts: Array<{
-    id: string
-    text: string
-    createdAt: string
-    reactionsCount: number
-  }>
-}
-
-export interface PanelPayload_Top_Type {
-  officialChannels: Array<{ id: string; title: string; url: string }>
-  fanContent: Array<{ id: string; thumbnail: string }>
-}
-
-export interface PanelPayload_Left_Type {
-  magazine: Array<{
-    id: string
-    title: string
-    category: string
-    priceCents?: number
-  }>
-}
-
-export interface PanelPayload_Right_Type {
-  communities: Array<{
-    id: string
-    title: string
-    memberCount: number
-    joinPolicy: 'open' | 'request' | 'invite-only'
-  }>
-}
-
-export interface PanelPayload_Bottom_Type {
-  feed: Array<{
-    id: string
-    authorId: string
-    text: string
-    isOfficial: boolean
-    createdAt: string
-  }>
-}
-
-/**
- * Zod схемы (placeholders). Будут активированы в Фазе 0:
- *
- * export const ZPersonInstance = z.object({ ... })
- * export const ZPersonType     = z.object({ ... })
- * export const ZPanelPayload_Top_Instance = z.object({ ... })
- * ... и т.д.
- */

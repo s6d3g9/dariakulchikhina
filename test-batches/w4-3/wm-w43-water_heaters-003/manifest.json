@@ -1,0 +1,1 @@
+{"batchId": "ad6ff499eed379b408d75d06cc40535cc700b931b2a87fe57031e54c4941e821", "familyKey": "water_heaters", "recordLevels": ["catalog_type"], "count": 4, "pendingRefs": ["water_heaters"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-3 audit GO 2026-07-03: hard+dupes removed, bergauf-wp & serial water_heaters quarantined"}

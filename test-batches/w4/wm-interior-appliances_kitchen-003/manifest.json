@@ -1,0 +1,1 @@
+{"batchId": "99f80b53e4497978c88be5d3644e3424f57158d9a617c810a2d410a218675443", "familyKey": "appliances_kitchen", "recordLevels": ["catalog_type"], "count": 27, "pendingRefs": ["appliances_kitchen"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}

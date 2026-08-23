@@ -1,0 +1,1 @@
+{"batchId": "9a34c0ae45aad252f09bb8b9efbca73dfbb356cc3356ea8faf6715445574decc", "familyKey": "wiring_devices", "recordLevels": ["catalog_type"], "count": 30, "pendingRefs": ["wiring_devices"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}

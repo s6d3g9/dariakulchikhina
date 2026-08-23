@@ -1,0 +1,1 @@
+{"batchId": "7d9c7088dc44f5d0adc08959e2b3cf751c28d7db79771392bcd89891882575c6", "familyKey": "kitchen_sinks", "recordLevels": ["catalog_type"], "count": 30, "pendingRefs": ["kitchen_sinks"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-2 adversarial audit 2026-07-03: GO; hard+dupes removed, judge batch-fixes applied"}

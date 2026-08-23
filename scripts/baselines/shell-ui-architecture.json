@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "roots": [
+    "app",
+    "messenger/web"
+  ],
+  "metrics": {
+    "rawZIndexDeclarations": 142,
+    "importantDeclarations": 1776,
+    "fixedPositionDeclarations": 62,
+    "teleports": 27,
+    "globalKeydownListeners": 5,
+    "documentPointerdownListeners": 10,
+    "boundingRectCalls": 26,
+    "navigationCustomEvents": 0,
+    "booleanNavigationStateDeclarations": 4,
+    "duplicateSelectorDefinitions": 1638
+  }
+}

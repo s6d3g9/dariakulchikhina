@@ -3,6 +3,23 @@
 Эти правила действуют для любого нового чата Copilot в этом репозитории.
 Если задача затрагивает интерфейс, layout, компоненты, страницы, формы, навигацию, взаимодействия или стили, сначала учитывай этот файл.
 
+## NL-only граница инструментов разработки
+
+Это правило действует для всех задач репозитория, а не только для UI:
+
+- каноническая среда разработки и индексирования — NL-host `v2202602335514431700`, Linux, `/srv/v6`, пользователь `claudecode`;
+- Serena, Graphify, Entire, symbol/lexical/vector indexers, AI provider CLI, server-side web/browser tools и их dashboards запускаются только в этой среде;
+- provider workers могут исполняться только под изолированными NL service accounts, объявленными в `development-provider-routing.json`; реализация идёт через `glm-worker`, независимая Qwen-критика — через `qwen-worker`, интерактивный root запрещён;
+- на macOS, ноутбуке разработчика или в локальной копии репозитория эти процессы не запускать и не устанавливать;
+- отсутствие SSH/серверного terminal означает fail-closed: сообщить blocker, не создавать local fallback;
+- перед использованием выполнить `pnpm tooling:nl:verify`; Serena запускать только командами `pnpm tooling:nl:serena:claude` или `pnpm tooling:nl:serena:codex`;
+- перед AI routing выполнить `pnpm tooling:nl:providers:verify`; разрешены только модели и accounts из manifest;
+- адрес `127.0.0.1` для dashboard означает loopback NL-host, никогда loopback рабочей станции;
+- dashboard нельзя bind'ить на `0.0.0.0`, автоматически открывать в локальном браузере или прокладывать к нему локальный tunnel без отдельного прямого разрешения пользователя;
+- web research выполняется только серверными инструментами. Локальный браузер не является fallback.
+
+Enforcement: `scripts/nl-tooling-policy.mjs` сверяет platform, hostname, realpath репозитория и OS-user. Несовпадение завершает запуск кодом `78`. Инструкции без executable guard не считаются достаточной защитой.
+
 ## Приоритет
 
 1. Этот файл — главный always-on манифест для UI-задач в новых чатах

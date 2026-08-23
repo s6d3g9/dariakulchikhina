@@ -1,0 +1,1 @@
+{"batchId": "9979f65f2be1f6a67d281c246fe21f34bd971e7ff7854264ac32892f99cd616a", "familyKey": "furniture_sofas", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["furniture_sofas"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}

@@ -24,7 +24,7 @@ v5.3 остаётся действующей архитектурой до Фа�
 ### Архитектура платформы
 - [07-layered-architecture.md](07-layered-architecture.md) — 6 слоёв + каталог 35 сервисов
 - [08-repository-structure.md](08-repository-structure.md) — дерево монорепо v6
-- [09-invariants.md](09-invariants.md) — архитектурные инварианты (18 правил)
+- [09-invariants.md](09-invariants.md) — архитектурные инварианты, включая Claim Graph и projection kernel
 - [14-data-architecture.md](14-data-architecture.md) — где что хранится, ownership БД, consistency
 - [15-integration-patterns.md](15-integration-patterns.md) — sync/async/saga, events, idempotency
 
@@ -74,6 +74,16 @@ v5.3 остаётся действующей архитектурой до Фа�
 - [44-identity-flows.md](44-identity-flows.md) — OIDC, passkey, WS-tickets, device-binding, step-up, KYC
 - [45-cold-starts.md](45-cold-starts.md) — user / vertical / region bootstrap, seed content, zero-state design
 - [46-public-api.md](46-public-api.md) — External API, OAuth, quotas, webhooks, SDKs
+- [55-world-model-claim-graph.md](55-world-model-claim-graph.md) — **policy-aware Claim Graph**, provenance, summaries, identity links, invalidation
+- [56-generative-surface-engine.md](56-generative-surface-engine.md) — **автокомпозиция widgets/surfaces** по intent, budget и constraints
+- [57-editorial-projection-engine.md](57-editorial-projection-engine.md) — семантическая типографика, reflow, motion и Android/Web parity
+- [58-command-safety-runtime.md](58-command-safety-runtime.md) — commands, idempotency, confirmation, offline rebase, events
+- [59-type-profiles-and-instruments.md](59-type-profiles-and-instruments.md) — модель типов мира, документы, автомобили, instrument registry
+- [60-conformance-and-property-tests.md](60-conformance-and-property-tests.md) — security, property, renderer и cross-platform tests
+- [61-development-intelligence-and-provider-balancer.md](61-development-intelligence-and-provider-balancer.md) — mother/daughter контур, Graphify/Entire, индексация, patterns и multi-account AI balancing
+- [62-nl-only-development-runtime.md](62-nl-only-development-runtime.md) — исполняемая NL-only граница для Serena, Graphify, indexers, dashboards и server-side browsing
+- [schemas/](schemas/) — draft machine-readable contracts проекционного ядра
+- [reviews/](reviews/) — сохранённые критические аудиты и принятые решения
 
 ### Процессы
 - [47-feature-flags-policy.md](47-feature-flags-policy.md) — flag lifecycle, naming, cleanup, CI
@@ -103,6 +113,8 @@ v5.3 остаётся действующей архитектурой до Фа�
 - **Инфра**: Zitadel, Traefik, NATS JetStream, Temporal, PostgreSQL + TigerBeetle + ScyllaDB + ClickHouse + S3, SigNoz, Argo CD.
 - **Creator economy** — первоклассная: `authorship-registry` + `ownership-registry` + recursive royalty + subscription-engine. См. `09 I10`.
 - **Governance** — runtime: `policy-engine` решает allow/distill/deny по geo/age/jurisdiction. Никаких форков кода под локации.
+- **World Model** — policy-aware graph утверждений с provenance и valid-time; UI — детерминированная проекция, а не source-of-truth.
+- **Adaptive surfaces** — TypeProfile + InstrumentManifest + constraint solver создают один semantic SurfacePlan для Shell, Messenger, Android и Web.
 - **Мобильный-first и offline-first** везде, начиная с shell'а.
 - **Фаза 0** начинается уже сейчас и полезна даже без v6 (Turborepo, contracts-package, OpenAPI, SigNoz).
 
@@ -119,7 +131,7 @@ v5.3 остаётся действующей архитектурой до Фа�
 | 06-card-types-matrix | ✅ |
 | 07-layered-architecture | ✅ |
 | 08-repository-structure | ✅ |
-| 09-invariants | ✅ 18 правил |
+| 09-invariants | ✅ 40 правил, I24–I40 — projection kernel target |
 | 10-timeline-engine | ✅ Temporal-based, 5 типов шагов, gate'ы |
 | 11-creator-economy | ✅ authorship + ownership + recursive royalty + license taxonomy |
 | 12-pattern-composition | ✅ atomic/compound/template, binding, travel-пример целиком |
@@ -165,5 +177,12 @@ v5.3 остаётся действующей архитектурой до Фа�
 | 52-knowledge-management | ✅ docs-as-code, RFC, onboarding paths, anti-silo |
 | 53-community-support | ✅ 6 tiers, self-service 80%+, creator/partner tiers |
 | 54-innovation-track | ✅ 4 tracks, sunset policy, 70/20/10 budget |
+| 55-world-model-claim-graph | 🆕 draft canonical target |
+| 56-generative-surface-engine | 🆕 draft canonical target |
+| 57-editorial-projection-engine | 🆕 draft canonical target |
+| 58-command-safety-runtime | 🆕 draft canonical target |
+| 59-type-profiles-and-instruments | 🆕 draft canonical target |
+| 60-conformance-and-property-tests | 🆕 draft merge-gate target |
+| 61-development-intelligence-and-provider-balancer | 🆕 draft canonical target |
 | 99-glossary | ✅ единая терминология |
 | ADR | ✅ два первых (Turborepo, Temporal) + README + процесс |

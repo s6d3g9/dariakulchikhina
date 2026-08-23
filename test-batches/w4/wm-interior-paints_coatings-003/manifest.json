@@ -1,0 +1,1 @@
+{"batchId": "cdb608dad08ac4f9512985babdccc3308b2e07c6a668c5b66259285d216ed6fc", "familyKey": "paints_coatings", "recordLevels": ["catalog_type"], "count": 24, "pendingRefs": ["paints_coatings"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}

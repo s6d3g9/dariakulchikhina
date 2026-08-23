@@ -1,0 +1,1 @@
+{"batchId": "3b2cb919e42514eb4d9d1fddfa71b4c21f723d8181349eff0e452b7336e32a5e", "familyKey": "lighting_fixtures", "recordLevels": ["catalog_type"], "count": 28, "pendingRefs": ["lighting_fixtures"], "generator": "glm", "schemaVersion": 1, "auditNote": "w4-wave1 adversarial audit 2026-07-03: hard rejects removed, soft downgraded to confidence=low"}
